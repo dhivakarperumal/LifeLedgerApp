@@ -28,7 +28,7 @@ export function BottomTabBar({
   return (
     <View style={styles.container}>
       <LinearGradient
-        colors={["#1E5128", "#12351A"]}
+        colors={[Colors.primaryDark, Colors.headerEnd]}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={styles.gradient}
@@ -133,9 +133,8 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   tabItemFocused: {
-    backgroundColor: "#dff2b3", // Light vibrant green-yellow
-    // Glowing effect
-    shadowColor: "#dff2b3",
+    backgroundColor: Colors.accent,
+    shadowColor: Colors.accent,
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.8,
     shadowRadius: 10,
