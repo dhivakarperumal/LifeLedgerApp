@@ -31,7 +31,8 @@
           "image": "./assets/images/logo.png",
           "imageWidth": 76
         }
-      ]
+      ],
+      ["./plugins/withAndroidNavigationBarColor.js"]
     ],
     "experiments": {
       "typedRoutes": true,

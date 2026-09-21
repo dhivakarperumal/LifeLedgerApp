@@ -2,7 +2,7 @@ import { Tabs } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import type { ComponentProps } from "react";
 import { Pressable, Text, View, StyleSheet } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import { Colors } from "../constants/colors";
 
@@ -25,69 +25,79 @@ export function BottomTabBar({
   descriptors,
   navigation,
 }: BottomTabBarProps) {
+  // Get the safe area bottom inset (gesture bar / home indicator height)
+  const insets = useSafeAreaInsets();
+
   return (
     <View style={styles.container}>
+      {/* Rounded green gradient — only wraps the tab buttons, NOT the safe area */}
       <LinearGradient
         colors={[Colors.primaryDark, Colors.headerEnd]}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={styles.gradient}
       >
-        <SafeAreaView edges={["bottom"]}>
-          <View style={styles.tabContainer}>
-            {state.routes.map((route, index) => {
-              const { options } = descriptors[route.key];
-              const focused = state.index === index;
-              const label =
-                typeof options.tabBarLabel === "string"
-                  ? options.tabBarLabel
-                  : options.title ?? route.name;
+        <View style={styles.tabContainer}>
+          {state.routes.map((route, index) => {
+            const { options } = descriptors[route.key];
+            const focused = state.index === index;
+            const label =
+              typeof options.tabBarLabel === "string"
+                ? options.tabBarLabel
+                : options.title ?? route.name;
 
-              // Colors for the new design
-              const iconColor = focused ? "#1E5128" : "#FFFFFF";
-              const textColor = focused ? "#1E5128" : "#FFFFFF";
-              
-              // Get appropriate icon based on focus state
-              const routeIcons = tabIcons[route.name] ?? { outline: "ellipse-outline", solid: "ellipse" };
-              const iconName = focused ? routeIcons.solid : routeIcons.outline;
+            // Colors for the new design
+            const iconColor = focused ? "#1E5128" : "#FFFFFF";
+            const textColor = focused ? "#1E5128" : "#FFFFFF";
+            
+            // Get appropriate icon based on focus state
+            const routeIcons = tabIcons[route.name] ?? { outline: "ellipse-outline", solid: "ellipse" };
+            const iconName = focused ? routeIcons.solid : routeIcons.outline;
 
-              const handlePress = () => {
-                const event = navigation.emit({
-                  type: "tabPress",
-                  target: route.key,
-                  canPreventDefault: true,
-                });
+            const handlePress = () => {
+              const event = navigation.emit({
+                type: "tabPress",
+                target: route.key,
+                canPreventDefault: true,
+              });
 
-                if (!focused && !event.defaultPrevented) {
-                  navigation.navigate(route.name, route.params);
+              if (!focused && !event.defaultPrevented) {
+                navigation.navigate(route.name, route.params);
+              }
+            };
+
+            return (
+              <Pressable
+                key={route.key}
+                accessibilityRole="tab"
+                accessibilityState={focused ? { selected: true } : {}}
+                accessibilityLabel={options.tabBarAccessibilityLabel}
+                testID={options.tabBarButtonTestID}
+                onPress={handlePress}
+                onLongPress={() =>
+                  navigation.emit({ type: "tabLongPress", target: route.key })
                 }
-              };
-
-              return (
-                <Pressable
-                  key={route.key}
-                  accessibilityRole="tab"
-                  accessibilityState={focused ? { selected: true } : {}}
-                  accessibilityLabel={options.tabBarAccessibilityLabel}
-                  testID={options.tabBarButtonTestID}
-                  onPress={handlePress}
-                  onLongPress={() =>
-                    navigation.emit({ type: "tabLongPress", target: route.key })
-                  }
-                  style={styles.tabButton}
-                >
-                  <View style={[styles.tabItem, focused && styles.tabItemFocused]}>
-                    <Ionicons name={iconName} color={iconColor} size={24} />
-                    <Text style={[styles.tabLabel, { color: textColor, fontWeight: focused ? "700" : "500" }]}>
-                      {label}
-                    </Text>
-                  </View>
-                </Pressable>
-              );
-            })}
-          </View>
-        </SafeAreaView>
+                style={styles.tabButton}
+              >
+                <View style={[styles.tabItem, focused && styles.tabItemFocused]}>
+                  <Ionicons name={iconName} color={iconColor} size={24} />
+                  <Text style={[styles.tabLabel, { color: textColor, fontWeight: focused ? "700" : "500" }]}>
+                    {label}
+                  </Text>
+                </View>
+              </Pressable>
+            );
+          })}
+        </View>
       </LinearGradient>
+
+      {/*
+        Pure black spacer that fills exactly the system navigation bar /
+        gesture-indicator area below the rounded green bar.
+        This replaces the old SafeAreaView that was inside the gradient
+        (which caused the green to bleed into the gesture zone).
+      */}
+      <View style={[styles.safeAreaSpacer, { height: insets.bottom }]} />
     </View>
   );
 }
@@ -98,7 +108,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: "transparent",
+    backgroundColor: "#000000",
   },
   gradient: {
     borderTopLeftRadius: 30,
@@ -142,5 +152,8 @@ const styles = StyleSheet.create({
   },
   tabLabel: {
     fontSize: 12,
+  },
+  safeAreaSpacer: {
+    backgroundColor: "#000000",
   },
 });

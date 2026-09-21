@@ -1,6 +1,7 @@
 import { Tabs } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
-import { StatusBar } from "react-native";
+import { Platform, StatusBar } from "react-native";
+import { NavigationBar } from "expo-navigation-bar";
 import { BottomTabBar } from "../../Navigations/BottomTabBar";
 import { TopHeader } from "../../Navigations/TopHeader";
 import { Colors } from "../../constants/colors";
@@ -12,6 +13,8 @@ export default function TabsLayout() {
         barStyle="light-content"
         backgroundColor={Colors.headerStart}
       />
+      {/* Set Android system navigation bar buttons to light (white) for black background */}
+      {Platform.OS === "android" && <NavigationBar style="dark" />}
       <Tabs
         screenOptions={{
           headerShown: true,
