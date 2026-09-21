@@ -10,7 +10,7 @@ export function TopHeader() {
         resizeMode="cover"
         accessibilityLabel="Life Ledger logo"
       />
-      <Text className="text-lg font-bold" style={{ color: Colors.primary }}>
+      <Text className="text-lg font-bold" style={{ color: "#FFFFFF" }}>
         Life Ledger
       </Text>
     </View>

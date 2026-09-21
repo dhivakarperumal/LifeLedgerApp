@@ -12,6 +12,8 @@ export const Colors = {
   tabActive: "#366039",
   border: "#E5EAE7",
   danger: "#E74C4C",
+  headerStart: "#1E5128",
+  headerEnd: "#12351A",
 
   forest: "#366039",
   deepForest: "#264B2A",

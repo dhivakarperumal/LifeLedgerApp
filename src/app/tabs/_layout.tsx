@@ -1,5 +1,6 @@
 import { Tabs } from "expo-router";
-import { StatusBar } from "expo-status-bar";
+import { LinearGradient } from "expo-linear-gradient";
+import { StatusBar } from "react-native";
 import { BottomTabBar } from "../../Navigations/BottomTabBar";
 import { TopHeader } from "../../Navigations/TopHeader";
 import { Colors } from "../../constants/colors";
@@ -7,15 +8,25 @@ import { Colors } from "../../constants/colors";
 export default function TabsLayout() {
   return (
     <>
-      <StatusBar style="light" backgroundColor={Colors.surface} />
+      <StatusBar
+        barStyle="light-content"
+        backgroundColor={Colors.headerStart}
+      />
       <Tabs
         screenOptions={{
           headerShown: true,
           headerTitle: () => <TopHeader />,
           headerShadowVisible: false,
-          headerStyle: { backgroundColor: Colors.surface },
-          headerTintColor: Colors.textPrimary,
-          tabBarActiveTintColor: Colors.textPrimary,
+          headerBackground: () => (
+            <LinearGradient
+              colors={[Colors.headerStart, Colors.headerEnd]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={{ flex: 1 }}
+            />
+          ),
+          headerTintColor: Colors.white,
+          tabBarActiveTintColor: Colors.white,
           tabBarInactiveTintColor: Colors.primaryLight,
           tabBarStyle: { display: "none" },
         }}
