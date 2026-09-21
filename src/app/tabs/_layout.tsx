@@ -21,7 +21,10 @@ export default function TabsLayout() {
         }}
         tabBar={(props) => <BottomTabBar {...props} />}
       >
-        <Tabs.Screen name="index" options={{ title: "Home" }} />
+        <Tabs.Screen
+          name="index"
+          options={{ title: "Home", headerShown: false }}
+        />
         <Tabs.Screen name="expenses" options={{ title: "Expenses" }} />
         <Tabs.Screen name="memories" options={{ title: "Memories" }} />
         <Tabs.Screen name="diary" options={{ title: "Diary" }} />
