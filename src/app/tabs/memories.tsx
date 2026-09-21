@@ -1,11 +1,19 @@
-import { Text, View } from "react-native";
+import { Text, View, ScrollView } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Colors } from "../../constants/colors";
 
 export default function Memories() {
+  const insets = useSafeAreaInsets();
+
   return (
-    <View
-      className="flex-1 px-6 py-8"
+    <ScrollView
+      className="flex-1"
       style={{ backgroundColor: Colors.contentBackground }}
+      contentContainerStyle={{
+        paddingHorizontal: 24,
+        paddingTop: 32,
+        paddingBottom: insets.bottom + 100, // clear the floating bottom tab bar
+      }}
     >
       <Text className="text-3xl font-bold" style={{ color: Colors.forest }}>
         Memories
@@ -18,7 +26,13 @@ export default function Memories() {
         style={{ backgroundColor: Colors.white }}
       >
         <Text
-          className="text-lg font-semibold"
+          className="text-sm font-semibold uppercase tracking-widest"
+          style={{ color: Colors.olive }}
+        >
+          Your memories
+        </Text>
+        <Text
+          className="mt-3 text-lg font-semibold"
           style={{ color: Colors.forest }}
         >
           Your memory wall is waiting
@@ -27,6 +41,7 @@ export default function Memories() {
           Add a photo or a note to make your first memory.
         </Text>
       </View>
-    </View>
+    </ScrollView>
   );
 }
+

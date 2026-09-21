@@ -1,9 +1,9 @@
-import { Tabs } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import type { ComponentProps } from "react";
-import { Pressable, Text, View, StyleSheet } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
+import { Tabs } from "expo-router";
+import type { ComponentProps } from "react";
+import { Pressable, StyleSheet, Text, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Colors } from "../constants/colors";
 
 type BottomTabBarProps = Parameters<
@@ -44,14 +44,17 @@ export function BottomTabBar({
             const label =
               typeof options.tabBarLabel === "string"
                 ? options.tabBarLabel
-                : options.title ?? route.name;
+                : (options.title ?? route.name);
 
             // Colors for the new design
-            const iconColor = focused ? "#1E5128" : "#FFFFFF";
-            const textColor = focused ? "#1E5128" : "#FFFFFF";
-            
+            const iconColor = focused ? Colors.accent : "#FFFFFF";
+            const textColor = focused ? Colors.accent : "#FFFFFF";
+
             // Get appropriate icon based on focus state
-            const routeIcons = tabIcons[route.name] ?? { outline: "ellipse-outline", solid: "ellipse" };
+            const routeIcons = tabIcons[route.name] ?? {
+              outline: "ellipse-outline",
+              solid: "ellipse",
+            };
             const iconName = focused ? routeIcons.solid : routeIcons.outline;
 
             const handlePress = () => {
@@ -79,9 +82,16 @@ export function BottomTabBar({
                 }
                 style={styles.tabButton}
               >
-                <View style={[styles.tabItem, focused && styles.tabItemFocused]}>
+                <View
+                  style={[styles.tabItem, focused && styles.tabItemFocused]}
+                >
                   <Ionicons name={iconName} color={iconColor} size={24} />
-                  <Text style={[styles.tabLabel, { color: textColor, fontWeight: focused ? "700" : "500" }]}>
+                  <Text
+                    style={[
+                      styles.tabLabel,
+                      { color: textColor, fontWeight: focused ? "700" : "500" },
+                    ]}
+                  >
                     {label}
                   </Text>
                 </View>
@@ -92,10 +102,9 @@ export function BottomTabBar({
       </LinearGradient>
 
       {/*
-        Pure black spacer that fills exactly the system navigation bar /
-        gesture-indicator area below the rounded green bar.
-        This replaces the old SafeAreaView that was inside the gradient
-        (which caused the green to bleed into the gesture zone).
+        Pure black spacer that fills the system navigation bar / gesture zone.
+        The container is transparent so the green gradient corners look correct.
+        Only this spacer (below the gradient) is black.
       */}
       <View style={[styles.safeAreaSpacer, { height: insets.bottom }]} />
     </View>
@@ -108,7 +117,9 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: "#000000",
+    // transparent — so the green gradient rounded corners are not
+    // contaminated by a black background bleeding through the corners
+    backgroundColor: "transparent",
   },
   gradient: {
     borderTopLeftRadius: 30,
@@ -124,7 +135,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingHorizontal: 8,
+    paddingHorizontal: 4,
     paddingTop: 12,
     paddingBottom: 8,
     minHeight: 76,
@@ -135,24 +146,21 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   tabItem: {
+    flexDirection: "column",
     alignItems: "center",
     justifyContent: "center",
     paddingVertical: 8,
-    paddingHorizontal: 16,
+    paddingHorizontal: 8,
     borderRadius: 24,
     gap: 4,
   },
   tabItemFocused: {
-    backgroundColor: Colors.accent,
-    shadowColor: Colors.accent,
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.8,
-    shadowRadius: 10,
-    elevation: 8,
+    // no background — active state is shown via yellow icon & text only
   },
   tabLabel: {
-    fontSize: 12,
+    fontSize: 10,
   },
+  // Only the area BELOW the green bar is black (fills gesture/nav bar zone)
   safeAreaSpacer: {
     backgroundColor: "#000000",
   },
