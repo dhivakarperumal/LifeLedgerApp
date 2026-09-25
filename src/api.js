@@ -2,8 +2,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 
 export const API_BASE_URL =
-  process.env.EXPO_PUBLIC_API_URL ||
-  "https://lifetracking.qtechx.com/api";
+  process.env.EXPO_PUBLIC_API_URL || "https://lifetracking.qtechx.com/api";
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -54,10 +53,7 @@ export const clearTokenCache = () => {
 
 export const saveUser = async (user) => {
   if (user) {
-    await AsyncStorage.setItem(
-      "userProfile",
-      JSON.stringify(user)
-    );
+    await AsyncStorage.setItem("userProfile", JSON.stringify(user));
   }
 };
 
@@ -81,7 +77,7 @@ export const getStoredUser = async () => {
 
 export const getApiErrorMessage = (
   error,
-  fallback = "Something went wrong"
+  fallback = "Something went wrong",
 ) => {
   return (
     error?.response?.data?.message ||
@@ -105,7 +101,7 @@ api.interceptors.request.use(
 
     return config;
   },
-  (error) => Promise.reject(error)
+  (error) => Promise.reject(error),
 );
 
 /* =========================
@@ -138,17 +134,14 @@ api.interceptors.response.use(
       message:
         "Network connection failed. Please check your internet connection.",
     });
-  }
+  },
 );
 
 /* =========================
    LOGIN
 ========================= */
 
-export const loginWithIdentifier = async (
-  identifier,
-  password
-) => {
+export const loginWithIdentifier = async (identifier, password) => {
   try {
     const response = await api.post("/auth/login", {
       identifier: String(identifier || "").trim(),
@@ -175,15 +168,28 @@ export const loginWithIdentifier = async (
 };
 
 /* =========================
+   REGISTRATION
+========================= */
+
+export const registerUser = async ({ username, email, phone, password }) => {
+  const response = await api.post("/auth/register", {
+    username: String(username || "").trim(),
+    email: String(email || "").trim(),
+    phone: String(phone || "").trim(),
+    role: "admin",
+    password: String(password || ""),
+  });
+
+  return response.data || {};
+};
+
+/* =========================
    LOGOUT
 ========================= */
 
 export const logoutUser = async () => {
   try {
-    await AsyncStorage.multiRemove([
-      "userToken",
-      "userProfile",
-    ]);
+    await AsyncStorage.multiRemove(["userToken", "userProfile"]);
   } finally {
     clearTokenCache();
   }

@@ -1,11 +1,16 @@
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { Pressable, ScrollView, Text, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from "react-native-safe-area-context";
 import { TopHeader } from "../../Navigations/TopHeader";
 import { Colors } from "../../constants/colors";
 
 export default function Index() {
+  const insets = useSafeAreaInsets();
+
   return (
     <SafeAreaView
       edges={["top"]}
@@ -13,8 +18,9 @@ export default function Index() {
     >
       <View style={{ flex: 1, backgroundColor: Colors.contentBackground }}>
         <ScrollView
+          style={{ flex: 1 }}
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={{ paddingBottom: 28 }}
+          contentContainerStyle={{ paddingBottom: 104 + insets.bottom }}
         >
           <LinearGradient
             colors={[Colors.headerStart, Colors.headerEnd]}

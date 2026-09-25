@@ -1,7 +1,7 @@
-import { Tabs } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
-import { Platform, StatusBar } from "react-native";
 import { NavigationBar } from "expo-navigation-bar";
+import { Tabs } from "expo-router";
+import { Platform, StatusBar } from "react-native";
 import { BottomTabBar } from "../../Navigations/BottomTabBar";
 import { TopHeader } from "../../Navigations/TopHeader";
 import { Colors } from "../../constants/colors";
@@ -19,6 +19,11 @@ export default function TabsLayout() {
         screenOptions={{
           headerShown: true,
           headerTitle: () => <TopHeader />,
+          headerTitleAlign: "left",
+          headerTitleContainerStyle: {
+            flex: 1,
+            marginHorizontal: 0,
+          },
           headerShadowVisible: false,
           headerBackground: () => (
             <LinearGradient
