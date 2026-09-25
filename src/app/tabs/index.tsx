@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
-import { ScrollView, Text, Pressable, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
+import { Pressable, ScrollView, Text, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { TopHeader } from "../../Navigations/TopHeader";
 import { Colors } from "../../constants/colors";
 
