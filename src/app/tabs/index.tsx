@@ -1,15 +1,62 @@
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
+import { useEffect, useState } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
 import {
-    SafeAreaView,
-    useSafeAreaInsets,
+  SafeAreaView,
+  useSafeAreaInsets,
 } from "react-native-safe-area-context";
 import { TopHeader } from "../../Navigations/TopHeader";
+import { getStoredUser } from "../../api";
 import { Colors } from "../../constants/colors";
+
+type StoredUser = {
+  name?: string;
+  email?: string;
+};
+
+function getTimeGreeting(hour: number) {
+  if (hour < 5 || hour >= 21) return "Good night";
+  if (hour < 12) return "Good morning";
+  if (hour < 17) return "Good afternoon";
+  return "Good evening";
+}
 
 export default function Index() {
   const insets = useSafeAreaInsets();
+  const [currentTime, setCurrentTime] = useState(() => new Date());
+  const [userName, setUserName] = useState("there");
+
+  useEffect(() => {
+    const interval = setInterval(() => setCurrentTime(new Date()), 60_000);
+    return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    let isActive = true;
+
+    void getStoredUser().then((user: StoredUser | null) => {
+      if (!isActive) return;
+
+      const name = user?.name?.trim();
+      const emailName = user?.email?.split("@")[0]?.trim();
+      setUserName(name || emailName || "there");
+    });
+
+    return () => {
+      isActive = false;
+    };
+  }, []);
+
+  const dateLabel = currentTime
+    .toLocaleDateString("en-US", {
+      weekday: "long",
+      month: "long",
+      day: "numeric",
+      year: "numeric",
+    })
+    .toUpperCase();
+  const greeting = getTimeGreeting(currentTime.getHours());
 
   return (
     <SafeAreaView
@@ -42,19 +89,19 @@ export default function Index() {
               className="mt-6 text-xs font-semibold"
               style={{ color: Colors.primaryLight, letterSpacing: 1.5 }}
             >
-              MONDAY, SEPTEMBER 21, 2026
+              {dateLabel}
             </Text>
             <Text
               className="mt-2 text-2xl font-bold"
               style={{ color: Colors.white }}
             >
-              👋 Good Afternoon,
+              {greeting},👋
             </Text>
             <Text
               className="text-2xl font-bold"
               style={{ color: Colors.accent }}
             >
-              Dhivakar P
+              {userName}
             </Text>
 
             <View
