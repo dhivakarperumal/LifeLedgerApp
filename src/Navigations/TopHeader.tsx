@@ -104,7 +104,11 @@ export function TopHeader() {
             className="mr-1 h-9 w-9 items-center justify-center rounded-full bg-white/15"
             onPress={() => setSideMenuVisible(true)}
           >
-            <Ionicons name="menu-outline" size={23} color={Colors.white} />
+            <View className="items-start gap-[3px]">
+              <View className="h-1 w-6 rounded-full bg-white" />
+              <View className="h-1 w-4 rounded-full bg-white" />
+              <View className="h-1 w-6 rounded-full bg-white" />
+            </View>
           </Pressable>
           <Image
             source={require("../../assets/images/logo.png")}
