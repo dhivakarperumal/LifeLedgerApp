@@ -2,6 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { ScrollView, Text, Pressable, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
+import { TopHeader } from "../../Navigations/TopHeader";
 import { Colors } from "../../constants/colors";
 
 export default function Index() {
@@ -27,64 +28,8 @@ export default function Index() {
               borderBottomRightRadius: 42,
             }}
           >
-            <View className="flex-row items-center justify-between">
-              <View className="flex-row items-center gap-3">
-                <View
-                  className="h-10 w-10 items-center justify-center rounded-full"
-                  style={{ backgroundColor: Colors.primaryLight }}
-                >
-                  <Ionicons name="leaf" size={25} color={Colors.primaryDark} />
-                </View>
-                <View>
-                  <Text
-                    className="text-xl font-bold"
-                    style={{ color: Colors.white }}
-                  >
-                    Life Ledger
-                  </Text>
-                  <Text
-                    className="text-xs"
-                    style={{ color: Colors.primaryLight }}
-                  >
-                    Track · Plan · Live Better
-                  </Text>
-                </View>
-              </View>
-              <View className="flex-row items-center gap-3">
-                <Pressable
-                  accessibilityLabel="Notifications"
-                  className="h-11 w-11 items-center justify-center rounded-full"
-                  style={{ backgroundColor: "rgba(255,255,255,0.14)" }}
-                >
-                  <Ionicons
-                    name="notifications"
-                    size={22}
-                    color={Colors.white}
-                  />
-                  <View
-                    className="absolute right-0 top-0 h-5 w-5 items-center justify-center rounded-full"
-                    style={{ backgroundColor: Colors.danger }}
-                  >
-                    <Text
-                      className="text-xs font-bold"
-                      style={{ color: Colors.white }}
-                    >
-                      3
-                    </Text>
-                  </View>
-                </Pressable>
-                <View
-                  className="h-11 w-11 items-center justify-center rounded-full"
-                  style={{ backgroundColor: Colors.white }}
-                >
-                  <Text
-                    className="text-lg font-semibold"
-                    style={{ color: Colors.primary }}
-                  >
-                    D
-                  </Text>
-                </View>
-              </View>
+            <View className="h-11">
+              <TopHeader />
             </View>
 
             <Text

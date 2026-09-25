@@ -1,17 +1,31 @@
 import { useRouter } from "expo-router";
-import { SymbolView } from "expo-symbols";
 import { StatusBar } from "expo-status-bar";
+import { SymbolView } from "expo-symbols";
 import { useEffect } from "react";
 import { ActivityIndicator, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { isLoggedIn } from "../api";
 import { Colors } from "../constants/colors";
 
 export function LoadingScreen() {
   const router = useRouter();
 
   useEffect(() => {
-    const timer = setTimeout(() => router.replace("/tabs"), 1800);
-    return () => clearTimeout(timer);
+    let cancelled = false;
+
+    const redirect = async () => {
+      await new Promise((resolve) => setTimeout(resolve, 1800));
+      const loggedIn = await isLoggedIn().catch(() => false);
+
+      if (!cancelled) {
+        router.replace(loggedIn ? "/tabs" : "/auth/login");
+      }
+    };
+
+    void redirect();
+    return () => {
+      cancelled = true;
+    };
   }, [router]);
 
   return (

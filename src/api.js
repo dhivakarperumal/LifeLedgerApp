@@ -2,138 +2,200 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 
 export const API_BASE_URL =
-  process.env.EXPO_PUBLIC_API_URL || "https://veeturusi.qtechx.com/api";
-  // process.env.EXPO_PUBLIC_API_URL || "http://10.11.28.32:5000/api";
+  process.env.EXPO_PUBLIC_API_URL ||
+  "https://lifetracking.qtechx.com/api";
 
 const api = axios.create({
   baseURL: API_BASE_URL,
-  headers: { "Content-Type": "application/json" },
   timeout: 15000,
+  headers: {
+    "Content-Type": "application/json",
+    Accept: "application/json",
+  },
 });
 
-const MAX_RETRIES = 1;
 let cachedToken = null;
 
-export function clearTokenCache() {
-  cachedToken = null;
-}
+/* =========================
+   TOKEN MANAGEMENT
+========================= */
 
-export async function setAuthToken(token) {
+export const setAuthToken = async (token) => {
+  cachedToken = token || null;
+
   if (token) {
-    cachedToken = token;
     await AsyncStorage.setItem("userToken", token);
   } else {
-    cachedToken = null;
     await AsyncStorage.removeItem("userToken");
   }
-}
+};
 
-export async function getStoredToken() {
-  const storageToken = await AsyncStorage.getItem("userToken");
-  return storageToken || cachedToken || null;
-}
-
-export async function getStoredUser() {
-  const storedUser = await AsyncStorage.getItem("userProfile");
-  return storedUser ? JSON.parse(storedUser) : null;
-}
-
-export const NEW_ORDER_STATUSES = new Set([
-  "pending",
-  "new",
-  "new order",
-  "order placed",
-]);
-
-export function isNewOrderStatus(status) {
-  return NEW_ORDER_STATUSES.has(
-    String(status || "")
-      .trim()
-      .toLowerCase(),
-  );
-}
-
-export function getApiErrorMessage(error, fallback = "Something went wrong") {
-  return error?.message || error?.response?.data?.message || fallback;
-}
-
-api.interceptors.request.use(async (config) => {
-  const storageToken = await AsyncStorage.getItem("userToken");
-  const activeToken = storageToken || cachedToken;
-
-  if (activeToken) {
-    cachedToken = activeToken;
-    config.headers.Authorization = `Bearer ${activeToken}`;
-  } else {
-    delete config.headers.Authorization;
+export const getStoredToken = async () => {
+  if (cachedToken) {
+    return cachedToken;
   }
 
-  return config;
-});
+  const token = await AsyncStorage.getItem("userToken");
+
+  if (token) {
+    cachedToken = token;
+  }
+
+  return token || null;
+};
+
+export const clearTokenCache = () => {
+  cachedToken = null;
+};
+
+/* =========================
+   USER PROFILE
+========================= */
+
+export const saveUser = async (user) => {
+  if (user) {
+    await AsyncStorage.setItem(
+      "userProfile",
+      JSON.stringify(user)
+    );
+  }
+};
+
+export const getStoredUser = async () => {
+  const user = await AsyncStorage.getItem("userProfile");
+
+  if (!user) {
+    return null;
+  }
+
+  try {
+    return JSON.parse(user);
+  } catch {
+    return null;
+  }
+};
+
+/* =========================
+   API ERROR
+========================= */
+
+export const getApiErrorMessage = (
+  error,
+  fallback = "Something went wrong"
+) => {
+  return (
+    error?.response?.data?.message ||
+    error?.response?.data?.error ||
+    error?.message ||
+    fallback
+  );
+};
+
+/* =========================
+   REQUEST INTERCEPTOR
+========================= */
+
+api.interceptors.request.use(
+  async (config) => {
+    const token = await getStoredToken();
+
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
+
+/* =========================
+   RESPONSE INTERCEPTOR
+========================= */
 
 api.interceptors.response.use(
   (response) => response,
+
   async (error) => {
-    const originalRequest = error.config;
-    const retryCount = originalRequest?._retryCount || 0;
-    const isNetworkError =
-      !error.response && (error.code || error.message === "Network Error");
-
-    if (isNetworkError && originalRequest && retryCount < MAX_RETRIES) {
-      originalRequest._retryCount = retryCount + 1;
-      return api(originalRequest);
-    }
-
     if (error.response) {
-      if (error.response.status === 401) {
-        try {
-          await logoutUser();
-        } catch {
-          clearTokenCache();
-        }
+      const status = error.response.status;
+
+      if (status === 401) {
+        await logoutUser();
       }
 
-      const message =
-        error.response.data?.message ||
-        error.response.data?.error ||
-        "Server error";
-
       return Promise.reject({
-        status: error.response.status,
-        message,
+        status,
+        message:
+          error.response.data?.message ||
+          error.response.data?.error ||
+          "Server error",
         data: error.response.data,
       });
     }
 
     return Promise.reject({
       status: "network_error",
-      message: `Network connection failed. Check that ${API_BASE_URL} is reachable.`,
+      message:
+        "Network connection failed. Please check your internet connection.",
     });
-  },
+  }
 );
 
-export async function loginWithIdentifier(identifier, password) {
-  const response = await api.post("/auth/login", {
-    identifier: String(identifier || "").trim(),
-    password: String(password || ""),
-  });
+/* =========================
+   LOGIN
+========================= */
 
-  const { token, user, message } = response.data || {};
+export const loginWithIdentifier = async (
+  identifier,
+  password
+) => {
+  try {
+    const response = await api.post("/auth/login", {
+      identifier: String(identifier || "").trim(),
+      password: String(password || ""),
+    });
 
-  if (token) {
-    await setAuthToken(token);
+    const data = response.data || {};
+
+    if (data.token) {
+      await setAuthToken(data.token);
+    }
+
+    if (data.user) {
+      await saveUser(data.user);
+    }
+
+    return {
+      ...data,
+      message: data.message || "Login successful",
+    };
+  } catch (error) {
+    throw error;
   }
+};
 
-  if (user) {
-    await AsyncStorage.setItem("userProfile", JSON.stringify(user));
+/* =========================
+   LOGOUT
+========================= */
+
+export const logoutUser = async () => {
+  try {
+    await AsyncStorage.multiRemove([
+      "userToken",
+      "userProfile",
+    ]);
+  } finally {
+    clearTokenCache();
   }
+};
 
-  return { ...response.data, message: message || "Login successful" };
-}
+/* =========================
+   CHECK LOGIN
+========================= */
 
-export async function logoutUser() {
-  await AsyncStorage.multiRemove(["userToken", "userProfile"]);
-  clearTokenCache();
-}
+export const isLoggedIn = async () => {
+  const token = await getStoredToken();
+  return !!token;
+};
 
 export default api;
