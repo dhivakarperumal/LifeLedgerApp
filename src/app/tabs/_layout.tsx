@@ -1,10 +1,40 @@
+import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { NavigationBar } from "expo-navigation-bar";
 import { Tabs } from "expo-router";
-import { Platform, StatusBar } from "react-native";
+import { useState } from "react";
+import {
+  Image,
+  Platform,
+  Pressable,
+  StatusBar,
+  Text,
+  View,
+} from "react-native";
 import { BottomTabBar } from "../../Navigations/BottomTabBar";
-import { TopHeader } from "../../Navigations/TopHeader";
 import { Colors } from "../../constants/colors";
+
+function FavoriteHeaderButton() {
+  const [isFavorite, setIsFavorite] = useState(false);
+
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={
+        isFavorite ? "Remove from favorites" : "Add to favorites"
+      }
+      accessibilityState={{ selected: isFavorite }}
+      className="mr-4 h-9 w-9 items-center justify-center rounded-full bg-white/15 active:bg-white/25"
+      onPress={() => setIsFavorite((current) => !current)}
+    >
+      <Ionicons
+        name={isFavorite ? "heart" : "heart-outline"}
+        size={20}
+        color={isFavorite ? Colors.accent : Colors.white}
+      />
+    </Pressable>
+  );
+}
 
 export default function TabsLayout() {
   return (
@@ -18,11 +48,22 @@ export default function TabsLayout() {
       <Tabs
         screenOptions={{
           headerShown: true,
-          headerTitle: () => <TopHeader />,
+          headerTitle: ({ children }) => (
+            <View className="flex-row items-center gap-3">
+              <Image
+                source={require("../../../assets/images/logo.png")}
+                className="h-8 w-8 rounded-lg"
+                resizeMode="cover"
+                accessibilityLabel="Life Ledger logo"
+              />
+              <Text className="text-lg font-bold text-white">{children}</Text>
+            </View>
+          ),
           headerTitleAlign: "left",
           headerTitleContainerStyle: {
             flex: 1,
             marginHorizontal: 0,
+            paddingHorizontal: 16,
           },
           headerShadowVisible: false,
           headerBackground: () => (
@@ -45,8 +86,20 @@ export default function TabsLayout() {
           options={{ title: "Home", headerShown: false }}
         />
         <Tabs.Screen name="expenses" options={{ title: "Expenses" }} />
-        <Tabs.Screen name="memories" options={{ title: "Memories" }} />
-        <Tabs.Screen name="diary" options={{ title: "Diary" }} />
+        <Tabs.Screen
+          name="memories"
+          options={{
+            title: "Memories",
+            headerRight: () => <FavoriteHeaderButton />,
+          }}
+        />
+        <Tabs.Screen
+          name="diary"
+          options={{
+            title: "Diary",
+            headerRight: () => <FavoriteHeaderButton />,
+          }}
+        />
         <Tabs.Screen name="more" options={{ title: "More" }} />
       </Tabs>
     </>
