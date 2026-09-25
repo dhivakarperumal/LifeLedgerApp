@@ -1,6 +1,8 @@
 import { Ionicons } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { LinearGradient } from "expo-linear-gradient";
-import { useEffect, useState } from "react";
+import { useFocusEffect } from "expo-router";
+import { useCallback, useEffect, useState } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
 import {
   SafeAreaView,
@@ -9,6 +11,7 @@ import {
 import { TopHeader } from "../../Navigations/TopHeader";
 import { getStoredUser } from "../../api";
 import { Colors } from "../../constants/colors";
+import { HOME_QUOTES, HOME_QUOTE_INDEX_KEY } from "../../constants/homeQuotes";
 
 type StoredUser = {
   name?: string;
@@ -26,6 +29,7 @@ export default function Index() {
   const insets = useSafeAreaInsets();
   const [currentTime, setCurrentTime] = useState(() => new Date());
   const [userName, setUserName] = useState("there");
+  const [homeQuote, setHomeQuote] = useState<string>(HOME_QUOTES[0]);
 
   useEffect(() => {
     const interval = setInterval(() => setCurrentTime(new Date()), 60_000);
@@ -47,6 +51,40 @@ export default function Index() {
       isActive = false;
     };
   }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      let isActive = true;
+
+      const rotateQuote = async () => {
+        const storedIndex = await AsyncStorage.getItem(
+          HOME_QUOTE_INDEX_KEY,
+        ).catch(() => null);
+        const parsedIndex = Number.parseInt(storedIndex ?? "", 10);
+        const previousIndex =
+          Number.isInteger(parsedIndex) &&
+          parsedIndex >= 0 &&
+          parsedIndex < HOME_QUOTES.length
+            ? parsedIndex
+            : -1;
+        const nextIndex = (previousIndex + 1) % HOME_QUOTES.length;
+
+        if (!isActive) return;
+
+        setHomeQuote(HOME_QUOTES[nextIndex]);
+        void AsyncStorage.setItem(
+          HOME_QUOTE_INDEX_KEY,
+          String(nextIndex),
+        ).catch(() => undefined);
+      };
+
+      void rotateQuote();
+
+      return () => {
+        isActive = false;
+      };
+    }, []),
+  );
 
   const dateLabel = currentTime
     .toLocaleDateString("en-US", {
@@ -118,7 +156,7 @@ export default function Index() {
                 className="flex-1 text-base italic"
                 style={{ color: Colors.white }}
               >
-                “Don’t be afraid to give up the good to go for the great.”
+                “{homeQuote}”
               </Text>
               <Ionicons name="chevron-forward" size={20} color={Colors.white} />
             </View>

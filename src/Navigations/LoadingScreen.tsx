@@ -36,7 +36,7 @@ export function LoadingScreen() {
     >
       <StatusBar style="dark" />
       <View
-        className="h-60 w-60 items-center justify-center rounded-full"
+        className="h-[236px] w-[236px] items-center justify-center rounded-full"
         style={{
           backgroundColor: Colors.white,
           shadowColor: Colors.primaryDark,
@@ -49,15 +49,15 @@ export function LoadingScreen() {
         <SymbolView
           name="wallet.pass"
           tintColor={Colors.primaryDark}
-          size={92}
+          size={100}
           weight="regular"
         />
       </View>
       <Text
-        className="mt-12 text-4xl font-bold"
+        className="mt-12 text-4xl font-bold tracking-[1.5px]"
         style={{ color: Colors.loadingText }}
       >
-        Life Ledger
+        LifeLedger
       </Text>
       <Text
         className="mt-3 text-2xl font-semibold"
