@@ -1,11 +1,49 @@
 import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import { SymbolView } from "expo-symbols";
 import { useEffect } from "react";
 import { ActivityIndicator, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { isLoggedIn } from "../api";
 import { Colors } from "../constants/colors";
+
+function WalletIllustration() {
+  return (
+    <View className="relative h-[132px] w-[160px]">
+      <View className="absolute left-0 top-3 h-[30px] w-[136px] rounded-tl-[22px] rounded-tr-[4px] bg-[#7E3F20]" />
+      <View
+        className="absolute left-[36px] top-[-12px]"
+        style={{
+          width: 0,
+          height: 0,
+          borderLeftWidth: 38,
+          borderLeftColor: "transparent",
+          borderRightWidth: 38,
+          borderRightColor: "transparent",
+          borderBottomWidth: 48,
+          borderBottomColor: "#82C51B",
+        }}
+      />
+      <View
+        className="absolute left-[54px] top-[-5px]"
+        style={{
+          width: 0,
+          height: 0,
+          borderLeftWidth: 20,
+          borderLeftColor: "transparent",
+          borderRightWidth: 20,
+          borderRightColor: "transparent",
+          borderBottomWidth: 32,
+          borderBottomColor: "#A2D52A",
+        }}
+      />
+      <View className="absolute left-0 top-[32px] h-[100px] w-[144px] rounded-tl-[16px] rounded-bl-[20px] rounded-br-[3px] bg-[#AE5E24]" />
+      <View className="absolute right-0 top-[74px] h-[36px] w-[52px] rounded-[18px] bg-[#85421E]" />
+      <View className="absolute right-0 top-[68px] h-[36px] w-[52px] items-center justify-center rounded-[18px] bg-[#FF9900]">
+        <View className="h-4 w-4 rounded-full bg-[#FFD331]" />
+      </View>
+    </View>
+  );
+}
 
 export function LoadingScreen() {
   const router = useRouter();
@@ -46,12 +84,7 @@ export function LoadingScreen() {
           elevation: 8,
         }}
       >
-        <SymbolView
-          name="wallet.pass"
-          tintColor={Colors.primaryDark}
-          size={100}
-          weight="regular"
-        />
+        <WalletIllustration />
       </View>
       <Text
         className="mt-12 text-4xl font-bold tracking-[1.5px]"
