@@ -1,17 +1,22 @@
 import { Ionicons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useState } from "react";
 import {
-    ActivityIndicator,
-    Alert,
-    Pressable,
-    ScrollView,
-    Text,
-    TextInput,
-    View,
+  ActivityIndicator,
+  Alert,
+  Pressable,
+  ScrollView,
+  Text,
+  TextInput,
+  View,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from "react-native-safe-area-context";
 import api, { getApiErrorMessage, getStoredUser, logoutUser } from "../api";
+import { Colors } from "../constants/colors";
 
 type UserProfile = {
   id?: number | string;
@@ -88,6 +93,7 @@ function ProfileDetail({
 
 export default function Profile() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const [user, setUser] = useState<UserProfile | null>(null);
   const [passwords, setPasswords] = useState<PasswordState>({
     current: "",
@@ -236,25 +242,39 @@ export default function Profile() {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-[#F5F6F2]" edges={["top", "bottom"]}>
-      <View className="flex-row items-center justify-between px-5 pb-4 pt-2">
+    <SafeAreaView className="flex-1 bg-[#F5F6F2]" edges={["bottom"]}>
+      <LinearGradient
+        colors={[Colors.headerStart, Colors.headerEnd]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={{
+          flexDirection: "row",
+          alignItems: "center",
+          justifyContent: "flex-start",
+          paddingHorizontal: 20,
+          paddingBottom: 16,
+          paddingTop: insets.top + 8,
+        }}
+      >
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Go back"
-          className="h-10 w-10 items-center justify-center rounded-full bg-white"
-          onPress={() => router.back()}
+          className="h-10 w-10 items-center justify-center rounded-full bg-white/15"
+          onPress={() => {
+            if (router.canGoBack()) router.back();
+            else router.replace("/tabs/more");
+          }}
         >
-          <Ionicons name="arrow-back" size={20} color="#25332C" />
+          <Ionicons name="arrow-back" size={20} color={Colors.white} />
         </Pressable>
-        <Text className="text-lg font-bold text-[#25332C]">My Profile</Text>
-        <View className="h-10 w-10" />
-      </View>
+        <Text className="ml-3 text-lg font-bold text-white">My Profile</Text>
+      </LinearGradient>
 
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingHorizontal: 18, paddingBottom: 36 }}
       >
-        <View className="mb-5 overflow-hidden rounded-2xl bg-[#315640] p-5">
+        <View className="mb-5 mt-6 overflow-hidden rounded-2xl bg-[#315640] p-5">
           <View className="flex-row items-center justify-between">
             <Text className="text-xs font-bold uppercase tracking-[1.4px] text-white/75">
               Life Ledger
