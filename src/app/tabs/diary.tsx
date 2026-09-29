@@ -7,8 +7,14 @@ import {
   useAudioRecorder,
 } from "expo-audio";
 import * as DocumentPicker from "expo-document-picker";
-import { useRouter } from "expo-router";
-import { useEffect, useEffectEvent, useMemo, useState } from "react";
+import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
+import {
+  useCallback,
+  useEffect,
+  useEffectEvent,
+  useMemo,
+  useState,
+} from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -252,11 +258,13 @@ function initialDiaryForm(categoryId = ""): DiaryForm {
 export default function Diary() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const { edit: editParam } = useLocalSearchParams<{
+    edit?: string | string[];
+  }>();
   const recorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
   const [entries, setEntries] = useState<DiaryEntry[]>([]);
   const [categories, setCategories] = useState<DiaryCategory[]>([]);
   const [loading, setLoading] = useState(true);
-  const [refreshKey, setRefreshKey] = useState(0);
   const [search, setSearch] = useState("");
   const [selectedFilter, setSelectedFilter] = useState<EntryFilter>("all");
   const [filterMenuVisible, setFilterMenuVisible] = useState(false);
@@ -290,12 +298,12 @@ export default function Diary() {
   });
   const [isRecording, setIsRecording] = useState(false);
 
-  const handleUnauthorized = async () => {
+  const handleUnauthorized = useCallback(async () => {
     await logoutUser();
     router.replace("/auth/login");
-  };
+  }, [router]);
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     try {
       const [entriesResult, categoriesResult] = await Promise.allSettled([
         api.get("/diary"),
@@ -324,16 +332,14 @@ export default function Diary() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [handleUnauthorized]);
 
-  const refreshEntries = useEffectEvent(() => {
-    void fetchData();
-  });
-
-  useEffect(() => {
-    const timeout = setTimeout(() => refreshEntries(), 0);
-    return () => clearTimeout(timeout);
-  }, [refreshKey]);
+  useFocusEffect(
+    useCallback(() => {
+      const timeout = setTimeout(() => void fetchData(), 0);
+      return () => clearTimeout(timeout);
+    }, [fetchData]),
+  );
 
   const stats = useMemo(() => {
     const now = new Date();
@@ -448,6 +454,22 @@ export default function Diary() {
     setRemovedIds({ image: [], video: [], audio: [], zip: [] });
     setEditorVisible(true);
   };
+  const openRequestedEntry = useEffectEvent(() => {
+    const requestedId = Array.isArray(editParam) ? editParam[0] : editParam;
+    const requestedEntry = entries.find(
+      (entry) => String(entry.id) === String(requestedId),
+    );
+    if (requestedEntry) {
+      openEditEntry(requestedEntry);
+      router.setParams({ edit: undefined });
+    }
+  });
+
+  useEffect(() => {
+    if (!editParam || !entries.length) return;
+    const timeout = setTimeout(() => openRequestedEntry(), 0);
+    return () => clearTimeout(timeout);
+  }, [editParam, entries.length]);
 
   const pickAttachments = async () => {
     try {
@@ -640,7 +662,7 @@ export default function Diary() {
       }
       setEditorVisible(false);
       setAttachments([]);
-      setRefreshKey((value) => value + 1);
+      await fetchData();
       if (savedId || !attachments.length)
         Alert.alert(
           "Saved",
@@ -1096,6 +1118,19 @@ export default function Diary() {
                   paddingTop: 9,
                 }}
               >
+                <Pressable
+                  onPress={() =>
+                    router.push({
+                      pathname: "/diary/[id]",
+                      params: { id: String(entry.id) },
+                    })
+                  }
+                  accessibilityRole="button"
+                  accessibilityLabel="View entry details"
+                  style={{ padding: 5 }}
+                >
+                  <Ionicons name="eye-outline" size={19} color={Colors.sage} />
+                </Pressable>
                 <Pressable
                   onPress={() => openEditEntry(entry)}
                   accessibilityRole="button"
