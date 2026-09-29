@@ -66,6 +66,29 @@ function formatDate(dateString?: string) {
   });
 }
 
+function SectionHeader({ title, onAction }: { title: string; onAction?: () => void }) {
+  return (
+    <View className="mt-7 mb-3 flex-row items-center justify-between">
+      <Text className="text-lg font-bold" style={{ color: Colors.textPrimary }}>
+        {title}
+      </Text>
+      {onAction && (
+        <Text className="text-sm font-semibold" style={{ color: Colors.primary }} onPress={onAction}>
+          View All ›
+        </Text>
+      )}
+    </View>
+  );
+}
+
+function EmptyStateCard({ message }: { message: string }) {
+  return (
+    <View className="rounded-3xl p-5 items-center justify-center border" style={{ backgroundColor: Colors.white, borderColor: Colors.border, borderStyle: 'dashed' }}>
+      <Text style={{ color: Colors.textSecondary, fontStyle: 'italic', fontSize: 13 }}>{message}</Text>
+    </View>
+  );
+}
+
 export default function Index() {
   const insets = useSafeAreaInsets();
   const [currentTime, setCurrentTime] = useState(() => new Date());
@@ -75,6 +98,10 @@ export default function Index() {
   // Data states
   const [isLoading, setIsLoading] = useState(true);
   const [recentTransactions, setRecentTransactions] = useState<ExpenseItem[]>([]);
+  const [recentMemories, setRecentMemories] = useState<any[]>([]);
+  const [recentDiary, setRecentDiary] = useState<any[]>([]);
+  const [recentEvents, setRecentEvents] = useState<any[]>([]);
+
   const [overview, setOverview] = useState({
     totalSpent: 0,
     thisMonth: 0,
@@ -146,14 +173,53 @@ export default function Index() {
       const fetchData = async () => {
         try {
           setIsLoading(true);
-          const expensesRes = await api.get("/expenses");
+          const [expensesRes, memoriesRes, diaryRes, eventsRes] = await Promise.allSettled([
+            api.get("/expenses"),
+            api.get("/memories"),
+            api.get("/diary"),
+            api.get("/events")
+          ]);
+
           if (!isActive) return;
 
-          const expensesData: ExpenseItem[] = Array.isArray(expensesRes?.data)
-            ? expensesRes.data
-            : [];
+          // Parse Responses
+          const expensesData: ExpenseItem[] =
+            expensesRes.status === "fulfilled" && Array.isArray(expensesRes.value?.data)
+              ? expensesRes.value.data
+              : expensesRes.status === "fulfilled" && Array.isArray(expensesRes.value?.data?.data)
+                ? expensesRes.value.data.data
+                : expensesRes.status === "fulfilled" && Array.isArray(expensesRes.value?.data?.expenses)
+                  ? expensesRes.value.data.expenses
+                  : [];
 
-          // Process stats
+          const memoriesData =
+            memoriesRes.status === "fulfilled" && Array.isArray(memoriesRes.value?.data)
+              ? memoriesRes.value.data
+              : memoriesRes.status === "fulfilled" && Array.isArray(memoriesRes.value?.data?.data)
+                ? memoriesRes.value.data.data
+                : memoriesRes.status === "fulfilled" && Array.isArray(memoriesRes.value?.data?.memories)
+                  ? memoriesRes.value.data.memories
+                  : [];
+
+          const diaryData =
+            diaryRes.status === "fulfilled" && Array.isArray(diaryRes.value?.data)
+              ? diaryRes.value.data
+              : diaryRes.status === "fulfilled" && Array.isArray(diaryRes.value?.data?.data)
+                ? diaryRes.value.data.data
+                : diaryRes.status === "fulfilled" && Array.isArray(diaryRes.value?.data?.entries)
+                  ? diaryRes.value.data.entries
+                  : [];
+
+          const eventsData =
+            eventsRes.status === "fulfilled" && Array.isArray(eventsRes.value?.data)
+              ? eventsRes.value.data
+              : eventsRes.status === "fulfilled" && Array.isArray(eventsRes.value?.data?.data)
+                ? eventsRes.value.data.data
+                : eventsRes.status === "fulfilled" && Array.isArray(eventsRes.value?.data?.events)
+                  ? eventsRes.value.data.events
+                  : [];
+
+          // Process expenses stats
           const now = new Date();
           const currentMonth = now.getMonth();
           const currentYear = now.getFullYear();
@@ -212,7 +278,12 @@ export default function Index() {
             }));
 
           setTopCategories(sortedCats);
+          
           setRecentTransactions(expensesData.slice(0, 3));
+          setRecentMemories(memoriesData.slice(0, 3));
+          setRecentDiary(diaryData.slice(0, 3));
+          setRecentEvents(eventsData.slice(0, 3));
+
         } catch (error) {
           console.error("Failed to fetch home data:", error);
         } finally {
@@ -467,7 +538,7 @@ export default function Index() {
                             className="h-3 rounded-full"
                             style={{ 
                               backgroundColor: cat.color,
-                              flex: Math.max(cat.percentage, 5) // ensure it's at least visible
+                              flex: Math.max(cat.percentage, 5)
                             }}
                           />
                         ))}
@@ -496,28 +567,15 @@ export default function Index() {
                   )}
                 </View>
 
-                <View className="mt-7 flex-row items-center justify-between">
-                  <Text
-                    className="text-lg font-bold"
-                    style={{ color: Colors.textPrimary }}
-                  >
-                    Recent Transactions
-                  </Text>
-                  <Text
-                    className="text-sm font-semibold"
-                    style={{ color: Colors.primary }}
-                  >
-                    View All ›
-                  </Text>
-                </View>
-                
+                {/* --- Recent Transactions --- */}
+                <SectionHeader title="Recent Transactions" />
                 {recentTransactions.length > 0 ? (
                   recentTransactions.map((tx) => {
                     const iconName = categoryIcons[tx.category || "Other"] || "pricetag-outline";
                     return (
                       <View
                         key={String(tx.id)}
-                        className="mt-3 flex-row items-center rounded-3xl p-4"
+                        className="mb-3 flex-row items-center rounded-3xl p-4"
                         style={{ backgroundColor: Colors.white }}
                       >
                         <View
@@ -551,10 +609,123 @@ export default function Index() {
                     );
                   })
                 ) : (
-                  <View className="mt-3 rounded-3xl p-6 items-center" style={{ backgroundColor: Colors.white }}>
-                    <Text style={{ color: Colors.textSecondary }}>No recent transactions found.</Text>
-                  </View>
+                  <EmptyStateCard message="No recent transactions found." />
                 )}
+
+                {/* --- Recent Memories --- */}
+                <SectionHeader title="Recent Memories" />
+                {recentMemories.length > 0 ? (
+                  recentMemories.map((memory) => {
+                    return (
+                      <View
+                        key={String(memory.id)}
+                        className="mb-3 flex-row items-center rounded-3xl p-4"
+                        style={{ backgroundColor: Colors.white }}
+                      >
+                        <View
+                          className="mr-4 h-12 w-12 items-center justify-center rounded-full"
+                          style={{ backgroundColor: "#F3E8FF" }}
+                        >
+                          <Ionicons name="images-outline" size={21} color="#9333EA" />
+                        </View>
+                        <View className="flex-1">
+                          <Text
+                            className="text-base font-semibold"
+                            style={{ color: Colors.textPrimary }}
+                            numberOfLines={1}
+                          >
+                            {memory.title || "Memory"}
+                          </Text>
+                          <Text
+                            className="mt-1 text-sm"
+                            style={{ color: Colors.textSecondary }}
+                          >
+                            {memory.category_name || "Uncategorized"} · {formatDate(memory.memory_date || memory.created_at)}
+                          </Text>
+                        </View>
+                      </View>
+                    );
+                  })
+                ) : (
+                  <EmptyStateCard message="No recent memories found." />
+                )}
+
+                {/* --- Recent Diary Entries --- */}
+                <SectionHeader title="Recent Diary Entries" />
+                {recentDiary.length > 0 ? (
+                  recentDiary.map((diary) => {
+                    return (
+                      <View
+                        key={String(diary.id)}
+                        className="mb-3 flex-row items-center rounded-3xl p-4"
+                        style={{ backgroundColor: Colors.white }}
+                      >
+                        <View
+                          className="mr-4 h-12 w-12 items-center justify-center rounded-full"
+                          style={{ backgroundColor: "#E0F2FE" }}
+                        >
+                          <Ionicons name="book-outline" size={21} color="#0284C7" />
+                        </View>
+                        <View className="flex-1">
+                          <Text
+                            className="text-base font-semibold"
+                            style={{ color: Colors.textPrimary }}
+                            numberOfLines={1}
+                          >
+                            {diary.title || "Diary Entry"}
+                          </Text>
+                          <Text
+                            className="mt-1 text-sm"
+                            style={{ color: Colors.textSecondary }}
+                          >
+                            {diary.mood || "No Mood"} · {formatDate(diary.entry_date || diary.created_at)}
+                          </Text>
+                        </View>
+                      </View>
+                    );
+                  })
+                ) : (
+                  <EmptyStateCard message="No recent diary entries found." />
+                )}
+
+                {/* --- Recent Events --- */}
+                <SectionHeader title="Recent Events" />
+                {recentEvents.length > 0 ? (
+                  recentEvents.map((event) => {
+                    return (
+                      <View
+                        key={String(event.id)}
+                        className="mb-3 flex-row items-center rounded-3xl p-4"
+                        style={{ backgroundColor: Colors.white }}
+                      >
+                        <View
+                          className="mr-4 h-12 w-12 items-center justify-center rounded-full"
+                          style={{ backgroundColor: "#FEF3C7" }}
+                        >
+                          <Ionicons name="calendar-outline" size={21} color="#D97706" />
+                        </View>
+                        <View className="flex-1">
+                          <Text
+                            className="text-base font-semibold"
+                            style={{ color: Colors.textPrimary }}
+                            numberOfLines={1}
+                          >
+                            {event.title || event.name || "Event"}
+                          </Text>
+                          <Text
+                            className="mt-1 text-sm"
+                            style={{ color: Colors.textSecondary }}
+                          >
+                            {formatDate(event.event_date || event.start_date || event.created_at)}
+                          </Text>
+                        </View>
+                      </View>
+                    );
+                  })
+                ) : (
+                  <EmptyStateCard message="No recent events found." />
+                )}
+
               </>
             )}
           </View>
