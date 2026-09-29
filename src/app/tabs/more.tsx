@@ -34,7 +34,7 @@ const accountItems: MoreRowItem[] = [
     iconBackground: "#E8F8F0",
   },
   {
-   label: "Transfers & Transactions",
+    label: "Transfers & Transactions",
     subtitle: "View money movement",
     icon: "swap-horizontal-outline",
     iconColor: "#D18B35",
@@ -254,11 +254,13 @@ export default function More() {
           key={item.label}
           item={item}
           onPress={
-            item.label === "Categories"
-              ? () => router.push("/categories")
-              : item.label === "Monthly Income"
-                ? () => router.push("/income")
-                : undefined
+            item.label === "My Profile"
+              ? () => router.push("/profile")
+              : item.label === "Categories"
+                ? () => router.push("/categories")
+                : item.label === "Monthly Income"
+                  ? () => router.push("/income")
+                  : undefined
           }
         />
       ))}

@@ -1,0 +1,467 @@
+import { Ionicons } from "@expo/vector-icons";
+import { useFocusEffect, useRouter } from "expo-router";
+import { useCallback, useState } from "react";
+import {
+    ActivityIndicator,
+    Alert,
+    Pressable,
+    ScrollView,
+    Text,
+    TextInput,
+    View,
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import api, { getApiErrorMessage, getStoredUser, logoutUser } from "../api";
+
+type UserProfile = {
+  id?: number | string;
+  user_id?: number | string;
+  name?: string;
+  username?: string;
+  first_name?: string;
+  last_name?: string;
+  email?: string;
+  phone?: string;
+  role?: string;
+  status?: string;
+};
+
+type PasswordKey = "current" | "next" | "confirm";
+type PasswordState = Record<PasswordKey, string>;
+
+const passwordFields: {
+  key: PasswordKey;
+  label: string;
+  autoComplete: "current-password" | "new-password";
+}[] = [
+  {
+    key: "current",
+    label: "Current password",
+    autoComplete: "current-password",
+  },
+  { key: "next", label: "New password", autoComplete: "new-password" },
+  { key: "confirm", label: "Confirm password", autoComplete: "new-password" },
+];
+
+function getDisplayName(user: UserProfile | null) {
+  const fullName = [user?.first_name, user?.last_name]
+    .filter(Boolean)
+    .join(" ")
+    .trim();
+  return (
+    user?.name?.trim() ||
+    fullName ||
+    user?.username?.trim() ||
+    user?.email ||
+    "Admin User"
+  );
+}
+
+function ProfileDetail({
+  icon,
+  label,
+  value,
+}: {
+  icon: keyof typeof Ionicons.glyphMap;
+  label: string;
+  value: string;
+}) {
+  return (
+    <View className="mb-3 flex-row items-center rounded-xl border border-[#E4E8E3] bg-white p-3.5">
+      <View className="mr-3 h-10 w-10 items-center justify-center rounded-xl bg-[#EEF3EE]">
+        <Ionicons name={icon} size={19} color="#315640" />
+      </View>
+      <View className="min-w-0 flex-1">
+        <Text className="text-[10px] font-bold uppercase tracking-[0.8px] text-[#839087]">
+          {label}
+        </Text>
+        <Text
+          className="mt-1 text-[14px] font-semibold text-[#293930]"
+          numberOfLines={2}
+        >
+          {value || "Not provided"}
+        </Text>
+      </View>
+    </View>
+  );
+}
+
+export default function Profile() {
+  const router = useRouter();
+  const [user, setUser] = useState<UserProfile | null>(null);
+  const [passwords, setPasswords] = useState<PasswordState>({
+    current: "",
+    next: "",
+    confirm: "",
+  });
+  const [visibleFields, setVisibleFields] = useState<
+    Record<PasswordKey, boolean>
+  >({
+    current: false,
+    next: false,
+    confirm: false,
+  });
+  const [passwordStatus, setPasswordStatus] = useState<{
+    type: "success" | "error" | "";
+    message: string;
+  }>({ type: "", message: "" });
+  const [loading, setLoading] = useState(true);
+  const [savingPassword, setSavingPassword] = useState(false);
+  const [deactivating, setDeactivating] = useState(false);
+
+  useFocusEffect(
+    useCallback(() => {
+      let active = true;
+      void getStoredUser()
+        .then((storedUser) => {
+          if (active) setUser(storedUser);
+        })
+        .catch((error) => {
+          if (active) {
+            Alert.alert("Unable to load profile", getApiErrorMessage(error));
+          }
+        })
+        .finally(() => {
+          if (active) setLoading(false);
+        });
+      return () => {
+        active = false;
+      };
+    }, []),
+  );
+
+  const profileName = getDisplayName(user);
+  const profileEmail = user?.email || "Not provided";
+  const profilePhone = user?.phone || "Not provided";
+  const profileRole = user?.role || "Admin";
+  const userId = user?.id || user?.user_id;
+
+  const handlePasswordChange = async () => {
+    setPasswordStatus({ type: "", message: "" });
+    if (passwords.next.length < 6) {
+      setPasswordStatus({
+        type: "error",
+        message: "New password must be at least 6 characters.",
+      });
+      return;
+    }
+    if (passwords.next !== passwords.confirm) {
+      setPasswordStatus({
+        type: "error",
+        message: "New password and confirmation do not match.",
+      });
+      return;
+    }
+    if (!userId) {
+      setPasswordStatus({
+        type: "error",
+        message: "Unable to identify your account. Please sign in again.",
+      });
+      return;
+    }
+
+    try {
+      setSavingPassword(true);
+      const response = await api.put(`/auth/profile/${userId}/password`, {
+        currentPassword: passwords.current,
+        newPassword: passwords.next,
+      });
+      setPasswords({ current: "", next: "", confirm: "" });
+      setPasswordStatus({
+        type: "success",
+        message: response.data?.message || "Password changed successfully.",
+      });
+    } catch (error) {
+      if ((error as { status?: number })?.status === 401) {
+        await logoutUser();
+        router.replace("/auth/login");
+        return;
+      }
+      setPasswordStatus({
+        type: "error",
+        message: getApiErrorMessage(
+          error,
+          "Unable to change password. Please try again.",
+        ),
+      });
+    } finally {
+      setSavingPassword(false);
+    }
+  };
+
+  const deactivateAccount = async () => {
+    if (!userId) {
+      setPasswordStatus({
+        type: "error",
+        message: "Unable to identify your account. Please sign in again.",
+      });
+      return;
+    }
+    try {
+      setDeactivating(true);
+      await api.patch(`/auth/users/${userId}/status`, { status: "Inactive" });
+      await logoutUser();
+      router.replace("/auth/login");
+    } catch (error) {
+      if ((error as { status?: number })?.status === 401) {
+        await logoutUser();
+        router.replace("/auth/login");
+        return;
+      }
+      setPasswordStatus({
+        type: "error",
+        message: getApiErrorMessage(
+          error,
+          "Unable to deactivate your account.",
+        ),
+      });
+    } finally {
+      setDeactivating(false);
+    }
+  };
+
+  const confirmDeactivation = () => {
+    Alert.alert(
+      "Deactivate account?",
+      "Your account details will be kept, but you will no longer be able to log in.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Deactivate",
+          style: "destructive",
+          onPress: () => void deactivateAccount(),
+        },
+      ],
+    );
+  };
+
+  return (
+    <SafeAreaView className="flex-1 bg-[#F5F6F2]" edges={["top", "bottom"]}>
+      <View className="flex-row items-center justify-between px-5 pb-4 pt-2">
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Go back"
+          className="h-10 w-10 items-center justify-center rounded-full bg-white"
+          onPress={() => router.back()}
+        >
+          <Ionicons name="arrow-back" size={20} color="#25332C" />
+        </Pressable>
+        <Text className="text-[18px] font-bold text-[#25332C]">My Profile</Text>
+        <View className="h-10 w-10" />
+      </View>
+
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingHorizontal: 18, paddingBottom: 36 }}
+      >
+        <View className="mb-5 overflow-hidden rounded-2xl bg-[#315640] p-5">
+          <View className="flex-row items-center justify-between">
+            <Text className="text-[11px] font-bold uppercase tracking-[1.4px] text-white/75">
+              Life Ledger
+            </Text>
+            <Ionicons
+              name="shield-checkmark-outline"
+              size={21}
+              color="#DDEBDD"
+            />
+          </View>
+          <View className="mt-6 flex-row items-center">
+            <View className="mr-4 h-16 w-16 items-center justify-center rounded-2xl bg-white">
+              <Text className="text-[28px] font-extrabold text-[#315640]">
+                {profileName.charAt(0).toUpperCase()}
+              </Text>
+            </View>
+            <View className="min-w-0 flex-1">
+              <Text
+                className="text-[22px] font-extrabold text-white"
+                numberOfLines={2}
+              >
+                {profileName}
+              </Text>
+              <Text className="mt-1 text-[11px] font-bold uppercase tracking-[1.2px] text-white/70">
+                {profileRole}
+              </Text>
+            </View>
+          </View>
+          <View className="mt-5 flex-row items-center">
+            <View className="mr-2 h-2 w-2 rounded-full bg-[#B7E3A2]" />
+            <Text className="text-[12px] font-semibold text-white/85">
+              {user?.status === "Inactive"
+                ? "Account inactive"
+                : "Account active"}
+            </Text>
+          </View>
+        </View>
+
+        <View className="mb-5 rounded-2xl border border-[#E4E8E3] bg-[#F5F6F2]">
+          <View className="mb-3 flex-row items-center justify-between">
+            <View>
+              <Text className="text-[10px] font-bold uppercase tracking-[1.2px] text-[#839087]">
+                Personal details
+              </Text>
+              <Text className="mt-1 text-[19px] font-bold text-[#293930]">
+                Account information
+              </Text>
+            </View>
+            {loading && <ActivityIndicator color="#315640" />}
+          </View>
+          <ProfileDetail
+            icon="person-outline"
+            label="Full name"
+            value={profileName}
+          />
+          <ProfileDetail
+            icon="shield-checkmark-outline"
+            label="Role"
+            value={profileRole}
+          />
+          <ProfileDetail
+            icon="mail-outline"
+            label="Email address"
+            value={profileEmail}
+          />
+          <ProfileDetail
+            icon="call-outline"
+            label="Phone number"
+            value={profilePhone}
+          />
+        </View>
+
+        <View className="mb-5 rounded-2xl border border-[#E4E8E3] bg-white p-4">
+          <View className="mb-4 flex-row items-center">
+            <View className="mr-3 h-10 w-10 items-center justify-center rounded-xl bg-[#315640]">
+              <Ionicons name="lock-closed-outline" size={19} color="#FFFFFF" />
+            </View>
+            <View className="flex-1">
+              <Text className="text-[10px] font-bold uppercase tracking-[1px] text-[#839087]">
+                Security
+              </Text>
+              <Text className="mt-0.5 text-[19px] font-bold text-[#293930]">
+                Change password
+              </Text>
+            </View>
+          </View>
+          <Text className="mb-4 text-[12px] leading-5 text-[#738077]">
+            Use a new password with at least 6 characters.
+          </Text>
+
+          {passwordFields.map((field) => (
+            <View key={field.key} className="mb-3">
+              <Text className="mb-1.5 text-[11px] font-bold text-[#526058]">
+                {field.label}
+              </Text>
+              <View className="flex-row items-center rounded-xl border border-[#E1E6E0] bg-[#F9FAF8] px-3">
+                <TextInput
+                  accessibilityLabel={field.label}
+                  autoComplete={field.autoComplete}
+                  className="h-12 flex-1 text-[14px] text-[#293930]"
+                  onChangeText={(value) => {
+                    setPasswords((current) => ({
+                      ...current,
+                      [field.key]: value,
+                    }));
+                    setPasswordStatus({ type: "", message: "" });
+                  }}
+                  placeholder={field.label}
+                  placeholderTextColor="#9AA39D"
+                  secureTextEntry={!visibleFields[field.key]}
+                  value={passwords[field.key]}
+                />
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={`${visibleFields[field.key] ? "Hide" : "Show"} ${field.label.toLowerCase()}`}
+                  className="h-9 w-9 items-center justify-center"
+                  onPress={() =>
+                    setVisibleFields((current) => ({
+                      ...current,
+                      [field.key]: !current[field.key],
+                    }))
+                  }
+                >
+                  <Ionicons
+                    name={
+                      visibleFields[field.key]
+                        ? "eye-off-outline"
+                        : "eye-outline"
+                    }
+                    size={18}
+                    color="#7F8A82"
+                  />
+                </Pressable>
+              </View>
+            </View>
+          ))}
+
+          {!!passwordStatus.message && (
+            <Text
+              accessibilityLiveRegion="polite"
+              className={`mb-3 text-[12px] font-semibold ${passwordStatus.type === "error" ? "text-[#B64C45]" : "text-[#25805A]"}`}
+            >
+              {passwordStatus.message}
+            </Text>
+          )}
+          <Pressable
+            accessibilityRole="button"
+            className={`flex-row items-center justify-center rounded-xl bg-[#315640] py-3.5 ${savingPassword || !passwords.current || !passwords.next || !passwords.confirm ? "opacity-50" : ""}`}
+            disabled={
+              savingPassword ||
+              !passwords.current ||
+              !passwords.next ||
+              !passwords.confirm
+            }
+            onPress={() => void handlePasswordChange()}
+          >
+            {savingPassword ? (
+              <ActivityIndicator color="#FFFFFF" />
+            ) : (
+              <>
+                <Ionicons
+                  name="lock-closed-outline"
+                  size={16}
+                  color="#FFFFFF"
+                />
+                <Text className="ml-2 text-[13px] font-bold text-white">
+                  Update password
+                </Text>
+              </>
+            )}
+          </Pressable>
+        </View>
+
+        <View className="rounded-2xl border border-[#F1D7D5] bg-[#FFF6F5] p-4">
+          <Text className="text-[10px] font-bold uppercase tracking-[1.2px] text-[#B64C45]">
+            Danger zone
+          </Text>
+          <Text className="mt-1 text-[17px] font-bold text-[#293930]">
+            Deactivate account
+          </Text>
+          <Text className="mt-1 text-[12px] leading-5 text-[#778179]">
+            Your account details will be retained, but you will no longer be
+            able to log in.
+          </Text>
+          <Pressable
+            accessibilityRole="button"
+            className={`mt-4 flex-row items-center justify-center rounded-xl border border-[#E9C6C3] bg-white py-3 ${deactivating ? "opacity-50" : ""}`}
+            disabled={deactivating}
+            onPress={confirmDeactivation}
+          >
+            {deactivating ? (
+              <ActivityIndicator color="#B64C45" />
+            ) : (
+              <>
+                <Ionicons
+                  name="person-remove-outline"
+                  size={17}
+                  color="#B64C45"
+                />
+                <Text className="ml-2 text-[13px] font-bold text-[#B64C45]">
+                  Deactivate account
+                </Text>
+              </>
+            )}
+          </Pressable>
+        </View>
+      </ScrollView>
+    </SafeAreaView>
+  );
+}
