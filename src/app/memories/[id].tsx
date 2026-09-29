@@ -33,7 +33,7 @@ type MemoryMedia = {
   type?: string;
 };
 
-type MemoryDetails = {
+type MemoryRecord = {
   id: number | string;
   title: string;
   description?: string;
@@ -54,7 +54,7 @@ type MemoryDetails = {
 
 const mediaBaseUrl = API_BASE_URL.replace(/\/api\/?$/, "");
 
-function isFavorite(value?: MemoryDetails["is_favorite"]) {
+function isFavorite(value?: MemoryRecord["is_favorite"]) {
   return value === true || value === 1 || value === "1" || value === "true";
 }
 
@@ -136,7 +136,7 @@ function formatDateTime(value?: string) {
   });
 }
 
-function getGallery(memory: MemoryDetails) {
+function getGallery(memory: MemoryRecord) {
   const items = [...(memory.media_gallery || [])];
   if (memory.media_url) items.unshift(memory.media_url);
   const seen = new Set<string>();
@@ -153,7 +153,7 @@ export default function MemoryDetails() {
   const id = Array.isArray(rawId) ? rawId[0] : rawId;
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const [memory, setMemory] = useState<MemoryDetails | null>(null);
+  const [memory, setMemory] = useState<MemoryRecord | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {

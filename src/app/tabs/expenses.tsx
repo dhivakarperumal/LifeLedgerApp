@@ -1,6 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
-import { useEffect, useMemo, useState } from "react";
+import { LinearGradient } from "expo-linear-gradient";
+import { useFocusEffect, useRouter } from "expo-router";
+import { useCallback, useMemo, useState } from "react";
 import {
   Alert,
   Modal,
@@ -15,7 +16,6 @@ import {
   useSafeAreaInsets,
 } from "react-native-safe-area-context";
 import api, { getApiErrorMessage, logoutUser } from "../../api";
-import { Colors } from "../../constants/colors";
 
 type ExpenseItem = {
   id: number | string;
@@ -59,6 +59,17 @@ const categoryIcons: Record<string, keyof typeof Ionicons.glyphMap> = {
   Other: "ellipsis-horizontal-outline",
 };
 
+/** Category accent colours — icon bg + icon tint */
+const categoryAccents: Record<string, { bg: string; color: string }> = {
+  Food: { bg: "#FFF0E6", color: "#F97316" },
+  Travel: { bg: "#E6F0FF", color: "#3B82F6" },
+  Bills: { bg: "#FEF3C7", color: "#D97706" },
+  Shopping: { bg: "#FCE7F3", color: "#EC4899" },
+  Health: { bg: "#ECFDF5", color: "#10B981" },
+  Education: { bg: "#EDE9FE", color: "#7C3AED" },
+  Other: { bg: "#F3F4F6", color: "#6B7280" },
+};
+
 const paymentMethods = [
   "Cash",
   "UPI",
@@ -67,6 +78,15 @@ const paymentMethods = [
   "Cheque",
   "Other",
 ];
+
+const paymentIcons: Record<string, keyof typeof Ionicons.glyphMap> = {
+  Cash: "cash-outline",
+  UPI: "phone-portrait-outline",
+  "Bank Transfer": "business-outline",
+  Card: "card-outline",
+  Cheque: "document-outline",
+  Other: "ellipsis-horizontal-outline",
+};
 
 function getCurrentDate() {
   return new Date().toISOString().split("T")[0];
@@ -89,10 +109,8 @@ function formatAmount(value: number | string | undefined) {
 
 function formatDate(dateString?: string) {
   if (!dateString) return "—";
-
   const date = new Date(dateString);
   if (Number.isNaN(date.getTime())) return dateString;
-
   return date.toLocaleDateString("en-IN", {
     day: "2-digit",
     month: "short",
@@ -116,6 +134,7 @@ export default function Expenses() {
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
   const [isModalVisible, setIsModalVisible] = useState(false);
+  const [isFilterSheetVisible, setIsFilterSheetVisible] = useState(false);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState<ExpenseForm>({
     title: "",
@@ -127,12 +146,12 @@ export default function Expenses() {
     notes: "",
   });
 
-  const handleUnauthorized = async () => {
+  const handleUnauthorized = useCallback(async () => {
     await logoutUser();
     router.replace("/auth/login");
-  };
+  }, [router]);
 
-  const fetchAll = async () => {
+  const fetchAll = useCallback(async () => {
     try {
       setLoading(true);
       const [expensesRes, statsRes, categoriesRes] = await Promise.all([
@@ -152,7 +171,6 @@ export default function Expenses() {
         .map((item: unknown): string => {
           if (typeof item === "string") return item.trim();
           if (!item || typeof item !== "object") return "";
-
           const category = item as Record<string, unknown>;
           const nestedCategory = category.category;
           const name =
@@ -163,7 +181,6 @@ export default function Expenses() {
               : (nestedCategory as Record<string, unknown> | undefined)
                   ?.name) ??
             category.title;
-
           return typeof name === "string" ? name.trim() : "";
         })
         .filter((category: string) => category.length > 0);
@@ -184,12 +201,10 @@ export default function Expenses() {
       setSelectedCategory("All");
     } catch (error) {
       const status = (error as any)?.status || (error as any)?.response?.status;
-
       if (status === 401) {
         await handleUnauthorized();
         return;
       }
-
       console.error(error);
       Alert.alert(
         "Error",
@@ -200,24 +215,23 @@ export default function Expenses() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [handleUnauthorized]);
 
-  useEffect(() => {
-    fetchAll();
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      void fetchAll();
+    }, [fetchAll]),
+  );
 
   const visibleExpenses = useMemo(() => {
     const query = search.trim().toLowerCase();
-
     return expenses.filter((expense) => {
       const matchesCategory =
         selectedCategory === "All" ||
         (expense.category || "Other") === selectedCategory;
-
       const haystack = `${expense.title || ""} ${expense.category || ""} ${
         expense.notes || ""
       }`.toLowerCase();
-
       const matchesSearch = !query || haystack.includes(query);
       return matchesCategory && matchesSearch;
     });
@@ -276,7 +290,6 @@ export default function Expenses() {
     try {
       setSaving(true);
       const payload = new FormData();
-
       payload.append("title", form.title.trim());
       payload.append("expense_amount", String(Number(form.expense_amount)));
       payload.append("category", form.category);
@@ -299,12 +312,10 @@ export default function Expenses() {
       Alert.alert("Success", "Expense saved successfully.");
     } catch (error) {
       const status = (error as any)?.status || (error as any)?.response?.status;
-
       if (status === 401) {
         await handleUnauthorized();
         return;
       }
-
       Alert.alert(
         "Error",
         getApiErrorMessage(error, "Failed to save expense."),
@@ -330,12 +341,10 @@ export default function Expenses() {
           } catch (error) {
             const status =
               (error as any)?.status || (error as any)?.response?.status;
-
             if (status === 401) {
               await handleUnauthorized();
               return;
             }
-
             Alert.alert(
               "Error",
               getApiErrorMessage(error, "Failed to delete expense."),
@@ -349,258 +358,389 @@ export default function Expenses() {
   return (
     <SafeAreaView
       edges={["bottom"]}
-      style={{ flex: 1, backgroundColor: Colors.contentBackground }}
+      style={{ flex: 1, backgroundColor: "#F0F4F8" }}
     >
-      <View style={{ flex: 1, backgroundColor: Colors.contentBackground }}>
+      <View style={{ flex: 1, backgroundColor: "#F0F4F8" }}>
+        {/* ── Hero Header ── */}
+        <LinearGradient
+          colors={["#1B4332", "#2D6A4F", "#40916C"]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={{
+            paddingTop: insets.top + 16,
+            paddingBottom: 28,
+            paddingHorizontal: 20,
+          }}
+        >
+          {/* Stat cards inside header */}
+          <View style={{ flexDirection: "row", gap: 12 }}>
+            <HeroStatCard
+              label="Total Spent"
+              value={formatAmount(stats.totalAmount || totals.totalExpense)}
+              icon="trending-down-outline"
+              accentBg="rgba(255,255,255,0.18)"
+            />
+            <HeroStatCard
+              label="Today"
+              value={formatAmount(totals.todayExpense)}
+              icon="today-outline"
+              accentBg="rgba(255,255,255,0.18)"
+            />
+          </View>
+        </LinearGradient>
+
         <ScrollView
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{
             paddingHorizontal: 16,
-            paddingTop: 16,
+            paddingTop: 18,
             paddingBottom: insets.bottom + 120,
           }}
         >
-          <View
-            style={{
-              marginBottom: 14,
-            }}
-          >
-          
-          </View>
-
-          <View
-            style={{ flexDirection: "row", alignItems: "stretch", gap: 12 }}
-          >
-            <StatCard
-              label="Total"
-              value={formatAmount(stats.totalAmount || totals.totalExpense)}
-              accent="#240046"
-            />
-            <StatCard
-              label="Today"
-              value={formatAmount(totals.todayExpense)}
-              accent="#0B8D51"
-            />
-          </View>
-
-          <View
-            style={{
-              marginTop: 18,
-              backgroundColor: Colors.white,
-              borderRadius: 18,
-              paddingHorizontal: 12,
-              paddingVertical: 10,
-              borderWidth: 1,
-              borderColor: "#E7EDEB",
-              flexDirection: "row",
-              alignItems: "center",
-            }}
-          >
-            <Ionicons name="search-outline" size={20} color="#6F7F9E" />
-            <TextInput
-              value={search}
-              onChangeText={setSearch}
-              placeholder="Search expense..."
-              placeholderTextColor="#7B8895"
+          {/* ── Search bar + Filter button ── */}
+          <View style={{ flexDirection: "row", gap: 10, marginBottom: 12 }}>
+            {/* Search input */}
+            <View
               style={{
                 flex: 1,
-                marginLeft: 10,
-                fontSize: 16,
-                color: "#17284A",
+                backgroundColor: "#FFFFFF",
+                borderRadius: 16,
+                paddingHorizontal: 14,
+                paddingVertical: 12,
+                flexDirection: "row",
+                alignItems: "center",
+                shadowColor: "#000",
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.06,
+                shadowRadius: 8,
+                elevation: 3,
               }}
-            />
+            >
+              <Ionicons name="search-outline" size={20} color="#94A3B8" />
+              <TextInput
+                value={search}
+                onChangeText={setSearch}
+                placeholder="Search expenses…"
+                placeholderTextColor="#94A3B8"
+                style={{
+                  flex: 1,
+                  marginLeft: 10,
+                  fontSize: 15,
+                  color: "#1E293B",
+                }}
+              />
+              {search.length > 0 && (
+                <Pressable onPress={() => setSearch("")} hitSlop={8}>
+                  <Ionicons name="close-circle" size={18} color="#94A3B8" />
+                </Pressable>
+              )}
+            </View>
+
+            {/* Filter button */}
+            <Pressable
+              onPress={() => setIsFilterSheetVisible(true)}
+              style={{
+                width: 50,
+                height: 50,
+                borderRadius: 16,
+                backgroundColor:
+                  selectedCategory !== "All" ? "#1B4332" : "#FFFFFF",
+                justifyContent: "center",
+                alignItems: "center",
+                shadowColor: selectedCategory !== "All" ? "#1B4332" : "#000",
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: selectedCategory !== "All" ? 0.35 : 0.06,
+                shadowRadius: selectedCategory !== "All" ? 8 : 6,
+                elevation: selectedCategory !== "All" ? 8 : 3,
+              }}
+            >
+              <Ionicons
+                name="options-outline"
+                size={22}
+                color={selectedCategory !== "All" ? "#FFFFFF" : "#475569"}
+              />
+              {selectedCategory !== "All" && (
+                <View
+                  style={{
+                    position: "absolute",
+                    top: 8,
+                    right: 8,
+                    width: 8,
+                    height: 8,
+                    borderRadius: 4,
+                    backgroundColor: "#52D58E",
+                    borderWidth: 1.5,
+                    borderColor: "#1B4332",
+                  }}
+                />
+              )}
+            </Pressable>
           </View>
 
+          {/* Active filter chip */}
+          {selectedCategory !== "All" && (
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                marginBottom: 14,
+              }}
+            >
+              <View
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  backgroundColor: "#E8F5E9",
+                  borderRadius: 20,
+                  paddingHorizontal: 12,
+                  paddingVertical: 6,
+                  borderWidth: 1,
+                  borderColor: "#B7DFC5",
+                  gap: 6,
+                }}
+              >
+                <Ionicons
+                  name={categoryIcons[selectedCategory] || "pricetag-outline"}
+                  size={13}
+                  color="#1B4332"
+                />
+                <Text
+                  style={{
+                    fontSize: 12,
+                    fontWeight: "700",
+                    color: "#1B4332",
+                  }}
+                >
+                  {selectedCategory}
+                </Text>
+                <Pressable
+                  onPress={() => setSelectedCategory("All")}
+                  hitSlop={8}
+                >
+                  <Ionicons name="close-circle" size={16} color="#2D6A4F" />
+                </Pressable>
+              </View>
+              <Text style={{ marginLeft: 10, fontSize: 12, color: "#94A3B8" }}>
+                {visibleExpenses.length} result
+                {visibleExpenses.length !== 1 ? "s" : ""}
+              </Text>
+            </View>
+          )}
+
+          {/* ── Expense list ── */}
           <View
             style={{
-              marginTop: 18,
               flexDirection: "row",
               alignItems: "center",
               justifyContent: "space-between",
+              marginBottom: 12,
             }}
           >
-            <Text
-              style={{
-                fontSize: 12,
-                letterSpacing: 1.4,
-                color: "#6A7176",
-                fontWeight: "700",
-              }}
-            >
-              CATEGORY
+            <Text style={{ fontSize: 16, fontWeight: "800", color: "#1E293B" }}>
+              {selectedCategory === "All"
+                ? "All Expenses"
+                : `${selectedCategory} Expenses`}
             </Text>
-            <Text
-              style={{ fontSize: 12, color: Colors.forest, fontWeight: "700" }}
-            >
-              {categoryOptions.length} filters
+            <Text style={{ fontSize: 12, color: "#94A3B8" }}>
+              {visibleExpenses.length} item
+              {visibleExpenses.length !== 1 ? "s" : ""}
             </Text>
           </View>
 
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={{ paddingVertical: 12, gap: 10 }}
-          >
-            {["All", ...categoryOptions].map((category) => {
-              const isSelected = selectedCategory === category;
-              const icon =
-                category === "All"
-                  ? "grid-outline"
-                  : categoryIcons[category] || "pricetag-outline";
-
-              return (
-                <Pressable
-                  key={category}
-                  onPress={() => setSelectedCategory(category)}
-                  style={{
-                    width: 80,
-                    minHeight: 74,
-                    backgroundColor: isSelected ? "#E8F6EE" : Colors.white,
-                    borderRadius: 16,
-                    borderWidth: 1,
-                    borderColor: isSelected ? "#B7E0C7" : "#E7EDEB",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    paddingVertical: 8,
-                  }}
-                >
-                  <Ionicons
-                    name={icon}
-                    size={20}
-                    color={isSelected ? Colors.forest : "#2E4A44"}
-                  />
-                  <Text
-                    style={{
-                      marginTop: 6,
-                      fontSize: 11,
-                      color: isSelected ? Colors.forest : "#2E4A44",
-                      fontWeight: isSelected ? "700" : "600",
-                    }}
-                  >
-                    {category}
-                  </Text>
-                </Pressable>
-              );
-            })}
-          </ScrollView>
-
-          <View style={{ marginTop: 12 }}>
-            {loading ? (
-              <View style={{ paddingVertical: 32, alignItems: "center" }}>
-                <Text style={{ color: "#586A78", fontSize: 15 }}>
-                  Loading expenses...
-                </Text>
-              </View>
-            ) : visibleExpenses.length === 0 ? (
-              <View
+          {loading ? (
+            <View
+              style={{
+                backgroundColor: "#FFFFFF",
+                borderRadius: 20,
+                padding: 40,
+                alignItems: "center",
+                shadowColor: "#000",
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.05,
+                shadowRadius: 8,
+                elevation: 2,
+              }}
+            >
+              <Ionicons name="hourglass-outline" size={36} color="#94A3B8" />
+              <Text
                 style={{
-                  backgroundColor: Colors.white,
-                  borderRadius: 18,
-                  padding: 26,
-                  alignItems: "center",
-                  borderWidth: 1,
-                  borderColor: "#E7EDEB",
+                  marginTop: 12,
+                  fontSize: 15,
+                  color: "#64748B",
+                  fontWeight: "600",
                 }}
               >
-                <Ionicons name="receipt-outline" size={36} color="#8A99A4" />
-                <Text
+                Loading expenses…
+              </Text>
+            </View>
+          ) : visibleExpenses.length === 0 ? (
+            <View
+              style={{
+                backgroundColor: "#FFFFFF",
+                borderRadius: 20,
+                padding: 40,
+                alignItems: "center",
+                shadowColor: "#000",
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.05,
+                shadowRadius: 8,
+                elevation: 2,
+              }}
+            >
+              <View
+                style={{
+                  width: 72,
+                  height: 72,
+                  borderRadius: 36,
+                  backgroundColor: "#F1F5F9",
+                  justifyContent: "center",
+                  alignItems: "center",
+                  marginBottom: 14,
+                }}
+              >
+                <Ionicons name="receipt-outline" size={34} color="#94A3B8" />
+              </View>
+              <Text
+                style={{
+                  fontSize: 18,
+                  fontWeight: "800",
+                  color: "#1E293B",
+                  marginBottom: 6,
+                }}
+              >
+                No expenses found
+              </Text>
+              <Text
+                style={{ fontSize: 13, color: "#94A3B8", textAlign: "center" }}
+              >
+                Try a different category or{"\n"}tap + to add a new expense.
+              </Text>
+            </View>
+          ) : (
+            visibleExpenses.map((expense, index) => {
+              const icon =
+                categoryIcons[String(expense.category || "Other")] ||
+                "pricetag-outline";
+              const accent = categoryAccents[expense.category || "Other"] || {
+                bg: "#F3F4F6",
+                color: "#6B7280",
+              };
+
+              return (
+                <View
+                  key={String(expense.id)}
                   style={{
-                    marginTop: 10,
-                    fontSize: 18,
-                    fontWeight: "700",
-                    color: "#1F2D2D",
+                    backgroundColor: "#FFFFFF",
+                    borderRadius: 18,
+                    padding: 16,
+                    marginBottom: 10,
+                    flexDirection: "row",
+                    alignItems: "center",
+                    shadowColor: "#000",
+                    shadowOffset: { width: 0, height: 2 },
+                    shadowOpacity: 0.06,
+                    shadowRadius: 8,
+                    elevation: 3,
                   }}
                 >
-                  No expenses found
-                </Text>
-                <Text style={{ marginTop: 6, color: "#6A7176", fontSize: 13 }}>
-                  Try a different category or add a new expense.
-                </Text>
-              </View>
-            ) : (
-              visibleExpenses.map((expense) => {
-                const icon =
-                  categoryIcons[String(expense.category || "Other")] ||
-                  "pricetag-outline";
-
-                return (
+                  {/* Icon */}
                   <View
-                    key={String(expense.id)}
                     style={{
-                      backgroundColor: Colors.white,
-                      borderRadius: 18,
-                      padding: 14,
-                      marginBottom: 12,
-                      borderWidth: 1,
-                      borderColor: "#E7EDEB",
-                      flexDirection: "row",
+                      width: 48,
+                      height: 48,
+                      borderRadius: 15,
+                      backgroundColor: accent.bg,
+                      justifyContent: "center",
                       alignItems: "center",
                     }}
                   >
+                    <Ionicons name={icon} size={22} color={accent.color} />
+                  </View>
+
+                  {/* Info */}
+                  <View style={{ flex: 1, marginLeft: 12 }}>
+                    <Text
+                      style={{
+                        fontSize: 15,
+                        fontWeight: "700",
+                        color: "#1E293B",
+                      }}
+                      numberOfLines={1}
+                    >
+                      {expense.title || "Expense"}
+                    </Text>
                     <View
                       style={{
-                        width: 46,
-                        height: 46,
-                        borderRadius: 16,
-                        backgroundColor: "#EAF4EE",
+                        flexDirection: "row",
+                        alignItems: "center",
+                        marginTop: 4,
+                        gap: 6,
+                      }}
+                    >
+                      <View
+                        style={{
+                          backgroundColor: accent.bg,
+                          borderRadius: 6,
+                          paddingHorizontal: 7,
+                          paddingVertical: 2,
+                        }}
+                      >
+                        <Text
+                          style={{
+                            fontSize: 10,
+                            fontWeight: "700",
+                            color: accent.color,
+                          }}
+                        >
+                          {expense.category || "Other"}
+                        </Text>
+                      </View>
+                      <Text style={{ fontSize: 11, color: "#94A3B8" }}>
+                        {formatDate(expense.expense_date)}
+                      </Text>
+                    </View>
+                  </View>
+
+                  {/* Amount + delete */}
+                  <View style={{ alignItems: "flex-end", gap: 6 }}>
+                    <Text
+                      style={{
+                        fontSize: 15,
+                        fontWeight: "800",
+                        color: "#EF4444",
+                      }}
+                    >
+                      {formatAmount(
+                        expense.expense_amount ?? expense.amount ?? 0,
+                      )}
+                    </Text>
+                    <Pressable
+                      onPress={() => handleDeleteExpense(expense)}
+                      hitSlop={10}
+                      style={{
+                        width: 28,
+                        height: 28,
+                        borderRadius: 8,
+                        backgroundColor: "#FEF2F2",
                         justifyContent: "center",
                         alignItems: "center",
                       }}
                     >
-                      <Ionicons name={icon} size={22} color={Colors.forest} />
-                    </View>
-
-                    <View style={{ flex: 1, marginLeft: 12 }}>
-                      <Text
-                        style={{
-                          fontSize: 18,
-                          fontWeight: "800",
-                          color: "#1F2D2D",
-                        }}
-                      >
-                        {expense.title || "Expense"}
-                      </Text>
-                      <Text
-                        style={{ marginTop: 4, fontSize: 12, color: "#6A7176" }}
-                      >
-                        {expense.category || "Other"} ·{" "}
-                        {formatDate(expense.expense_date)}
-                      </Text>
-                    </View>
-
-                    <View style={{ alignItems: "flex-end", marginRight: 10 }}>
-                      <Text
-                        style={{
-                          fontSize: 16,
-                          fontWeight: "800",
-                          color: "#D64545",
-                        }}
-                      >
-                        {formatAmount(
-                          expense.expense_amount ?? expense.amount ?? 0,
-                        )}
-                      </Text>
-                    </View>
-
-                    <Pressable
-                      onPress={() => handleDeleteExpense(expense)}
-                      hitSlop={10}
-                      style={{ padding: 4 }}
-                    >
                       <Ionicons
                         name="trash-outline"
-                        size={18}
-                        color="#D64545"
+                        size={14}
+                        color="#EF4444"
                       />
                     </Pressable>
                   </View>
-                );
-              })
-            )}
-          </View>
+                </View>
+              );
+            })
+          )}
         </ScrollView>
       </View>
 
+      {/* ── FAB ── */}
       <Pressable
         onPress={() => setIsModalVisible(true)}
         accessibilityRole="button"
@@ -609,25 +749,162 @@ export default function Expenses() {
         style={{
           position: "absolute",
           right: 20,
-          bottom: 88,
-          width: 58,
-          height: 58,
-          borderRadius: 29,
-          borderWidth: 2,
-          borderColor: "#B8C0BC",
-          backgroundColor: Colors.forest,
+          bottom: insets.bottom + 90,
+          width: 60,
+          height: 60,
+          borderRadius: 30,
+          backgroundColor: "#1B4332",
           alignItems: "center",
           justifyContent: "center",
-          shadowColor: "#000",
-          shadowOffset: { width: 0, height: 4 },
-          shadowOpacity: 0.2,
-          shadowRadius: 7,
-          elevation: 8,
+          shadowColor: "#1B4332",
+          shadowOffset: { width: 0, height: 6 },
+          shadowOpacity: 0.4,
+          shadowRadius: 12,
+          elevation: 10,
         }}
       >
-        <Ionicons name="add" size={30} color={Colors.white} />
+        <Ionicons name="add" size={30} color="#FFFFFF" />
       </Pressable>
 
+      {/* ── Category Filter Modal ── */}
+      <Modal
+        visible={isFilterSheetVisible}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setIsFilterSheetVisible(false)}
+      >
+        <View
+          style={{
+            flex: 1,
+            backgroundColor: "rgba(15, 23, 42, 0.45)",
+            justifyContent: "flex-end",
+          }}
+        >
+          <View
+            style={{
+              backgroundColor: "#FFFFFF",
+              borderTopLeftRadius: 28,
+              borderTopRightRadius: 28,
+              paddingHorizontal: 18,
+              paddingTop: 12,
+              paddingBottom: insets.bottom + 20,
+              maxHeight: "78%",
+            }}
+          >
+            <View
+              style={{
+                width: 44,
+                height: 4,
+                borderRadius: 2,
+                backgroundColor: "#E2E8F0",
+                alignSelf: "center",
+                marginBottom: 16,
+              }}
+            />
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "space-between",
+                marginBottom: 14,
+              }}
+            >
+              <Text
+                style={{ fontSize: 20, fontWeight: "800", color: "#1E293B" }}
+              >
+                Filter by category
+              </Text>
+              <Pressable
+                onPress={() => setIsFilterSheetVisible(false)}
+                hitSlop={10}
+                style={{
+                  width: 32,
+                  height: 32,
+                  borderRadius: 16,
+                  backgroundColor: "#F1F5F9",
+                  justifyContent: "center",
+                  alignItems: "center",
+                }}
+              >
+                <Ionicons name="close" size={16} color="#475569" />
+              </Pressable>
+            </View>
+
+            <ScrollView showsVerticalScrollIndicator={false}>
+              {["All", ...categoryOptions].map((item) => {
+                const active = selectedCategory === item;
+                const icon =
+                  item === "All"
+                    ? "funnel-outline"
+                    : categoryIcons[item] || "pricetag-outline";
+                const accent =
+                  item === "All"
+                    ? { bg: "#E8F5E9", color: "#1B4332" }
+                    : categoryAccents[item] || {
+                        bg: "#F3F4F6",
+                        color: "#6B7280",
+                      };
+                return (
+                  <Pressable
+                    key={item}
+                    onPress={() => {
+                      setSelectedCategory(item);
+                      setIsFilterSheetVisible(false);
+                    }}
+                    style={{
+                      flexDirection: "row",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      backgroundColor: active ? "#E8F5E9" : "#F8FAFC",
+                      borderWidth: 1,
+                      borderColor: active ? "#B7DFC5" : "#E2E8F0",
+                      borderRadius: 14,
+                      paddingHorizontal: 14,
+                      paddingVertical: 12,
+                      marginBottom: 10,
+                    }}
+                  >
+                    <View
+                      style={{
+                        flexDirection: "row",
+                        alignItems: "center",
+                        gap: 10,
+                      }}
+                    >
+                      <View
+                        style={{
+                          width: 34,
+                          height: 34,
+                          borderRadius: 10,
+                          backgroundColor: accent.bg,
+                          alignItems: "center",
+                          justifyContent: "center",
+                        }}
+                      >
+                        <Ionicons name={icon} size={16} color={accent.color} />
+                      </View>
+                      <Text
+                        style={{
+                          fontSize: 15,
+                          fontWeight: active ? "800" : "600",
+                          color: "#1E293B",
+                        }}
+                      >
+                        {item}
+                      </Text>
+                    </View>
+                    {active && (
+                      <Ionicons name="checkmark" size={18} color="#1B4332" />
+                    )}
+                  </Pressable>
+                );
+              })}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
+      {/* ── Add Expense Modal ── */}
       <Modal
         visible={isModalVisible}
         transparent
@@ -637,36 +914,64 @@ export default function Expenses() {
         <View
           style={{
             flex: 1,
-            backgroundColor: "rgba(0,0,0,0.45)",
+            backgroundColor: "rgba(0,0,0,0.5)",
             justifyContent: "flex-end",
           }}
         >
           <View
             style={{
-              backgroundColor: Colors.white,
-              borderTopLeftRadius: 26,
-              borderTopRightRadius: 26,
-              paddingHorizontal: 18,
-              paddingTop: 18,
-              paddingBottom: insets.bottom + 18,
-              maxHeight: "88%",
+              backgroundColor: "#FFFFFF",
+              borderTopLeftRadius: 30,
+              borderTopRightRadius: 30,
+              paddingHorizontal: 20,
+              paddingTop: 10,
+              paddingBottom: insets.bottom + 20,
+              maxHeight: "92%",
             }}
           >
+            {/* Drag handle */}
+            <View
+              style={{
+                width: 40,
+                height: 4,
+                borderRadius: 2,
+                backgroundColor: "#E2E8F0",
+                alignSelf: "center",
+                marginBottom: 16,
+              }}
+            />
+
+            {/* Modal header */}
             <View
               style={{
                 flexDirection: "row",
                 justifyContent: "space-between",
                 alignItems: "center",
-                marginBottom: 18,
+                marginBottom: 20,
               }}
             >
-              <Text
-                style={{ fontSize: 24, fontWeight: "800", color: "#17284A" }}
+              <View>
+                <Text
+                  style={{ fontSize: 22, fontWeight: "900", color: "#1E293B" }}
+                >
+                  Add Expense
+                </Text>
+                <Text style={{ fontSize: 12, color: "#94A3B8", marginTop: 2 }}>
+                  Fill in the details below
+                </Text>
+              </View>
+              <Pressable
+                onPress={() => setIsModalVisible(false)}
+                style={{
+                  width: 36,
+                  height: 36,
+                  borderRadius: 18,
+                  backgroundColor: "#F1F5F9",
+                  justifyContent: "center",
+                  alignItems: "center",
+                }}
               >
-                Add Expense
-              </Text>
-              <Pressable onPress={() => setIsModalVisible(false)}>
-                <Ionicons name="close" size={22} color="#17284A" />
+                <Ionicons name="close" size={18} color="#64748B" />
               </Pressable>
             </View>
 
@@ -677,31 +982,24 @@ export default function Expenses() {
                 onChangeText={(text) =>
                   setForm((current) => ({ ...current, title: text }))
                 }
-                placeholder="e.g. Grocery"
+                placeholder="e.g. Grocery, Petrol…"
+                icon="create-outline"
               />
 
               <TextField
-                label="Amount"
+                label="Amount (₹)"
                 value={form.expense_amount}
                 onChangeText={(text) =>
                   setForm((current) => ({ ...current, expense_amount: text }))
                 }
                 placeholder="0.00"
                 keyboardType="decimal-pad"
+                icon="cash-outline"
               />
 
-              <View style={{ marginBottom: 14 }}>
-                <Text
-                  style={{
-                    fontSize: 12,
-                    color: "#6A7176",
-                    fontWeight: "700",
-                    marginBottom: 8,
-                    letterSpacing: 1.2,
-                  }}
-                >
-                  CATEGORY
-                </Text>
+              {/* Category picker */}
+              <View style={{ marginBottom: 16 }}>
+                <ModalSectionLabel label="CATEGORY" />
                 <ScrollView
                   horizontal
                   showsHorizontalScrollIndicator={false}
@@ -709,6 +1007,11 @@ export default function Expenses() {
                 >
                   {categoryOptions.map((item) => {
                     const selected = form.category === item;
+                    const accent = categoryAccents[item] || {
+                      bg: "#F3F4F6",
+                      color: "#6B7280",
+                    };
+                    const icon = categoryIcons[item] || "pricetag-outline";
                     return (
                       <Pressable
                         key={item}
@@ -716,18 +1019,27 @@ export default function Expenses() {
                           setForm((current) => ({ ...current, category: item }))
                         }
                         style={{
-                          paddingHorizontal: 12,
+                          paddingHorizontal: 14,
                           paddingVertical: 8,
                           borderRadius: 12,
-                          backgroundColor: selected ? "#EAF6EE" : "#F3F5F4",
-                          borderWidth: 1,
-                          borderColor: selected ? "#BEE1C8" : "#E5ECEA",
+                          backgroundColor: selected ? "#1B4332" : "#F8FAFC",
+                          borderWidth: 1.5,
+                          borderColor: selected ? "#1B4332" : "#E2E8F0",
+                          flexDirection: "row",
+                          alignItems: "center",
+                          gap: 6,
                         }}
                       >
+                        <Ionicons
+                          name={icon}
+                          size={14}
+                          color={selected ? "#FFFFFF" : accent.color}
+                        />
                         <Text
                           style={{
-                            color: selected ? Colors.forest : "#2E4A44",
+                            color: selected ? "#FFFFFF" : "#374151",
                             fontWeight: selected ? "700" : "600",
+                            fontSize: 13,
                           }}
                         >
                           {item}
@@ -738,101 +1050,98 @@ export default function Expenses() {
                 </ScrollView>
               </View>
 
-              <View style={{ flexDirection: "row", gap: 12, marginBottom: 14 }}>
+              {/* Date & Time */}
+              <View style={{ flexDirection: "row", gap: 12, marginBottom: 16 }}>
                 <View style={{ flex: 1 }}>
-                  <Text
-                    style={{
-                      fontSize: 12,
-                      color: "#6A7176",
-                      fontWeight: "700",
-                      marginBottom: 8,
-                      letterSpacing: 1.2,
-                    }}
-                  >
-                    DATE
-                  </Text>
-                  <TextInput
-                    value={form.date}
-                    onChangeText={(text) =>
-                      setForm((current) => ({ ...current, date: text }))
-                    }
-                    placeholder="YYYY-MM-DD"
-                    style={inputStyle}
-                  />
+                  <ModalSectionLabel label="DATE" />
+                  <View style={inputWrapperStyle}>
+                    <Ionicons
+                      name="calendar-outline"
+                      size={16}
+                      color="#94A3B8"
+                      style={{ marginRight: 8 }}
+                    />
+                    <TextInput
+                      value={form.date}
+                      onChangeText={(text) =>
+                        setForm((current) => ({ ...current, date: text }))
+                      }
+                      placeholder="YYYY-MM-DD"
+                      placeholderTextColor="#CBD5E1"
+                      style={inlineInputStyle}
+                    />
+                  </View>
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text
-                    style={{
-                      fontSize: 12,
-                      color: "#6A7176",
-                      fontWeight: "700",
-                      marginBottom: 8,
-                      letterSpacing: 1.2,
-                    }}
-                  >
-                    TIME
-                  </Text>
-                  <TextInput
-                    value={form.time}
-                    onChangeText={(text) =>
-                      setForm((current) => ({ ...current, time: text }))
-                    }
-                    placeholder="HH:MM"
-                    style={inputStyle}
-                  />
+                  <ModalSectionLabel label="TIME" />
+                  <View style={inputWrapperStyle}>
+                    <Ionicons
+                      name="time-outline"
+                      size={16}
+                      color="#94A3B8"
+                      style={{ marginRight: 8 }}
+                    />
+                    <TextInput
+                      value={form.time}
+                      onChangeText={(text) =>
+                        setForm((current) => ({ ...current, time: text }))
+                      }
+                      placeholder="HH:MM"
+                      placeholderTextColor="#CBD5E1"
+                      style={inlineInputStyle}
+                    />
+                  </View>
                 </View>
               </View>
 
-              <Text
-                style={{
-                  fontSize: 12,
-                  color: "#6A7176",
-                  fontWeight: "700",
-                  marginBottom: 8,
-                  letterSpacing: 1.2,
-                }}
-              >
-                PAYMENT METHOD
-              </Text>
-              <View
-                style={{
-                  flexDirection: "row",
-                  flexWrap: "wrap",
-                  gap: 8,
-                  marginBottom: 14,
-                }}
-              >
-                {paymentMethods.map((method) => {
-                  const selected = form.payment_method === method;
-                  return (
-                    <Pressable
-                      key={method}
-                      onPress={() =>
-                        setForm((current) => ({
-                          ...current,
-                          payment_method: method,
-                        }))
-                      }
-                      style={{
-                        paddingHorizontal: 12,
-                        paddingVertical: 8,
-                        borderRadius: 12,
-                        backgroundColor: selected ? "#F1E9FF" : "#F3F5F4",
-                        borderWidth: 1,
-                        borderColor: selected ? "#D3C5FF" : "#E5ECEA",
-                      }}
-                    >
-                      <Text
+              {/* Payment method */}
+              <View style={{ marginBottom: 16 }}>
+                <ModalSectionLabel label="PAYMENT METHOD" />
+                <View
+                  style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}
+                >
+                  {paymentMethods.map((method) => {
+                    const selected = form.payment_method === method;
+                    const icon = paymentIcons[method] || "card-outline";
+                    return (
+                      <Pressable
+                        key={method}
+                        onPress={() =>
+                          setForm((current) => ({
+                            ...current,
+                            payment_method: method,
+                          }))
+                        }
                         style={{
-                          color: selected ? "#4B1F7D" : "#2E4A44",
-                          fontWeight: selected ? "700" : "600",
+                          paddingHorizontal: 12,
+                          paddingVertical: 8,
+                          borderRadius: 12,
+                          backgroundColor: selected ? "#F0FDF4" : "#F8FAFC",
+                          borderWidth: 1.5,
+                          borderColor: selected ? "#2D6A4F" : "#E2E8F0",
+                          flexDirection: "row",
+                          alignItems: "center",
+                          gap: 5,
                         }}
                       >
-                        {method}
-                      </Text>
-                    </Pressable>
-                  );
-                })}
+                        <Ionicons
+                          name={icon}
+                          size={13}
+                          color={selected ? "#2D6A4F" : "#94A3B8"}
+                        />
+                        <Text
+                          style={{
+                            color: selected ? "#1B4332" : "#374151",
+                            fontWeight: selected ? "700" : "500",
+                            fontSize: 13,
+                          }}
+                        >
+                          {method}
+                        </Text>
+                      </Pressable>
+                    );
+                  })}
+                </View>
               </View>
 
               <TextField
@@ -841,31 +1150,48 @@ export default function Expenses() {
                 onChangeText={(text) =>
                   setForm((current) => ({ ...current, notes: text }))
                 }
-                placeholder="Optional detail"
+                placeholder="Optional details…"
                 multiline
+                icon="chatbubble-ellipses-outline"
               />
 
               <Pressable
                 onPress={handleCreateExpense}
                 disabled={saving}
                 style={{
-                  marginTop: 18,
-                  backgroundColor: Colors.forest,
-                  borderRadius: 16,
-                  height: 52,
+                  marginTop: 8,
+                  borderRadius: 18,
+                  height: 54,
                   justifyContent: "center",
                   alignItems: "center",
                   opacity: saving ? 0.7 : 1,
+                  overflow: "hidden",
+                  backgroundColor: "#1B4332",
+                  shadowColor: "#1B4332",
+                  shadowOffset: { width: 0, height: 6 },
+                  shadowOpacity: 0.35,
+                  shadowRadius: 12,
+                  elevation: 8,
+                  flexDirection: "row",
+                  gap: 8,
                 }}
               >
+                <Ionicons
+                  name={
+                    saving ? "hourglass-outline" : "checkmark-circle-outline"
+                  }
+                  size={20}
+                  color="#FFFFFF"
+                />
                 <Text
                   style={{
-                    color: Colors.white,
+                    color: "#FFFFFF",
                     fontWeight: "800",
                     fontSize: 16,
+                    letterSpacing: 0.3,
                   }}
                 >
-                  {saving ? "Saving..." : "Save Expense"}
+                  {saving ? "Saving…" : "Save Expense"}
                 </Text>
               </Pressable>
             </ScrollView>
@@ -876,60 +1202,80 @@ export default function Expenses() {
   );
 }
 
-function StatCard({
+/* ─────────────────────────────────────────
+   Sub-components
+───────────────────────────────────────── */
+
+function HeroStatCard({
   label,
   value,
-  accent,
+  icon,
+  accentBg,
 }: {
   label: string;
   value: string;
-  accent: string;
+  icon: keyof typeof Ionicons.glyphMap;
+  accentBg: string;
 }) {
   return (
     <View
       style={{
         flex: 1,
-        backgroundColor: Colors.white,
+        backgroundColor: accentBg,
         borderRadius: 18,
         padding: 14,
         borderWidth: 1,
-        borderColor: "#E7EDEB",
+        borderColor: "rgba(255,255,255,0.2)",
       }}
     >
       <View
         style={{
-          width: 42,
-          height: 42,
-          borderRadius: 14,
-          backgroundColor: `${accent}1A`,
-          justifyContent: "center",
+          flexDirection: "row",
           alignItems: "center",
+          gap: 6,
           marginBottom: 8,
         }}
       >
-        <Ionicons name="wallet-outline" size={20} color={accent} />
+        <Ionicons name={icon} size={15} color="rgba(255,255,255,0.8)" />
+        <Text
+          style={{
+            fontSize: 11,
+            color: "rgba(255,255,255,0.8)",
+            fontWeight: "600",
+            letterSpacing: 0.8,
+          }}
+        >
+          {label.toUpperCase()}
+        </Text>
       </View>
       <Text
         style={{
-          fontSize: 11,
-          color: "#6A7176",
-          letterSpacing: 1.2,
-          fontWeight: "700",
+          fontSize: 20,
+          color: "#FFFFFF",
+          fontWeight: "900",
         }}
-      >
-        {label.toUpperCase()}
-      </Text>
-      <Text
-        style={{
-          fontSize: 22,
-          color: "#1F2D2D",
-          fontWeight: "800",
-          marginTop: 6,
-        }}
+        numberOfLines={1}
+        adjustsFontSizeToFit
       >
         {value}
       </Text>
     </View>
+  );
+}
+
+function ModalSectionLabel({ label }: { label: string }) {
+  return (
+    <Text
+      style={{
+        fontSize: 11,
+        color: "#94A3B8",
+        fontWeight: "700",
+        letterSpacing: 1.3,
+        marginBottom: 8,
+      }}
+    >
+      {label}
+    </Text>
   );
 }
 
@@ -940,6 +1286,7 @@ function TextField({
   placeholder,
   keyboardType,
   multiline,
+  icon,
 }: {
   label: string;
   value: string;
@@ -947,44 +1294,60 @@ function TextField({
   placeholder?: string;
   keyboardType?: "default" | "number-pad" | "decimal-pad" | "numeric";
   multiline?: boolean;
+  icon?: keyof typeof Ionicons.glyphMap;
 }) {
   return (
-    <View style={{ marginBottom: 14 }}>
-      <Text
+    <View style={{ marginBottom: 16 }}>
+      <ModalSectionLabel label={label.toUpperCase()} />
+      <View
         style={{
-          fontSize: 12,
-          color: "#6A7176",
-          fontWeight: "700",
-          marginBottom: 8,
-          letterSpacing: 1.2,
+          ...inputWrapperStyle,
+          minHeight: multiline ? 90 : 48,
+          alignItems: multiline ? "flex-start" : "center",
+          paddingTop: multiline ? 12 : 0,
         }}
       >
-        {label.toUpperCase()}
-      </Text>
-      <TextInput
-        value={value}
-        onChangeText={onChangeText}
-        placeholder={placeholder}
-        keyboardType={keyboardType}
-        multiline={multiline}
-        numberOfLines={multiline ? 4 : 1}
-        style={{
-          ...inputStyle,
-          minHeight: multiline ? 88 : 44,
-          textAlignVertical: multiline ? "top" : "center",
-        }}
-      />
+        {icon && (
+          <Ionicons
+            name={icon}
+            size={17}
+            color="#94A3B8"
+            style={{ marginRight: 8, marginTop: multiline ? 2 : 0 }}
+          />
+        )}
+        <TextInput
+          value={value}
+          onChangeText={onChangeText}
+          placeholder={placeholder}
+          placeholderTextColor="#CBD5E1"
+          keyboardType={keyboardType}
+          multiline={multiline}
+          numberOfLines={multiline ? 4 : 1}
+          style={{
+            flex: 1,
+            fontSize: 15,
+            color: "#1E293B",
+            textAlignVertical: multiline ? "top" : "center",
+          }}
+        />
+      </View>
     </View>
   );
 }
 
-const inputStyle = {
-  backgroundColor: "#F5F7F6",
-  borderWidth: 1,
-  borderColor: "#E5ECEA",
-  borderRadius: 12,
-  paddingHorizontal: 12,
+const inputWrapperStyle = {
+  backgroundColor: "#F8FAFC",
+  borderWidth: 1.5,
+  borderColor: "#E2E8F0",
+  borderRadius: 14,
+  paddingHorizontal: 14,
   paddingVertical: 10,
-  fontSize: 15,
-  color: "#17284A",
+  flexDirection: "row" as const,
+  alignItems: "center" as const,
+};
+
+const inlineInputStyle = {
+  flex: 1,
+  fontSize: 14,
+  color: "#1E293B",
 };

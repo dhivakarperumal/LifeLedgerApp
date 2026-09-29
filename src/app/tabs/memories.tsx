@@ -6,8 +6,8 @@ import {
   useAudioRecorder,
 } from "expo-audio";
 import * as DocumentPicker from "expo-document-picker";
-import { useRouter } from "expo-router";
-import { useEffect, useEffectEvent, useMemo, useState } from "react";
+import { useFocusEffect, useRouter } from "expo-router";
+import { useCallback, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -180,7 +180,6 @@ export default function Memories() {
   const [search, setSearch] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [favoriteOnly, setFavoriteOnly] = useState(false);
-  const [refreshKey, setRefreshKey] = useState(0);
   const [loading, setLoading] = useState(true);
   const [editorVisible, setEditorVisible] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -189,12 +188,12 @@ export default function Memories() {
   const [newMedia, setNewMedia] = useState<LocalMedia[]>([]);
   const [isRecording, setIsRecording] = useState(false);
 
-  const handleUnauthorized = async () => {
+  const handleUnauthorized = useCallback(async () => {
     await logoutUser();
     router.replace("/auth/login");
-  };
+  }, [router]);
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     try {
       const [memoriesResult, categoriesResult] = await Promise.allSettled([
         api.get("/memories"),
@@ -231,16 +230,14 @@ export default function Memories() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [handleUnauthorized]);
 
-  const refreshMemories = useEffectEvent(() => {
-    void fetchData();
-  });
-
-  useEffect(() => {
-    const timeout = setTimeout(() => refreshMemories(), 0);
-    return () => clearTimeout(timeout);
-  }, [refreshKey]);
+  useFocusEffect(
+    useCallback(() => {
+      const timeout = setTimeout(() => void fetchData(), 0);
+      return () => clearTimeout(timeout);
+    }, [fetchData]),
+  );
 
   const filteredMemories = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -450,7 +447,7 @@ export default function Memories() {
 
       setEditorVisible(false);
       setNewMedia([]);
-      setRefreshKey((current) => current + 1);
+      await fetchData();
       Alert.alert("Saved", editingId ? "Memory updated." : "Memory created.");
     } catch (error) {
       const status = (error as any)?.status || (error as any)?.response?.status;
@@ -543,9 +540,7 @@ export default function Memories() {
             justifyContent: "space-between",
             marginBottom: 16,
           }}
-        >
-         
-        </View>
+        ></View>
 
         <View
           style={{
@@ -796,6 +791,24 @@ export default function Memories() {
                         marginTop: 9,
                       }}
                     >
+                      <Pressable
+                        onPress={() =>
+                          router.push({
+                            pathname: "/memories/[id]",
+                            params: { id: String(memory.id) },
+                          })
+                        }
+                        accessibilityRole="button"
+                        accessibilityLabel="View memory details"
+                        hitSlop={5}
+                        style={{ padding: 6 }}
+                      >
+                        <Ionicons
+                          name="eye-outline"
+                          size={19}
+                          color={Colors.sage}
+                        />
+                      </Pressable>
                       <Pressable
                         onPress={() => openEditMemory(memory)}
                         accessibilityRole="button"
