@@ -1,4 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
 import { Pressable, ScrollView, Text, View } from "react-native";
 import { Colors } from "../../constants/colors";
 
@@ -18,7 +19,7 @@ const accountItems: MoreRowItem[] = [
     iconColor: "#4D7CC4",
     iconBackground: "#EAF2FF",
   },
-    {
+  {
     label: "Categories",
     subtitle: "View money movement",
     icon: "swap-horizontal-outline",
@@ -33,7 +34,7 @@ const accountItems: MoreRowItem[] = [
     iconBackground: "#E8F8F0",
   },
   {
-    label: "Transactions",
+   label: "Transfers & Transactions",
     subtitle: "View money movement",
     icon: "swap-horizontal-outline",
     iconColor: "#D18B35",
@@ -72,9 +73,16 @@ const appItems: MoreRowItem[] = [
   },
 ];
 
-function MoreMenuRow({ item }: { item: MoreRowItem }) {
+function MoreMenuRow({
+  item,
+  onPress,
+}: {
+  item: MoreRowItem;
+  onPress?: () => void;
+}) {
   return (
     <Pressable
+      onPress={onPress}
       className="mt-3 flex-row items-center rounded-2xl border border-[#E9EEF0] bg-white px-4 py-3.5"
       style={{
         shadowColor: "#000000",
@@ -112,6 +120,8 @@ function MoreMenuRow({ item }: { item: MoreRowItem }) {
 }
 
 export default function More() {
+  const router = useRouter();
+
   return (
     <ScrollView
       showsVerticalScrollIndicator={false}
@@ -240,7 +250,17 @@ export default function More() {
       </Text>
 
       {accountItems.map((item) => (
-        <MoreMenuRow key={item.label} item={item} />
+        <MoreMenuRow
+          key={item.label}
+          item={item}
+          onPress={
+            item.label === "Categories"
+              ? () => router.push("/categories")
+              : item.label === "Monthly Income"
+                ? () => router.push("/income")
+                : undefined
+          }
+        />
       ))}
 
       <Text

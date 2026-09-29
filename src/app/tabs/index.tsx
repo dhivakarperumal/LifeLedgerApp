@@ -3,19 +3,41 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { LinearGradient } from "expo-linear-gradient";
 import { useFocusEffect } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
-import { Pressable, ScrollView, Text, View } from "react-native";
+import { Pressable, ScrollView, Text, View, ActivityIndicator } from "react-native";
 import {
   SafeAreaView,
   useSafeAreaInsets,
 } from "react-native-safe-area-context";
 import { TopHeader } from "../../Navigations/TopHeader";
-import { getStoredUser } from "../../api";
+import api, { getStoredUser } from "../../api";
 import { Colors } from "../../constants/colors";
 import { HOME_QUOTES, HOME_QUOTE_INDEX_KEY } from "../../constants/homeQuotes";
 
 type StoredUser = {
   name?: string;
   email?: string;
+};
+
+type ExpenseItem = {
+  id: number | string;
+  title: string;
+  category?: string;
+  expense_amount?: number | string;
+  amount?: number | string;
+  expense_date?: string;
+  payment_method?: string;
+  notes?: string;
+  recurring?: string;
+};
+
+const categoryIcons: Record<string, keyof typeof Ionicons.glyphMap> = {
+  Food: "restaurant-outline",
+  Travel: "car-outline",
+  Bills: "document-text-outline",
+  Shopping: "bag-handle-outline",
+  Health: "medkit-outline",
+  Education: "school-outline",
+  Other: "ellipsis-horizontal-outline",
 };
 
 function getTimeGreeting(hour: number) {
@@ -25,11 +47,42 @@ function getTimeGreeting(hour: number) {
   return "Good evening";
 }
 
+function formatAmount(value: number | string | undefined) {
+  const numeric = Number(value || 0);
+  return `₹${numeric.toLocaleString("en-IN", {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  })}`;
+}
+
+function formatDate(dateString?: string) {
+  if (!dateString) return "—";
+  const date = new Date(dateString);
+  if (Number.isNaN(date.getTime())) return dateString;
+  return date.toLocaleDateString("en-IN", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+}
+
 export default function Index() {
   const insets = useSafeAreaInsets();
   const [currentTime, setCurrentTime] = useState(() => new Date());
   const [userName, setUserName] = useState("there");
   const [homeQuote, setHomeQuote] = useState<string>(HOME_QUOTES[0]);
+
+  // Data states
+  const [isLoading, setIsLoading] = useState(true);
+  const [recentTransactions, setRecentTransactions] = useState<ExpenseItem[]>([]);
+  const [overview, setOverview] = useState({
+    totalSpent: 0,
+    thisMonth: 0,
+    thisWeek: 0,
+  });
+  const [topCategories, setTopCategories] = useState<
+    { label: string; value: number; percentage: number; color: string }[]
+  >([]);
 
   useEffect(() => {
     const interval = setInterval(() => setCurrentTime(new Date()), 60_000);
@@ -84,6 +137,95 @@ export default function Index() {
         isActive = false;
       };
     }, []),
+  );
+
+  useFocusEffect(
+    useCallback(() => {
+      let isActive = true;
+
+      const fetchData = async () => {
+        try {
+          setIsLoading(true);
+          const expensesRes = await api.get("/expenses");
+          if (!isActive) return;
+
+          const expensesData: ExpenseItem[] = Array.isArray(expensesRes?.data)
+            ? expensesRes.data
+            : [];
+
+          // Process stats
+          const now = new Date();
+          const currentMonth = now.getMonth();
+          const currentYear = now.getFullYear();
+
+          const startOfWeek = new Date(now);
+          startOfWeek.setDate(now.getDate() - now.getDay());
+          startOfWeek.setHours(0, 0, 0, 0);
+
+          let totalSpent = 0;
+          let thisMonthSpent = 0;
+          let thisWeekSpent = 0;
+
+          const categoryTotals: Record<string, number> = {};
+
+          expensesData.forEach((exp) => {
+            const amount = Number(exp.expense_amount ?? exp.amount ?? 0);
+            if (isNaN(amount)) return;
+
+            totalSpent += amount;
+
+            if (exp.expense_date) {
+              const expDate = new Date(exp.expense_date);
+              if (!isNaN(expDate.getTime())) {
+                if (
+                  expDate.getMonth() === currentMonth &&
+                  expDate.getFullYear() === currentYear
+                ) {
+                  thisMonthSpent += amount;
+                }
+                if (expDate >= startOfWeek) {
+                  thisWeekSpent += amount;
+                }
+              }
+            }
+
+            const cat = exp.category || "Other";
+            categoryTotals[cat] = (categoryTotals[cat] || 0) + amount;
+          });
+
+          setOverview({
+            totalSpent,
+            thisMonth: thisMonthSpent,
+            thisWeek: thisWeekSpent,
+          });
+
+          // Top categories
+          const catColors = [Colors.primary, Colors.olive, Colors.primaryLight];
+          const sortedCats = Object.entries(categoryTotals)
+            .sort((a, b) => b[1] - a[1])
+            .slice(0, 3)
+            .map(([label, value], idx) => ({
+              label,
+              value,
+              percentage: totalSpent > 0 ? Math.round((value / totalSpent) * 100) : 0,
+              color: catColors[idx] || Colors.textSecondary,
+            }));
+
+          setTopCategories(sortedCats);
+          setRecentTransactions(expensesData.slice(0, 3));
+        } catch (error) {
+          console.error("Failed to fetch home data:", error);
+        } finally {
+          if (isActive) setIsLoading(false);
+        }
+      };
+
+      fetchData();
+
+      return () => {
+        isActive = false;
+      };
+    }, [])
   );
 
   const dateLabel = currentTime
@@ -198,204 +340,223 @@ export default function Index() {
               ))}
             </View>
 
-            <View className="mt-12 flex-row items-center justify-between">
-              <Text
-                className="text-xl font-bold"
-                style={{ color: Colors.textPrimary }}
-              >
-                Overview
-              </Text>
-              <Pressable
-                className="flex-row items-center rounded-full border px-3 py-2"
-                style={{
-                  borderColor: Colors.border,
-                  backgroundColor: Colors.white,
-                }}
-              >
-                <Text
-                  className="text-sm font-semibold"
-                  style={{ color: Colors.textPrimary }}
-                >
-                  This Month
-                </Text>
-                <Ionicons
-                  name="chevron-down"
-                  size={18}
-                  color={Colors.textPrimary}
-                />
-              </Pressable>
-            </View>
-
-            <View
-              className="mt-4 rounded-3xl p-6"
-              style={{
-                backgroundColor: Colors.white,
-                shadowColor: Colors.primaryDark,
-                shadowOpacity: 0.06,
-                shadowRadius: 12,
-                elevation: 2,
-              }}
-            >
-              <View className="flex-row items-center justify-between">
-                <View>
+            {isLoading ? (
+              <View style={{ marginTop: 60, alignItems: "center" }}>
+                <ActivityIndicator size="large" color={Colors.primary} />
+                <Text style={{ marginTop: 12, color: Colors.textSecondary }}>Loading your overview...</Text>
+              </View>
+            ) : (
+              <>
+                <View className="mt-12 flex-row items-center justify-between">
                   <Text
-                    className="text-base"
-                    style={{ color: Colors.textSecondary }}
-                  >
-                    Total Spent
-                  </Text>
-                  <Text
-                    className="mt-1 text-3xl font-bold"
+                    className="text-xl font-bold"
                     style={{ color: Colors.textPrimary }}
                   >
-                    ₹1,780
+                    Overview
                   </Text>
-                  <Text
-                    className="mt-2 text-sm"
-                    style={{ color: Colors.olive }}
+                  <Pressable
+                    className="flex-row items-center rounded-full border px-3 py-2"
+                    style={{
+                      borderColor: Colors.border,
+                      backgroundColor: Colors.white,
+                    }}
                   >
-                    ↓ 12% less than last month
-                  </Text>
-                </View>
-                <View
-                  className="rounded-xl p-4"
-                  style={{ backgroundColor: Colors.bgCard }}
-                >
-                  <Text
-                    className="text-sm"
-                    style={{ color: Colors.textSecondary }}
-                  >
-                    This Week{" "}
                     <Text
-                      className="font-bold"
+                      className="text-sm font-semibold"
                       style={{ color: Colors.textPrimary }}
                     >
-                      ₹1,780
+                      This Month
                     </Text>
-                  </Text>
-                  <Text
-                    className="mt-4 text-sm"
-                    style={{ color: Colors.textSecondary }}
-                  >
-                    This Month{" "}
-                    <Text
-                      className="font-bold"
-                      style={{ color: Colors.textPrimary }}
-                    >
-                      ₹4,520
-                    </Text>
-                  </Text>
+                    <Ionicons
+                      name="chevron-down"
+                      size={18}
+                      color={Colors.textPrimary}
+                    />
+                  </Pressable>
                 </View>
-              </View>
-            </View>
 
-            <View
-              className="mt-4 rounded-3xl p-6"
-              style={{ backgroundColor: Colors.white }}
-            >
-              <View className="flex-row items-center justify-between">
-                <Text
-                  className="text-lg font-bold"
-                  style={{ color: Colors.textPrimary }}
+                <View
+                  className="mt-4 rounded-3xl p-6"
+                  style={{
+                    backgroundColor: Colors.white,
+                    shadowColor: Colors.primaryDark,
+                    shadowOpacity: 0.06,
+                    shadowRadius: 12,
+                    elevation: 2,
+                  }}
                 >
-                  Top Categories
-                </Text>
-                <Pressable className="flex-row items-center">
+                  <View className="flex-row items-center justify-between">
+                    <View>
+                      <Text
+                        className="text-base"
+                        style={{ color: Colors.textSecondary }}
+                      >
+                        Total Spent
+                      </Text>
+                      <Text
+                        className="mt-1 text-3xl font-bold"
+                        style={{ color: Colors.textPrimary }}
+                      >
+                        {formatAmount(overview.totalSpent)}
+                      </Text>
+                    </View>
+                    <View
+                      className="rounded-xl p-4"
+                      style={{ backgroundColor: Colors.bgCard }}
+                    >
+                      <Text
+                        className="text-sm"
+                        style={{ color: Colors.textSecondary }}
+                      >
+                        This Week{" "}
+                        <Text
+                          className="font-bold"
+                          style={{ color: Colors.textPrimary }}
+                        >
+                          {formatAmount(overview.thisWeek)}
+                        </Text>
+                      </Text>
+                      <Text
+                        className="mt-4 text-sm"
+                        style={{ color: Colors.textSecondary }}
+                      >
+                        This Month{" "}
+                        <Text
+                          className="font-bold"
+                          style={{ color: Colors.textPrimary }}
+                        >
+                          {formatAmount(overview.thisMonth)}
+                        </Text>
+                      </Text>
+                    </View>
+                  </View>
+                </View>
+
+                <View
+                  className="mt-4 rounded-3xl p-6"
+                  style={{ backgroundColor: Colors.white }}
+                >
+                  <View className="flex-row items-center justify-between">
+                    <Text
+                      className="text-lg font-bold"
+                      style={{ color: Colors.textPrimary }}
+                    >
+                      Top Categories
+                    </Text>
+                    <Pressable className="flex-row items-center">
+                      <Text
+                        className="text-sm font-semibold"
+                        style={{ color: Colors.primary }}
+                      >
+                        View All
+                      </Text>
+                      <Ionicons
+                        name="chevron-forward"
+                        size={17}
+                        color={Colors.primary}
+                      />
+                    </Pressable>
+                  </View>
+                  
+                  {topCategories.length > 0 ? (
+                    <>
+                      <View className="mt-4 flex-row gap-1">
+                        {topCategories.map((cat, idx) => (
+                          <View
+                            key={idx}
+                            className="h-3 rounded-full"
+                            style={{ 
+                              backgroundColor: cat.color,
+                              flex: Math.max(cat.percentage, 5) // ensure it's at least visible
+                            }}
+                          />
+                        ))}
+                      </View>
+                      <View className="mt-5 flex-row justify-between flex-wrap gap-y-2">
+                        {topCategories.map((cat, idx) => (
+                          <View key={idx} className="flex-row items-center w-[48%] mb-2">
+                            <View
+                              className="mr-2 h-6 w-6 rounded-full"
+                              style={{ backgroundColor: cat.color }}
+                            />
+                            <Text
+                              className="text-sm"
+                              style={{ color: Colors.textPrimary }}
+                              numberOfLines={1}
+                            >
+                              {cat.label}{" "}
+                              <Text style={{ color: Colors.olive }}>{cat.percentage}%</Text>
+                            </Text>
+                          </View>
+                        ))}
+                      </View>
+                    </>
+                  ) : (
+                    <Text style={{ marginTop: 12, color: Colors.textSecondary }}>No category data available yet.</Text>
+                  )}
+                </View>
+
+                <View className="mt-7 flex-row items-center justify-between">
+                  <Text
+                    className="text-lg font-bold"
+                    style={{ color: Colors.textPrimary }}
+                  >
+                    Recent Transactions
+                  </Text>
                   <Text
                     className="text-sm font-semibold"
                     style={{ color: Colors.primary }}
                   >
-                    View All
+                    View All ›
                   </Text>
-                  <Ionicons
-                    name="chevron-forward"
-                    size={17}
-                    color={Colors.primary}
-                  />
-                </Pressable>
-              </View>
-              <View className="mt-4 flex-row gap-1">
-                <View
-                  className="h-3 flex-[76] rounded-full"
-                  style={{ backgroundColor: Colors.primary }}
-                />
-                <View
-                  className="h-3 flex-[14] rounded-full"
-                  style={{ backgroundColor: Colors.olive }}
-                />
-                <View
-                  className="h-3 flex-[10] rounded-full"
-                  style={{ backgroundColor: Colors.primaryLight }}
-                />
-              </View>
-              <View className="mt-5 flex-row justify-between">
-                {[
-                  ["Bills", "76%", Colors.primary],
-                  ["Travel", "14%", Colors.olive],
-                  ["Food", "10%", Colors.primaryLight],
-                ].map(([label, value, color]) => (
-                  <View key={label as string} className="flex-row items-center">
-                    <View
-                      className="mr-2 h-6 w-6 rounded-full"
-                      style={{ backgroundColor: color as string }}
-                    />
-                    <Text
-                      className="text-sm"
-                      style={{ color: Colors.textPrimary }}
-                    >
-                      {label}{" "}
-                      <Text style={{ color: Colors.olive }}>{value}</Text>
-                    </Text>
+                </View>
+                
+                {recentTransactions.length > 0 ? (
+                  recentTransactions.map((tx) => {
+                    const iconName = categoryIcons[tx.category || "Other"] || "pricetag-outline";
+                    return (
+                      <View
+                        key={String(tx.id)}
+                        className="mt-3 flex-row items-center rounded-3xl p-4"
+                        style={{ backgroundColor: Colors.white }}
+                      >
+                        <View
+                          className="mr-4 h-12 w-12 items-center justify-center rounded-full"
+                          style={{ backgroundColor: Colors.bgCard }}
+                        >
+                          <Ionicons name={iconName} size={21} color={Colors.primary} />
+                        </View>
+                        <View className="flex-1">
+                          <Text
+                            className="text-base font-semibold"
+                            style={{ color: Colors.textPrimary }}
+                            numberOfLines={1}
+                          >
+                            {tx.title || "Expense"}
+                          </Text>
+                          <Text
+                            className="mt-1 text-sm"
+                            style={{ color: Colors.textSecondary }}
+                          >
+                            {tx.category || "Other"} · {formatDate(tx.expense_date)}
+                          </Text>
+                        </View>
+                        <Text
+                          className="text-base font-bold"
+                          style={{ color: Colors.danger }}
+                        >
+                          - {formatAmount(tx.expense_amount ?? tx.amount ?? 0)}
+                        </Text>
+                      </View>
+                    );
+                  })
+                ) : (
+                  <View className="mt-3 rounded-3xl p-6 items-center" style={{ backgroundColor: Colors.white }}>
+                    <Text style={{ color: Colors.textSecondary }}>No recent transactions found.</Text>
                   </View>
-                ))}
-              </View>
-            </View>
-
-            <View className="mt-7 flex-row items-center justify-between">
-              <Text
-                className="text-lg font-bold"
-                style={{ color: Colors.textPrimary }}
-              >
-                Recent Transactions
-              </Text>
-              <Text
-                className="text-sm font-semibold"
-                style={{ color: Colors.primary }}
-              >
-                View All ›
-              </Text>
-            </View>
-            <View
-              className="mt-3 flex-row items-center rounded-3xl p-4"
-              style={{ backgroundColor: Colors.white }}
-            >
-              <View
-                className="mr-4 h-12 w-12 items-center justify-center rounded-full"
-                style={{ backgroundColor: Colors.bgCard }}
-              >
-                <Ionicons name="restaurant" size={21} color={Colors.primary} />
-              </View>
-              <View className="flex-1">
-                <Text
-                  className="text-base font-semibold"
-                  style={{ color: Colors.textPrimary }}
-                >
-                  Lunch with Friends
-                </Text>
-                <Text
-                  className="mt-1 text-sm"
-                  style={{ color: Colors.textSecondary }}
-                >
-                  Food · Sep 21, 2026
-                </Text>
-              </View>
-              <Text
-                className="text-base font-bold"
-                style={{ color: Colors.danger }}
-              >
-                - ₹350
-              </Text>
-            </View>
+                )}
+              </>
+            )}
           </View>
         </ScrollView>
       </View>

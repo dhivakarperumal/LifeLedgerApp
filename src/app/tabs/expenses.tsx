@@ -1198,6 +1198,133 @@ export default function Expenses() {
           </View>
         </View>
       </Modal>
+
+      {/* ── Filter Bottom Sheet ── */}
+      <Modal
+        visible={isFilterSheetVisible}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setIsFilterSheetVisible(false)}
+      >
+        <View
+          style={{
+            flex: 1,
+            backgroundColor: "rgba(0,0,0,0.5)",
+            justifyContent: "flex-end",
+          }}
+        >
+          <View
+            style={{
+              backgroundColor: "#FFFFFF",
+              borderTopLeftRadius: 30,
+              borderTopRightRadius: 30,
+              paddingHorizontal: 20,
+              paddingTop: 10,
+              paddingBottom: insets.bottom + 20,
+              maxHeight: "80%",
+            }}
+          >
+            {/* Drag handle */}
+            <View
+              style={{
+                width: 40,
+                height: 4,
+                borderRadius: 2,
+                backgroundColor: "#E2E8F0",
+                alignSelf: "center",
+                marginBottom: 16,
+              }}
+            />
+
+            <View
+              style={{
+                flexDirection: "row",
+                justifyContent: "space-between",
+                alignItems: "center",
+                marginBottom: 20,
+              }}
+            >
+              <Text
+                style={{ fontSize: 20, fontWeight: "800", color: "#1E293B" }}
+              >
+                Filter by Category
+              </Text>
+              <Pressable
+                onPress={() => setIsFilterSheetVisible(false)}
+                style={{
+                  width: 32,
+                  height: 32,
+                  borderRadius: 16,
+                  backgroundColor: "#F1F5F9",
+                  justifyContent: "center",
+                  alignItems: "center",
+                }}
+              >
+                <Ionicons name="close" size={16} color="#64748B" />
+              </Pressable>
+            </View>
+
+            <ScrollView showsVerticalScrollIndicator={false}>
+              <View
+                style={{
+                  flexDirection: "row",
+                  flexWrap: "wrap",
+                  gap: 10,
+                  marginBottom: 10,
+                }}
+              >
+                {["All", ...categoryOptions].map((category) => {
+                  const isSelected = selectedCategory === category;
+                  const icon =
+                    category === "All"
+                      ? "grid-outline"
+                      : categoryIcons[category] || "pricetag-outline";
+                  const accent = categoryAccents[category] || {
+                    bg: "#F3F4F6",
+                    color: "#6B7280",
+                  };
+
+                  return (
+                    <Pressable
+                      key={category}
+                      onPress={() => {
+                        setSelectedCategory(category);
+                        setIsFilterSheetVisible(false);
+                      }}
+                      style={{
+                        paddingHorizontal: 16,
+                        paddingVertical: 12,
+                        backgroundColor: isSelected ? "#1B4332" : "#F8FAFC",
+                        borderRadius: 16,
+                        borderWidth: 1.5,
+                        borderColor: isSelected ? "#1B4332" : "#E2E8F0",
+                        flexDirection: "row",
+                        alignItems: "center",
+                        gap: 8,
+                      }}
+                    >
+                      <Ionicons
+                        name={icon}
+                        size={16}
+                        color={isSelected ? "#FFFFFF" : accent.color}
+                      />
+                      <Text
+                        style={{
+                          color: isSelected ? "#FFFFFF" : "#374151",
+                          fontWeight: isSelected ? "700" : "600",
+                          fontSize: 14,
+                        }}
+                      >
+                        {category}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
