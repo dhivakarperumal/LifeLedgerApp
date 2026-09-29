@@ -1525,7 +1525,7 @@ export default function Diary() {
         style={{
           position: "absolute",
           right: 20,
-          bottom: 88,
+          bottom: 140,
           width: 58,
           height: 58,
           borderRadius: 29,

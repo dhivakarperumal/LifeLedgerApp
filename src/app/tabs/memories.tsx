@@ -1,31 +1,31 @@
 import { Ionicons } from "@expo/vector-icons";
 import {
-  AudioModule,
-  RecordingPresets,
-  setAudioModeAsync,
-  useAudioRecorder,
+    AudioModule,
+    RecordingPresets,
+    setAudioModeAsync,
+    useAudioRecorder,
 } from "expo-audio";
 import * as DocumentPicker from "expo-document-picker";
 import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import { useCallback, useMemo, useState } from "react";
 import {
-  ActivityIndicator,
-  Alert,
-  Image,
-  Modal,
-  Pressable,
-  ScrollView,
-  Text,
-  TextInput,
-  View,
+    ActivityIndicator,
+    Alert,
+    Image,
+    Modal,
+    Pressable,
+    ScrollView,
+    Text,
+    TextInput,
+    View,
 } from "react-native";
 import {
-  SafeAreaView,
-  useSafeAreaInsets,
+    SafeAreaView,
+    useSafeAreaInsets,
 } from "react-native-safe-area-context";
 import api, { API_BASE_URL, getApiErrorMessage, logoutUser } from "../../api";
-import { Colors } from "../../constants/colors";
 import { SearchBar } from "../../components/SearchBar";
+import { Colors } from "../../constants/colors";
 
 type Memory = {
   id: number | string;
@@ -837,7 +837,7 @@ export default function Memories() {
         style={{
           position: "absolute",
           right: 20,
-          bottom: 88,
+          bottom: 140,
           width: 58,
           height: 58,
           borderRadius: 29,
