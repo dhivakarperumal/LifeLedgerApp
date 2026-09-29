@@ -18,6 +18,13 @@ const accountItems: MoreRowItem[] = [
     iconColor: "#4D7CC4",
     iconBackground: "#EAF2FF",
   },
+    {
+    label: "Categories",
+    subtitle: "View money movement",
+    icon: "swap-horizontal-outline",
+    iconColor: "#D18B35",
+    iconBackground: "#FFF3E3",
+  },
   {
     label: "Monthly Income",
     subtitle: "Manage budget source",
@@ -150,6 +157,79 @@ export default function More() {
         >
           <Ionicons name="create-outline" size={18} color="#3B4450" />
         </Pressable>
+      </View>
+
+      <View
+        className="mb-5 overflow-hidden rounded-[24px] border border-[#E9EEF0] bg-white"
+        style={{
+          shadowColor: "#000000",
+          shadowOffset: { width: 0, height: 2 },
+          shadowOpacity: 0.06,
+          shadowRadius: 10,
+          elevation: 2,
+        }}
+      >
+        <View
+          className="flex-row items-center justify-between px-5 py-4"
+          style={{ backgroundColor: "#F7F3FF" }}
+        >
+          <View>
+            <Text
+              className="text-[10px] font-bold tracking-[1.4px] text-[#7C5CDA]"
+              style={{ fontFamily: "Roboto Condensed, sans-serif" }}
+            >
+              MEMBER CARD
+            </Text>
+            <Text
+              className="mt-1 text-[18px] font-bold text-[#1F2D2D]"
+              style={{ fontFamily: "Roboto Condensed, sans-serif" }}
+            >
+              Premium Access
+            </Text>
+          </View>
+          <View
+            className="h-11 w-11 items-center justify-center rounded-2xl"
+            style={{ backgroundColor: "#E9DEF8" }}
+          >
+            <Ionicons
+              name="shield-checkmark-outline"
+              size={22}
+              color="#5F3AC5"
+            />
+          </View>
+        </View>
+
+        <View className="flex-row gap-3 px-5 py-4">
+          <View className="flex-1 rounded-2xl border border-[#E9EEF0] bg-[#F6F8F7] p-3">
+            <Text
+              className="text-[10px] font-bold tracking-[1.2px] text-[#7B8589]"
+              style={{ fontFamily: "Roboto Condensed, sans-serif" }}
+            >
+              TOTAL
+            </Text>
+            <Text
+              className="mt-1 text-[24px] font-extrabold text-[#1F2D2D]"
+              style={{ fontFamily: "Roboto Condensed, sans-serif" }}
+            >
+              ₹24.8K
+            </Text>
+          </View>
+
+          <View className="flex-1 rounded-2xl border border-[#E9EEF0] bg-[#F4FBF7] p-3">
+            <Text
+              className="text-[10px] font-bold tracking-[1.2px] text-[#7B8589]"
+              style={{ fontFamily: "Roboto Condensed, sans-serif" }}
+            >
+              SAVED
+            </Text>
+            <Text
+              className="mt-1 text-[24px] font-extrabold text-[#1F2D2D]"
+              style={{ fontFamily: "Roboto Condensed, sans-serif" }}
+            >
+              ₹8.1K
+            </Text>
+          </View>
+        </View>
       </View>
 
       <Text
