@@ -1,5 +1,4 @@
 import { Ionicons } from "@expo/vector-icons";
-import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
 import {
@@ -142,21 +141,34 @@ export default function Expenses() {
         api.get("/categories"),
       ]);
 
-      const categories = Array.isArray(categoriesRes?.data)
+      const categoryRows = Array.isArray(categoriesRes?.data)
         ? categoriesRes.data
-            .map(
-              (category: any) =>
-                category?.name || category?.category || category,
-            )
-            .filter(Boolean)
-        : fallbackCategories;
+        : Array.isArray(categoriesRes?.data?.categories)
+          ? categoriesRes.data.categories
+          : Array.isArray(categoriesRes?.data?.data)
+            ? categoriesRes.data.data
+            : [];
+      const categories: string[] = categoryRows
+        .map((item: unknown): string => {
+          if (typeof item === "string") return item.trim();
+          if (!item || typeof item !== "object") return "";
 
+          const category = item as Record<string, unknown>;
+          const nestedCategory = category.category;
+          const name =
+            category.name ??
+            category.category_name ??
+            (typeof nestedCategory === "string"
+              ? nestedCategory
+              : (nestedCategory as Record<string, unknown> | undefined)
+                  ?.name) ??
+            category.title;
+
+          return typeof name === "string" ? name.trim() : "";
+        })
+        .filter((category: string) => category.length > 0);
       const acceptableCategories = categories.length
-        ? categories.filter(
-            (category: string) =>
-              fallbackCategories.includes(category) ||
-              category.trim().length > 0,
-          )
+        ? Array.from(new Set(categories))
         : fallbackCategories;
 
       setExpenses(Array.isArray(expensesRes?.data) ? expensesRes.data : []);
@@ -336,70 +348,10 @@ export default function Expenses() {
 
   return (
     <SafeAreaView
+      edges={["bottom"]}
       style={{ flex: 1, backgroundColor: Colors.contentBackground }}
     >
       <View style={{ flex: 1, backgroundColor: Colors.contentBackground }}>
-        <LinearGradient
-          colors={[Colors.headerStart, Colors.headerEnd]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={{ paddingTop: 18, paddingBottom: 18 }}
-        >
-          <View
-            style={{
-              paddingHorizontal: 18,
-              flexDirection: "row",
-              alignItems: "center",
-              justifyContent: "space-between",
-            }}
-          >
-            <View
-              style={{ flexDirection: "row", alignItems: "center", flex: 1 }}
-            >
-              <View
-                style={{
-                  width: 42,
-                  height: 42,
-                  borderRadius: 21,
-                  backgroundColor: "#F3F7F4",
-                  justifyContent: "center",
-                  alignItems: "center",
-                  marginRight: 10,
-                }}
-              >
-                <Text
-                  style={{
-                    fontSize: 22,
-                    fontWeight: "800",
-                    color: Colors.headerStart,
-                  }}
-                >
-                  L
-                </Text>
-              </View>
-              <Text
-                style={{ fontSize: 28, color: Colors.white, fontWeight: "800" }}
-              >
-                Expense
-              </Text>
-            </View>
-
-            <Pressable
-              onPress={() => setIsModalVisible(true)}
-              style={{
-                width: 38,
-                height: 38,
-                borderRadius: 19,
-                backgroundColor: "rgba(255,255,255,0.15)",
-                justifyContent: "center",
-                alignItems: "center",
-              }}
-            >
-              <Ionicons name="add" size={24} color={Colors.white} />
-            </Pressable>
-          </View>
-        </LinearGradient>
-
         <ScrollView
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{
@@ -408,6 +360,14 @@ export default function Expenses() {
             paddingBottom: insets.bottom + 120,
           }}
         >
+          <View
+            style={{
+              marginBottom: 14,
+            }}
+          >
+          
+          </View>
+
           <View
             style={{ flexDirection: "row", alignItems: "stretch", gap: 12 }}
           >
@@ -640,6 +600,33 @@ export default function Expenses() {
           </View>
         </ScrollView>
       </View>
+
+      <Pressable
+        onPress={() => setIsModalVisible(true)}
+        accessibilityRole="button"
+        accessibilityLabel="Add expense"
+        accessibilityHint="Opens the new expense form"
+        style={{
+          position: "absolute",
+          right: 20,
+          bottom: 88,
+          width: 58,
+          height: 58,
+          borderRadius: 29,
+          borderWidth: 2,
+          borderColor: "#B8C0BC",
+          backgroundColor: Colors.forest,
+          alignItems: "center",
+          justifyContent: "center",
+          shadowColor: "#000",
+          shadowOffset: { width: 0, height: 4 },
+          shadowOpacity: 0.2,
+          shadowRadius: 7,
+          elevation: 8,
+        }}
+      >
+        <Ionicons name="add" size={30} color={Colors.white} />
+      </Pressable>
 
       <Modal
         visible={isModalVisible}

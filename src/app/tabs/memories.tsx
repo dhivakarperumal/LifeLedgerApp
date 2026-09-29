@@ -554,21 +554,6 @@ export default function Memories() {
               Your moments, kept close
             </Text>
           </View>
-          <Pressable
-            onPress={openNewMemory}
-            accessibilityRole="button"
-            accessibilityLabel="Add memory"
-            style={{
-              width: 48,
-              height: 48,
-              borderRadius: 24,
-              alignItems: "center",
-              justifyContent: "center",
-              backgroundColor: Colors.forest,
-            }}
-          >
-            <Ionicons name="add" size={28} color={Colors.white} />
-          </Pressable>
         </View>
 
         <View
@@ -854,6 +839,33 @@ export default function Memories() {
           </View>
         )}
       </ScrollView>
+
+      <Pressable
+        onPress={openNewMemory}
+        accessibilityRole="button"
+        accessibilityLabel="Add memory"
+        accessibilityHint="Opens the new memory form"
+        style={{
+          position: "absolute",
+          right: 20,
+          bottom: 88,
+          width: 58,
+          height: 58,
+          borderRadius: 29,
+          borderWidth: 2,
+          borderColor: "#B8C0BC",
+          backgroundColor: Colors.forest,
+          alignItems: "center",
+          justifyContent: "center",
+          shadowColor: "#000",
+          shadowOffset: { width: 0, height: 4 },
+          shadowOpacity: 0.2,
+          shadowRadius: 7,
+          elevation: 8,
+        }}
+      >
+        <Ionicons name="add" size={30} color={Colors.white} />
+      </Pressable>
 
       <Modal
         visible={editorVisible}

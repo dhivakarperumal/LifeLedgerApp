@@ -85,10 +85,7 @@ export default function TabsLayout() {
           name="index"
           options={{ title: "Home", headerShown: false }}
         />
-        <Tabs.Screen
-          name="expenses"
-          options={{ title: "Expenses", headerShown: false }}
-        />
+        <Tabs.Screen name="expenses" options={{ title: "Expenses" }} />
         <Tabs.Screen
           name="memories"
           options={{
