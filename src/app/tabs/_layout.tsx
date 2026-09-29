@@ -4,12 +4,12 @@ import { NavigationBar } from "expo-navigation-bar";
 import { Tabs } from "expo-router";
 import { useState } from "react";
 import {
-  Image,
-  Platform,
-  Pressable,
-  StatusBar,
-  Text,
-  View,
+    Image,
+    Platform,
+    Pressable,
+    StatusBar,
+    Text,
+    View,
 } from "react-native";
 import { BottomTabBar } from "../../Navigations/BottomTabBar";
 import { Colors } from "../../constants/colors";
@@ -85,7 +85,10 @@ export default function TabsLayout() {
           name="index"
           options={{ title: "Home", headerShown: false }}
         />
-        <Tabs.Screen name="expenses" options={{ title: "Expenses" }} />
+        <Tabs.Screen
+          name="expenses"
+          options={{ title: "Expenses", headerShown: false }}
+        />
         <Tabs.Screen
           name="memories"
           options={{

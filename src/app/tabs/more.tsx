@@ -1,32 +1,192 @@
-import { Text, View } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { Pressable, ScrollView, Text, View } from "react-native";
 import { Colors } from "../../constants/colors";
+
+type MoreRowItem = {
+  label: string;
+  subtitle: string;
+  icon: keyof typeof Ionicons.glyphMap;
+  iconColor: string;
+  iconBackground: string;
+};
+
+const accountItems: MoreRowItem[] = [
+  {
+    label: "My Profile",
+    subtitle: "Edit personal details",
+    icon: "person-outline",
+    iconColor: "#4D7CC4",
+    iconBackground: "#EAF2FF",
+  },
+  {
+    label: "Monthly Income",
+    subtitle: "Manage budget source",
+    icon: "cash-outline",
+    iconColor: "#1F9D67",
+    iconBackground: "#E8F8F0",
+  },
+  {
+    label: "Transactions",
+    subtitle: "View money movement",
+    icon: "swap-horizontal-outline",
+    iconColor: "#D18B35",
+    iconBackground: "#FFF3E3",
+  },
+  {
+    label: "Calendar & Reminders",
+    subtitle: "Meetings, bills & tasks",
+    icon: "calendar-outline",
+    iconColor: "#1C7D61",
+    iconBackground: "#E8F5F1",
+  },
+  {
+    label: "Analytics & Reports",
+    subtitle: "Weekly, monthly & custom reports",
+    icon: "bar-chart-outline",
+    iconColor: "#4A6D87",
+    iconBackground: "#EEF4F8",
+  },
+];
+
+const appItems: MoreRowItem[] = [
+  {
+    label: "Settings",
+    subtitle: "Privacy & notifications",
+    icon: "settings-outline",
+    iconColor: "#4B5563",
+    iconBackground: "#EEF1F4",
+  },
+  {
+    label: "Backup & Export",
+    subtitle: "PDF, zip & cloud sync",
+    icon: "cloud-upload-outline",
+    iconColor: "#0E8AA5",
+    iconBackground: "#E5F9FF",
+  },
+];
+
+function MoreMenuRow({ item }: { item: MoreRowItem }) {
+  return (
+    <Pressable
+      className="mt-3 flex-row items-center rounded-2xl border border-[#E9EEF0] bg-white px-4 py-3.5"
+      style={{
+        shadowColor: "#000000",
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.04,
+        shadowRadius: 6,
+        elevation: 1,
+      }}
+    >
+      <View
+        className="mr-4 h-12 w-12 items-center justify-center rounded-xl"
+        style={{ backgroundColor: item.iconBackground }}
+      >
+        <Ionicons name={item.icon} size={24} color={item.iconColor} />
+      </View>
+
+      <View className="flex-1">
+        <Text
+          className="text-[17px] font-bold text-[#1F2D2D]"
+          style={{ fontFamily: "Roboto Condensed, sans-serif" }}
+        >
+          {item.label}
+        </Text>
+        <Text
+          className="mt-1 text-[12px] font-medium uppercase tracking-[0.9px] text-[#7B8589]"
+          style={{ fontFamily: "Roboto Condensed, sans-serif" }}
+        >
+          {item.subtitle}
+        </Text>
+      </View>
+
+      <Ionicons name="chevron-forward" size={20} color="#8E969B" />
+    </Pressable>
+  );
+}
 
 export default function More() {
   return (
-    <View
-      className="flex-1 px-6 py-8"
-      style={{ backgroundColor: Colors.contentBackground }}
+    <ScrollView
+      showsVerticalScrollIndicator={false}
+      contentContainerStyle={{
+        paddingHorizontal: 18,
+        paddingTop: 20,
+        paddingBottom: 80,
+        backgroundColor: Colors.contentBackground,
+      }}
+      style={{ flex: 1, backgroundColor: Colors.contentBackground }}
     >
-      <Text className="text-3xl font-bold" style={{ color: Colors.forest }}>
-        More
-      </Text>
-      <Text className="mt-2 text-base" style={{ color: Colors.sage }}>
-        Manage your preferences and make Life Ledger yours.
-      </Text>
-      <View
-        className="mt-8 rounded-3xl p-5"
-        style={{ backgroundColor: Colors.white }}
-      >
-        <Text
-          className="text-lg font-semibold"
-          style={{ color: Colors.forest }}
+      <View className="mb-4 flex-row items-center justify-between">
+        <View className="flex-row items-center">
+          <View className="mr-3 h-14 w-14 items-center justify-center rounded-xl bg-[#2F4E39]">
+            <Text
+              className="text-[30px] font-extrabold text-white"
+              style={{ fontFamily: "Roboto Condensed, sans-serif" }}
+            >
+              D
+            </Text>
+          </View>
+
+          <View>
+            <Text
+              className="text-[20px] font-bold text-[#1E2A2F]"
+              style={{ fontFamily: "Roboto Condensed, sans-serif" }}
+            >
+              Dhivakar P
+            </Text>
+            <Text
+              className="text-[10px] font-bold tracking-[1.5px] text-[#6E7A7F]"
+              style={{ fontFamily: "Roboto Condensed, sans-serif" }}
+            >
+              PREMIUM MEMBER
+            </Text>
+          </View>
+        </View>
+
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Edit profile"
+          className="h-10 w-10 items-center justify-center rounded-full bg-[#E9EEF0]"
         >
-          Settings
-        </Text>
-        <Text className="mt-1" style={{ color: Colors.sage }}>
-          More tools and preferences will live here.
-        </Text>
+          <Ionicons name="create-outline" size={18} color="#3B4450" />
+        </Pressable>
       </View>
-    </View>
+
+      <Text
+        className="mt-3 mb-2 text-[11px] font-bold tracking-[1.5px] text-[#6A7176]"
+        style={{ fontFamily: "Roboto Condensed, sans-serif" }}
+      >
+        ACCOUNT MANAGEMENT
+      </Text>
+
+      {accountItems.map((item) => (
+        <MoreMenuRow key={item.label} item={item} />
+      ))}
+
+      <Text
+        className="mt-5 mb-2 text-[11px] font-bold tracking-[1.5px] text-[#6A7176]"
+        style={{ fontFamily: "Roboto Condensed, sans-serif" }}
+      >
+        APP SETTINGS
+      </Text>
+
+      {appItems.map((item) => (
+        <MoreMenuRow key={item.label} item={item} />
+      ))}
+
+      <Pressable
+        className="mt-8 mb-4 flex-row items-center justify-center rounded-2xl border border-[#F0B7B7] bg-[#FBEAEA] px-5 py-4"
+        accessibilityRole="button"
+        accessibilityLabel="Sign out"
+      >
+        <Ionicons name="log-out-outline" size={20} color="#DD4B4B" />
+        <Text
+          className="ml-3 text-[16px] font-bold text-[#D94A4A]"
+          style={{ fontFamily: "Roboto Condensed, sans-serif" }}
+        >
+          SIGN OUT ACCOUNT
+        </Text>
+      </Pressable>
+    </ScrollView>
   );
 }
