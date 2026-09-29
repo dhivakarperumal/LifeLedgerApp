@@ -260,7 +260,9 @@ export default function More() {
                 ? () => router.push("/categories")
                 : item.label === "Monthly Income"
                   ? () => router.push("/income")
-                  : undefined
+                  : item.label === "Transfers & Transactions"
+                    ? () => router.push("/transfers")
+                    : undefined
           }
         />
       ))}
