@@ -544,16 +544,7 @@ export default function Memories() {
             marginBottom: 16,
           }}
         >
-          <View>
-            <Text
-              style={{ color: Colors.forest, fontSize: 27, fontWeight: "800" }}
-            >
-              Memories
-            </Text>
-            <Text style={{ color: Colors.sage, fontSize: 14, marginTop: 3 }}>
-              Your moments, kept close
-            </Text>
-          </View>
+         
         </View>
 
         <View

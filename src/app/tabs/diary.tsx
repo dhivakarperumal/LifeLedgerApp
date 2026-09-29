@@ -708,21 +708,6 @@ export default function Diary() {
               Make a little room for today.
             </Text>
           </View>
-          <Pressable
-            onPress={openNewEntry}
-            accessibilityRole="button"
-            accessibilityLabel="Write diary entry"
-            style={{
-              width: 48,
-              height: 48,
-              borderRadius: 24,
-              alignItems: "center",
-              justifyContent: "center",
-              backgroundColor: Colors.forest,
-            }}
-          >
-            <Ionicons name="create-outline" size={23} color={Colors.white} />
-          </Pressable>
         </View>
 
         <View style={{ flexDirection: "row", gap: 9, marginBottom: 15 }}>
@@ -1091,6 +1076,33 @@ export default function Diary() {
           ))
         )}
       </ScrollView>
+
+      <Pressable
+        onPress={openNewEntry}
+        accessibilityRole="button"
+        accessibilityLabel="Write diary entry"
+        accessibilityHint="Opens a new diary entry"
+        style={{
+          position: "absolute",
+          right: 20,
+          bottom: 88,
+          width: 58,
+          height: 58,
+          borderRadius: 29,
+          borderWidth: 2,
+          borderColor: "#B8C0BC",
+          backgroundColor: Colors.forest,
+          alignItems: "center",
+          justifyContent: "center",
+          shadowColor: "#000",
+          shadowOffset: { width: 0, height: 4 },
+          shadowOpacity: 0.2,
+          shadowRadius: 7,
+          elevation: 8,
+        }}
+      >
+        <Ionicons name="add" size={30} color={Colors.white} />
+      </Pressable>
 
       <Modal
         visible={editorVisible}
