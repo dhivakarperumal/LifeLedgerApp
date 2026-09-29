@@ -32,7 +32,13 @@
           "imageWidth": 76
         }
       ],
-      ["./plugins/withAndroidNavigationBarColor.js"]
+      ["./plugins/withAndroidNavigationBarColor.js"],
+      [
+        "expo-audio",
+        {
+          "microphonePermission": "Allow Life Ledger to record voice notes."
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,
