@@ -269,6 +269,10 @@ export default function Diary() {
     null,
   );
   const [dateDraft, setDateDraft] = useState(new Date());
+  const [entryPickerField, setEntryPickerField] = useState<
+    "date" | "time" | null
+  >(null);
+  const [entryPickerDraft, setEntryPickerDraft] = useState(new Date());
   const [editorVisible, setEditorVisible] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<number | null>(null);
@@ -726,6 +730,30 @@ export default function Diary() {
     else setDateTo(value);
   };
 
+  const openEntryPicker = (field: "date" | "time") => {
+    const nextDate =
+      field === "date"
+        ? parseDateKey(form.entry_date) || new Date()
+        : new Date();
+    if (field === "time" && /^\d{2}:\d{2}$/.test(form.entry_time)) {
+      const [hours, minutes] = form.entry_time.split(":").map(Number);
+      nextDate.setHours(hours, minutes, 0, 0);
+    }
+    setEntryPickerDraft(nextDate);
+    setEntryPickerField(field);
+  };
+
+  const applyEntryPicker = (field: "date" | "time", date: Date) => {
+    if (field === "date") {
+      updateForm("entry_date", dateKey(date));
+    } else {
+      updateForm(
+        "entry_time",
+        `${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`,
+      );
+    }
+  };
+
   return (
     <SafeAreaView
       edges={["bottom"]}
@@ -1114,6 +1142,20 @@ export default function Diary() {
         />
       ) : null}
 
+      {Platform.OS === "android" && entryPickerField ? (
+        <DateTimePicker
+          value={entryPickerDraft}
+          mode={entryPickerField}
+          display="default"
+          onChange={(event, date) => {
+            if (event.type === "set" && date && entryPickerField) {
+              applyEntryPicker(entryPickerField, date);
+            }
+            setEntryPickerField(null);
+          }}
+        />
+      ) : null}
+
       <Modal
         visible={Platform.OS === "ios" && datePickerField !== null}
         transparent
@@ -1188,6 +1230,81 @@ export default function Diary() {
                 }
                 onChange={(_, date) => {
                   if (date) setDateDraft(date);
+                }}
+              />
+            ) : null}
+          </View>
+        </View>
+      </Modal>
+
+      <Modal
+        visible={Platform.OS === "ios" && entryPickerField !== null}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setEntryPickerField(null)}
+      >
+        <View
+          style={{
+            flex: 1,
+            justifyContent: "flex-end",
+            backgroundColor: "rgba(14,31,26,0.48)",
+          }}
+        >
+          <View
+            style={{
+              paddingHorizontal: 18,
+              paddingTop: 16,
+              paddingBottom: insets.bottom + 12,
+              borderTopLeftRadius: 22,
+              borderTopRightRadius: 22,
+              backgroundColor: Colors.white,
+            }}
+          >
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "space-between",
+              }}
+            >
+              <Pressable onPress={() => setEntryPickerField(null)}>
+                <Text style={{ color: Colors.sage, fontSize: 15 }}>Cancel</Text>
+              </Pressable>
+              <Text
+                style={{
+                  color: Colors.forest,
+                  fontSize: 16,
+                  fontWeight: "700",
+                }}
+              >
+                Select {entryPickerField === "date" ? "date" : "time"}
+              </Text>
+              <Pressable
+                onPress={() => {
+                  if (entryPickerField) {
+                    applyEntryPicker(entryPickerField, entryPickerDraft);
+                  }
+                  setEntryPickerField(null);
+                }}
+              >
+                <Text
+                  style={{
+                    color: Colors.forest,
+                    fontSize: 15,
+                    fontWeight: "700",
+                  }}
+                >
+                  Done
+                </Text>
+              </Pressable>
+            </View>
+            {entryPickerField ? (
+              <DateTimePicker
+                value={entryPickerDraft}
+                mode={entryPickerField}
+                display="spinner"
+                onChange={(_, date) => {
+                  if (date) setEntryPickerDraft(date);
                 }}
               />
             ) : null}
@@ -1469,22 +1586,19 @@ export default function Diary() {
                 placeholder="A title for today"
               />
               <View style={{ flexDirection: "row", gap: 9 }}>
-                <View style={{ flex: 1 }}>
-                  <FormField
-                    label="Date"
-                    value={form.entry_date}
-                    onChangeText={(value) => updateForm("entry_date", value)}
-                    placeholder="YYYY-MM-DD"
-                  />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <FormField
-                    label="Time"
-                    value={form.entry_time}
-                    onChangeText={(value) => updateForm("entry_time", value)}
-                    placeholder="HH:MM"
-                  />
-                </View>
+                <DateRangeButton
+                  label="Date"
+                  value={form.entry_date}
+                  displayValue={formatDate(form.entry_date)}
+                  onPress={() => openEntryPicker("date")}
+                />
+                <DateRangeButton
+                  label="Time"
+                  value={form.entry_time}
+                  displayValue={form.entry_time || "Select time"}
+                  icon="time-outline"
+                  onPress={() => openEntryPicker("time")}
+                />
               </View>
 
               <Text style={labelStyle}>Mood</Text>
@@ -1757,10 +1871,14 @@ export default function Diary() {
 function DateRangeButton({
   label,
   value,
+  displayValue,
+  icon = "calendar-outline",
   onPress,
 }: {
   label: string;
   value: string;
+  displayValue?: string;
+  icon?: keyof typeof Ionicons.glyphMap;
   onPress: () => void;
 }) {
   return (
@@ -1769,7 +1887,7 @@ function DateRangeButton({
       <Pressable
         onPress={onPress}
         accessibilityRole="button"
-        accessibilityLabel={`${label} date: ${value ? formatDate(value) : "not selected"}`}
+        accessibilityLabel={`${label}: ${displayValue || (value ? formatDate(value) : "not selected")}`}
         style={{
           minHeight: 46,
           flexDirection: "row",
@@ -1782,12 +1900,13 @@ function DateRangeButton({
           backgroundColor: Colors.white,
         }}
       >
-        <Ionicons name="calendar-outline" size={17} color={Colors.forest} />
+        <Ionicons name={icon} size={17} color={Colors.forest} />
         <Text
           numberOfLines={1}
           style={{ flex: 1, color: Colors.textPrimary, fontSize: 13 }}
         >
-          {value ? formatDate(value) : `Select ${label.toLowerCase()}`}
+          {displayValue ||
+            (value ? formatDate(value) : `Select ${label.toLowerCase()}`)}
         </Text>
       </Pressable>
     </View>
