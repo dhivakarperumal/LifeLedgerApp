@@ -6,7 +6,7 @@ import {
   useAudioRecorder,
 } from "expo-audio";
 import * as DocumentPicker from "expo-document-picker";
-import { useFocusEffect, useRouter } from "expo-router";
+import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import { useCallback, useMemo, useState } from "react";
 import {
   ActivityIndicator,
@@ -174,6 +174,10 @@ function getCategoryType(category: MemoryCategory) {
 export default function Memories() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const { edit: rawEditId } = useLocalSearchParams<{
+    edit?: string | string[];
+  }>();
+  const editId = Array.isArray(rawEditId) ? rawEditId[0] : rawEditId;
   const recorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
   const [memories, setMemories] = useState<Memory[]>([]);
   const [categories, setCategories] = useState<MemoryCategory[]>([]);
@@ -293,6 +297,18 @@ export default function Memories() {
     setNewMedia([]);
     setEditorVisible(true);
   };
+
+  useFocusEffect(
+    useCallback(() => {
+      if (!editId) return;
+      const target = memories.find(
+        (memory) => String(memory.id) === String(editId),
+      );
+      if (!target) return;
+      openEditMemory(target);
+      router.setParams({ edit: undefined });
+    }, [editId, memories, router]),
+  );
 
   const pickMedia = async () => {
     try {

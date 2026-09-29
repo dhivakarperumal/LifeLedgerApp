@@ -252,6 +252,14 @@ export default function MemoryDetails() {
     ]);
   };
 
+  const editMemory = () => {
+    if (!memory) return;
+    router.push({
+      pathname: "/tabs/memories",
+      params: { edit: String(memory.id) },
+    });
+  };
+
   const goBack = () => {
     if (router.canGoBack()) router.back();
     else router.replace("/tabs/memories");
@@ -335,6 +343,9 @@ export default function MemoryDetails() {
                 size={19}
                 color={favorite ? Colors.accent : Colors.white}
               />
+            </HeaderAction>
+            <HeaderAction label="Edit memory" onPress={editMemory}>
+              <Ionicons name="create-outline" size={19} color={Colors.white} />
             </HeaderAction>
             <HeaderAction label="Delete memory" onPress={deleteMemory}>
               <Ionicons name="trash-outline" size={19} color={Colors.white} />
