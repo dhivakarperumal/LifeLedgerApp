@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { LinearGradient } from "expo-linear-gradient";
-import { useFocusEffect } from "expo-router";
+import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
 import { Pressable, ScrollView, Text, View, ActivityIndicator } from "react-native";
 import {
@@ -90,6 +90,7 @@ function EmptyStateCard({ message }: { message: string }) {
 }
 
 export default function Index() {
+  const router = useRouter();
   const insets = useSafeAreaInsets();
   const [currentTime, setCurrentTime] = useState(() => new Date());
   const [userName, setUserName] = useState("there");
@@ -376,15 +377,22 @@ export default function Index() {
           </LinearGradient>
 
           <View className="-mt-8 px-5">
-            <View className="flex-row justify-between">
+            <View className="flex-row flex-wrap justify-between gap-y-4">
               {[
-                ["wallet", "Expense"],
-                ["book", "Diary"],
-                ["calendar", "Event"],
-                ["image", "Memory"],
-                ["swap-horizontal", "Transfer"],
-              ].map(([icon, label]) => (
-                <Pressable key={label} className="flex-1 items-center">
+                { icon: "wallet", label: "Expense", route: "/tabs/expenses" },
+                { icon: "book", label: "Diary", route: "/tabs/diary" },
+                { icon: "image", label: "Memory", route: "/tabs/memories" },
+                { icon: "swap-horizontal", label: "Transfer", route: "/transfers" },
+                { icon: "cash", label: "Income", route: "/income" },
+                { icon: "grid", label: "Category", route: "/categories" },
+                { icon: "calendar", label: "Event", route: "/events" },
+                { icon: "pie-chart", label: "Report", route: "/reports" },
+              ].map(({ icon, label, route }) => (
+                <Pressable
+                  key={label}
+                  className="w-[22%] items-center"
+                  onPress={() => router.push(route as any)}
+                >
                   <View
                     className="h-14 w-14 items-center justify-center rounded-2xl"
                     style={{

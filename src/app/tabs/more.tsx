@@ -161,6 +161,7 @@ export default function More() {
         </View>
 
         <Pressable
+          onPress={() => router.push("/profile")}
           accessibilityRole="button"
           accessibilityLabel="Edit profile"
           className="h-10 w-10 items-center justify-center rounded-full bg-[#E9EEF0]"
@@ -262,7 +263,9 @@ export default function More() {
                   ? () => router.push("/income")
                   : item.label === "Transfers & Transactions"
                     ? () => router.push("/transfers")
-                    : undefined
+                    : item.label === "Analytics & Reports"
+                      ? () => router.push("/reports")
+                      : undefined
           }
         />
       ))}
