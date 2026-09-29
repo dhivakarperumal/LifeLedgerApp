@@ -25,6 +25,7 @@ import {
 } from "react-native-safe-area-context";
 import api, { API_BASE_URL, getApiErrorMessage, logoutUser } from "../../api";
 import { Colors } from "../../constants/colors";
+import { SearchBar } from "../../components/SearchBar";
 
 type Memory = {
   id: number | string;
@@ -558,47 +559,15 @@ export default function Memories() {
           }}
         ></View>
 
-        <View
-          style={{
-            flexDirection: "row",
-            alignItems: "center",
-            borderRadius: 16,
-            backgroundColor: Colors.white,
-            borderWidth: 1,
-            borderColor: "#DCE7E2",
-            paddingHorizontal: 13,
-            marginBottom: 14,
-          }}
-        >
-          <Ionicons name="search-outline" size={20} color={Colors.sage} />
-          <TextInput
-            value={search}
-            onChangeText={setSearch}
-            placeholder="Search moments, places..."
-            placeholderTextColor="#8B9994"
-            style={{
-              flex: 1,
-              height: 48,
-              paddingHorizontal: 10,
-              color: Colors.textPrimary,
-              fontSize: 15,
-            }}
-          />
-          <Pressable
-            onPress={() => setFavoriteOnly((value) => !value)}
-            accessibilityRole="button"
-            accessibilityLabel={
-              favoriteOnly ? "Show all memories" : "Show favorite memories"
-            }
-            style={{ padding: 7 }}
-          >
-            <Ionicons
-              name={favoriteOnly ? "heart" : "heart-outline"}
-              size={21}
-              color={favoriteOnly ? "#D64555" : Colors.sage}
-            />
-          </Pressable>
-        </View>
+        <SearchBar
+          value={search}
+          onChangeText={setSearch}
+          placeholder="Search moments, places..."
+          onFilterPress={() => setFavoriteOnly((value) => !value)}
+          filterActive={favoriteOnly}
+          filterIcon={favoriteOnly ? "heart" : "heart-outline"}
+          style={{ marginBottom: 14 }}
+        />
 
         <ScrollView
           horizontal

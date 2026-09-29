@@ -1,7 +1,9 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
+import { useState } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
 import { Colors } from "../../constants/colors";
+import { SearchBar } from "../../components/SearchBar";
 
 type MoreRowItem = {
   label: string;
@@ -121,6 +123,23 @@ function MoreMenuRow({
 
 export default function More() {
   const router = useRouter();
+  const [search, setSearch] = useState("");
+
+  const query = search.trim().toLowerCase();
+
+  const filteredAccount = accountItems.filter(
+    (item) =>
+      !query ||
+      item.label.toLowerCase().includes(query) ||
+      item.subtitle.toLowerCase().includes(query),
+  );
+
+  const filteredApp = appItems.filter(
+    (item) =>
+      !query ||
+      item.label.toLowerCase().includes(query) ||
+      item.subtitle.toLowerCase().includes(query),
+  );
 
   return (
     <ScrollView
@@ -169,6 +188,16 @@ export default function More() {
           <Ionicons name="create-outline" size={18} color="#3B4450" />
         </Pressable>
       </View>
+
+      {/* Search bar */}
+      <SearchBar
+        value={search}
+        onChangeText={setSearch}
+        placeholder="Search settings, features..."
+        style={{ marginBottom: 16 }}
+      />
+
+
 
       <View
         className="mb-5 overflow-hidden rounded-[24px] border border-[#E9EEF0] bg-white"
@@ -250,7 +279,7 @@ export default function More() {
         ACCOUNT MANAGEMENT
       </Text>
 
-      {accountItems.map((item) => (
+      {filteredAccount.map((item) => (
         <MoreMenuRow
           key={item.label}
           item={item}
@@ -263,9 +292,11 @@ export default function More() {
                   ? () => router.push("/income")
                   : item.label === "Transfers & Transactions"
                     ? () => router.push("/transfers")
-                    : item.label === "Analytics & Reports"
-                      ? () => router.push("/reports")
-                      : undefined
+                    : item.label === "Calendar & Reminders"
+                      ? () => router.push("/calendar")
+                      : item.label === "Analytics & Reports"
+                        ? () => router.push("/reports")
+                        : undefined
           }
         />
       ))}
@@ -277,7 +308,7 @@ export default function More() {
         APP SETTINGS
       </Text>
 
-      {appItems.map((item) => (
+      {filteredApp.map((item) => (
         <MoreMenuRow key={item.label} item={item} />
       ))}
 

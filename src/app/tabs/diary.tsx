@@ -32,6 +32,7 @@ import {
 } from "react-native-safe-area-context";
 import api, { getApiErrorMessage, logoutUser } from "../../api";
 import { Colors } from "../../constants/colors";
+import { SearchBar } from "../../components/SearchBar";
 
 type DiaryEntry = {
   id: number | string;
@@ -798,33 +799,16 @@ export default function Diary() {
           }}
         ></View>
 
-        <View
-          style={{
-            flexDirection: "row",
-            alignItems: "center",
-            borderRadius: 14,
-            borderWidth: 1,
-            borderColor: "#DCE7E2",
-            backgroundColor: Colors.white,
-            paddingHorizontal: 12,
-            marginBottom: 12,
-          }}
-        >
-          <Ionicons name="search-outline" size={19} color={Colors.sage} />
-          <TextInput
-            value={search}
-            onChangeText={setSearch}
-            placeholder="Search title, mood, tags..."
-            placeholderTextColor="#899791"
-            style={{
-              flex: 1,
-              height: 46,
-              paddingHorizontal: 9,
-              color: Colors.textPrimary,
-              fontSize: 14,
-            }}
-          />
-        </View>
+        <SearchBar
+          value={search}
+          onChangeText={setSearch}
+          placeholder="Search title, mood, tags..."
+          onFilterPress={() => setFilterMenuVisible(true)}
+          filterActive={selectedFilter !== "all"}
+          filterIcon="filter-outline"
+          style={{ marginBottom: 12 }}
+        />
+
 
         <Pressable
           onPress={() => setFilterMenuVisible(true)}
@@ -850,6 +834,7 @@ export default function Diary() {
           </Text>
           <Ionicons name="chevron-down" size={18} color={Colors.sage} />
         </Pressable>
+
 
         {selectedFilter === "range" ? (
           <View style={{ marginBottom: 10 }}>

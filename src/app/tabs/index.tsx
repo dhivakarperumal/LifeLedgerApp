@@ -426,7 +426,6 @@ export default function Index() {
           </View>
 
           <View className="px-5">
-
             {isLoading ? (
               <View style={{ marginTop: 60, alignItems: "center" }}>
                 <ActivityIndicator size="large" color={Colors.primary} />

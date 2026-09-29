@@ -16,6 +16,7 @@ import {
   useSafeAreaInsets,
 } from "react-native-safe-area-context";
 import api, { getApiErrorMessage, logoutUser } from "../../api";
+import { SearchBar } from "../../components/SearchBar";
 
 type ExpenseItem = {
   id: number | string;
@@ -398,84 +399,14 @@ export default function Expenses() {
           }}
         >
           {/* ── Search bar + Filter button ── */}
-          <View style={{ flexDirection: "row", gap: 10, marginBottom: 12 }}>
-            {/* Search input */}
-            <View
-              style={{
-                flex: 1,
-                backgroundColor: "#FFFFFF",
-                borderRadius: 16,
-                paddingHorizontal: 14,
-                paddingVertical: 12,
-                flexDirection: "row",
-                alignItems: "center",
-                shadowColor: "#000",
-                shadowOffset: { width: 0, height: 2 },
-                shadowOpacity: 0.06,
-                shadowRadius: 8,
-                elevation: 3,
-              }}
-            >
-              <Ionicons name="search-outline" size={20} color="#94A3B8" />
-              <TextInput
-                value={search}
-                onChangeText={setSearch}
-                placeholder="Search expenses…"
-                placeholderTextColor="#94A3B8"
-                style={{
-                  flex: 1,
-                  marginLeft: 10,
-                  fontSize: 15,
-                  color: "#1E293B",
-                }}
-              />
-              {search.length > 0 && (
-                <Pressable onPress={() => setSearch("")} hitSlop={8}>
-                  <Ionicons name="close-circle" size={18} color="#94A3B8" />
-                </Pressable>
-              )}
-            </View>
-
-            {/* Filter button */}
-            <Pressable
-              onPress={() => setIsFilterSheetVisible(true)}
-              style={{
-                width: 50,
-                height: 50,
-                borderRadius: 16,
-                backgroundColor:
-                  selectedCategory !== "All" ? "#1B4332" : "#FFFFFF",
-                justifyContent: "center",
-                alignItems: "center",
-                shadowColor: selectedCategory !== "All" ? "#1B4332" : "#000",
-                shadowOffset: { width: 0, height: 2 },
-                shadowOpacity: selectedCategory !== "All" ? 0.35 : 0.06,
-                shadowRadius: selectedCategory !== "All" ? 8 : 6,
-                elevation: selectedCategory !== "All" ? 8 : 3,
-              }}
-            >
-              <Ionicons
-                name="options-outline"
-                size={22}
-                color={selectedCategory !== "All" ? "#FFFFFF" : "#475569"}
-              />
-              {selectedCategory !== "All" && (
-                <View
-                  style={{
-                    position: "absolute",
-                    top: 8,
-                    right: 8,
-                    width: 8,
-                    height: 8,
-                    borderRadius: 4,
-                    backgroundColor: "#52D58E",
-                    borderWidth: 1.5,
-                    borderColor: "#1B4332",
-                  }}
-                />
-              )}
-            </Pressable>
-          </View>
+          <SearchBar
+            value={search}
+            onChangeText={setSearch}
+            placeholder="Search expenses…"
+            onFilterPress={() => setIsFilterSheetVisible(true)}
+            filterActive={selectedCategory !== "All"}
+            style={{ marginBottom: 12 }}
+          />
 
           {/* Active filter chip */}
           {selectedCategory !== "All" && (
