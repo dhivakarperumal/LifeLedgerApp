@@ -1,4 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
+import DateTimePicker from "@react-native-community/datetimepicker";
 import {
   AudioModule,
   RecordingPresets,
@@ -12,6 +13,7 @@ import {
   ActivityIndicator,
   Alert,
   Modal,
+  Platform,
   Pressable,
   ScrollView,
   Text,
@@ -94,6 +96,7 @@ const entryFilters = [
   "drafts",
   "month",
   "year",
+  "range",
 ] as const;
 type EntryFilter = (typeof entryFilters)[number];
 const entryFilterLabels: Record<EntryFilter, string> = {
@@ -103,11 +106,27 @@ const entryFilterLabels: Record<EntryFilter, string> = {
   drafts: "Drafts",
   month: "This month",
   year: "This year",
+  range: "Custom range",
 };
 
 function todayKey() {
   const now = new Date();
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+}
+
+function dateKey(date: Date) {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+}
+
+function parseDateKey(value: string) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return undefined;
+  const [year, month, day] = value.split("-").map(Number);
+  const date = new Date(year, month - 1, day);
+  return date.getFullYear() === year &&
+    date.getMonth() === month - 1 &&
+    date.getDate() === day
+    ? date
+    : undefined;
 }
 
 function getList<T>(data: any, key: string): T[] {
@@ -244,7 +263,12 @@ export default function Diary() {
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [selectedMood, setSelectedMood] = useState("all");
   const [moodMenuVisible, setMoodMenuVisible] = useState(false);
-  const [selectedDate, setSelectedDate] = useState("");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
+  const [datePickerField, setDatePickerField] = useState<"from" | "to" | null>(
+    null,
+  );
+  const [dateDraft, setDateDraft] = useState(new Date());
   const [editorVisible, setEditorVisible] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<number | null>(null);
@@ -347,9 +371,11 @@ export default function Diary() {
           entry.category_name === selectedCategory;
         const moodMatches =
           selectedMood === "all" || entry.mood === selectedMood;
+        const entryDate = String(entry.entry_date || "").slice(0, 10);
         const dateMatches =
-          !selectedDate ||
-          String(entry.entry_date || "").slice(0, 10) === selectedDate;
+          selectedFilter !== "range" ||
+          ((!dateFrom || entryDate >= dateFrom) &&
+            (!dateTo || entryDate <= dateTo));
         const searchMatches =
           !term ||
           [
@@ -382,7 +408,8 @@ export default function Diary() {
     selectedFilter,
     selectedCategory,
     selectedMood,
-    selectedDate,
+    dateFrom,
+    dateTo,
   ]);
 
   const openNewEntry = () => {
@@ -687,6 +714,18 @@ export default function Diary() {
     setForm((current) => ({ ...current, [key]: value }));
   };
 
+  const openDatePicker = (field: "from" | "to") => {
+    const currentValue = field === "from" ? dateFrom : dateTo;
+    setDateDraft(parseDateKey(currentValue) || new Date());
+    setDatePickerField(field);
+  };
+
+  const applyRangeDate = (field: "from" | "to", date: Date) => {
+    const value = dateKey(date);
+    if (field === "from") setDateFrom(value);
+    else setDateTo(value);
+  };
+
   return (
     <SafeAreaView
       edges={["bottom"]}
@@ -762,31 +801,43 @@ export default function Diary() {
           <Ionicons name="chevron-down" size={18} color={Colors.sage} />
         </Pressable>
 
-        <View style={{ flexDirection: "row", gap: 8, marginBottom: 9 }}>
-          <TextInput
-            value={selectedDate}
-            onChangeText={setSelectedDate}
-            placeholder="Filter date YYYY-MM-DD"
-            placeholderTextColor="#899791"
-            style={{ ...inputStyle, flex: 1, minHeight: 42 }}
-          />
-          <Pressable
-            onPress={() => setSelectedDate("")}
-            accessibilityRole="button"
-            accessibilityLabel="Clear date filter"
-            style={{
-              width: 42,
-              alignItems: "center",
-              justifyContent: "center",
-              borderRadius: 12,
-              backgroundColor: Colors.white,
-              borderWidth: 1,
-              borderColor: "#DCE7E2",
-            }}
-          >
-            <Ionicons name="close" size={19} color={Colors.sage} />
-          </Pressable>
-        </View>
+        {selectedFilter === "range" ? (
+          <View style={{ marginBottom: 10 }}>
+            <View style={{ flexDirection: "row", gap: 9 }}>
+              <DateRangeButton
+                label="From"
+                value={dateFrom}
+                onPress={() => openDatePicker("from")}
+              />
+              <DateRangeButton
+                label="To"
+                value={dateTo}
+                onPress={() => openDatePicker("to")}
+              />
+            </View>
+            {dateFrom || dateTo ? (
+              <Pressable
+                onPress={() => {
+                  setDateFrom("");
+                  setDateTo("");
+                }}
+                accessibilityRole="button"
+                accessibilityLabel="Clear custom date range"
+                style={{ alignSelf: "flex-end", paddingVertical: 7 }}
+              >
+                <Text
+                  style={{
+                    color: Colors.sage,
+                    fontSize: 12,
+                    fontWeight: "600",
+                  }}
+                >
+                  Clear dates
+                </Text>
+              </Pressable>
+            ) : null}
+          </View>
+        ) : null}
 
         <ScrollView
           horizontal
@@ -1042,6 +1093,107 @@ export default function Diary() {
           ))
         )}
       </ScrollView>
+
+      {Platform.OS === "android" && datePickerField ? (
+        <DateTimePicker
+          value={dateDraft}
+          mode="date"
+          display="default"
+          minimumDate={
+            datePickerField === "to" ? parseDateKey(dateFrom) : undefined
+          }
+          maximumDate={
+            datePickerField === "from" ? parseDateKey(dateTo) : undefined
+          }
+          onChange={(event, date) => {
+            if (event.type === "set" && date && datePickerField) {
+              applyRangeDate(datePickerField, date);
+            }
+            setDatePickerField(null);
+          }}
+        />
+      ) : null}
+
+      <Modal
+        visible={Platform.OS === "ios" && datePickerField !== null}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setDatePickerField(null)}
+      >
+        <View
+          style={{
+            flex: 1,
+            justifyContent: "flex-end",
+            backgroundColor: "rgba(14,31,26,0.48)",
+          }}
+        >
+          <View
+            style={{
+              paddingHorizontal: 18,
+              paddingTop: 16,
+              paddingBottom: insets.bottom + 12,
+              borderTopLeftRadius: 22,
+              borderTopRightRadius: 22,
+              backgroundColor: Colors.white,
+            }}
+          >
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "space-between",
+              }}
+            >
+              <Pressable onPress={() => setDatePickerField(null)}>
+                <Text style={{ color: Colors.sage, fontSize: 15 }}>Cancel</Text>
+              </Pressable>
+              <Text
+                style={{
+                  color: Colors.forest,
+                  fontSize: 16,
+                  fontWeight: "700",
+                }}
+              >
+                Select {datePickerField === "from" ? "start" : "end"} date
+              </Text>
+              <Pressable
+                onPress={() => {
+                  if (datePickerField) {
+                    applyRangeDate(datePickerField, dateDraft);
+                  }
+                  setDatePickerField(null);
+                }}
+              >
+                <Text
+                  style={{
+                    color: Colors.forest,
+                    fontSize: 15,
+                    fontWeight: "700",
+                  }}
+                >
+                  Done
+                </Text>
+              </Pressable>
+            </View>
+            {datePickerField ? (
+              <DateTimePicker
+                value={dateDraft}
+                mode="date"
+                display="spinner"
+                minimumDate={
+                  datePickerField === "to" ? parseDateKey(dateFrom) : undefined
+                }
+                maximumDate={
+                  datePickerField === "from" ? parseDateKey(dateTo) : undefined
+                }
+                onChange={(_, date) => {
+                  if (date) setDateDraft(date);
+                }}
+              />
+            ) : null}
+          </View>
+        </View>
+      </Modal>
 
       <Modal
         visible={filterMenuVisible}
@@ -1599,6 +1751,46 @@ export default function Diary() {
         </View>
       </Modal>
     </SafeAreaView>
+  );
+}
+
+function DateRangeButton({
+  label,
+  value,
+  onPress,
+}: {
+  label: string;
+  value: string;
+  onPress: () => void;
+}) {
+  return (
+    <View style={{ flex: 1 }}>
+      <Text style={labelStyle}>{label}</Text>
+      <Pressable
+        onPress={onPress}
+        accessibilityRole="button"
+        accessibilityLabel={`${label} date: ${value ? formatDate(value) : "not selected"}`}
+        style={{
+          minHeight: 46,
+          flexDirection: "row",
+          alignItems: "center",
+          gap: 8,
+          paddingHorizontal: 10,
+          borderRadius: 11,
+          borderWidth: 1,
+          borderColor: "#DFE7E2",
+          backgroundColor: Colors.white,
+        }}
+      >
+        <Ionicons name="calendar-outline" size={17} color={Colors.forest} />
+        <Text
+          numberOfLines={1}
+          style={{ flex: 1, color: Colors.textPrimary, fontSize: 13 }}
+        >
+          {value ? formatDate(value) : `Select ${label.toLowerCase()}`}
+        </Text>
+      </Pressable>
+    </View>
   );
 }
 
