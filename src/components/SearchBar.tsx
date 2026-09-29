@@ -46,6 +46,7 @@ export function SearchBar({
           flex: 1,
           flexDirection: "row",
           alignItems: "center",
+          minHeight: 60,
           backgroundColor: Colors.white,
           borderRadius: 50,
           paddingHorizontal: 16,
@@ -97,9 +98,9 @@ export function SearchBar({
           accessibilityRole="button"
           accessibilityLabel="Filter"
           style={{
-            width: 44,
-            height: 44,
-            borderRadius: 22,
+            width: 60,
+            height: 60,
+            borderRadius: 30,
             backgroundColor: filterActive ? Colors.primary : Colors.white,
             alignItems: "center",
             justifyContent: "center",

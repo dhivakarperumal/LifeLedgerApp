@@ -128,7 +128,7 @@ export default function More() {
       contentContainerStyle={{
         paddingHorizontal: 18,
         paddingTop: 20,
-        paddingBottom: 80,
+        paddingBottom: 140,
         backgroundColor: Colors.contentBackground,
       }}
       style={{ flex: 1, backgroundColor: Colors.contentBackground }}
