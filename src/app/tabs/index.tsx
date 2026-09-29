@@ -3,10 +3,16 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { LinearGradient } from "expo-linear-gradient";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
-import { Pressable, ScrollView, Text, View, ActivityIndicator } from "react-native";
 import {
-  SafeAreaView,
-  useSafeAreaInsets,
+    ActivityIndicator,
+    Pressable,
+    ScrollView,
+    Text,
+    View,
+} from "react-native";
+import {
+    SafeAreaView,
+    useSafeAreaInsets,
 } from "react-native-safe-area-context";
 import { TopHeader } from "../../Navigations/TopHeader";
 import api, { getStoredUser } from "../../api";
@@ -28,6 +34,18 @@ type ExpenseItem = {
   payment_method?: string;
   notes?: string;
   recurring?: string;
+};
+
+type CalendarEvent = {
+  id: number | string;
+  title?: string;
+  name?: string;
+  startDate?: string;
+  start_date?: string;
+  event_date?: string;
+  date?: string;
+  startTime?: string;
+  start_time?: string;
 };
 
 const categoryIcons: Record<string, keyof typeof Ionicons.glyphMap> = {
@@ -66,14 +84,44 @@ function formatDate(dateString?: string) {
   });
 }
 
-function SectionHeader({ title, onAction }: { title: string; onAction?: () => void }) {
+function dateKey(date: Date) {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+}
+
+function eventDateKey(value?: string) {
+  if (!value) return "";
+  if (/^\d{4}-\d{2}-\d{2}/.test(value)) return value.slice(0, 10);
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? "" : dateKey(date);
+}
+
+function getCalendarEvents(data: any): CalendarEvent[] {
+  if (Array.isArray(data)) return data;
+  if (Array.isArray(data?.events)) return data.events;
+  if (Array.isArray(data?.data)) return data.data;
+  if (Array.isArray(data?.data?.events)) return data.data.events;
+  if (Array.isArray(data?.data?.data)) return data.data.data;
+  return [];
+}
+
+function SectionHeader({
+  title,
+  onAction,
+}: {
+  title: string;
+  onAction?: () => void;
+}) {
   return (
     <View className="mt-7 mb-3 flex-row items-center justify-between">
       <Text className="text-lg font-bold" style={{ color: Colors.textPrimary }}>
         {title}
       </Text>
       {onAction && (
-        <Text className="text-sm font-semibold" style={{ color: Colors.primary }} onPress={onAction}>
+        <Text
+          className="text-sm font-semibold"
+          style={{ color: Colors.primary }}
+          onPress={onAction}
+        >
           View All ›
         </Text>
       )}
@@ -83,8 +131,23 @@ function SectionHeader({ title, onAction }: { title: string; onAction?: () => vo
 
 function EmptyStateCard({ message }: { message: string }) {
   return (
-    <View className="rounded-3xl p-5 items-center justify-center border" style={{ backgroundColor: Colors.white, borderColor: Colors.border, borderStyle: 'dashed' }}>
-      <Text style={{ color: Colors.textSecondary, fontStyle: 'italic', fontSize: 13 }}>{message}</Text>
+    <View
+      className="rounded-3xl p-5 items-center justify-center border"
+      style={{
+        backgroundColor: Colors.white,
+        borderColor: Colors.border,
+        borderStyle: "dashed",
+      }}
+    >
+      <Text
+        style={{
+          color: Colors.textSecondary,
+          fontStyle: "italic",
+          fontSize: 13,
+        }}
+      >
+        {message}
+      </Text>
     </View>
   );
 }
@@ -98,10 +161,12 @@ export default function Index() {
 
   // Data states
   const [isLoading, setIsLoading] = useState(true);
-  const [recentTransactions, setRecentTransactions] = useState<ExpenseItem[]>([]);
+  const [recentTransactions, setRecentTransactions] = useState<ExpenseItem[]>(
+    [],
+  );
   const [recentMemories, setRecentMemories] = useState<any[]>([]);
   const [recentDiary, setRecentDiary] = useState<any[]>([]);
-  const [recentEvents, setRecentEvents] = useState<any[]>([]);
+  const [calendarEvents, setCalendarEvents] = useState<CalendarEvent[]>([]);
 
   const [overview, setOverview] = useState({
     totalSpent: 0,
@@ -174,51 +239,57 @@ export default function Index() {
       const fetchData = async () => {
         try {
           setIsLoading(true);
-          const [expensesRes, memoriesRes, diaryRes, eventsRes] = await Promise.allSettled([
-            api.get("/expenses"),
-            api.get("/memories"),
-            api.get("/diary"),
-            api.get("/events")
-          ]);
+          const [expensesRes, memoriesRes, diaryRes, eventsRes] =
+            await Promise.allSettled([
+              api.get("/expenses"),
+              api.get("/memories"),
+              api.get("/diary"),
+              api.get("/calendar/events"),
+            ]);
 
           if (!isActive) return;
 
           // Parse Responses
           const expensesData: ExpenseItem[] =
-            expensesRes.status === "fulfilled" && Array.isArray(expensesRes.value?.data)
+            expensesRes.status === "fulfilled" &&
+            Array.isArray(expensesRes.value?.data)
               ? expensesRes.value.data
-              : expensesRes.status === "fulfilled" && Array.isArray(expensesRes.value?.data?.data)
+              : expensesRes.status === "fulfilled" &&
+                  Array.isArray(expensesRes.value?.data?.data)
                 ? expensesRes.value.data.data
-                : expensesRes.status === "fulfilled" && Array.isArray(expensesRes.value?.data?.expenses)
+                : expensesRes.status === "fulfilled" &&
+                    Array.isArray(expensesRes.value?.data?.expenses)
                   ? expensesRes.value.data.expenses
                   : [];
 
           const memoriesData =
-            memoriesRes.status === "fulfilled" && Array.isArray(memoriesRes.value?.data)
+            memoriesRes.status === "fulfilled" &&
+            Array.isArray(memoriesRes.value?.data)
               ? memoriesRes.value.data
-              : memoriesRes.status === "fulfilled" && Array.isArray(memoriesRes.value?.data?.data)
+              : memoriesRes.status === "fulfilled" &&
+                  Array.isArray(memoriesRes.value?.data?.data)
                 ? memoriesRes.value.data.data
-                : memoriesRes.status === "fulfilled" && Array.isArray(memoriesRes.value?.data?.memories)
+                : memoriesRes.status === "fulfilled" &&
+                    Array.isArray(memoriesRes.value?.data?.memories)
                   ? memoriesRes.value.data.memories
                   : [];
 
           const diaryData =
-            diaryRes.status === "fulfilled" && Array.isArray(diaryRes.value?.data)
+            diaryRes.status === "fulfilled" &&
+            Array.isArray(diaryRes.value?.data)
               ? diaryRes.value.data
-              : diaryRes.status === "fulfilled" && Array.isArray(diaryRes.value?.data?.data)
+              : diaryRes.status === "fulfilled" &&
+                  Array.isArray(diaryRes.value?.data?.data)
                 ? diaryRes.value.data.data
-                : diaryRes.status === "fulfilled" && Array.isArray(diaryRes.value?.data?.entries)
+                : diaryRes.status === "fulfilled" &&
+                    Array.isArray(diaryRes.value?.data?.entries)
                   ? diaryRes.value.data.entries
                   : [];
 
           const eventsData =
-            eventsRes.status === "fulfilled" && Array.isArray(eventsRes.value?.data)
-              ? eventsRes.value.data
-              : eventsRes.status === "fulfilled" && Array.isArray(eventsRes.value?.data?.data)
-                ? eventsRes.value.data.data
-                : eventsRes.status === "fulfilled" && Array.isArray(eventsRes.value?.data?.events)
-                  ? eventsRes.value.data.events
-                  : [];
+            eventsRes.status === "fulfilled"
+              ? getCalendarEvents(eventsRes.value.data)
+              : [];
 
           // Process expenses stats
           const now = new Date();
@@ -274,17 +345,17 @@ export default function Index() {
             .map(([label, value], idx) => ({
               label,
               value,
-              percentage: totalSpent > 0 ? Math.round((value / totalSpent) * 100) : 0,
+              percentage:
+                totalSpent > 0 ? Math.round((value / totalSpent) * 100) : 0,
               color: catColors[idx] || Colors.textSecondary,
             }));
 
           setTopCategories(sortedCats);
-          
+
           setRecentTransactions(expensesData.slice(0, 3));
           setRecentMemories(memoriesData.slice(0, 3));
           setRecentDiary(diaryData.slice(0, 3));
-          setRecentEvents(eventsData.slice(0, 3));
-
+          setCalendarEvents(eventsData);
         } catch (error) {
           console.error("Failed to fetch home data:", error);
         } finally {
@@ -297,7 +368,7 @@ export default function Index() {
       return () => {
         isActive = false;
       };
-    }, [])
+    }, []),
   );
 
   const dateLabel = currentTime
@@ -309,6 +380,12 @@ export default function Index() {
     })
     .toUpperCase();
   const greeting = getTimeGreeting(currentTime.getHours());
+  const todayKey = dateKey(currentTime);
+  const todayEvents = calendarEvents.filter((event) =>
+    [event.startDate, event.start_date, event.event_date, event.date]
+      .map(eventDateKey)
+      .includes(todayKey),
+  );
 
   return (
     <SafeAreaView
@@ -386,7 +463,11 @@ export default function Index() {
                 { icon: "wallet", label: "Expense", route: "/tabs/expenses" },
                 { icon: "book", label: "Diary", route: "/tabs/diary" },
                 { icon: "image", label: "Memory", route: "/tabs/memories" },
-                { icon: "swap-horizontal", label: "Transfer", route: "/transfers" },
+                {
+                  icon: "swap-horizontal",
+                  label: "Transfer",
+                  route: "/transfers",
+                },
                 { icon: "cash", label: "Income", route: "/income" },
                 { icon: "grid", label: "Category", route: "/categories" },
                 { icon: "calendar", label: "Event", route: "/events" },
@@ -429,7 +510,9 @@ export default function Index() {
             {isLoading ? (
               <View style={{ marginTop: 60, alignItems: "center" }}>
                 <ActivityIndicator size="large" color={Colors.primary} />
-                <Text style={{ marginTop: 12, color: Colors.textSecondary }}>Loading your overview...</Text>
+                <Text style={{ marginTop: 12, color: Colors.textSecondary }}>
+                  Loading your overview...
+                </Text>
               </View>
             ) : (
               <>
@@ -543,7 +626,7 @@ export default function Index() {
                       />
                     </Pressable>
                   </View>
-                  
+
                   {topCategories.length > 0 ? (
                     <>
                       <View className="mt-4 flex-row gap-1">
@@ -551,16 +634,19 @@ export default function Index() {
                           <View
                             key={idx}
                             className="h-3 rounded-full"
-                            style={{ 
+                            style={{
                               backgroundColor: cat.color,
-                              flex: Math.max(cat.percentage, 5)
+                              flex: Math.max(cat.percentage, 5),
                             }}
                           />
                         ))}
                       </View>
                       <View className="mt-5 flex-row justify-between flex-wrap gap-y-2">
                         {topCategories.map((cat, idx) => (
-                          <View key={idx} className="flex-row items-center w-[48%] mb-2">
+                          <View
+                            key={idx}
+                            className="flex-row items-center w-[48%] mb-2"
+                          >
                             <View
                               className="mr-2 h-6 w-6 rounded-full"
                               style={{ backgroundColor: cat.color }}
@@ -571,14 +657,20 @@ export default function Index() {
                               numberOfLines={1}
                             >
                               {cat.label}{" "}
-                              <Text style={{ color: Colors.olive }}>{cat.percentage}%</Text>
+                              <Text style={{ color: Colors.olive }}>
+                                {cat.percentage}%
+                              </Text>
                             </Text>
                           </View>
                         ))}
                       </View>
                     </>
                   ) : (
-                    <Text style={{ marginTop: 12, color: Colors.textSecondary }}>No category data available yet.</Text>
+                    <Text
+                      style={{ marginTop: 12, color: Colors.textSecondary }}
+                    >
+                      No category data available yet.
+                    </Text>
                   )}
                 </View>
 
@@ -586,7 +678,9 @@ export default function Index() {
                 <SectionHeader title="Recent Transactions" />
                 {recentTransactions.length > 0 ? (
                   recentTransactions.map((tx) => {
-                    const iconName = categoryIcons[tx.category || "Other"] || "pricetag-outline";
+                    const iconName =
+                      categoryIcons[tx.category || "Other"] ||
+                      "pricetag-outline";
                     return (
                       <View
                         key={String(tx.id)}
@@ -597,7 +691,11 @@ export default function Index() {
                           className="mr-4 h-12 w-12 items-center justify-center rounded-full"
                           style={{ backgroundColor: Colors.bgCard }}
                         >
-                          <Ionicons name={iconName} size={21} color={Colors.primary} />
+                          <Ionicons
+                            name={iconName}
+                            size={21}
+                            color={Colors.primary}
+                          />
                         </View>
                         <View className="flex-1">
                           <Text
@@ -611,7 +709,8 @@ export default function Index() {
                             className="mt-1 text-sm"
                             style={{ color: Colors.textSecondary }}
                           >
-                            {tx.category || "Other"} · {formatDate(tx.expense_date)}
+                            {tx.category || "Other"} ·{" "}
+                            {formatDate(tx.expense_date)}
                           </Text>
                         </View>
                         <Text
@@ -641,7 +740,11 @@ export default function Index() {
                           className="mr-4 h-12 w-12 items-center justify-center rounded-full"
                           style={{ backgroundColor: "#F3E8FF" }}
                         >
-                          <Ionicons name="images-outline" size={21} color="#9333EA" />
+                          <Ionicons
+                            name="images-outline"
+                            size={21}
+                            color="#9333EA"
+                          />
                         </View>
                         <View className="flex-1">
                           <Text
@@ -655,7 +758,10 @@ export default function Index() {
                             className="mt-1 text-sm"
                             style={{ color: Colors.textSecondary }}
                           >
-                            {memory.category_name || "Uncategorized"} · {formatDate(memory.memory_date || memory.created_at)}
+                            {memory.category_name || "Uncategorized"} ·{" "}
+                            {formatDate(
+                              memory.memory_date || memory.created_at,
+                            )}
                           </Text>
                         </View>
                       </View>
@@ -679,7 +785,11 @@ export default function Index() {
                           className="mr-4 h-12 w-12 items-center justify-center rounded-full"
                           style={{ backgroundColor: "#E0F2FE" }}
                         >
-                          <Ionicons name="book-outline" size={21} color="#0284C7" />
+                          <Ionicons
+                            name="book-outline"
+                            size={21}
+                            color="#0284C7"
+                          />
                         </View>
                         <View className="flex-1">
                           <Text
@@ -693,7 +803,8 @@ export default function Index() {
                             className="mt-1 text-sm"
                             style={{ color: Colors.textSecondary }}
                           >
-                            {diary.mood || "No Mood"} · {formatDate(diary.entry_date || diary.created_at)}
+                            {diary.mood || "No Mood"} ·{" "}
+                            {formatDate(diary.entry_date || diary.created_at)}
                           </Text>
                         </View>
                       </View>
@@ -704,9 +815,12 @@ export default function Index() {
                 )}
 
                 {/* --- Recent Events --- */}
-                <SectionHeader title="Recent Events" />
-                {recentEvents.length > 0 ? (
-                  recentEvents.map((event) => {
+                <SectionHeader
+                  title="Today's Calendar Events"
+                  onAction={() => router.push("/calendar")}
+                />
+                {todayEvents.length > 0 ? (
+                  todayEvents.map((event) => {
                     return (
                       <View
                         key={String(event.id)}
@@ -717,7 +831,11 @@ export default function Index() {
                           className="mr-4 h-12 w-12 items-center justify-center rounded-full"
                           style={{ backgroundColor: "#FEF3C7" }}
                         >
-                          <Ionicons name="calendar-outline" size={21} color="#D97706" />
+                          <Ionicons
+                            name="calendar-outline"
+                            size={21}
+                            color="#D97706"
+                          />
                         </View>
                         <View className="flex-1">
                           <Text
@@ -731,16 +849,23 @@ export default function Index() {
                             className="mt-1 text-sm"
                             style={{ color: Colors.textSecondary }}
                           >
-                            {formatDate(event.event_date || event.start_date || event.created_at)}
+                            {formatDate(
+                              event.startDate ||
+                                event.start_date ||
+                                event.event_date ||
+                                event.date,
+                            )}
+                            {event.startTime || event.start_time
+                              ? ` · ${event.startTime || event.start_time}`
+                              : ""}
                           </Text>
                         </View>
                       </View>
                     );
                   })
                 ) : (
-                  <EmptyStateCard message="No recent events found." />
+                  <EmptyStateCard message="No events scheduled for today." />
                 )}
-
               </>
             )}
           </View>

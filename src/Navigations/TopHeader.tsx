@@ -1,15 +1,17 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import {
-  Alert,
-  Animated,
-  Easing,
-  Image,
-  Modal,
-  Pressable,
-  Text,
-  View,
+    Alert,
+    Animated,
+    Easing,
+    Image,
+    Modal,
+    Pressable,
+    ScrollView,
+    Text,
+    View,
+    useWindowDimensions,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { getStoredUser, logoutUser } from "../api";
@@ -22,12 +24,13 @@ type UserProfile = {
 
 export function TopHeader() {
   const router = useRouter();
+  const { width } = useWindowDimensions();
   const [user, setUser] = useState<UserProfile | null>(null);
   const [sideMenuVisible, setSideMenuVisible] = useState(false);
   const [sideMenuMounted, setSideMenuMounted] = useState(false);
   const [menuVisible, setMenuVisible] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
-  const drawerPosition = useRef(new Animated.Value(-320)).current;
+  const [drawerPosition] = useState(() => new Animated.Value(-width));
 
   useEffect(() => {
     let cancelled = false;
@@ -45,10 +48,14 @@ export function TopHeader() {
 
   const displayName = user?.name?.trim() || user?.email?.trim() || "User";
   const userInitial = displayName.charAt(0).toUpperCase();
+  const openSideMenu = () => {
+    setSideMenuMounted(true);
+    setSideMenuVisible(true);
+  };
 
   useEffect(() => {
     if (sideMenuVisible) {
-      setSideMenuMounted(true);
+      drawerPosition.setValue(-width);
       Animated.timing(drawerPosition, {
         duration: 260,
         easing: Easing.out(Easing.cubic),
@@ -62,7 +69,7 @@ export function TopHeader() {
       Animated.timing(drawerPosition, {
         duration: 220,
         easing: Easing.in(Easing.cubic),
-        toValue: -320,
+        toValue: -width,
         useNativeDriver: true,
       }).start(({ finished }) => {
         if (finished) {
@@ -70,7 +77,7 @@ export function TopHeader() {
         }
       });
     }
-  }, [drawerPosition, sideMenuMounted, sideMenuVisible]);
+  }, [drawerPosition, sideMenuMounted, sideMenuVisible, width]);
 
   const navigateFromMenu = (
     path:
@@ -78,7 +85,12 @@ export function TopHeader() {
       | "/tabs/expenses"
       | "/tabs/memories"
       | "/tabs/diary"
-      | "/tabs/more",
+      | "/tabs/more"
+      | "/categories"
+      | "/income"
+      | "/transfers"
+      | "/calendar"
+      | "/reports",
   ) => {
     setSideMenuVisible(false);
     router.replace(path);
@@ -102,7 +114,7 @@ export function TopHeader() {
           <Pressable
             accessibilityLabel="Open navigation menu"
             className="mr-1 h-9 w-9 items-center justify-center rounded-full bg-white/15"
-            onPress={() => setSideMenuVisible(true)}
+            onPress={openSideMenu}
           >
             <View className="items-start gap-[3px]">
               <View className="h-1 w-6 rounded-full bg-white" />
@@ -158,8 +170,9 @@ export function TopHeader() {
           onPress={() => setSideMenuVisible(false)}
         >
           <Animated.View
-            className="h-full w-80 bg-white shadow-2xl"
+            className="h-full bg-[#264B2A] shadow-2xl"
             style={{
+              width,
               transform: [{ translateX: drawerPosition }],
             }}
           >
@@ -168,52 +181,60 @@ export function TopHeader() {
               onPress={(event) => event.stopPropagation()}
             >
               <SafeAreaView
-                className="flex-1 bg-white"
+                className="flex-1 bg-[#264B2A]"
                 edges={["top", "bottom"]}
               >
-                <View className="flex-row items-center justify-between border-b border-[#E5EAE7] px-5 pb-5 pt-3">
+                <View className="flex-row items-center justify-between border-b border-[#447449] px-5 pb-5 pt-3">
                   <View className="flex-row items-center gap-3">
-                    <View className="h-12 w-12 items-center justify-center rounded-2xl bg-[#ECF2EE]">
+                    <View className="h-12 w-12 items-center justify-center rounded-2xl bg-[#366039]">
                       <Image
                         source={require("../../assets/images/logo.png")}
-                        className="h-9 w-9"
+                        className="h-9 w-9 rounded-xl"
                         resizeMode="contain"
                         accessibilityLabel="Life Ledger logo"
                       />
                     </View>
                     <View>
-                      <Text className="text-lg font-bold text-[#263238]">
+                      <Text className="text-lg font-bold text-white">
                         Life Ledger
                       </Text>
-                      <Text className="text-xs text-[#7B8589]">
+                      <Text className="text-xs text-[#ADBEA3]">
                         Your daily companion
                       </Text>
                     </View>
                   </View>
                   <Pressable
+                    accessibilityRole="button"
                     accessibilityLabel="Close navigation menu"
                     onPress={() => setSideMenuVisible(false)}
+                    className="h-10 w-10 items-center justify-center rounded-full border border-white/40 active:bg-white/15"
                   >
-                    <Ionicons
-                      name="close"
-                      size={24}
-                      color={Colors.textSecondary}
-                    />
+                    <Ionicons name="close" size={24} color={Colors.white} />
                   </Pressable>
                 </View>
 
-                <View className="px-4 pt-6">
+                <ScrollView className="flex-1 px-4 pt-6">
                   {[
                     ["Home", "home-outline", "/tabs"],
                     ["Expenses", "wallet-outline", "/tabs/expenses"],
                     ["Memories", "images-outline", "/tabs/memories"],
                     ["Diary", "book-outline", "/tabs/diary"],
+                    ["Categories", "pricetag-outline", "/categories"],
+                    ["Monthly Income", "cash-outline", "/income"],
+                    [
+                      "Transfers & Transactions",
+                      "swap-horizontal-outline",
+                      "/transfers",
+                    ],
+                    ["Calendar", "calendar-outline", "/calendar"],
+                    ["Reports", "bar-chart-outline", "/reports"],
+                    ["Settings", "settings-outline", "/tabs/more"],
                     ["More", "grid-outline", "/tabs/more"],
                   ].map(([label, icon, path]) => (
                     <Pressable
                       key={label}
                       accessibilityRole="button"
-                      className="active:bg-[#ECF2EE] mb-2 flex-row items-center rounded-2xl px-4 py-4"
+                      className="active:bg-[#366039] mb-2 flex-row items-center rounded-2xl px-4 py-4"
                       onPress={() =>
                         navigateFromMenu(
                           path as
@@ -221,27 +242,32 @@ export function TopHeader() {
                             | "/tabs/expenses"
                             | "/tabs/memories"
                             | "/tabs/diary"
-                            | "/tabs/more",
+                            | "/tabs/more"
+                            | "/categories"
+                            | "/income"
+                            | "/transfers"
+                            | "/calendar"
+                            | "/reports",
                         )
                       }
                     >
                       <Ionicons
                         name={icon as never}
                         size={23}
-                        color={Colors.primary}
+                        color={Colors.accent}
                       />
-                      <Text className="ml-4 text-base font-semibold text-[#263238]">
+                      <Text className="ml-4 text-base font-semibold text-white">
                         {label}
                       </Text>
                       <Ionicons
                         name="chevron-forward"
                         size={18}
-                        color={Colors.textMuted}
+                        color={Colors.primaryLight}
                         className="ml-auto"
                       />
                     </Pressable>
                   ))}
-                </View>
+                </ScrollView>
               </SafeAreaView>
             </Pressable>
           </Animated.View>
