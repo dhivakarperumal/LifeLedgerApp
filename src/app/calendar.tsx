@@ -1,19 +1,20 @@
 import { Ionicons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useState } from "react";
 import {
-    ActivityIndicator,
-    Alert,
-    Modal,
-    Pressable,
-    ScrollView,
-    Text,
-    TextInput,
-    View,
+  ActivityIndicator,
+  Alert,
+  Modal,
+  Pressable,
+  ScrollView,
+  Text,
+  TextInput,
+  View,
 } from "react-native";
 import {
-    SafeAreaView,
-    useSafeAreaInsets,
+  SafeAreaView,
+  useSafeAreaInsets,
 } from "react-native-safe-area-context";
 import api, { getApiErrorMessage } from "../api";
 import { Colors } from "../constants/colors";
@@ -303,32 +304,45 @@ export default function CalendarScreen() {
       edges={["top"]}
       style={{ backgroundColor: Colors.primary }}
     >
-      <View className="h-2" style={{ backgroundColor: Colors.primary }} />
       <ScrollView
         className="flex-1"
         style={{ backgroundColor: Colors.contentBackground }}
-        contentContainerStyle={{ paddingBottom: 100 }}
+        contentContainerStyle={{ paddingBottom: 190 + insets.bottom }}
         showsVerticalScrollIndicator={false}
       >
-        <View className="flex-row items-center bg-white px-5 pb-5 pt-3">
+        <LinearGradient
+          colors={[Colors.headerStart, Colors.headerEnd]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            paddingHorizontal: 20,
+            paddingBottom: 20,
+            paddingTop: 12,
+          }}
+        >
           <Pressable
-            onPress={() => router.back()}
+            onPress={() => {
+              if (router.canGoBack()) router.back();
+              else router.replace("/tabs/more");
+            }}
             accessibilityRole="button"
             accessibilityLabel="Go back"
-            className="mr-3 h-10 w-10 items-center justify-center rounded-full bg-[#ECF2EE]"
+            className="mr-3 h-10 w-10 items-center justify-center rounded-full bg-white/15"
           >
-            <Ionicons name="arrow-back" size={20} color={Colors.primary} />
+            <Ionicons name="arrow-back" size={20} color={Colors.white} />
           </Pressable>
-          <View className="mr-3 items-center border-r border-[#E5EAE7] pr-4">
-            <Text className="text-4xl font-light text-[#366039]">
+          <View className="mr-3 items-center border-r border-white/30 pr-4">
+            <Text className="text-4xl font-light text-white">
               {selectedDate.getDate().toString().padStart(2, "0")}
             </Text>
           </View>
           <View className="flex-1">
-            <Text className="text-xl font-extrabold text-[#366039]">
+            <Text className="text-xl font-extrabold text-white">
               Life Calendar
             </Text>
-            <Text className="mt-1 text-sm font-medium text-[#7B8589]">
+            <Text className="mt-1 text-sm font-medium text-[#ADBEA3]">
               {selectedDate.toLocaleDateString("en-IN", {
                 weekday: "long",
                 month: "long",
@@ -336,15 +350,7 @@ export default function CalendarScreen() {
               })}
             </Text>
           </View>
-          <Pressable
-            onPress={() => openForm(activeType)}
-            accessibilityRole="button"
-            accessibilityLabel="Add calendar item"
-            className="h-10 w-10 items-center justify-center rounded-full bg-[#366039]"
-          >
-            <Ionicons name="add" size={23} color={Colors.white} />
-          </Pressable>
-        </View>
+        </LinearGradient>
 
         <View className="px-4 pt-4">
           <View className="mb-3 flex-row items-center justify-between">
@@ -580,7 +586,7 @@ export default function CalendarScreen() {
           activeType === "event" ? "New event" : "New reminder"
         }
         className="absolute right-5 h-14 w-14 items-center justify-center rounded-full bg-[#366039] shadow-lg"
-        style={{ bottom: insets.bottom + 16, elevation: 6 }}
+        style={{ bottom: 140, elevation: 8 }}
       >
         <Ionicons name="add" size={28} color={Colors.white} />
       </Pressable>

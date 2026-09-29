@@ -1,20 +1,25 @@
 import { Ionicons } from "@expo/vector-icons";
 import * as DocumentPicker from "expo-document-picker";
+import { LinearGradient } from "expo-linear-gradient";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useMemo, useState } from "react";
 import {
-    ActivityIndicator,
-    Alert,
-    Linking,
-    Modal,
-    Pressable,
-    ScrollView,
-    Text,
-    TextInput,
-    View,
+  ActivityIndicator,
+  Alert,
+  Linking,
+  Modal,
+  Pressable,
+  ScrollView,
+  Text,
+  TextInput,
+  View,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from "react-native-safe-area-context";
 import api, { API_BASE_URL, getApiErrorMessage, logoutUser } from "../api";
+import { Colors } from "../constants/colors";
 
 type IncomeRecord = {
   id: number | string;
@@ -149,6 +154,7 @@ function Metric({
 
 export default function Income() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const [incomes, setIncomes] = useState<IncomeRecord[]>([]);
   const [incomeCategories, setIncomeCategories] = useState<string[]>([]);
   const [monthlyBudget, setMonthlyBudget] = useState(0);
@@ -477,35 +483,47 @@ export default function Income() {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-[#F5F6F2]" edges={["top", "bottom"]}>
-      <View className="flex-row items-center justify-between px-5 pb-4 pt-2">
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Go back"
-          className="h-10 w-10 items-center justify-center rounded-full bg-white"
-          onPress={() => router.back()}
-        >
-          <Ionicons name="arrow-back" size={20} color="#25332C" />
-        </Pressable>
-        <Text className="text-lg font-bold text-[#25332C]">
-          Monthly Income
-        </Text>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Add income"
-          className="h-10 w-10 items-center justify-center rounded-full bg-[#315640]"
-          onPress={openAddIncome}
-        >
-          <Ionicons name="add" size={24} color="#FFFFFF" />
-        </Pressable>
-      </View>
+    <SafeAreaView className="flex-1 bg-[#F5F6F2]" edges={["bottom"]}>
+      <LinearGradient
+        colors={[Colors.headerStart, Colors.headerEnd]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={{
+          flexDirection: "row",
+          alignItems: "center",
+          justifyContent: "flex-start",
+          paddingHorizontal: 20,
+          paddingBottom: 16,
+          paddingTop: insets.top + 8,
+        }}
+      >
+        <View className="flex-row items-center">
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Go back"
+            className="h-10 w-10 items-center justify-center rounded-full bg-white/15"
+            onPress={() => {
+              if (router.canGoBack()) router.back();
+              else router.replace("/tabs/more");
+            }}
+          >
+            <Ionicons name="arrow-back" size={20} color={Colors.white} />
+          </Pressable>
+          <Text className="ml-3 text-lg font-bold text-white">
+            Monthly Income
+          </Text>
+        </View>
+      </LinearGradient>
 
       <ScrollView
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingHorizontal: 18, paddingBottom: 36 }}
+        contentContainerStyle={{
+          paddingHorizontal: 18,
+          paddingBottom: insets.bottom + 140,
+        }}
       >
-        <View className="flex-row gap-3">
+        <View className="flex-row mt-6 gap-3">
           <Metric
             label="Total income"
             value={formatAmount(totalIncome)}
@@ -519,7 +537,7 @@ export default function Income() {
             tone="mint"
           />
         </View>
-        <View className="flex-row gap-3">
+        <View className="flex-row  gap-3">
           <Metric
             label="Remaining"
             value={formatAmount(remainingIncome)}
@@ -814,6 +832,17 @@ export default function Income() {
         )}
       </ScrollView>
 
+      <Pressable
+        onPress={openAddIncome}
+        accessibilityRole="button"
+        accessibilityLabel="Add income"
+        accessibilityHint="Opens the new income form"
+        className="absolute right-5 h-14 w-14 items-center justify-center rounded-full bg-[#315640] shadow-lg"
+        style={{ bottom: 140, elevation: 8 }}
+      >
+        <Ionicons name="add" size={28} color={Colors.white} />
+      </Pressable>
+
       <Modal
         animationType="slide"
         onRequestClose={closeEditor}
@@ -1023,9 +1052,7 @@ export default function Income() {
                 disabled={saving}
                 onPress={closeEditor}
               >
-                <Text className="text-sm font-bold text-[#58645C]">
-                  Cancel
-                </Text>
+                <Text className="text-sm font-bold text-[#58645C]">Cancel</Text>
               </Pressable>
               <Pressable
                 className="flex-1 flex-row items-center justify-center rounded-xl bg-[#315640] py-3.5"
@@ -1073,9 +1100,7 @@ export default function Income() {
                 disabled={budgetSaving}
                 onPress={() => setBudgetVisible(false)}
               >
-                <Text className="text-sm font-bold text-[#58645C]">
-                  Cancel
-                </Text>
+                <Text className="text-sm font-bold text-[#58645C]">Cancel</Text>
               </Pressable>
               <Pressable
                 className="flex-1 items-center rounded-xl bg-[#315640] py-3"
