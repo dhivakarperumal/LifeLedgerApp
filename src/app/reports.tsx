@@ -1,24 +1,29 @@
 import { Ionicons } from "@expo/vector-icons";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { File, Paths } from "expo-file-system";
+import { LinearGradient } from "expo-linear-gradient";
 import * as Print from "expo-print";
 import { useFocusEffect, useRouter } from "expo-router";
 import * as Sharing from "expo-sharing";
 import { useCallback, useMemo, useState } from "react";
 import {
-    ActivityIndicator,
-    Alert,
-    Modal,
-    Platform,
-    Pressable,
-    ScrollView,
-    Share,
-    Text,
-    TextInput,
-    View,
+  ActivityIndicator,
+  Alert,
+  Modal,
+  Platform,
+  Pressable,
+  ScrollView,
+  Share,
+  Text,
+  TextInput,
+  View,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from "react-native-safe-area-context";
 import api, { getApiErrorMessage, logoutUser } from "../api";
+import { Colors } from "../constants/colors";
 
 type ReportType = "expense" | "transfer";
 type ReportRecord = {
@@ -274,6 +279,7 @@ function Metric({
 
 export default function Reports() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const [expenses, setExpenses] = useState<ReportRecord[]>([]);
   const [transfers, setTransfers] = useState<ReportRecord[]>([]);
   const [loading, setLoading] = useState(true);
@@ -440,6 +446,66 @@ export default function Reports() {
         .length,
     };
   }, [visible]);
+  const categorySummary = useMemo(() => {
+    const totals = new Map<string, number>();
+    visible
+      .filter((record) => record._type === "expense")
+      .forEach((record) => {
+        const category = record.category || "Uncategorized";
+        totals.set(
+          category,
+          (totals.get(category) || 0) + Number(record.expense_amount || 0),
+        );
+      });
+    const total = Array.from(totals.values()).reduce(
+      (sum, amount) => sum + amount,
+      0,
+    );
+    return Array.from(totals.entries())
+      .sort((left, right) => right[1] - left[1])
+      .slice(0, 5)
+      .map(([category, amount]) => ({
+        category,
+        amount,
+        percentage: total > 0 ? Math.round((amount / total) * 100) : 0,
+      }));
+  }, [visible]);
+  const monthlyTrend = useMemo(() => {
+    const months = Array.from({ length: 6 }, (_, index) => {
+      const month = new Date();
+      month.setDate(1);
+      month.setMonth(month.getMonth() - 5 + index);
+      return month;
+    });
+    const totals = new Map<string, number>();
+
+    visible
+      .filter((record) => record._type === "expense" && record._date)
+      .forEach((record) => {
+        const date = /^\d{4}-\d{2}-\d{2}$/.test(record._date!)
+          ? new Date(`${record._date}T12:00:00`)
+          : new Date(record._date!);
+        if (Number.isNaN(date.getTime())) return;
+        const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+        totals.set(
+          key,
+          (totals.get(key) || 0) + Number(record.expense_amount || 0),
+        );
+      });
+
+    return months.map((month) => {
+      const key = `${month.getFullYear()}-${String(month.getMonth() + 1).padStart(2, "0")}`;
+      return {
+        key,
+        label: month.toLocaleDateString("en-IN", { month: "short" }),
+        amount: totals.get(key) || 0,
+      };
+    });
+  }, [visible]);
+  const highestMonthlyTotal = Math.max(
+    ...monthlyTrend.map((month) => month.amount),
+    0,
+  );
 
   const resetFilters = () => {
     setReportType("all");
@@ -629,31 +695,43 @@ export default function Reports() {
     datePreset !== "All";
 
   return (
-    <SafeAreaView className="flex-1 bg-[#F5F6F2]" edges={["top", "bottom"]}>
-      <View className="flex-row items-center justify-between px-5 pb-4 pt-2">
+    <SafeAreaView className="flex-1 bg-[#F5F6F2]" edges={["bottom"]}>
+      <LinearGradient
+        colors={[Colors.headerStart, Colors.headerEnd]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={{
+          flexDirection: "row",
+          alignItems: "center",
+          justifyContent: "flex-start",
+          paddingHorizontal: 20,
+          paddingBottom: 16,
+          paddingTop: insets.top + 8,
+        }}
+      >
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Go back"
-          className="h-10 w-10 items-center justify-center rounded-full bg-white"
-          onPress={() => router.back()}
+          className="h-10 w-10 items-center justify-center rounded-full bg-white/15"
+          onPress={() => {
+            if (router.canGoBack()) router.back();
+            else router.replace("/tabs/more");
+          }}
         >
-          <Ionicons name="arrow-back" size={20} color="#25332C" />
+          <Ionicons name="arrow-back" size={20} color={Colors.white} />
         </Pressable>
-        <View className="flex-row items-center">
-          <Ionicons name="bar-chart-outline" size={20} color="#315640" />
-          <Text className="ml-2 text-lg font-bold text-[#25332C]">
-            Reports
-          </Text>
+        <View className="ml-3 flex-row items-center">
+          <Ionicons name="bar-chart-outline" size={20} color={Colors.accent} />
+          <Text className="ml-2 text-lg font-bold text-white">Reports</Text>
         </View>
-        <View className="h-10 w-10" />
-      </View>
+      </LinearGradient>
 
       <ScrollView
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingHorizontal: 18, paddingBottom: 36 }}
       >
-        <View className="mb-4 flex-row">
+        <View className="mb-4 mt-8 flex-row">
           <Pressable
             accessibilityRole="button"
             disabled={exporting !== null}
@@ -729,6 +807,72 @@ export default function Reports() {
             icon="checkmark-circle-outline"
             tone="mint"
           />
+        </View>
+
+        <View className="mb-4 rounded-2xl border border-[#E4E8E3] bg-white p-4">
+          <Text className="mb-3 text-sm font-bold text-[#293930]">
+            Monthly spending · last 6 months
+          </Text>
+          {highestMonthlyTotal > 0 ? (
+            monthlyTrend.map((month) => (
+              <View
+                key={month.key}
+                className="mb-3 last:mb-0 flex-row items-center"
+              >
+                <Text className="w-9 text-xs font-semibold text-[#526058]">
+                  {month.label}
+                </Text>
+                <View className="h-2 flex-1 overflow-hidden rounded-full bg-[#EDF0ED]">
+                  <View
+                    className="h-full rounded-full bg-[#315640]"
+                    style={{
+                      width: `${(month.amount / highestMonthlyTotal) * 100}%`,
+                    }}
+                  />
+                </View>
+                <Text className="ml-3 w-[92px] text-right text-[10px] font-bold text-[#293930]">
+                  {formatAmount(month.amount)}
+                </Text>
+              </View>
+            ))
+          ) : (
+            <Text className="text-xs text-[#7C8880]">
+              No expense data in the last six months for these filters.
+            </Text>
+          )}
+        </View>
+
+        <View className="mb-4 rounded-2xl border border-[#E4E8E3] bg-white p-4">
+          <Text className="mb-3 text-sm font-bold text-[#293930]">
+            Spending by category
+          </Text>
+          {categorySummary.length ? (
+            categorySummary.map((item) => (
+              <View key={item.category} className="mb-3 last:mb-0">
+                <View className="mb-1 flex-row items-center justify-between">
+                  <Text
+                    className="flex-1 text-xs font-semibold text-[#526058]"
+                    numberOfLines={1}
+                  >
+                    {item.category}
+                  </Text>
+                  <Text className="ml-3 text-xs font-bold text-[#293930]">
+                    {formatAmount(item.amount)} · {item.percentage}%
+                  </Text>
+                </View>
+                <View className="h-2 overflow-hidden rounded-full bg-[#EDF0ED]">
+                  <View
+                    className="h-full rounded-full bg-[#315640]"
+                    style={{ width: `${item.percentage}%` }}
+                  />
+                </View>
+              </View>
+            ))
+          ) : (
+            <Text className="text-xs text-[#7C8880]">
+              No expense data in this report range.
+            </Text>
+          )}
         </View>
 
         <View className="mb-4 rounded-2xl border border-[#E4E8E3] bg-white p-3.5">
@@ -1117,9 +1261,7 @@ export default function Reports() {
                 Select {datePickerField === "from" ? "start" : "end"} date
               </Text>
               <Pressable onPress={() => setDatePickerField(null)}>
-                <Text className="text-sm font-bold text-[#315640]">
-                  Done
-                </Text>
+                <Text className="text-sm font-bold text-[#315640]">Done</Text>
               </Pressable>
             </View>
             <DateTimePicker
@@ -1137,9 +1279,7 @@ export default function Reports() {
                 setDatePickerField(null);
               }}
             >
-              <Text className="text-sm font-bold text-white">
-                Apply date
-              </Text>
+              <Text className="text-sm font-bold text-white">Apply date</Text>
             </Pressable>
           </View>
         </View>
