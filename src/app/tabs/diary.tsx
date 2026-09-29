@@ -96,6 +96,14 @@ const entryFilters = [
   "year",
 ] as const;
 type EntryFilter = (typeof entryFilters)[number];
+const entryFilterLabels: Record<EntryFilter, string> = {
+  all: "All entries",
+  recent: "Recent",
+  favorites: "Favorites",
+  drafts: "Drafts",
+  month: "This month",
+  year: "This year",
+};
 
 function todayKey() {
   const now = new Date();
@@ -232,8 +240,10 @@ export default function Diary() {
   const [refreshKey, setRefreshKey] = useState(0);
   const [search, setSearch] = useState("");
   const [selectedFilter, setSelectedFilter] = useState<EntryFilter>("all");
+  const [filterMenuVisible, setFilterMenuVisible] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [selectedMood, setSelectedMood] = useState("all");
+  const [moodMenuVisible, setMoodMenuVisible] = useState(false);
   const [selectedDate, setSelectedDate] = useState("");
   const [editorVisible, setEditorVisible] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -697,32 +707,7 @@ export default function Diary() {
             justifyContent: "space-between",
             marginBottom: 16,
           }}
-        >
-          <View>
-            <Text
-              style={{ color: Colors.forest, fontSize: 27, fontWeight: "800" }}
-            >
-              Diary
-            </Text>
-            <Text style={{ color: Colors.sage, fontSize: 14, marginTop: 3 }}>
-              Make a little room for today.
-            </Text>
-          </View>
-        </View>
-
-        <View style={{ flexDirection: "row", gap: 9, marginBottom: 15 }}>
-          <StatCard label="Entries" value={stats.total} icon="book-outline" />
-          <StatCard
-            label="This month"
-            value={stats.thisMonth}
-            icon="calendar-outline"
-          />
-          <StatCard
-            label="Favorites"
-            value={stats.favorites}
-            icon="heart-outline"
-          />
-        </View>
+        ></View>
 
         <View
           style={{
@@ -752,47 +737,30 @@ export default function Diary() {
           />
         </View>
 
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={{ gap: 7, paddingBottom: 11 }}
+        <Pressable
+          onPress={() => setFilterMenuVisible(true)}
+          accessibilityRole="button"
+          accessibilityLabel={`Entry filter: ${entryFilterLabels[selectedFilter]}`}
+          accessibilityHint="Opens the entry filter options"
+          style={{
+            minHeight: 46,
+            flexDirection: "row",
+            alignItems: "center",
+            gap: 10,
+            paddingHorizontal: 12,
+            marginBottom: 11,
+            borderRadius: 13,
+            borderWidth: 1,
+            borderColor: "#DCE7E2",
+            backgroundColor: Colors.white,
+          }}
         >
-          {entryFilters.map((filter) => {
-            const active = selectedFilter === filter;
-            const label =
-              filter === "all"
-                ? "All"
-                : filter === "month"
-                  ? "This month"
-                  : filter === "year"
-                    ? "This year"
-                    : filter[0].toUpperCase() + filter.slice(1);
-            return (
-              <Pressable
-                key={filter}
-                onPress={() => setSelectedFilter(filter)}
-                style={{
-                  paddingHorizontal: 13,
-                  paddingVertical: 8,
-                  borderRadius: 16,
-                  backgroundColor: active ? Colors.forest : Colors.white,
-                  borderWidth: 1,
-                  borderColor: active ? Colors.forest : "#DCE7E2",
-                }}
-              >
-                <Text
-                  style={{
-                    color: active ? Colors.white : Colors.textPrimary,
-                    fontSize: 12,
-                    fontWeight: "700",
-                  }}
-                >
-                  {label}
-                </Text>
-              </Pressable>
-            );
-          })}
-        </ScrollView>
+          <Ionicons name="filter-outline" size={18} color={Colors.forest} />
+          <Text style={{ flex: 1, color: Colors.textPrimary, fontSize: 14 }}>
+            {entryFilterLabels[selectedFilter]}
+          </Text>
+          <Ionicons name="chevron-down" size={18} color={Colors.sage} />
+        </Pressable>
 
         <View style={{ flexDirection: "row", gap: 8, marginBottom: 9 }}>
           <TextInput
@@ -856,34 +824,32 @@ export default function Diary() {
           )}
         </ScrollView>
 
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={{ gap: 7, paddingBottom: 15 }}
+        <Pressable
+          onPress={() => setMoodMenuVisible(true)}
+          accessibilityRole="button"
+          accessibilityLabel={`Mood filter: ${selectedMood === "all" ? "All moods" : selectedMood}`}
+          accessibilityHint="Opens the mood filter options"
+          style={{
+            minHeight: 46,
+            flexDirection: "row",
+            alignItems: "center",
+            gap: 10,
+            paddingHorizontal: 12,
+            marginBottom: 15,
+            borderRadius: 13,
+            borderWidth: 1,
+            borderColor: "#DCE7E2",
+            backgroundColor: Colors.white,
+          }}
         >
-          {["all", ...moods.map((mood) => mood.name)].map((mood) => {
-            const active = selectedMood === mood;
-            const moodInfo = moods.find((item) => item.name === mood);
-            return (
-              <Pressable
-                key={mood}
-                onPress={() => setSelectedMood(mood)}
-                style={{
-                  paddingHorizontal: 11,
-                  paddingVertical: 7,
-                  borderRadius: 14,
-                  backgroundColor: active ? "#FFF2D9" : Colors.white,
-                  borderWidth: 1,
-                  borderColor: active ? "#F1D39A" : "#DCE7E2",
-                }}
-              >
-                <Text style={{ color: Colors.textPrimary, fontSize: 12 }}>
-                  {moodInfo ? `${moodInfo.emoji} ${mood}` : "All moods"}
-                </Text>
-              </Pressable>
-            );
-          })}
-        </ScrollView>
+          <Ionicons name="happy-outline" size={18} color={Colors.forest} />
+          <Text style={{ flex: 1, color: Colors.textPrimary, fontSize: 14 }}>
+            {selectedMood === "all"
+              ? "All moods"
+              : `${moods.find((mood) => mood.name === selectedMood)?.emoji || ""} ${selectedMood}`}
+          </Text>
+          <Ionicons name="chevron-down" size={18} color={Colors.sage} />
+        </Pressable>
 
         {loading ? (
           <View style={{ paddingVertical: 42, alignItems: "center" }}>
@@ -1076,6 +1042,191 @@ export default function Diary() {
           ))
         )}
       </ScrollView>
+
+      <Modal
+        visible={filterMenuVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setFilterMenuVisible(false)}
+      >
+        <View
+          style={{
+            flex: 1,
+            alignItems: "center",
+            justifyContent: "center",
+            paddingHorizontal: 24,
+            backgroundColor: "rgba(14,31,26,0.48)",
+          }}
+        >
+          <Pressable
+            onPress={() => setFilterMenuVisible(false)}
+            accessibilityRole="button"
+            accessibilityLabel="Close filter options"
+            style={{
+              position: "absolute",
+              top: 0,
+              right: 0,
+              bottom: 0,
+              left: 0,
+            }}
+          />
+          <View
+            style={{
+              width: "100%",
+              maxWidth: 360,
+              padding: 15,
+              borderRadius: 18,
+              borderWidth: 1,
+              borderColor: "#DCE7E2",
+              backgroundColor: Colors.white,
+            }}
+          >
+            <Text
+              style={{
+                marginBottom: 9,
+                color: Colors.forest,
+                fontSize: 18,
+                fontWeight: "800",
+              }}
+            >
+              Filter entries
+            </Text>
+            {entryFilters.map((filter) => {
+              const active = selectedFilter === filter;
+              return (
+                <Pressable
+                  key={filter}
+                  onPress={() => {
+                    setSelectedFilter(filter);
+                    setFilterMenuVisible(false);
+                  }}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: active }}
+                  style={{
+                    minHeight: 46,
+                    flexDirection: "row",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    paddingHorizontal: 11,
+                    borderRadius: 11,
+                    backgroundColor: active ? "#E8F1EA" : Colors.white,
+                  }}
+                >
+                  <Text
+                    style={{
+                      color: Colors.textPrimary,
+                      fontSize: 14,
+                      fontWeight: active ? "700" : "500",
+                    }}
+                  >
+                    {entryFilterLabels[filter]}
+                  </Text>
+                  {active ? (
+                    <Ionicons
+                      name="checkmark-circle"
+                      size={19}
+                      color={Colors.forest}
+                    />
+                  ) : null}
+                </Pressable>
+              );
+            })}
+          </View>
+        </View>
+      </Modal>
+
+      <Modal
+        visible={moodMenuVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setMoodMenuVisible(false)}
+      >
+        <View
+          style={{
+            flex: 1,
+            alignItems: "center",
+            justifyContent: "center",
+            paddingHorizontal: 24,
+            backgroundColor: "rgba(14,31,26,0.48)",
+          }}
+        >
+          <Pressable
+            onPress={() => setMoodMenuVisible(false)}
+            accessibilityRole="button"
+            accessibilityLabel="Close mood options"
+            style={{
+              position: "absolute",
+              top: 0,
+              right: 0,
+              bottom: 0,
+              left: 0,
+            }}
+          />
+          <View
+            style={{
+              width: "100%",
+              maxWidth: 360,
+              padding: 15,
+              borderRadius: 18,
+              borderWidth: 1,
+              borderColor: "#DCE7E2",
+              backgroundColor: Colors.white,
+            }}
+          >
+            <Text
+              style={{
+                marginBottom: 9,
+                color: Colors.forest,
+                fontSize: 18,
+                fontWeight: "800",
+              }}
+            >
+              Filter by mood
+            </Text>
+            {["all", ...moods.map((mood) => mood.name)].map((mood) => {
+              const active = selectedMood === mood;
+              const moodInfo = moods.find((item) => item.name === mood);
+              return (
+                <Pressable
+                  key={mood}
+                  onPress={() => {
+                    setSelectedMood(mood);
+                    setMoodMenuVisible(false);
+                  }}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: active }}
+                  style={{
+                    minHeight: 46,
+                    flexDirection: "row",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    paddingHorizontal: 11,
+                    borderRadius: 11,
+                    backgroundColor: active ? "#FFF5E2" : Colors.white,
+                  }}
+                >
+                  <Text
+                    style={{
+                      color: Colors.textPrimary,
+                      fontSize: 14,
+                      fontWeight: active ? "700" : "500",
+                    }}
+                  >
+                    {moodInfo ? `${moodInfo.emoji} ${mood}` : "All moods"}
+                  </Text>
+                  {active ? (
+                    <Ionicons
+                      name="checkmark-circle"
+                      size={19}
+                      color={Colors.forest}
+                    />
+                  ) : null}
+                </Pressable>
+              );
+            })}
+          </View>
+        </View>
+      </Modal>
 
       <Pressable
         onPress={openNewEntry}
