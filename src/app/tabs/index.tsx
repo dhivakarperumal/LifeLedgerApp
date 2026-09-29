@@ -376,8 +376,12 @@ export default function Index() {
             </View>
           </LinearGradient>
 
-          <View className="-mt-8 px-5">
-            <View className="flex-row flex-wrap justify-between gap-y-4">
+          <View className="-mt-8">
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={{ paddingHorizontal: 20, gap: 18 }}
+            >
               {[
                 { icon: "wallet", label: "Expense", route: "/tabs/expenses" },
                 { icon: "book", label: "Diary", route: "/tabs/diary" },
@@ -390,7 +394,8 @@ export default function Index() {
               ].map(({ icon, label, route }) => (
                 <Pressable
                   key={label}
-                  className="w-[22%] items-center"
+                  className="items-center"
+                  style={{ width: 60 }}
                   onPress={() => router.push(route as any)}
                 >
                   <View
@@ -417,7 +422,10 @@ export default function Index() {
                   </Text>
                 </Pressable>
               ))}
-            </View>
+            </ScrollView>
+          </View>
+
+          <View className="px-5">
 
             {isLoading ? (
               <View style={{ marginTop: 60, alignItems: "center" }}>

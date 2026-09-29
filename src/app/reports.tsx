@@ -251,7 +251,7 @@ function Metric({
     >
       <View className="flex-row items-center justify-between">
         <Text
-          className={`text-[10px] font-bold uppercase tracking-[0.7px] ${styles.label}`}
+          className={`text-xs font-bold uppercase tracking-[0.7px] ${styles.label}`}
           numberOfLines={1}
         >
           {label}
@@ -263,7 +263,7 @@ function Metric({
         </View>
       </View>
       <Text
-        className={`mt-2 text-[17px] font-extrabold ${styles.value}`}
+        className={`mt-2 text-lg font-extrabold ${styles.value}`}
         numberOfLines={1}
       >
         {value}
@@ -641,7 +641,7 @@ export default function Reports() {
         </Pressable>
         <View className="flex-row items-center">
           <Ionicons name="bar-chart-outline" size={20} color="#315640" />
-          <Text className="ml-2 text-[18px] font-bold text-[#25332C]">
+          <Text className="ml-2 text-lg font-bold text-[#25332C]">
             Reports
           </Text>
         </View>
@@ -669,7 +669,7 @@ export default function Reports() {
                 color="#FFFFFF"
               />
             )}
-            <Text className="ml-2 text-[12px] font-bold text-white">
+            <Text className="ml-2 text-xs font-bold text-white">
               Export PDF
             </Text>
           </Pressable>
@@ -684,7 +684,7 @@ export default function Reports() {
             ) : (
               <Ionicons name="download-outline" size={17} color="#315640" />
             )}
-            <Text className="ml-2 text-[12px] font-bold text-[#315640]">
+            <Text className="ml-2 text-xs font-bold text-[#315640]">
               Export CSV
             </Text>
           </Pressable>
@@ -736,7 +736,7 @@ export default function Reports() {
             <Ionicons name="search-outline" size={18} color="#87918A" />
             <TextInput
               accessibilityLabel="Search report records"
-              className="h-11 flex-1 px-3 text-[13px] text-[#25332C]"
+              className="h-11 flex-1 px-3 text-sm text-[#25332C]"
               placeholder="Search title, category, notes, amount"
               placeholderTextColor="#9AA39D"
               value={search}
@@ -772,7 +772,7 @@ export default function Reports() {
                 onPress={() => changeReportType(value)}
               >
                 <Text
-                  className={`text-[11px] font-bold ${reportType === value ? "text-white" : "text-[#78847B]"}`}
+                  className={`text-xs font-bold ${reportType === value ? "text-white" : "text-[#78847B]"}`}
                 >
                   {label}
                 </Text>
@@ -780,7 +780,7 @@ export default function Reports() {
             ))}
           </View>
 
-          <Text className="mb-1.5 text-[10px] font-bold uppercase tracking-[0.8px] text-[#87918A]">
+          <Text className="mb-1.5 text-xs font-bold uppercase tracking-[0.8px] text-[#87918A]">
             Category
           </Text>
           <ScrollView
@@ -800,7 +800,7 @@ export default function Reports() {
                   }}
                 >
                   <Text
-                    className={`text-[10px] font-bold ${selected ? "text-white" : "text-[#637068]"}`}
+                    className={`text-xs font-bold ${selected ? "text-white" : "text-[#637068]"}`}
                   >
                     {category === "All" ? "All categories" : category}
                   </Text>
@@ -809,7 +809,7 @@ export default function Reports() {
             })}
           </ScrollView>
 
-          <Text className="mb-1.5 text-[10px] font-bold uppercase tracking-[0.8px] text-[#87918A]">
+          <Text className="mb-1.5 text-xs font-bold uppercase tracking-[0.8px] text-[#87918A]">
             Payment method
           </Text>
           <ScrollView
@@ -829,7 +829,7 @@ export default function Reports() {
                   }}
                 >
                   <Text
-                    className={`text-[10px] font-bold ${selected ? "text-white" : "text-[#637068]"}`}
+                    className={`text-xs font-bold ${selected ? "text-white" : "text-[#637068]"}`}
                   >
                     {payment === "All" ? "All methods" : payment}
                   </Text>
@@ -838,7 +838,7 @@ export default function Reports() {
             })}
           </ScrollView>
 
-          <Text className="mb-1.5 text-[10px] font-bold uppercase tracking-[0.8px] text-[#87918A]">
+          <Text className="mb-1.5 text-xs font-bold uppercase tracking-[0.8px] text-[#87918A]">
             Date range
           </Text>
           <ScrollView
@@ -862,7 +862,7 @@ export default function Reports() {
                   }}
                 >
                   <Text
-                    className={`text-[10px] font-bold ${selected ? "text-white" : "text-[#637068]"}`}
+                    className={`text-xs font-bold ${selected ? "text-white" : "text-[#637068]"}`}
                   >
                     {preset}
                   </Text>
@@ -887,7 +887,7 @@ export default function Reports() {
                       size={16}
                       color="#68776D"
                     />
-                    <Text className="ml-2 text-[11px] font-semibold text-[#526058]">
+                    <Text className="ml-2 text-xs font-semibold text-[#526058]">
                       {field === "from" ? "From" : "To"}:{" "}
                       {value || "Select date"}
                     </Text>
@@ -898,7 +898,7 @@ export default function Reports() {
           )}
 
           <View className="flex-row items-center justify-between border-t border-[#EEF0ED] pt-3">
-            <Text className="text-[11px] font-medium text-[#7C8880]">
+            <Text className="text-xs font-medium text-[#7C8880]">
               {visible.length} matching{" "}
               {visible.length === 1 ? "record" : "records"}
             </Text>
@@ -914,7 +914,7 @@ export default function Reports() {
                     size={15}
                     color="#B64C45"
                   />
-                  <Text className="ml-1 text-[10px] font-bold text-[#B64C45]">
+                  <Text className="ml-1 text-xs font-bold text-[#B64C45]">
                     Reset
                   </Text>
                 </Pressable>
@@ -952,17 +952,17 @@ export default function Reports() {
         {loading ? (
           <View className="items-center rounded-2xl border border-[#E4E8E3] bg-white py-16">
             <ActivityIndicator size="large" color="#315640" />
-            <Text className="mt-3 text-[13px] font-medium text-[#7B8580]">
+            <Text className="mt-3 text-sm font-medium text-[#7B8580]">
               Loading report data...
             </Text>
           </View>
         ) : visible.length === 0 ? (
           <View className="items-center rounded-2xl border border-[#E4E8E3] bg-white px-6 py-12">
             <Ionicons name="file-tray-outline" size={34} color="#A4ADA6" />
-            <Text className="mt-3 text-[16px] font-bold text-[#25332C]">
+            <Text className="mt-3 text-base font-bold text-[#25332C]">
               No records found
             </Text>
-            <Text className="mt-1 text-center text-[13px] text-[#7B8580]">
+            <Text className="mt-1 text-center text-sm text-[#7B8580]">
               Try changing the search or filters.
             </Text>
           </View>
@@ -987,13 +987,13 @@ export default function Reports() {
                   <View className="flex-row items-start justify-between gap-2">
                     <View className="min-w-0 flex-1">
                       <Text
-                        className="text-[13px] font-bold text-[#293930]"
+                        className="text-sm font-bold text-[#293930]"
                         numberOfLines={2}
                       >
                         {record.title}
                       </Text>
                       <Text
-                        className="mt-1 text-[10px] font-medium text-[#818D84]"
+                        className="mt-1 text-xs font-medium text-[#818D84]"
                         numberOfLines={1}
                       >
                         {formatDate(record._date)} · {payment}
@@ -1011,7 +1011,7 @@ export default function Reports() {
                   </View>
                   <View className="mt-3 flex-row items-center justify-between">
                     <Text
-                      className={`text-[15px] font-extrabold ${isExpense ? "text-[#B64C45]" : "text-[#356B9A]"}`}
+                      className={`text-base font-extrabold ${isExpense ? "text-[#B64C45]" : "text-[#356B9A]"}`}
                     >
                       {formatAmount(amount)}
                     </Text>
@@ -1027,13 +1027,13 @@ export default function Reports() {
                   <View className="mt-3 flex-row items-center justify-between border-t border-[#EEF0ED] pt-3">
                     {isExpense ? (
                       <Text
-                        className={`text-[10px] font-semibold ${record.recurring === "Yes" ? "text-[#25805A]" : "text-[#818D84]"}`}
+                        className={`text-xs font-semibold ${record.recurring === "Yes" ? "text-[#25805A]" : "text-[#818D84]"}`}
                       >
                         {record.recurring === "Yes" ? "Recurring" : "One-time"}
                       </Text>
                     ) : (
                       <Text
-                        className="text-[10px] font-semibold text-[#25805A]"
+                        className="text-xs font-semibold text-[#25805A]"
                         numberOfLines={1}
                       >
                         Left {formatAmount(record.remaining_amount)}
@@ -1045,7 +1045,7 @@ export default function Reports() {
                   </View>
                   {!!record.notes && (
                     <Text
-                      className="mt-2 text-[10px] leading-4 text-[#818D84]"
+                      className="mt-2 text-xs leading-4 text-[#818D84]"
                       numberOfLines={2}
                     >
                       {record.notes}
@@ -1059,7 +1059,7 @@ export default function Reports() {
 
         {!loading && visible.length > 0 && (
           <View className="mt-1 flex-row items-center justify-between rounded-xl border border-[#E4E8E3] bg-white px-3 py-2.5">
-            <Text className="text-[10px] font-semibold text-[#6F7B73]">
+            <Text className="text-xs font-semibold text-[#6F7B73]">
               {Math.min((safeCurrentPage - 1) * pageSize + 1, visible.length)}-
               {Math.min(safeCurrentPage * pageSize, visible.length)} of{" "}
               {visible.length}
@@ -1074,7 +1074,7 @@ export default function Reports() {
               >
                 <Ionicons name="chevron-back" size={16} color="#526058" />
               </Pressable>
-              <Text className="text-[10px] font-bold text-[#6F7B73]">
+              <Text className="text-xs font-bold text-[#6F7B73]">
                 {safeCurrentPage}/{totalPages}
               </Text>
               <Pressable
@@ -1113,11 +1113,11 @@ export default function Reports() {
         <View className="flex-1 justify-end bg-black/40">
           <View className="rounded-t-[24px] bg-white px-5 pb-8 pt-4">
             <View className="mb-2 flex-row items-center justify-between">
-              <Text className="text-[16px] font-bold text-[#293930]">
+              <Text className="text-base font-bold text-[#293930]">
                 Select {datePickerField === "from" ? "start" : "end"} date
               </Text>
               <Pressable onPress={() => setDatePickerField(null)}>
-                <Text className="text-[13px] font-bold text-[#315640]">
+                <Text className="text-sm font-bold text-[#315640]">
                   Done
                 </Text>
               </Pressable>
@@ -1137,7 +1137,7 @@ export default function Reports() {
                 setDatePickerField(null);
               }}
             >
-              <Text className="text-[13px] font-bold text-white">
+              <Text className="text-sm font-bold text-white">
                 Apply date
               </Text>
             </Pressable>

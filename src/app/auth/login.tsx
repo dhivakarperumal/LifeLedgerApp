@@ -31,7 +31,7 @@ function FeaturePill({
       <View className="h-12 w-12 items-center justify-center rounded-2xl bg-white/20">
         {icon}
       </View>
-      <Text className="text-center text-[10px] font-semibold leading-3 text-white/85">
+      <Text className="text-center text-xs font-semibold leading-3 text-white/85">
         {label}
       </Text>
     </View>
@@ -68,7 +68,7 @@ function SocialButton({
       }}
     >
       {logo}
-      <Text className="text-[13px] font-bold" style={{ color: textColor }}>
+      <Text className="text-sm font-bold" style={{ color: textColor }}>
         {label}
       </Text>
     </Pressable>
@@ -142,7 +142,7 @@ export default function LoginScreen() {
                     <Text className="text-white">Life </Text>
                     <Text className="text-[#D7D83B]">Ledger</Text>
                   </Text>
-                  <Text className="mt-px text-[11px] text-white/75">
+                  <Text className="mt-px text-xs text-white/75">
                     Track Today · Build a Better Tomorrow
                   </Text>
                 </View>
@@ -197,16 +197,16 @@ export default function LoginScreen() {
           {/* ── Login card ──────────────────────────────────────────────────── */}
           <View className="mx-4 mb-6 mt-[-1px] rounded-[28px] bg-white p-6 shadow-lg">
             {/* Header */}
-            <Text className="text-center text-[22px] font-bold text-[#263238]">
+            <Text className="text-center text-2xl font-bold text-[#263238]">
               Welcome Back
             </Text>
-            <Text className="mb-6 mt-1 text-center text-[13px] text-[#7B8589]">
+            <Text className="mb-6 mt-1 text-center text-sm text-[#7B8589]">
               Login to your Life Ledger account
             </Text>
 
             {/* Email field */}
             <View className="mb-[14px]">
-              <Text className="mb-2 text-[13px] font-semibold text-[#263238]">
+              <Text className="mb-2 text-sm font-semibold text-[#263238]">
                 Email or Mobile Number
               </Text>
               <View className="h-[52px] flex-row items-center rounded-[14px] border border-[#E5EAE7] bg-[#F9FAFC] px-[14px]">
@@ -227,14 +227,14 @@ export default function LoginScreen() {
                   keyboardType="email-address"
                   returnKeyType="next"
                   selectionColor={Colors.primary}
-                  className="ml-2.5 flex-1 text-[15px] text-[#263238]"
+                  className="ml-2.5 flex-1 text-base text-[#263238]"
                 />
               </View>
             </View>
 
             {/* Password field */}
             <View className="mb-4">
-              <Text className="mb-2 text-[13px] font-semibold text-[#263238]">
+              <Text className="mb-2 text-sm font-semibold text-[#263238]">
                 Password
               </Text>
               <View className="h-[52px] flex-row items-center rounded-[14px] border border-[#E5EAE7] bg-[#F9FAFC] px-[14px]">
@@ -254,7 +254,7 @@ export default function LoginScreen() {
                   returnKeyType="done"
                   onSubmitEditing={handleSubmit}
                   selectionColor={Colors.primary}
-                  className="ml-2.5 flex-1 text-[15px] text-[#263238]"
+                  className="ml-2.5 flex-1 text-base text-[#263238]"
                 />
                 <Pressable
                   hitSlop={10}
@@ -292,7 +292,7 @@ export default function LoginScreen() {
                     <Ionicons name="checkmark" size={13} color={Colors.white} />
                   )}
                 </View>
-                <Text className="text-[13px] text-[#7B8589]">Remember Me</Text>
+                <Text className="text-sm text-[#7B8589]">Remember Me</Text>
               </Pressable>
 
               <Pressable
@@ -303,7 +303,7 @@ export default function LoginScreen() {
                   )
                 }
               >
-                <Text className="text-[13px] font-semibold text-[#366039]">
+                <Text className="text-sm font-semibold text-[#366039]">
                   Forgot Password?
                 </Text>
               </Pressable>
@@ -365,14 +365,14 @@ export default function LoginScreen() {
 
             {/* Sign up link */}
             <View className="flex-row items-center justify-center gap-1">
-              <Text className="text-[13px] text-[#7B8589]">
+              <Text className="text-sm text-[#7B8589]">
                 Don&apos;t have an account?
               </Text>
               <Pressable
                 onPress={() => router.push("/auth/register")}
                 className="active:opacity-60"
               >
-                <Text className="text-[13px] font-bold text-[#366039] underline">
+                <Text className="text-sm font-bold text-[#366039] underline">
                   Sign Up
                 </Text>
               </Pressable>

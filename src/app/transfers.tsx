@@ -124,17 +124,17 @@ function Metric({
     <View
       className={`mb-3 min-h-[104px] flex-1 rounded-2xl border border-[#E4E8E3] p-3.5 ${background}`}
     >
-      <Text className="text-[10px] font-bold uppercase tracking-[0.8px] text-[#7C8880]">
+      <Text className="text-xs font-bold uppercase tracking-[0.8px] text-[#7C8880]">
         {label}
       </Text>
       <Text
-        className={`mt-2 text-[18px] font-extrabold ${valueColor}`}
+        className={`mt-2 text-lg font-extrabold ${valueColor}`}
         numberOfLines={1}
       >
         {value}
       </Text>
       <Text
-        className="mt-1 text-[10px] font-medium text-[#818D84]"
+        className="mt-1 text-xs font-medium text-[#818D84]"
         numberOfLines={1}
       >
         {caption}
@@ -502,7 +502,7 @@ export default function Transfers() {
         >
           <Ionicons name="arrow-back" size={20} color="#25332C" />
         </Pressable>
-        <Text className="text-[18px] font-bold text-[#25332C]">Transfers</Text>
+        <Text className="text-lg font-bold text-[#25332C]">Transfers</Text>
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Add transfer"
@@ -552,10 +552,10 @@ export default function Transfers() {
 
         <View className="mb-3 flex-row items-center justify-between">
           <View>
-            <Text className="text-[17px] font-bold text-[#293930]">
+            <Text className="text-lg font-bold text-[#293930]">
               Transfer records
             </Text>
-            <Text className="mt-0.5 text-[12px] text-[#859087]">
+            <Text className="mt-0.5 text-xs text-[#859087]">
               {transfers.length} {transfers.length === 1 ? "record" : "records"}
             </Text>
           </View>
@@ -565,7 +565,7 @@ export default function Transfers() {
             className="flex-row items-center rounded-xl bg-[#315640] px-3.5 py-2.5"
           >
             <Ionicons name="add" size={17} color="#FFFFFF" />
-            <Text className="ml-1 text-[12px] font-bold text-white">
+            <Text className="ml-1 text-xs font-bold text-white">
               Add transfer
             </Text>
           </Pressable>
@@ -575,7 +575,7 @@ export default function Transfers() {
           <Ionicons name="search-outline" size={18} color="#87918A" />
           <TextInput
             accessibilityLabel="Search transfers"
-            className="h-12 flex-1 px-3 text-[14px] text-[#25332C]"
+            className="h-12 flex-1 px-3 text-sm text-[#25332C]"
             placeholder="Search title or category"
             placeholderTextColor="#9AA39D"
             value={search}
@@ -613,7 +613,7 @@ export default function Transfers() {
                   }}
                 >
                   <Text
-                    className={`text-[11px] font-bold ${selected ? "text-white" : "text-[#637068]"}`}
+                    className={`text-xs font-bold ${selected ? "text-white" : "text-[#637068]"}`}
                   >
                     {category}
                   </Text>
@@ -652,7 +652,7 @@ export default function Transfers() {
         {loading ? (
           <View className="items-center py-16">
             <ActivityIndicator size="large" color="#315640" />
-            <Text className="mt-3 text-[13px] font-medium text-[#7B8580]">
+            <Text className="mt-3 text-sm font-medium text-[#7B8580]">
               Loading transfers...
             </Text>
           </View>
@@ -663,10 +663,10 @@ export default function Transfers() {
               size={34}
               color="#A4ADA6"
             />
-            <Text className="mt-3 text-[16px] font-bold text-[#25332C]">
+            <Text className="mt-3 text-base font-bold text-[#25332C]">
               No transfer records found
             </Text>
-            <Text className="mt-1 text-center text-[13px] text-[#7B8580]">
+            <Text className="mt-1 text-center text-sm text-[#7B8580]">
               Add a transfer or adjust your search.
             </Text>
           </View>
@@ -692,13 +692,13 @@ export default function Transfers() {
                   <View className="flex-row items-start justify-between gap-2">
                     <View className="min-w-0 flex-1">
                       <Text
-                        className="text-[14px] font-bold text-[#293930]"
+                        className="text-sm font-bold text-[#293930]"
                         numberOfLines={2}
                       >
                         {transfer.title}
                       </Text>
                       <Text
-                        className="mt-1 text-[11px] font-medium text-[#818D84]"
+                        className="mt-1 text-xs font-medium text-[#818D84]"
                         numberOfLines={1}
                       >
                         {transfer.category || "Uncategorized"} ·{" "}
@@ -706,7 +706,7 @@ export default function Transfers() {
                       </Text>
                     </View>
                     <Text
-                      className="text-[14px] font-extrabold text-[#293930]"
+                      className="text-sm font-extrabold text-[#293930]"
                       numberOfLines={1}
                     >
                       {formatAmount(amount)}
@@ -724,7 +724,7 @@ export default function Transfers() {
                         Spent
                       </Text>
                       <Text
-                        className="mt-0.5 text-[11px] font-extrabold text-[#B64C45]"
+                        className="mt-0.5 text-xs font-extrabold text-[#B64C45]"
                         numberOfLines={1}
                       >
                         {formatAmount(expense)}
@@ -735,7 +735,7 @@ export default function Transfers() {
                         Remaining
                       </Text>
                       <Text
-                        className="mt-0.5 text-[11px] font-extrabold text-[#25805A]"
+                        className="mt-0.5 text-xs font-extrabold text-[#25805A]"
                         numberOfLines={1}
                       >
                         {formatAmount(remaining)}
@@ -744,7 +744,7 @@ export default function Transfers() {
                   </View>
                   <View className="mt-3 flex-row items-center justify-between border-t border-[#EEF0ED] pt-3">
                     <View className="flex-row items-center gap-2">
-                      <Text className="text-[10px] font-medium text-[#7C8880]">
+                      <Text className="text-xs font-medium text-[#7C8880]">
                         {transfer.payment_method || "-"}
                       </Text>
                       {transfer.receipt && (
@@ -802,7 +802,7 @@ export default function Transfers() {
 
         {!loading && visibleTransfers.length > 0 && (
           <View className="mt-1 flex-row items-center justify-between rounded-xl border border-[#E4E8E3] bg-white px-3 py-2.5">
-            <Text className="text-[11px] font-semibold text-[#6F7B73]">
+            <Text className="text-xs font-semibold text-[#6F7B73]">
               Showing{" "}
               {Math.min(
                 (safeCurrentPage - 1) * pageSize + 1,
@@ -823,7 +823,7 @@ export default function Transfers() {
               >
                 <Ionicons name="chevron-back" size={16} color="#526058" />
               </Pressable>
-              <Text className="text-[11px] font-bold text-[#6F7B73]">
+              <Text className="text-xs font-bold text-[#6F7B73]">
                 {safeCurrentPage} / {totalPages}
               </Text>
               <Pressable
@@ -852,12 +852,12 @@ export default function Transfers() {
           <View className="max-h-[92%] rounded-t-[26px] bg-[#F8F9F6] px-5 pb-8 pt-5">
             <View className="mb-4 flex-row items-center justify-between">
               <View>
-                <Text className="text-[20px] font-bold text-[#25332C]">
+                <Text className="text-xl font-bold text-[#25332C]">
                   {editingTransferId !== null
                     ? "Edit transfer"
                     : "Add transfer"}
                 </Text>
-                <Text className="mt-1 text-[12px] text-[#818B84]">
+                <Text className="mt-1 text-xs text-[#818B84]">
                   Move income into a budget or savings category
                 </Text>
               </View>
@@ -875,7 +875,7 @@ export default function Transfers() {
               keyboardShouldPersistTaps="handled"
               showsVerticalScrollIndicator={false}
             >
-              <Text className="mb-2 text-[12px] font-bold text-[#46534B]">
+              <Text className="mb-2 text-xs font-bold text-[#46534B]">
                 Source income (optional)
               </Text>
               <ScrollView
@@ -890,10 +890,10 @@ export default function Transfers() {
                     setForm((current) => ({ ...current, amount: "" }));
                   }}
                 >
-                  <Text className="text-[12px] font-bold text-[#293930]">
+                  <Text className="text-xs font-bold text-[#293930]">
                     No source
                   </Text>
-                  <Text className="mt-1 text-[10px] text-[#818D84]">
+                  <Text className="mt-1 text-xs text-[#818D84]">
                     Unlinked transfer
                   </Text>
                 </Pressable>
@@ -910,12 +910,12 @@ export default function Transfers() {
                       }}
                     >
                       <Text
-                        className="text-[12px] font-bold text-[#293930]"
+                        className="text-xs font-bold text-[#293930]"
                         numberOfLines={1}
                       >
                         {income.title}
                       </Text>
-                      <Text className="mt-1 text-[10px] text-[#818D84]">
+                      <Text className="mt-1 text-xs text-[#818D84]">
                         {formatAmount(income.remaining_amount ?? income.amount)}{" "}
                         available
                       </Text>
@@ -925,10 +925,10 @@ export default function Transfers() {
               </ScrollView>
               {selectedIncome && (
                 <View className="mb-4 flex-row justify-between rounded-xl bg-[#EFF7F1] px-3 py-2.5">
-                  <Text className="text-[11px] font-semibold text-[#617367]">
+                  <Text className="text-xs font-semibold text-[#617367]">
                     Available {formatAmount(availableBalance)}
                   </Text>
-                  <Text className="text-[11px] font-bold text-[#25805A]">
+                  <Text className="text-xs font-bold text-[#25805A]">
                     After transfer {formatAmount(remainingAfterTransfer)}
                   </Text>
                 </View>
@@ -947,17 +947,17 @@ export default function Transfers() {
                     size={16}
                     color="#315640"
                   />
-                  <Text className="ml-1 text-[11px] font-bold text-[#315640]">
+                  <Text className="ml-1 text-xs font-bold text-[#315640]">
                     Add income record
                   </Text>
                 </Pressable>
               )}
 
-              <Text className="mb-1.5 text-[12px] font-bold text-[#46534B]">
+              <Text className="mb-1.5 text-xs font-bold text-[#46534B]">
                 Transfer title
               </Text>
               <TextInput
-                className="mb-4 rounded-xl border border-[#E1E6E0] bg-white px-4 py-3 text-[14px] text-[#25332C]"
+                className="mb-4 rounded-xl border border-[#E1E6E0] bg-white px-4 py-3 text-sm text-[#25332C]"
                 placeholder="e.g. Monthly savings"
                 placeholderTextColor="#9AA39D"
                 value={form.title}
@@ -966,11 +966,11 @@ export default function Transfers() {
 
               <View className="flex-row gap-3">
                 <View className="flex-1">
-                  <Text className="mb-1.5 text-[12px] font-bold text-[#46534B]">
+                  <Text className="mb-1.5 text-xs font-bold text-[#46534B]">
                     Amount
                   </Text>
                   <TextInput
-                    className="mb-4 rounded-xl border border-[#E1E6E0] bg-white px-4 py-3 text-[14px] text-[#25332C]"
+                    className="mb-4 rounded-xl border border-[#E1E6E0] bg-white px-4 py-3 text-sm text-[#25332C]"
                     keyboardType="decimal-pad"
                     placeholder="0.00"
                     placeholderTextColor="#9AA39D"
@@ -979,11 +979,11 @@ export default function Transfers() {
                   />
                 </View>
                 <View className="flex-1">
-                  <Text className="mb-1.5 text-[12px] font-bold text-[#46534B]">
+                  <Text className="mb-1.5 text-xs font-bold text-[#46534B]">
                     Date
                   </Text>
                   <TextInput
-                    className="mb-4 rounded-xl border border-[#E1E6E0] bg-white px-4 py-3 text-[14px] text-[#25332C]"
+                    className="mb-4 rounded-xl border border-[#E1E6E0] bg-white px-4 py-3 text-sm text-[#25332C]"
                     placeholder="YYYY-MM-DD"
                     placeholderTextColor="#9AA39D"
                     value={form.date}
@@ -992,11 +992,11 @@ export default function Transfers() {
                 </View>
               </View>
 
-              <Text className="mb-1.5 text-[12px] font-bold text-[#46534B]">
+              <Text className="mb-1.5 text-xs font-bold text-[#46534B]">
                 Category
               </Text>
               <TextInput
-                className="mb-2 rounded-xl border border-[#E1E6E0] bg-white px-4 py-3 text-[14px] text-[#25332C]"
+                className="mb-2 rounded-xl border border-[#E1E6E0] bg-white px-4 py-3 text-sm text-[#25332C]"
                 placeholder="Choose or enter a category"
                 placeholderTextColor="#9AA39D"
                 value={form.category}
@@ -1015,7 +1015,7 @@ export default function Transfers() {
                       onPress={() => updateForm("category", category)}
                     >
                       <Text
-                        className={`text-[11px] font-bold ${form.category === category ? "text-white" : "text-[#637068]"}`}
+                        className={`text-xs font-bold ${form.category === category ? "text-white" : "text-[#637068]"}`}
                       >
                         {category}
                       </Text>
@@ -1024,7 +1024,7 @@ export default function Transfers() {
                 </ScrollView>
               )}
 
-              <Text className="mb-2 text-[12px] font-bold text-[#46534B]">
+              <Text className="mb-2 text-xs font-bold text-[#46534B]">
                 Payment method
               </Text>
               <View className="mb-4 flex-row flex-wrap gap-2">
@@ -1035,7 +1035,7 @@ export default function Transfers() {
                     onPress={() => updateForm("paymentMethod", method)}
                   >
                     <Text
-                      className={`text-[11px] font-bold ${form.paymentMethod === method ? "text-white" : "text-[#637068]"}`}
+                      className={`text-xs font-bold ${form.paymentMethod === method ? "text-white" : "text-[#637068]"}`}
                     >
                       {method}
                     </Text>
@@ -1043,11 +1043,11 @@ export default function Transfers() {
                 ))}
               </View>
 
-              <Text className="mb-1.5 text-[12px] font-bold text-[#46534B]">
+              <Text className="mb-1.5 text-xs font-bold text-[#46534B]">
                 Notes
               </Text>
               <TextInput
-                className="mb-4 min-h-[78px] rounded-xl border border-[#E1E6E0] bg-white px-4 py-3 text-[14px] text-[#25332C]"
+                className="mb-4 min-h-[78px] rounded-xl border border-[#E1E6E0] bg-white px-4 py-3 text-sm text-[#25332C]"
                 multiline
                 placeholder="Add any useful details"
                 placeholderTextColor="#9AA39D"
@@ -1056,7 +1056,7 @@ export default function Transfers() {
                 onChangeText={(value) => updateForm("notes", value)}
               />
 
-              <Text className="mb-2 text-[12px] font-bold text-[#46534B]">
+              <Text className="mb-2 text-xs font-bold text-[#46534B]">
                 Receipt
               </Text>
               {existingReceipt && !receipt && (
@@ -1070,7 +1070,7 @@ export default function Transfers() {
                     color="#426C92"
                   />
                   <Text
-                    className="ml-2 flex-1 text-[11px] font-semibold text-[#526058]"
+                    className="ml-2 flex-1 text-xs font-semibold text-[#526058]"
                     numberOfLines={1}
                   >
                     Current receipt · tap to open
@@ -1090,7 +1090,7 @@ export default function Transfers() {
                     color="#426C62"
                   />
                   <Text
-                    className="ml-2 flex-1 text-[12px] font-semibold text-[#59675F]"
+                    className="ml-2 flex-1 text-xs font-semibold text-[#59675F]"
                     numberOfLines={1}
                   >
                     {receipt?.name || "Choose image or PDF"}
@@ -1115,7 +1115,7 @@ export default function Transfers() {
                 disabled={submitting}
                 onPress={closeModal}
               >
-                <Text className="text-[14px] font-bold text-[#58645C]">
+                <Text className="text-sm font-bold text-[#58645C]">
                   Cancel
                 </Text>
               </Pressable>
@@ -1127,7 +1127,7 @@ export default function Transfers() {
                 {submitting ? (
                   <ActivityIndicator color="#FFFFFF" />
                 ) : (
-                  <Text className="text-[14px] font-bold text-white">
+                  <Text className="text-sm font-bold text-white">
                     {editingTransferId !== null
                       ? "Save changes"
                       : "Save transfer"}
@@ -1149,11 +1149,11 @@ export default function Transfers() {
           <View className="rounded-t-[26px] bg-[#F8F9F6] px-5 pb-9 pt-5">
             <View className="mb-4 flex-row items-center justify-between">
               <View className="flex-1 pr-3">
-                <Text className="text-[10px] font-bold uppercase tracking-[1px] text-[#818B84]">
+                <Text className="text-xs font-bold uppercase tracking-[1px] text-[#818B84]">
                   Transfer details
                 </Text>
                 <Text
-                  className="mt-1 text-[20px] font-bold text-[#25332C]"
+                  className="mt-1 text-xl font-bold text-[#25332C]"
                   numberOfLines={1}
                 >
                   {selectedTransfer?.title}
@@ -1170,46 +1170,46 @@ export default function Transfers() {
             </View>
             <View className="mb-3 flex-row gap-3">
               <View className="flex-1 rounded-xl bg-white p-3">
-                <Text className="text-[10px] font-bold uppercase text-[#87918A]">
+                <Text className="text-xs font-bold uppercase text-[#87918A]">
                   Amount
                 </Text>
-                <Text className="mt-1 text-[14px] font-extrabold text-[#293930]">
+                <Text className="mt-1 text-sm font-extrabold text-[#293930]">
                   {formatAmount(selectedTransfer?.amount)}
                 </Text>
               </View>
               <View className="flex-1 rounded-xl bg-white p-3">
-                <Text className="text-[10px] font-bold uppercase text-[#87918A]">
+                <Text className="text-xs font-bold uppercase text-[#87918A]">
                   Category
                 </Text>
-                <Text className="mt-1 text-[14px] font-bold text-[#293930]">
+                <Text className="mt-1 text-sm font-bold text-[#293930]">
                   {selectedTransfer?.category || "-"}
                 </Text>
               </View>
             </View>
             <View className="mb-3 flex-row gap-3">
               <View className="flex-1 rounded-xl bg-white p-3">
-                <Text className="text-[10px] font-bold uppercase text-[#87918A]">
+                <Text className="text-xs font-bold uppercase text-[#87918A]">
                   Date
                 </Text>
-                <Text className="mt-1 text-[13px] font-bold text-[#293930]">
+                <Text className="mt-1 text-sm font-bold text-[#293930]">
                   {formatDate(selectedTransfer?.transfer_date)}
                 </Text>
               </View>
               <View className="flex-1 rounded-xl bg-white p-3">
-                <Text className="text-[10px] font-bold uppercase text-[#87918A]">
+                <Text className="text-xs font-bold uppercase text-[#87918A]">
                   Payment
                 </Text>
-                <Text className="mt-1 text-[13px] font-bold text-[#293930]">
+                <Text className="mt-1 text-sm font-bold text-[#293930]">
                   {selectedTransfer?.payment_method || "-"}
                 </Text>
               </View>
             </View>
             {!!selectedTransfer?.notes && (
               <View className="mb-3 rounded-xl bg-white p-3">
-                <Text className="text-[10px] font-bold uppercase text-[#87918A]">
+                <Text className="text-xs font-bold uppercase text-[#87918A]">
                   Notes
                 </Text>
-                <Text className="mt-1 text-[13px] leading-5 text-[#526058]">
+                <Text className="mt-1 text-sm leading-5 text-[#526058]">
                   {selectedTransfer.notes}
                 </Text>
               </View>
@@ -1220,7 +1220,7 @@ export default function Transfers() {
                 onPress={() => void openReceipt(selectedTransfer.receipt!)}
               >
                 <Ionicons name="open-outline" size={17} color="#FFFFFF" />
-                <Text className="ml-2 text-[13px] font-bold text-white">
+                <Text className="ml-2 text-sm font-bold text-white">
                   Open receipt
                 </Text>
               </Pressable>

@@ -101,13 +101,13 @@ function MoreMenuRow({
 
       <View className="flex-1">
         <Text
-          className="text-[17px] font-bold text-[#1F2D2D]"
+          className="text-lg font-bold text-[#1F2D2D]"
           style={{ fontFamily: "Roboto Condensed, sans-serif" }}
         >
           {item.label}
         </Text>
         <Text
-          className="mt-1 text-[12px] font-medium uppercase tracking-[0.9px] text-[#7B8589]"
+          className="mt-1 text-xs font-medium uppercase tracking-[0.9px] text-[#7B8589]"
           style={{ fontFamily: "Roboto Condensed, sans-serif" }}
         >
           {item.subtitle}
@@ -137,7 +137,7 @@ export default function More() {
         <View className="flex-row items-center">
           <View className="mr-3 h-14 w-14 items-center justify-center rounded-xl bg-[#2F4E39]">
             <Text
-              className="text-[30px] font-extrabold text-white"
+              className="text-3xl font-extrabold text-white"
               style={{ fontFamily: "Roboto Condensed, sans-serif" }}
             >
               D
@@ -146,13 +146,13 @@ export default function More() {
 
           <View>
             <Text
-              className="text-[20px] font-bold text-[#1E2A2F]"
+              className="text-xl font-bold text-[#1E2A2F]"
               style={{ fontFamily: "Roboto Condensed, sans-serif" }}
             >
               Dhivakar P
             </Text>
             <Text
-              className="text-[10px] font-bold tracking-[1.5px] text-[#6E7A7F]"
+              className="text-xs font-bold tracking-[1.5px] text-[#6E7A7F]"
               style={{ fontFamily: "Roboto Condensed, sans-serif" }}
             >
               PREMIUM MEMBER
@@ -186,13 +186,13 @@ export default function More() {
         >
           <View>
             <Text
-              className="text-[10px] font-bold tracking-[1.4px] text-[#7C5CDA]"
+              className="text-xs font-bold tracking-[1.4px] text-[#7C5CDA]"
               style={{ fontFamily: "Roboto Condensed, sans-serif" }}
             >
               MEMBER CARD
             </Text>
             <Text
-              className="mt-1 text-[18px] font-bold text-[#1F2D2D]"
+              className="mt-1 text-lg font-bold text-[#1F2D2D]"
               style={{ fontFamily: "Roboto Condensed, sans-serif" }}
             >
               Premium Access
@@ -213,13 +213,13 @@ export default function More() {
         <View className="flex-row gap-3 px-5 py-4">
           <View className="flex-1 rounded-2xl border border-[#E9EEF0] bg-[#F6F8F7] p-3">
             <Text
-              className="text-[10px] font-bold tracking-[1.2px] text-[#7B8589]"
+              className="text-xs font-bold tracking-[1.2px] text-[#7B8589]"
               style={{ fontFamily: "Roboto Condensed, sans-serif" }}
             >
               TOTAL
             </Text>
             <Text
-              className="mt-1 text-[24px] font-extrabold text-[#1F2D2D]"
+              className="mt-1 text-2xl font-extrabold text-[#1F2D2D]"
               style={{ fontFamily: "Roboto Condensed, sans-serif" }}
             >
               ₹24.8K
@@ -228,13 +228,13 @@ export default function More() {
 
           <View className="flex-1 rounded-2xl border border-[#E9EEF0] bg-[#F4FBF7] p-3">
             <Text
-              className="text-[10px] font-bold tracking-[1.2px] text-[#7B8589]"
+              className="text-xs font-bold tracking-[1.2px] text-[#7B8589]"
               style={{ fontFamily: "Roboto Condensed, sans-serif" }}
             >
               SAVED
             </Text>
             <Text
-              className="mt-1 text-[24px] font-extrabold text-[#1F2D2D]"
+              className="mt-1 text-2xl font-extrabold text-[#1F2D2D]"
               style={{ fontFamily: "Roboto Condensed, sans-serif" }}
             >
               ₹8.1K
@@ -244,7 +244,7 @@ export default function More() {
       </View>
 
       <Text
-        className="mt-3 mb-2 text-[11px] font-bold tracking-[1.5px] text-[#6A7176]"
+        className="mt-3 mb-2 text-xs font-bold tracking-[1.5px] text-[#6A7176]"
         style={{ fontFamily: "Roboto Condensed, sans-serif" }}
       >
         ACCOUNT MANAGEMENT
@@ -271,7 +271,7 @@ export default function More() {
       ))}
 
       <Text
-        className="mt-5 mb-2 text-[11px] font-bold tracking-[1.5px] text-[#6A7176]"
+        className="mt-5 mb-2 text-xs font-bold tracking-[1.5px] text-[#6A7176]"
         style={{ fontFamily: "Roboto Condensed, sans-serif" }}
       >
         APP SETTINGS
@@ -288,7 +288,7 @@ export default function More() {
       >
         <Ionicons name="log-out-outline" size={20} color="#DD4B4B" />
         <Text
-          className="ml-3 text-[16px] font-bold text-[#D94A4A]"
+          className="ml-3 text-base font-bold text-[#D94A4A]"
           style={{ fontFamily: "Roboto Condensed, sans-serif" }}
         >
           SIGN OUT ACCOUNT

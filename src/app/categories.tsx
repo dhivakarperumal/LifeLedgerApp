@@ -274,7 +274,7 @@ export default function Categories() {
         >
           <Ionicons name="arrow-back" size={20} color="#25332C" />
         </Pressable>
-        <Text className="text-[18px] font-bold text-[#25332C]">Categories</Text>
+        <Text className="text-lg font-bold text-[#25332C]">Categories</Text>
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Add category"
@@ -292,26 +292,26 @@ export default function Categories() {
       >
         <View className="mb-4 flex-row gap-3">
           <View className="flex-1 rounded-2xl bg-[#315640] p-4">
-            <Text className="text-[11px] font-bold uppercase tracking-[1px] text-white/75">
+            <Text className="text-xs font-bold uppercase tracking-[1px] text-white/75">
               Total
             </Text>
-            <Text className="mt-1 text-[26px] font-bold text-white">
+            <Text className="mt-1 text-3xl font-bold text-white">
               {categories.length}
             </Text>
           </View>
           <View className="flex-1 rounded-2xl border border-[#DDE5DD] bg-white p-4">
-            <Text className="text-[11px] font-bold uppercase tracking-[1px] text-[#718078]">
+            <Text className="text-xs font-bold uppercase tracking-[1px] text-[#718078]">
               Active
             </Text>
-            <Text className="mt-1 text-[26px] font-bold text-[#25805A]">
+            <Text className="mt-1 text-3xl font-bold text-[#25805A]">
               {activeCount}
             </Text>
           </View>
           <View className="flex-1 rounded-2xl border border-[#E9DECC] bg-[#FFF9EF] p-4">
-            <Text className="text-[11px] font-bold uppercase tracking-[1px] text-[#8B7351]">
+            <Text className="text-xs font-bold uppercase tracking-[1px] text-[#8B7351]">
               Inactive
             </Text>
-            <Text className="mt-1 text-[26px] font-bold text-[#B17632]">
+            <Text className="mt-1 text-3xl font-bold text-[#B17632]">
               {inactiveCount}
             </Text>
           </View>
@@ -321,7 +321,7 @@ export default function Categories() {
           <Ionicons name="search-outline" size={19} color="#87918A" />
           <TextInput
             accessibilityLabel="Search categories"
-            className="h-12 flex-1 px-3 text-[14px] text-[#25332C]"
+            className="h-12 flex-1 px-3 text-sm text-[#25332C]"
             placeholder="Search name or ID"
             placeholderTextColor="#9AA39D"
             value={search}
@@ -352,7 +352,7 @@ export default function Categories() {
                 onPress={() => setTypeFilter(type)}
               >
                 <Text
-                  className={`text-[12px] font-bold ${selected ? "text-white" : "text-[#637068]"}`}
+                  className={`text-xs font-bold ${selected ? "text-white" : "text-[#637068]"}`}
                 >
                   {type === "All" ? "All types" : type}
                 </Text>
@@ -371,7 +371,7 @@ export default function Categories() {
                 onPress={() => setStatusFilter(status)}
               >
                 <Text
-                  className={`text-[12px] font-bold ${selected ? "text-[#315640]" : "text-[#7B8580]"}`}
+                  className={`text-xs font-bold ${selected ? "text-[#315640]" : "text-[#7B8580]"}`}
                 >
                   {status === "All" ? "All statuses" : status}
                 </Text>
@@ -383,17 +383,17 @@ export default function Categories() {
         {loading ? (
           <View className="items-center py-16">
             <ActivityIndicator size="large" color="#315640" />
-            <Text className="mt-3 text-[13px] font-medium text-[#7B8580]">
+            <Text className="mt-3 text-sm font-medium text-[#7B8580]">
               Loading categories...
             </Text>
           </View>
         ) : filteredCategories.length === 0 ? (
           <View className="items-center rounded-2xl border border-[#E4E8E3] bg-white px-6 py-12">
             <Ionicons name="file-tray-outline" size={34} color="#A4ADA6" />
-            <Text className="mt-3 text-[16px] font-bold text-[#25332C]">
+            <Text className="mt-3 text-base font-bold text-[#25332C]">
               No categories found
             </Text>
-            <Text className="mt-1 text-center text-[13px] text-[#7B8580]">
+            <Text className="mt-1 text-center text-sm text-[#7B8580]">
               Try another filter or create a category.
             </Text>
           </View>
@@ -410,10 +410,10 @@ export default function Categories() {
                 >
                   <View className="flex-row items-start justify-between">
                     <View className="mr-3 flex-1">
-                      <Text className="text-[16px] font-bold text-[#25332C]">
+                      <Text className="text-base font-bold text-[#25332C]">
                         {category.name}
                       </Text>
-                      <Text className="mt-1 text-[11px] font-semibold text-[#8A948D]">
+                      <Text className="mt-1 text-xs font-semibold text-[#8A948D]">
                         {category.catId || "No ID"}
                       </Text>
                     </View>
@@ -422,7 +422,7 @@ export default function Categories() {
                       style={{ backgroundColor: typeBackground }}
                     >
                       <Text
-                        className="text-[10px] font-bold"
+                        className="text-xs font-bold"
                         style={{ color: typeColor }}
                       >
                         {type}
@@ -430,7 +430,7 @@ export default function Categories() {
                     </View>
                   </View>
                   <Text
-                    className="mt-3 text-[13px] leading-5 text-[#69756D]"
+                    className="mt-3 text-sm leading-5 text-[#69756D]"
                     numberOfLines={2}
                   >
                     {category.description || "No description"}
@@ -441,7 +441,7 @@ export default function Categories() {
                         className={`mr-2 h-2 w-2 rounded-full ${active ? "bg-[#2B9A65]" : "bg-[#C68A42]"}`}
                       />
                       <Text
-                        className={`text-[12px] font-semibold ${active ? "text-[#25805A]" : "text-[#A56A2F]"}`}
+                        className={`text-xs font-semibold ${active ? "text-[#25805A]" : "text-[#A56A2F]"}`}
                       >
                         {active ? "Active" : "Inactive"}
                       </Text>
@@ -490,11 +490,11 @@ export default function Categories() {
           <View className="max-h-[90%] rounded-t-[26px] bg-[#F8F9F6] px-5 pb-8 pt-5">
             <View className="mb-5 flex-row items-center justify-between">
               <View>
-                <Text className="text-[20px] font-bold text-[#25332C]">
+                <Text className="text-xl font-bold text-[#25332C]">
                   {editingCategory ? "Edit category" : "New category"}
                 </Text>
                 {editingCategory && (
-                  <Text className="mt-1 text-[12px] font-medium text-[#818B84]">
+                  <Text className="mt-1 text-xs font-medium text-[#818B84]">
                     {editingCategory.catId}
                   </Text>
                 )}
@@ -513,18 +513,18 @@ export default function Categories() {
               keyboardShouldPersistTaps="handled"
               showsVerticalScrollIndicator={false}
             >
-              <Text className="mb-2 text-[12px] font-bold text-[#46534B]">
+              <Text className="mb-2 text-xs font-bold text-[#46534B]">
                 Category name
               </Text>
               <TextInput
-                className="mb-4 rounded-xl border border-[#E1E6E0] bg-white px-4 py-3 text-[14px] text-[#25332C]"
+                className="mb-4 rounded-xl border border-[#E1E6E0] bg-white px-4 py-3 text-sm text-[#25332C]"
                 placeholder="e.g. Groceries"
                 placeholderTextColor="#9AA39D"
                 value={form.name}
                 onChangeText={(value) => setFormValue("name", value)}
               />
 
-              <Text className="mb-2 text-[12px] font-bold text-[#46534B]">
+              <Text className="mb-2 text-xs font-bold text-[#46534B]">
                 Category type
               </Text>
               <View className="mb-4 flex-row flex-wrap gap-2">
@@ -537,7 +537,7 @@ export default function Categories() {
                       onPress={() => setFormValue("catType", type)}
                     >
                       <Text
-                        className={`text-[12px] font-bold ${selected ? "text-white" : "text-[#637068]"}`}
+                        className={`text-xs font-bold ${selected ? "text-white" : "text-[#637068]"}`}
                       >
                         {type}
                       </Text>
@@ -546,11 +546,11 @@ export default function Categories() {
                 })}
               </View>
 
-              <Text className="mb-2 text-[12px] font-bold text-[#46534B]">
+              <Text className="mb-2 text-xs font-bold text-[#46534B]">
                 Description
               </Text>
               <TextInput
-                className="mb-4 min-h-[88px] rounded-xl border border-[#E1E6E0] bg-white px-4 py-3 text-[14px] text-[#25332C]"
+                className="mb-4 min-h-[88px] rounded-xl border border-[#E1E6E0] bg-white px-4 py-3 text-sm text-[#25332C]"
                 multiline
                 placeholder="Add a short description"
                 placeholderTextColor="#9AA39D"
@@ -559,11 +559,11 @@ export default function Categories() {
                 onChangeText={(value) => setFormValue("description", value)}
               />
 
-              <Text className="mb-2 text-[12px] font-bold text-[#46534B]">
+              <Text className="mb-2 text-xs font-bold text-[#46534B]">
                 Subcategories
               </Text>
               <TextInput
-                className="mb-4 min-h-[76px] rounded-xl border border-[#E1E6E0] bg-white px-4 py-3 text-[14px] text-[#25332C]"
+                className="mb-4 min-h-[76px] rounded-xl border border-[#E1E6E0] bg-white px-4 py-3 text-sm text-[#25332C]"
                 multiline
                 placeholder="One per line"
                 placeholderTextColor="#9AA39D"
@@ -572,7 +572,7 @@ export default function Categories() {
                 onChangeText={(value) => setFormValue("subcategory", value)}
               />
 
-              <Text className="mb-2 text-[12px] font-bold text-[#46534B]">
+              <Text className="mb-2 text-xs font-bold text-[#46534B]">
                 Status
               </Text>
               <View className="mb-5 flex-row gap-2">
@@ -585,7 +585,7 @@ export default function Categories() {
                       onPress={() => setFormValue("status", status)}
                     >
                       <Text
-                        className={`text-[13px] font-bold ${selected ? "text-[#315640]" : "text-[#637068]"}`}
+                        className={`text-sm font-bold ${selected ? "text-[#315640]" : "text-[#637068]"}`}
                       >
                         {status}
                       </Text>
@@ -601,7 +601,7 @@ export default function Categories() {
                 disabled={saving}
                 onPress={() => setModalVisible(false)}
               >
-                <Text className="text-[14px] font-bold text-[#58645C]">
+                <Text className="text-sm font-bold text-[#58645C]">
                   Cancel
                 </Text>
               </Pressable>
@@ -613,7 +613,7 @@ export default function Categories() {
                 {saving ? (
                   <ActivityIndicator color="#FFFFFF" />
                 ) : (
-                  <Text className="text-[14px] font-bold text-white">
+                  <Text className="text-sm font-bold text-white">
                     {editingCategory ? "Save changes" : "Create category"}
                   </Text>
                 )}

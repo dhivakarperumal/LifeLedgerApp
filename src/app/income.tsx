@@ -127,18 +127,18 @@ function Metric({
       className={`mb-3 min-h-[105px] flex-1 rounded-2xl border p-3.5 ${tones[tone]}`}
     >
       <Text
-        className={`text-[10px] font-bold uppercase tracking-[0.8px] ${mutedTone}`}
+        className={`text-xs font-bold uppercase tracking-[0.8px] ${mutedTone}`}
       >
         {label}
       </Text>
       <Text
-        className={`mt-2 text-[19px] font-extrabold ${textTone}`}
+        className={`mt-2 text-xl font-extrabold ${textTone}`}
         numberOfLines={1}
       >
         {value}
       </Text>
       <Text
-        className={`mt-1 text-[10px] font-medium ${mutedTone}`}
+        className={`mt-1 text-xs font-medium ${mutedTone}`}
         numberOfLines={1}
       >
         {caption}
@@ -487,7 +487,7 @@ export default function Income() {
         >
           <Ionicons name="arrow-back" size={20} color="#25332C" />
         </Pressable>
-        <Text className="text-[18px] font-bold text-[#25332C]">
+        <Text className="text-lg font-bold text-[#25332C]">
           Monthly Income
         </Text>
         <Pressable
@@ -539,10 +539,10 @@ export default function Income() {
               <Ionicons name="wallet-outline" size={20} color="#B07837" />
             </View>
             <View>
-              <Text className="text-[10px] font-bold uppercase tracking-[0.8px] text-[#859087]">
+              <Text className="text-xs font-bold uppercase tracking-[0.8px] text-[#859087]">
                 Monthly budget
               </Text>
-              <Text className="mt-0.5 text-[18px] font-extrabold text-[#293930]">
+              <Text className="mt-0.5 text-lg font-extrabold text-[#293930]">
                 {formatAmount(monthlyBudget)}
               </Text>
             </View>
@@ -556,7 +556,7 @@ export default function Income() {
             className="flex-row items-center rounded-lg bg-[#EDF3EE] px-3 py-2"
           >
             <Ionicons name="create-outline" size={15} color="#315640" />
-            <Text className="ml-1.5 text-[12px] font-bold text-[#315640]">
+            <Text className="ml-1.5 text-xs font-bold text-[#315640]">
               Edit
             </Text>
           </Pressable>
@@ -564,10 +564,10 @@ export default function Income() {
 
         <View className="mb-3 flex-row items-center justify-between">
           <View>
-            <Text className="text-[17px] font-bold text-[#293930]">
+            <Text className="text-lg font-bold text-[#293930]">
               Income records
             </Text>
-            <Text className="mt-0.5 text-[12px] text-[#859087]">
+            <Text className="mt-0.5 text-xs text-[#859087]">
               {incomes.length} {incomes.length === 1 ? "record" : "records"}
             </Text>
           </View>
@@ -577,7 +577,7 @@ export default function Income() {
             className="flex-row items-center rounded-xl bg-[#315640] px-3.5 py-2.5"
           >
             <Ionicons name="add" size={17} color="#FFFFFF" />
-            <Text className="ml-1 text-[12px] font-bold text-white">
+            <Text className="ml-1 text-xs font-bold text-white">
               Add income
             </Text>
           </Pressable>
@@ -587,7 +587,7 @@ export default function Income() {
           <Ionicons name="search-outline" size={18} color="#87918A" />
           <TextInput
             accessibilityLabel="Search income"
-            className="h-12 flex-1 px-3 text-[14px] text-[#25332C]"
+            className="h-12 flex-1 px-3 text-sm text-[#25332C]"
             placeholder="Search title, category, payment"
             placeholderTextColor="#9AA39D"
             value={search}
@@ -624,7 +624,7 @@ export default function Income() {
                   }}
                 >
                   <Text
-                    className={`text-[11px] font-bold ${selected ? "text-white" : "text-[#637068]"}`}
+                    className={`text-xs font-bold ${selected ? "text-white" : "text-[#637068]"}`}
                   >
                     {filter}
                   </Text>
@@ -663,17 +663,17 @@ export default function Income() {
         {loading ? (
           <View className="items-center py-16">
             <ActivityIndicator size="large" color="#315640" />
-            <Text className="mt-3 text-[13px] font-medium text-[#7B8580]">
+            <Text className="mt-3 text-sm font-medium text-[#7B8580]">
               Loading income...
             </Text>
           </View>
         ) : filteredIncomes.length === 0 ? (
           <View className="items-center rounded-2xl border border-[#E4E8E3] bg-white px-6 py-12">
             <Ionicons name="receipt-outline" size={34} color="#A4ADA6" />
-            <Text className="mt-3 text-[16px] font-bold text-[#25332C]">
+            <Text className="mt-3 text-base font-bold text-[#25332C]">
               No income records found
             </Text>
-            <Text className="mt-1 text-center text-[13px] text-[#7B8580]">
+            <Text className="mt-1 text-center text-sm text-[#7B8580]">
               Add an income record or adjust your search.
             </Text>
           </View>
@@ -693,26 +693,26 @@ export default function Income() {
                 <View className="flex-row items-start justify-between gap-2">
                   <View className="min-w-0 flex-1">
                     <Text
-                      className="text-[14px] font-bold text-[#293930]"
+                      className="text-sm font-bold text-[#293930]"
                       numberOfLines={2}
                     >
                       {income.title}
                     </Text>
                     <Text
-                      className="mt-1 text-[11px] font-medium text-[#818D84]"
+                      className="mt-1 text-xs font-medium text-[#818D84]"
                       numberOfLines={1}
                     >
                       {income.category || "Uncategorized"}
                     </Text>
                   </View>
                   <Text
-                    className="text-[14px] font-extrabold text-[#25805A]"
+                    className="text-sm font-extrabold text-[#25805A]"
                     numberOfLines={1}
                   >
                     {formatAmount(income.remaining_amount ?? income.amount)}
                   </Text>
                 </View>
-                <Text className="mt-3 text-[11px] font-medium text-[#7C8880]">
+                <Text className="mt-3 text-xs font-medium text-[#7C8880]">
                   {formatDate(income.income_date)} ·{" "}
                   {income.payment_method || "-"}
                 </Text>
@@ -722,7 +722,7 @@ export default function Income() {
                       className={`rounded-full px-2 py-1 ${income.recurring === "Yes" ? "bg-[#E7F4EC]" : "bg-[#F1F3F0]"}`}
                     >
                       <Text
-                        className={`text-[10px] font-bold ${income.recurring === "Yes" ? "text-[#25805A]" : "text-[#758078]"}`}
+                        className={`text-xs font-bold ${income.recurring === "Yes" ? "text-[#25805A]" : "text-[#758078]"}`}
                       >
                         {income.recurring === "Yes" ? "Recurring" : "One-time"}
                       </Text>
@@ -776,7 +776,7 @@ export default function Income() {
 
         {!loading && filteredIncomes.length > 0 && (
           <View className="mt-1 flex-row items-center justify-between rounded-xl border border-[#E4E8E3] bg-white px-3 py-2.5">
-            <Text className="text-[11px] font-semibold text-[#6F7B73]">
+            <Text className="text-xs font-semibold text-[#6F7B73]">
               Showing{" "}
               {Math.min(
                 (safeCurrentPage - 1) * pageSize + 1,
@@ -795,7 +795,7 @@ export default function Income() {
               >
                 <Ionicons name="chevron-back" size={16} color="#526058" />
               </Pressable>
-              <Text className="text-[11px] font-bold text-[#6F7B73]">
+              <Text className="text-xs font-bold text-[#6F7B73]">
                 {safeCurrentPage} / {totalPages}
               </Text>
               <Pressable
@@ -824,10 +824,10 @@ export default function Income() {
           <View className="max-h-[92%] rounded-t-[26px] bg-[#F8F9F6] px-5 pb-8 pt-5">
             <View className="mb-4 flex-row items-center justify-between">
               <View>
-                <Text className="text-[20px] font-bold text-[#25332C]">
+                <Text className="text-xl font-bold text-[#25332C]">
                   {editingIncomeId ? "Edit income" : "Add income"}
                 </Text>
-                <Text className="mt-1 text-[12px] text-[#818B84]">
+                <Text className="mt-1 text-xs text-[#818B84]">
                   Record a new income source
                 </Text>
               </View>
@@ -844,11 +844,11 @@ export default function Income() {
               keyboardShouldPersistTaps="handled"
               showsVerticalScrollIndicator={false}
             >
-              <Text className="mb-1.5 text-[12px] font-bold text-[#46534B]">
+              <Text className="mb-1.5 text-xs font-bold text-[#46534B]">
                 Income title
               </Text>
               <TextInput
-                className="mb-4 rounded-xl border border-[#E1E6E0] bg-white px-4 py-3 text-[14px] text-[#25332C]"
+                className="mb-4 rounded-xl border border-[#E1E6E0] bg-white px-4 py-3 text-sm text-[#25332C]"
                 placeholder="e.g. Freelance payment"
                 placeholderTextColor="#9AA39D"
                 value={form.title}
@@ -857,11 +857,11 @@ export default function Income() {
 
               <View className="flex-row gap-3">
                 <View className="flex-1">
-                  <Text className="mb-1.5 text-[12px] font-bold text-[#46534B]">
+                  <Text className="mb-1.5 text-xs font-bold text-[#46534B]">
                     Amount
                   </Text>
                   <TextInput
-                    className="mb-4 rounded-xl border border-[#E1E6E0] bg-white px-4 py-3 text-[14px] text-[#25332C]"
+                    className="mb-4 rounded-xl border border-[#E1E6E0] bg-white px-4 py-3 text-sm text-[#25332C]"
                     keyboardType="decimal-pad"
                     placeholder="0.00"
                     placeholderTextColor="#9AA39D"
@@ -870,11 +870,11 @@ export default function Income() {
                   />
                 </View>
                 <View className="flex-1">
-                  <Text className="mb-1.5 text-[12px] font-bold text-[#46534B]">
+                  <Text className="mb-1.5 text-xs font-bold text-[#46534B]">
                     Date
                   </Text>
                   <TextInput
-                    className="mb-4 rounded-xl border border-[#E1E6E0] bg-white px-4 py-3 text-[14px] text-[#25332C]"
+                    className="mb-4 rounded-xl border border-[#E1E6E0] bg-white px-4 py-3 text-sm text-[#25332C]"
                     placeholder="YYYY-MM-DD"
                     placeholderTextColor="#9AA39D"
                     value={form.date}
@@ -883,11 +883,11 @@ export default function Income() {
                 </View>
               </View>
 
-              <Text className="mb-1.5 text-[12px] font-bold text-[#46534B]">
+              <Text className="mb-1.5 text-xs font-bold text-[#46534B]">
                 Category
               </Text>
               <TextInput
-                className="mb-2 rounded-xl border border-[#E1E6E0] bg-white px-4 py-3 text-[14px] text-[#25332C]"
+                className="mb-2 rounded-xl border border-[#E1E6E0] bg-white px-4 py-3 text-sm text-[#25332C]"
                 placeholder="Choose or enter a category"
                 placeholderTextColor="#9AA39D"
                 value={form.category}
@@ -906,7 +906,7 @@ export default function Income() {
                       onPress={() => updateForm("category", category)}
                     >
                       <Text
-                        className={`text-[11px] font-bold ${form.category === category ? "text-white" : "text-[#637068]"}`}
+                        className={`text-xs font-bold ${form.category === category ? "text-white" : "text-[#637068]"}`}
                       >
                         {category}
                       </Text>
@@ -915,7 +915,7 @@ export default function Income() {
                 </ScrollView>
               )}
 
-              <Text className="mb-2 text-[12px] font-bold text-[#46534B]">
+              <Text className="mb-2 text-xs font-bold text-[#46534B]">
                 Payment method
               </Text>
               <View className="mb-4 flex-row flex-wrap gap-2">
@@ -926,7 +926,7 @@ export default function Income() {
                     onPress={() => updateForm("paymentMethod", method)}
                   >
                     <Text
-                      className={`text-[11px] font-bold ${form.paymentMethod === method ? "text-white" : "text-[#637068]"}`}
+                      className={`text-xs font-bold ${form.paymentMethod === method ? "text-white" : "text-[#637068]"}`}
                     >
                       {method}
                     </Text>
@@ -934,7 +934,7 @@ export default function Income() {
                 ))}
               </View>
 
-              <Text className="mb-2 text-[12px] font-bold text-[#46534B]">
+              <Text className="mb-2 text-xs font-bold text-[#46534B]">
                 Recurring income
               </Text>
               <View className="mb-4 flex-row gap-2">
@@ -945,7 +945,7 @@ export default function Income() {
                     onPress={() => updateForm("recurring", value)}
                   >
                     <Text
-                      className={`text-[13px] font-bold ${form.recurring === value ? "text-[#315640]" : "text-[#637068]"}`}
+                      className={`text-sm font-bold ${form.recurring === value ? "text-[#315640]" : "text-[#637068]"}`}
                     >
                       {value}
                     </Text>
@@ -953,11 +953,11 @@ export default function Income() {
                 ))}
               </View>
 
-              <Text className="mb-1.5 text-[12px] font-bold text-[#46534B]">
+              <Text className="mb-1.5 text-xs font-bold text-[#46534B]">
                 Notes
               </Text>
               <TextInput
-                className="mb-4 min-h-[78px] rounded-xl border border-[#E1E6E0] bg-white px-4 py-3 text-[14px] text-[#25332C]"
+                className="mb-4 min-h-[78px] rounded-xl border border-[#E1E6E0] bg-white px-4 py-3 text-sm text-[#25332C]"
                 multiline
                 placeholder="Add any useful details"
                 placeholderTextColor="#9AA39D"
@@ -966,7 +966,7 @@ export default function Income() {
                 onChangeText={(value) => updateForm("notes", value)}
               />
 
-              <Text className="mb-2 text-[12px] font-bold text-[#46534B]">
+              <Text className="mb-2 text-xs font-bold text-[#46534B]">
                 Attachment / receipt
               </Text>
               {existingAttachment && !attachment && (
@@ -980,7 +980,7 @@ export default function Income() {
                     color="#426C92"
                   />
                   <Text
-                    className="ml-2 flex-1 text-[12px] font-semibold text-[#526058]"
+                    className="ml-2 flex-1 text-xs font-semibold text-[#526058]"
                     numberOfLines={1}
                   >
                     Current receipt · tap to open
@@ -999,7 +999,7 @@ export default function Income() {
                   color="#426C62"
                 />
                 <Text
-                  className="ml-2 flex-1 text-[12px] font-semibold text-[#59675F]"
+                  className="ml-2 flex-1 text-xs font-semibold text-[#59675F]"
                   numberOfLines={1}
                 >
                   {attachment?.name || "Choose image or PDF"}
@@ -1023,7 +1023,7 @@ export default function Income() {
                 disabled={saving}
                 onPress={closeEditor}
               >
-                <Text className="text-[14px] font-bold text-[#58645C]">
+                <Text className="text-sm font-bold text-[#58645C]">
                   Cancel
                 </Text>
               </Pressable>
@@ -1035,7 +1035,7 @@ export default function Income() {
                 {saving ? (
                   <ActivityIndicator color="#FFFFFF" />
                 ) : (
-                  <Text className="text-[14px] font-bold text-white">
+                  <Text className="text-sm font-bold text-white">
                     {editingIncomeId ? "Update income" : "Save income"}
                   </Text>
                 )}
@@ -1053,14 +1053,14 @@ export default function Income() {
       >
         <View className="flex-1 justify-center bg-black/40 px-5">
           <View className="rounded-2xl bg-[#F8F9F6] p-5">
-            <Text className="text-[19px] font-bold text-[#25332C]">
+            <Text className="text-xl font-bold text-[#25332C]">
               Monthly budget
             </Text>
-            <Text className="mb-4 mt-1 text-[12px] text-[#818B84]">
+            <Text className="mb-4 mt-1 text-xs text-[#818B84]">
               Set your income budget for the month
             </Text>
             <TextInput
-              className="mb-5 rounded-xl border border-[#E1E6E0] bg-white px-4 py-3 text-[15px] text-[#25332C]"
+              className="mb-5 rounded-xl border border-[#E1E6E0] bg-white px-4 py-3 text-base text-[#25332C]"
               keyboardType="decimal-pad"
               placeholder="0.00"
               placeholderTextColor="#9AA39D"
@@ -1073,7 +1073,7 @@ export default function Income() {
                 disabled={budgetSaving}
                 onPress={() => setBudgetVisible(false)}
               >
-                <Text className="text-[13px] font-bold text-[#58645C]">
+                <Text className="text-sm font-bold text-[#58645C]">
                   Cancel
                 </Text>
               </Pressable>
@@ -1085,7 +1085,7 @@ export default function Income() {
                 {budgetSaving ? (
                   <ActivityIndicator color="#FFFFFF" />
                 ) : (
-                  <Text className="text-[13px] font-bold text-white">
+                  <Text className="text-sm font-bold text-white">
                     Save budget
                   </Text>
                 )}
@@ -1105,11 +1105,11 @@ export default function Income() {
           <View className="rounded-t-[26px] bg-[#F8F9F6] px-5 pb-9 pt-5">
             <View className="mb-4 flex-row items-center justify-between">
               <View className="flex-1 pr-3">
-                <Text className="text-[10px] font-bold uppercase tracking-[1px] text-[#818B84]">
+                <Text className="text-xs font-bold uppercase tracking-[1px] text-[#818B84]">
                   Income details
                 </Text>
                 <Text
-                  className="mt-1 text-[20px] font-bold text-[#25332C]"
+                  className="mt-1 text-xl font-bold text-[#25332C]"
                   numberOfLines={1}
                 >
                   {detailsIncome?.title}
@@ -1126,46 +1126,46 @@ export default function Income() {
             </View>
             <View className="mb-4 flex-row gap-3">
               <View className="flex-1 rounded-xl bg-white p-3">
-                <Text className="text-[10px] font-bold uppercase text-[#87918A]">
+                <Text className="text-xs font-bold uppercase text-[#87918A]">
                   Category
                 </Text>
-                <Text className="mt-1 text-[14px] font-bold text-[#293930]">
+                <Text className="mt-1 text-sm font-bold text-[#293930]">
                   {detailsIncome?.category || "-"}
                 </Text>
               </View>
               <View className="flex-1 rounded-xl bg-white p-3">
-                <Text className="text-[10px] font-bold uppercase text-[#87918A]">
+                <Text className="text-xs font-bold uppercase text-[#87918A]">
                   Amount
                 </Text>
-                <Text className="mt-1 text-[14px] font-extrabold text-[#25805A]">
+                <Text className="mt-1 text-sm font-extrabold text-[#25805A]">
                   {formatAmount(detailsIncome?.amount)}
                 </Text>
               </View>
             </View>
             <View className="mb-3 flex-row gap-3">
               <View className="flex-1 rounded-xl bg-white p-3">
-                <Text className="text-[10px] font-bold uppercase text-[#87918A]">
+                <Text className="text-xs font-bold uppercase text-[#87918A]">
                   Date
                 </Text>
-                <Text className="mt-1 text-[13px] font-bold text-[#293930]">
+                <Text className="mt-1 text-sm font-bold text-[#293930]">
                   {formatDate(detailsIncome?.income_date)}
                 </Text>
               </View>
               <View className="flex-1 rounded-xl bg-white p-3">
-                <Text className="text-[10px] font-bold uppercase text-[#87918A]">
+                <Text className="text-xs font-bold uppercase text-[#87918A]">
                   Payment
                 </Text>
-                <Text className="mt-1 text-[13px] font-bold text-[#293930]">
+                <Text className="mt-1 text-sm font-bold text-[#293930]">
                   {detailsIncome?.payment_method || "-"}
                 </Text>
               </View>
             </View>
             {!!detailsIncome?.notes && (
               <View className="mb-3 rounded-xl bg-white p-3">
-                <Text className="text-[10px] font-bold uppercase text-[#87918A]">
+                <Text className="text-xs font-bold uppercase text-[#87918A]">
                   Notes
                 </Text>
-                <Text className="mt-1 text-[13px] leading-5 text-[#526058]">
+                <Text className="mt-1 text-sm leading-5 text-[#526058]">
                   {detailsIncome.notes}
                 </Text>
               </View>
@@ -1176,7 +1176,7 @@ export default function Income() {
                 onPress={() => void openAttachment(detailsIncome.attachment!)}
               >
                 <Ionicons name="open-outline" size={17} color="#FFFFFF" />
-                <Text className="ml-2 text-[13px] font-bold text-white">
+                <Text className="ml-2 text-sm font-bold text-white">
                   Open attachment
                 </Text>
               </Pressable>

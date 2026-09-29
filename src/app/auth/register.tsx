@@ -50,7 +50,7 @@ function FormField({
 }) {
   return (
     <View className="mb-[14px]">
-      <Text className="mb-2 text-[13px] font-semibold text-[#263238]">
+      <Text className="mb-2 text-sm font-semibold text-[#263238]">
         {label}
       </Text>
       <View className="min-h-[52px] flex-row items-center rounded-[14px] border border-[#E5EAE7] bg-[#F9FAFC] px-[14px]">
@@ -63,7 +63,7 @@ function FormField({
           placeholder={placeholder}
           placeholderTextColor={Colors.textMuted}
           selectionColor={Colors.primary}
-          className="ml-2.5 flex-1 py-[14px] text-[15px] text-[#263238]"
+          className="ml-2.5 flex-1 py-[14px] text-base text-[#263238]"
         />
       </View>
     </View>
@@ -87,7 +87,7 @@ function PasswordField({
 }) {
   return (
     <View className="mb-[14px]">
-      <Text className="mb-2 text-[13px] font-semibold text-[#263238]">
+      <Text className="mb-2 text-sm font-semibold text-[#263238]">
         {label}
       </Text>
       <View className="min-h-[52px] flex-row items-center rounded-[14px] border border-[#E5EAE7] bg-[#F9FAFC] px-[14px]">
@@ -105,7 +105,7 @@ function PasswordField({
           secureTextEntry={!visible}
           autoComplete="password"
           selectionColor={Colors.primary}
-          className="ml-2.5 flex-1 py-[14px] text-[15px] text-[#263238]"
+          className="ml-2.5 flex-1 py-[14px] text-base text-[#263238]"
         />
         <Pressable
           hitSlop={10}
@@ -197,7 +197,7 @@ export default function RegisterScreen() {
                   <Text className="text-xl font-bold text-white">
                     Life <Text className="text-[#D7D83B]">Ledger</Text>
                   </Text>
-                  <Text className="mt-px text-[11px] text-[#ADBEA3]">
+                  <Text className="mt-px text-xs text-[#ADBEA3]">
                     Track Today · Build a Better Tomorrow
                   </Text>
                 </View>
@@ -275,11 +275,11 @@ export default function RegisterScreen() {
               </Pressable>
 
               <View className="flex-row justify-center gap-1">
-                <Text className="text-[13px] text-[#7B8589]">
+                <Text className="text-sm text-[#7B8589]">
                   Already have an account?
                 </Text>
                 <Pressable onPress={() => router.replace("/auth/login")}>
-                  <Text className="text-[13px] font-bold text-[#366039]">
+                  <Text className="text-sm font-bold text-[#366039]">
                     Login
                   </Text>
                 </Pressable>

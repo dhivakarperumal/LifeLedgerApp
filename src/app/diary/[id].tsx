@@ -615,7 +615,7 @@ function InfoItem({
     >
       <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
         <Ionicons name={icon} size={15} color={Colors.sage} />
-        <Text style={{ color: Colors.sage, fontSize: 11 }}>{label}</Text>
+        <Text style={{ color: Colors.sage, fontSize: 12 }}>{label}</Text>
       </View>
       <Text
         numberOfLines={2}
@@ -652,7 +652,7 @@ function MetaPill({
       }}
     >
       <Ionicons name={icon} size={12} color={Colors.forest} />
-      <Text style={{ color: Colors.forest, fontSize: 11, fontWeight: "600" }}>
+      <Text style={{ color: Colors.forest, fontSize: 12, fontWeight: "600" }}>
         {label}
       </Text>
     </View>
@@ -766,7 +766,7 @@ function AudioAttachment({ url, name }: { url: string; name: string }) {
         >
           {name}
         </Text>
-        <Text style={{ marginTop: 3, color: Colors.sage, fontSize: 11 }}>
+        <Text style={{ marginTop: 3, color: Colors.sage, fontSize: 12 }}>
           {elapsed}
         </Text>
       </View>
@@ -777,7 +777,7 @@ function AudioAttachment({ url, name }: { url: string; name: string }) {
 const sectionLabel = {
   marginBottom: 10,
   color: Colors.sage,
-  fontSize: 11,
+  fontSize: 12,
   fontWeight: "700" as const,
   textTransform: "uppercase" as const,
 };

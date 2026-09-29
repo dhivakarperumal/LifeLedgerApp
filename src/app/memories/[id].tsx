@@ -632,7 +632,7 @@ function MetaPills({
         <Text
           style={{
             color: inverse ? Colors.white : Colors.forest,
-            fontSize: 11,
+            fontSize: 12,
             fontWeight: "700",
           }}
         >
@@ -657,7 +657,7 @@ function MetaPills({
         <Text
           style={{
             color: inverse ? Colors.white : Colors.textPrimary,
-            fontSize: 11,
+            fontSize: 12,
             fontWeight: "700",
           }}
         >
@@ -693,7 +693,7 @@ function InfoItem({
     >
       <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
         <Ionicons name={icon} size={15} color={Colors.sage} />
-        <Text style={{ color: Colors.sage, fontSize: 11 }}>{label}</Text>
+        <Text style={{ color: Colors.sage, fontSize: 12 }}>{label}</Text>
       </View>
       <Text
         numberOfLines={2}
@@ -842,7 +842,7 @@ function AudioAttachment({
         >
           {name}
         </Text>
-        <Text style={{ color: Colors.sage, fontSize: 11, marginTop: 4 }}>
+        <Text style={{ color: Colors.sage, fontSize: 12, marginTop: 4 }}>
           {elapsed}
         </Text>
       </View>
@@ -865,7 +865,7 @@ function MetaPill({ category }: { category: string }) {
       }}
     >
       <Ionicons name="pricetag-outline" size={12} color={Colors.forest} />
-      <Text style={{ color: Colors.forest, fontSize: 11, fontWeight: "600" }}>
+      <Text style={{ color: Colors.forest, fontSize: 12, fontWeight: "600" }}>
         {category}
       </Text>
     </View>
@@ -883,7 +883,7 @@ const sectionCardStyle = {
 const sectionLabel = {
   marginBottom: 10,
   color: Colors.sage,
-  fontSize: 11,
+  fontSize: 12,
   fontWeight: "700" as const,
   textTransform: "uppercase" as const,
 };

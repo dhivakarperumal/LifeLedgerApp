@@ -1662,7 +1662,7 @@ export default function Diary() {
                       <Text
                         style={{
                           color: Colors.textPrimary,
-                          fontSize: 10,
+                          fontSize: 12,
                           marginTop: 3,
                         }}
                       >
@@ -1975,7 +1975,7 @@ function StatCard({
         <Ionicons name={icon} size={15} color={Colors.forest} />
         <Text
           numberOfLines={1}
-          style={{ color: Colors.sage, fontSize: 10, fontWeight: "700" }}
+          style={{ color: Colors.sage, fontSize: 12, fontWeight: "700" }}
         >
           {label}
         </Text>
@@ -2015,7 +2015,7 @@ function MetaPill({
       }}
     >
       {icon ? <Ionicons name={icon} size={12} color={Colors.forest} /> : null}
-      <Text numberOfLines={1} style={{ color: Colors.forest, fontSize: 11 }}>
+      <Text numberOfLines={1} style={{ color: Colors.forest, fontSize: 12 }}>
         {label}
       </Text>
     </View>
@@ -2131,7 +2131,7 @@ function AttachmentRow({
 const labelStyle = {
   marginBottom: 7,
   color: Colors.sage,
-  fontSize: 11,
+  fontSize: 12,
   fontWeight: "700" as const,
   textTransform: "uppercase" as const,
 };

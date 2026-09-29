@@ -72,11 +72,11 @@ function ProfileDetail({
         <Ionicons name={icon} size={19} color="#315640" />
       </View>
       <View className="min-w-0 flex-1">
-        <Text className="text-[10px] font-bold uppercase tracking-[0.8px] text-[#839087]">
+        <Text className="text-xs font-bold uppercase tracking-[0.8px] text-[#839087]">
           {label}
         </Text>
         <Text
-          className="mt-1 text-[14px] font-semibold text-[#293930]"
+          className="mt-1 text-sm font-semibold text-[#293930]"
           numberOfLines={2}
         >
           {value || "Not provided"}
@@ -246,7 +246,7 @@ export default function Profile() {
         >
           <Ionicons name="arrow-back" size={20} color="#25332C" />
         </Pressable>
-        <Text className="text-[18px] font-bold text-[#25332C]">My Profile</Text>
+        <Text className="text-lg font-bold text-[#25332C]">My Profile</Text>
         <View className="h-10 w-10" />
       </View>
 
@@ -256,7 +256,7 @@ export default function Profile() {
       >
         <View className="mb-5 overflow-hidden rounded-2xl bg-[#315640] p-5">
           <View className="flex-row items-center justify-between">
-            <Text className="text-[11px] font-bold uppercase tracking-[1.4px] text-white/75">
+            <Text className="text-xs font-bold uppercase tracking-[1.4px] text-white/75">
               Life Ledger
             </Text>
             <Ionicons
@@ -267,25 +267,25 @@ export default function Profile() {
           </View>
           <View className="mt-6 flex-row items-center">
             <View className="mr-4 h-16 w-16 items-center justify-center rounded-2xl bg-white">
-              <Text className="text-[28px] font-extrabold text-[#315640]">
+              <Text className="text-3xl font-extrabold text-[#315640]">
                 {profileName.charAt(0).toUpperCase()}
               </Text>
             </View>
             <View className="min-w-0 flex-1">
               <Text
-                className="text-[22px] font-extrabold text-white"
+                className="text-2xl font-extrabold text-white"
                 numberOfLines={2}
               >
                 {profileName}
               </Text>
-              <Text className="mt-1 text-[11px] font-bold uppercase tracking-[1.2px] text-white/70">
+              <Text className="mt-1 text-xs font-bold uppercase tracking-[1.2px] text-white/70">
                 {profileRole}
               </Text>
             </View>
           </View>
           <View className="mt-5 flex-row items-center">
             <View className="mr-2 h-2 w-2 rounded-full bg-[#B7E3A2]" />
-            <Text className="text-[12px] font-semibold text-white/85">
+            <Text className="text-xs font-semibold text-white/85">
               {user?.status === "Inactive"
                 ? "Account inactive"
                 : "Account active"}
@@ -296,10 +296,10 @@ export default function Profile() {
         <View className="mb-5 rounded-2xl border border-[#E4E8E3] bg-[#F5F6F2]">
           <View className="mb-3 flex-row items-center justify-between">
             <View>
-              <Text className="text-[10px] font-bold uppercase tracking-[1.2px] text-[#839087]">
+              <Text className="text-xs font-bold uppercase tracking-[1.2px] text-[#839087]">
                 Personal details
               </Text>
-              <Text className="mt-1 text-[19px] font-bold text-[#293930]">
+              <Text className="mt-1 text-xl font-bold text-[#293930]">
                 Account information
               </Text>
             </View>
@@ -333,28 +333,28 @@ export default function Profile() {
               <Ionicons name="lock-closed-outline" size={19} color="#FFFFFF" />
             </View>
             <View className="flex-1">
-              <Text className="text-[10px] font-bold uppercase tracking-[1px] text-[#839087]">
+              <Text className="text-xs font-bold uppercase tracking-[1px] text-[#839087]">
                 Security
               </Text>
-              <Text className="mt-0.5 text-[19px] font-bold text-[#293930]">
+              <Text className="mt-0.5 text-xl font-bold text-[#293930]">
                 Change password
               </Text>
             </View>
           </View>
-          <Text className="mb-4 text-[12px] leading-5 text-[#738077]">
+          <Text className="mb-4 text-xs leading-5 text-[#738077]">
             Use a new password with at least 6 characters.
           </Text>
 
           {passwordFields.map((field) => (
             <View key={field.key} className="mb-3">
-              <Text className="mb-1.5 text-[11px] font-bold text-[#526058]">
+              <Text className="mb-1.5 text-xs font-bold text-[#526058]">
                 {field.label}
               </Text>
               <View className="flex-row items-center rounded-xl border border-[#E1E6E0] bg-[#F9FAF8] px-3">
                 <TextInput
                   accessibilityLabel={field.label}
                   autoComplete={field.autoComplete}
-                  className="h-12 flex-1 text-[14px] text-[#293930]"
+                  className="h-12 flex-1 text-sm text-[#293930]"
                   onChangeText={(value) => {
                     setPasswords((current) => ({
                       ...current,
@@ -395,7 +395,7 @@ export default function Profile() {
           {!!passwordStatus.message && (
             <Text
               accessibilityLiveRegion="polite"
-              className={`mb-3 text-[12px] font-semibold ${passwordStatus.type === "error" ? "text-[#B64C45]" : "text-[#25805A]"}`}
+              className={`mb-3 text-xs font-semibold ${passwordStatus.type === "error" ? "text-[#B64C45]" : "text-[#25805A]"}`}
             >
               {passwordStatus.message}
             </Text>
@@ -420,7 +420,7 @@ export default function Profile() {
                   size={16}
                   color="#FFFFFF"
                 />
-                <Text className="ml-2 text-[13px] font-bold text-white">
+                <Text className="ml-2 text-sm font-bold text-white">
                   Update password
                 </Text>
               </>
@@ -429,13 +429,13 @@ export default function Profile() {
         </View>
 
         <View className="rounded-2xl border border-[#F1D7D5] bg-[#FFF6F5] p-4">
-          <Text className="text-[10px] font-bold uppercase tracking-[1.2px] text-[#B64C45]">
+          <Text className="text-xs font-bold uppercase tracking-[1.2px] text-[#B64C45]">
             Danger zone
           </Text>
-          <Text className="mt-1 text-[17px] font-bold text-[#293930]">
+          <Text className="mt-1 text-lg font-bold text-[#293930]">
             Deactivate account
           </Text>
-          <Text className="mt-1 text-[12px] leading-5 text-[#778179]">
+          <Text className="mt-1 text-xs leading-5 text-[#778179]">
             Your account details will be retained, but you will no longer be
             able to log in.
           </Text>
@@ -454,7 +454,7 @@ export default function Profile() {
                   size={17}
                   color="#B64C45"
                 />
-                <Text className="ml-2 text-[13px] font-bold text-[#B64C45]">
+                <Text className="ml-2 text-sm font-bold text-[#B64C45]">
                   Deactivate account
                 </Text>
               </>

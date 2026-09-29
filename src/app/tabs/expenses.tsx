@@ -687,7 +687,7 @@ export default function Expenses() {
                       >
                         <Text
                           style={{
-                            fontSize: 10,
+                            fontSize: 12,
                             fontWeight: "700",
                             color: accent.color,
                           }}
@@ -695,7 +695,7 @@ export default function Expenses() {
                           {expense.category || "Other"}
                         </Text>
                       </View>
-                      <Text style={{ fontSize: 11, color: "#94A3B8" }}>
+                      <Text style={{ fontSize: 12, color: "#94A3B8" }}>
                         {formatDate(expense.expense_date)}
                       </Text>
                     </View>
@@ -1366,7 +1366,7 @@ function HeroStatCard({
         <Ionicons name={icon} size={15} color="rgba(255,255,255,0.8)" />
         <Text
           style={{
-            fontSize: 11,
+            fontSize: 12,
             color: "rgba(255,255,255,0.8)",
             fontWeight: "600",
             letterSpacing: 0.8,
@@ -1394,7 +1394,7 @@ function ModalSectionLabel({ label }: { label: string }) {
   return (
     <Text
       style={{
-        fontSize: 11,
+        fontSize: 12,
         color: "#94A3B8",
         fontWeight: "700",
         letterSpacing: 1.3,

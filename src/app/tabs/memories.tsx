@@ -761,7 +761,7 @@ export default function Memories() {
                       numberOfLines={1}
                       style={{
                         color: Colors.olive,
-                        fontSize: 11,
+                        fontSize: 12,
                         fontWeight: "700",
                         marginTop: 3,
                       }}
