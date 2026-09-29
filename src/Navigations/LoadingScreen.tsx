@@ -87,13 +87,13 @@ export function LoadingScreen() {
         <WalletIllustration />
       </View>
       <Text
-        className="mt-12 text-4xl font-bold tracking-[1.5px]"
+        className="mt-12 text-3xl font-bold tracking-[1.5px]"
         style={{ color: Colors.loadingText }}
       >
         LifeLedger
       </Text>
       <Text
-        className="mt-3 text-2xl font-semibold"
+        className="mt-3 text-lg font-semibold"
         style={{ color: Colors.loadingMuted }}
       >
         Syncing your workspace...

@@ -83,7 +83,7 @@ function MoreMenuRow({
   return (
     <Pressable
       onPress={onPress}
-      className="mt-3 flex-row items-center rounded-2xl border border-[#E9EEF0] bg-white px-4 py-3.5"
+      className="mt-3 flex-row items-center rounded-2xl border border-[#E9EEF0] bg-white px-4 py-4"
       style={{
         shadowColor: "#000000",
         shadowOffset: { width: 0, height: 1 },
@@ -170,7 +170,6 @@ export default function More() {
         </Pressable>
       </View>
 
-      
       <Text
         className="mt-3 mb-2 text-xs font-bold tracking-[1.5px] text-[#6A7176]"
         style={{ fontFamily: "Roboto Condensed, sans-serif" }}
