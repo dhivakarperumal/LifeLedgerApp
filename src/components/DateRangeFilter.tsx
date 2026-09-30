@@ -1,14 +1,21 @@
+import {
+    Poppins_400Regular,
+    Poppins_500Medium,
+    Poppins_600SemiBold,
+    Poppins_700Bold,
+} from "@expo-google-fonts/poppins";
 import { Ionicons } from "@expo/vector-icons";
 import DateTimePicker from "@react-native-community/datetimepicker";
+import { useFonts } from "expo-font";
 import { useState } from "react";
 import {
-  Modal,
-  Platform,
-  Pressable,
-  ScrollView,
-  Text,
-  View,
-  type ViewStyle,
+    Modal,
+    Platform,
+    Pressable,
+    ScrollView,
+    Text,
+    View,
+    type ViewStyle,
 } from "react-native";
 import { Colors } from "../constants/colors";
 
@@ -41,10 +48,21 @@ type DateRangeFilterProps = {
 
 type DateField = "from" | "to";
 
-const optionIcons: Record<
-  DateRangePreset,
-  keyof typeof Ionicons.glyphMap
-> = {
+const poppinsFontMap = {
+  Poppins_400Regular,
+  Poppins_500Medium,
+  Poppins_600SemiBold,
+  Poppins_700Bold,
+};
+
+const poppinsFamilies = {
+  regular: "Poppins_400Regular",
+  medium: "Poppins_500Medium",
+  semibold: "Poppins_600SemiBold",
+  bold: "Poppins_700Bold",
+};
+
+const optionIcons: Record<DateRangePreset, keyof typeof Ionicons.glyphMap> = {
   All: "calendar-outline",
   Today: "today-outline",
   Yesterday: "time-outline",
@@ -136,7 +154,9 @@ export function createDateRangeSelection(
   if (filter === "Last Month") {
     return {
       filter,
-      startDate: dateKey(new Date(today.getFullYear(), today.getMonth() - 1, 1)),
+      startDate: dateKey(
+        new Date(today.getFullYear(), today.getMonth() - 1, 1),
+      ),
       endDate: dateKey(new Date(today.getFullYear(), today.getMonth(), 0)),
     };
   }
@@ -184,6 +204,7 @@ export function DateRangeFilter({
   onChange,
   style,
 }: DateRangeFilterProps) {
+  const [fontsLoaded] = useFonts(poppinsFontMap);
   const [visible, setVisible] = useState(false);
   const [customMode, setCustomMode] = useState(false);
   const [draftStart, setDraftStart] = useState(() => new Date());
@@ -286,6 +307,7 @@ export function DateRangeFilter({
               color: Colors.textSecondary,
               fontSize: 11,
               fontWeight: "600",
+              fontFamily: fontsLoaded ? poppinsFamilies.medium : undefined,
             }}
           >
             Date range
@@ -297,6 +319,7 @@ export function DateRangeFilter({
               color: Colors.textPrimary,
               fontSize: 14,
               fontWeight: "700",
+              fontFamily: fontsLoaded ? poppinsFamilies.semibold : undefined,
             }}
           >
             {selectedLabel}
@@ -324,7 +347,13 @@ export function DateRangeFilter({
             onPress={close}
             accessibilityRole="button"
             accessibilityLabel="Close date range options"
-            style={{ position: "absolute", top: 0, right: 0, bottom: 0, left: 0 }}
+            style={{
+              position: "absolute",
+              top: 0,
+              right: 0,
+              bottom: 0,
+              left: 0,
+            }}
           />
           <View
             style={{
@@ -372,6 +401,9 @@ export function DateRangeFilter({
                       color: Colors.textPrimary,
                       fontSize: 18,
                       fontWeight: "800",
+                      fontFamily: fontsLoaded
+                        ? poppinsFamilies.bold
+                        : undefined,
                     }}
                   >
                     Custom date range
@@ -410,6 +442,9 @@ export function DateRangeFilter({
                             color: Colors.textSecondary,
                             fontSize: 11,
                             fontWeight: "600",
+                            fontFamily: fontsLoaded
+                              ? poppinsFamilies.medium
+                              : undefined,
                           }}
                         >
                           {field === "from" ? "From Date" : "To Date"}
@@ -421,6 +456,9 @@ export function DateRangeFilter({
                             color: Colors.textPrimary,
                             fontSize: 13,
                             fontWeight: "700",
+                            fontFamily: fontsLoaded
+                              ? poppinsFamilies.semibold
+                              : undefined,
                           }}
                         >
                           {formatDate(dateKey(date))}
@@ -444,8 +482,12 @@ export function DateRangeFilter({
                       value={activeField === "from" ? draftStart : draftEnd}
                       mode="date"
                       display="spinner"
-                      minimumDate={activeField === "to" ? draftStart : undefined}
-                      maximumDate={activeField === "from" ? draftEnd : undefined}
+                      minimumDate={
+                        activeField === "to" ? draftStart : undefined
+                      }
+                      maximumDate={
+                        activeField === "from" ? draftEnd : undefined
+                      }
                       onChange={(_, date) => {
                         if (date) updateDraft(activeField, date);
                       }}
@@ -461,6 +503,9 @@ export function DateRangeFilter({
                       color: Colors.danger,
                       fontSize: 12,
                       fontWeight: "600",
+                      fontFamily: fontsLoaded
+                        ? poppinsFamilies.medium
+                        : undefined,
                     }}
                   >
                     {validationError}
@@ -495,6 +540,9 @@ export function DateRangeFilter({
                         color: Colors.textSecondary,
                         fontSize: 14,
                         fontWeight: "700",
+                        fontFamily: fontsLoaded
+                          ? poppinsFamilies.semibold
+                          : undefined,
                       }}
                     >
                       Cancel
@@ -518,6 +566,9 @@ export function DateRangeFilter({
                         color: Colors.white,
                         fontSize: 14,
                         fontWeight: "700",
+                        fontFamily: fontsLoaded
+                          ? poppinsFamilies.semibold
+                          : undefined,
                       }}
                     >
                       Apply
@@ -540,6 +591,9 @@ export function DateRangeFilter({
                       color: Colors.textPrimary,
                       fontSize: 18,
                       fontWeight: "800",
+                      fontFamily: fontsLoaded
+                        ? poppinsFamilies.bold
+                        : undefined,
                     }}
                   >
                     Date range
@@ -551,7 +605,11 @@ export function DateRangeFilter({
                     hitSlop={8}
                     style={{ padding: 4 }}
                   >
-                    <Ionicons name="close" size={21} color={Colors.textSecondary} />
+                    <Ionicons
+                      name="close"
+                      size={21}
+                      color={Colors.textSecondary}
+                    />
                   </Pressable>
                 </View>
                 <ScrollView
@@ -579,7 +637,9 @@ export function DateRangeFilter({
                         <Ionicons
                           name={optionIcons[preset]}
                           size={18}
-                          color={selected ? Colors.forest : Colors.textSecondary}
+                          color={
+                            selected ? Colors.forest : Colors.textSecondary
+                          }
                         />
                         <Text
                           style={{
@@ -588,6 +648,11 @@ export function DateRangeFilter({
                             color: Colors.textPrimary,
                             fontSize: 14,
                             fontWeight: selected ? "700" : "500",
+                            fontFamily: fontsLoaded
+                              ? selected
+                                ? poppinsFamilies.semibold
+                                : poppinsFamilies.medium
+                              : undefined,
                           }}
                         >
                           {preset}

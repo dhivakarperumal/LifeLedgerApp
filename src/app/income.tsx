@@ -19,10 +19,10 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import api, { API_BASE_URL, getApiErrorMessage, logoutUser } from "../api";
 import { AddButton } from "../components/AddButton";
 import {
-  createDateRangeSelection,
-  DateRangeFilter,
-  isDateInRange,
-  type DateRangeSelection,
+    createDateRangeSelection,
+    DateRangeFilter,
+    isDateInRange,
+    type DateRangeSelection,
 } from "../components/DateRangeFilter";
 import { FormInput, FormOption } from "../components/FormControls";
 import { GradientSafeAreaView as SafeAreaView } from "../components/GradientSafeAreaView";

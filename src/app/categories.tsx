@@ -318,30 +318,27 @@ export default function Categories() {
         }}
       >
         <View className="mb-4 mt-6 flex-row gap-3">
-          <View className="flex-1 rounded-2xl bg-[#315640] p-4">
-            <Text className="text-xs font-bold uppercase tracking-[1px] text-white/75">
-              Total
-            </Text>
-            <Text className="mt-1 text-3xl font-bold text-white">
-              {categories.length}
-            </Text>
-          </View>
-          <View className="flex-1 rounded-2xl border border-[#DDE5DD] bg-white p-4">
-            <Text className="text-xs font-bold uppercase tracking-[1px] text-[#718078]">
-              Active
-            </Text>
-            <Text className="mt-1 text-3xl font-bold text-[#25805A]">
-              {activeCount}
-            </Text>
-          </View>
-          <View className="flex-1 rounded-2xl border border-[#E9DECC] bg-[#FFF9EF] p-4">
-            <Text className="text-xs font-bold uppercase tracking-[1px] text-[#8B7351]">
-              Inactive
-            </Text>
-            <Text className="mt-1 text-3xl font-bold text-[#B17632]">
-              {inactiveCount}
-            </Text>
-          </View>
+          <SummaryStatCard
+            title="Total"
+            value={categories.length}
+            icon="layers-outline"
+            iconBg="#E2E8F0"
+            iconColor="#475569"
+          />
+          <SummaryStatCard
+            title="Active"
+            value={activeCount}
+            icon="checkmark-circle-outline"
+            iconBg="#DDF2D1"
+            iconColor="#388e3c"
+          />
+          <SummaryStatCard
+            title="Inactive"
+            value={inactiveCount}
+            icon="close-circle-outline"
+            iconBg="#FEE2E2"
+            iconColor="#EF4444"
+          />
         </View>
 
         <View className="mb-4 flex-row items-center rounded-xl border border-[#E4E8E3] bg-white px-3">
@@ -653,5 +650,72 @@ export default function Categories() {
         </View>
       </Modal>
     </SafeAreaView>
+  );
+}
+
+function SummaryStatCard({
+  title,
+  value,
+  icon,
+  iconBg,
+  iconColor,
+}: {
+  title: string;
+  value: number;
+  icon: keyof typeof Ionicons.glyphMap;
+  iconBg: string;
+  iconColor: string;
+}) {
+  return (
+    <View
+      style={{
+        flex: 1,
+        backgroundColor: "#FFFFFF",
+        borderRadius: 20,
+        padding: 10,
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.05,
+        shadowRadius: 12,
+        elevation: 4,
+        overflow: "hidden",
+      }}
+    >
+      <View
+        style={{
+          position: "absolute",
+          bottom: -20,
+          right: -20,
+          width: 80,
+          height: 80,
+          borderRadius: 40,
+          backgroundColor: "#F0Fdf4",
+          opacity: 0.6,
+        }}
+      />
+      <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 8 }}>
+        <View
+          style={{
+            width: 32,
+            height: 32,
+            borderRadius: 10,
+            backgroundColor: iconBg,
+            justifyContent: "center",
+            alignItems: "center",
+            marginRight: 8,
+          }}
+        >
+          <Ionicons name={icon} size={16} color={iconColor} />
+        </View>
+        <Text style={{ fontSize: 11, fontWeight: "800", color: "#8b929c", flexShrink: 1 }} numberOfLines={1}>
+          {title.toUpperCase()}
+        </Text>
+      </View>
+      <View>
+        <Text style={{ fontSize: 24, fontWeight: "900", color: "#111827", letterSpacing: -0.5 }}>
+          {value}
+        </Text>
+      </View>
+    </View>
   );
 }

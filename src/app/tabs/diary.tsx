@@ -30,10 +30,10 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import api, { getApiErrorMessage, logoutUser } from "../../api";
 import { AddButton } from "../../components/AddButton";
 import {
-  createDateRangeSelection,
-  DateRangeFilter,
-  isDateInRange,
-  type DateRangeSelection,
+    createDateRangeSelection,
+    DateRangeFilter,
+    isDateInRange,
+    type DateRangeSelection,
 } from "../../components/DateRangeFilter";
 import { FormInput, FormOption } from "../../components/FormControls";
 import { GradientSafeAreaView as SafeAreaView } from "../../components/GradientSafeAreaView";
@@ -780,9 +780,7 @@ export default function Diary() {
           onChangeText={setSearch}
           placeholder="Search title, mood, tags..."
           onFilterPress={() => setFilterMenuVisible(true)}
-          filterActive={
-            selectedFilter !== "all" || dateRange.filter !== "All"
-          }
+          filterActive={selectedFilter !== "all" || dateRange.filter !== "All"}
           filterIcon="options-outline"
           style={{ marginBottom: 12 }}
         />

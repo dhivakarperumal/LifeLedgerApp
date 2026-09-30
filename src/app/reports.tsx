@@ -8,7 +8,6 @@ import { useCallback, useMemo, useState } from "react";
 import {
     ActivityIndicator,
     Alert,
-    Modal,
     Platform,
     Pressable,
     RefreshControl,
@@ -16,15 +15,15 @@ import {
     Share,
     Text,
     TextInput,
-    View,
+    View
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import api, { getApiErrorMessage, logoutUser } from "../api";
 import {
-  createDateRangeSelection,
-  DateRangeFilter,
-  isDateInRange,
-  type DateRangeSelection,
+    createDateRangeSelection,
+    DateRangeFilter,
+    isDateInRange,
+    type DateRangeSelection,
 } from "../components/DateRangeFilter";
 import { GradientSafeAreaView as SafeAreaView } from "../components/GradientSafeAreaView";
 import { Colors } from "../constants/colors";
@@ -193,9 +192,8 @@ export default function Reports() {
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("All");
   const [paymentFilter, setPaymentFilter] = useState("All");
-  const [datePreset, setDatePreset] = useState<DatePreset>("All");
   const [dateRange, setDateRange] = useState<DateRangeSelection>(() =>
-    createDateRangeSelection("All")
+    createDateRangeSelection("All"),
   );
   const [viewMode, setViewMode] = useState<"list" | "grid">("list");
   const [currentPage, setCurrentPage] = useState(1);
@@ -280,11 +278,6 @@ export default function Reports() {
     ],
     [allRecords],
   );
-  const activeDateRange = useMemo(
-    () => getDateRange(dateRange.filter, dateRange.from, dateRange.to),
-    [dateRange]
-  );
-
   const visible = useMemo(() => {
     const query = search.trim().toLowerCase();
     return allRecords.filter((record) => {
@@ -299,19 +292,10 @@ export default function Reports() {
         categoryFilter === "All" || record.category === categoryFilter;
       const matchesPayment =
         paymentFilter === "All" || payment === paymentFilter;
-      const timestamp = record._date
-        ? new Date(record._date).getTime()
-        : Number.NaN;
       const matchesDate = isDateInRange(record._date, dateRange);
-      return (
-        matchesSearch &&
-        matchesCategory &&
-        matchesPayment &&
-        matchesFrom &&
-        matchesTo
-      );
+      return matchesSearch && matchesCategory && matchesPayment && matchesDate;
     });
-  }, [allRecords, search, categoryFilter, paymentFilter, activeDateRange]);
+  }, [allRecords, search, categoryFilter, paymentFilter, dateRange]);
 
   const totalPages = Math.max(1, Math.ceil(visible.length / pageSize));
   const safeCurrentPage = Math.min(currentPage, totalPages);
@@ -421,19 +405,6 @@ export default function Reports() {
     setCurrentPage(1);
   };
 
-  const openDatePicker = (field: DatePickerField) => {
-    const currentValue = field === "from" ? dateRange.from : dateRange.to;
-    setDateDraft(currentValue ? new Date(`${currentValue}T12:00:00`) : new Date());
-    setDatePickerField(field);
-  };
-
-  const applyDate = (field: DatePickerField, date: Date) => {
-    if (field === "from") setDateRange((prev) => ({ ...prev, from: dateKey(date) }));
-    else setDateRange((prev) => ({ ...prev, to: dateKey(date) }));
-    setDateRange((prev) => ({ ...prev, filter: "Custom Range" }));
-    setCurrentPage(1);
-  };
-
   const exportRows = visible.map((record, index) => ({
     index: index + 1,
     kind: record._type === "expense" ? "Expense" : "Transfer",
@@ -441,10 +412,11 @@ export default function Reports() {
     category: record.category || "",
     amount: getRecordAmount(record),
     payment: record.payment_method || record.paymentMethod || "",
-      date: formatDate(record._date),
-      notes: record.notes || "",
-      recurring: record._type === "expense" ? record.recurring || "No" : "-",
-      remaining: record._type === "transfer" ? Number(record.remaining_amount || 0) : "",
+    date: formatDate(record._date),
+    notes: record.notes || "",
+    recurring: record._type === "expense" ? record.recurring || "No" : "-",
+    remaining:
+      record._type === "transfer" ? Number(record.remaining_amount || 0) : "",
   }));
 
   const exportCsv = async () => {
@@ -544,8 +516,7 @@ export default function Reports() {
         @page{margin:24px}
       </style></head><body>
       <h1>Life Ledger Report</h1>
-      <p>Generated ${escapeHtml(formatDate(new Date().toISOString()))} · ${stats.totalRecords} records · ${escapeHtml(datePreset)}</p>
-        <p>Generated ${escapeHtml(formatDate(new Date().toISOString()))} · ${stats.totalRecords} records · ${escapeHtml(dateRange.filter)}</p>
+      <p>Generated ${escapeHtml(formatDate(new Date().toISOString()))} · ${stats.totalRecords} records · ${escapeHtml(dateRange.filter)}</p>
       <div class="summary">
         <div class="metric"><div class="label">Expenses</div><div class="value">₹${stats.totalExpense.toFixed(2)}</div></div>
         <div class="metric"><div class="label">Transfers</div><div class="value">₹${stats.totalTransfer.toFixed(2)}</div></div>
@@ -586,7 +557,7 @@ export default function Reports() {
     !!search ||
     categoryFilter !== "All" ||
     paymentFilter !== "All" ||
-    datePreset !== "All";
+    dateRange.filter !== "All";
 
   return (
     <SafeAreaView className="flex-1 bg-[#F5F6F2]" edges={["bottom"]}>
@@ -884,65 +855,14 @@ export default function Reports() {
             })}
           </ScrollView>
 
-          <Text className="mb-1.5 text-xs font-bold uppercase tracking-[0.8px] text-[#87918A]">
-            Date range
-          </Text>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={{ gap: 7, paddingBottom: 10 }}
-          >
-            {datePresets.map((preset) => {
-              const selected = datePreset === preset;
-              return (
-                <Pressable
-                  key={preset}
-                  className={`rounded-full border px-3 py-2 ${selected ? "border-[#315640] bg-[#315640]" : "border-[#E1E6E0] bg-white"}`}
-                  onPress={() => {
-                    setDatePreset(preset);
-                    if (preset !== "Custom Range") {
-                      setDateFrom("");
-                      setDateTo("");
-                    }
-                    setCurrentPage(1);
-                  }}
-                >
-                  <Text
-                    className={`text-xs font-bold ${selected ? "text-white" : "text-[#637068]"}`}
-                  >
-                    {preset}
-                  </Text>
-                </Pressable>
-              );
-            })}
-          </ScrollView>
-
-          {datePreset === "Custom Range" && (
-          {dateRange.filter === "Custom Range" && (
-            <View className="mb-2 flex-row gap-2">
-              {(["from", "to"] as const).map((field) => {
-                const value = field === "from" ? dateRange.from : dateRange.to;
-                return (
-                  <Pressable
-                    key={field}
-                    accessibilityRole="button"
-                    className="flex-1 flex-row items-center rounded-xl border border-[#E1E6E0] bg-[#F9FAF8] px-3 py-3"
-                    onPress={() => openDatePicker(field)}
-                  >
-                    <Ionicons
-                      name="calendar-outline"
-                      size={16}
-                      color="#68776D"
-                    />
-                    <Text className="ml-2 text-xs font-semibold text-[#526058]">
-                      {field === "from" ? "From" : "To"}: {" "}
-                      {value || "Select date"}
-                    </Text>
-                  </Pressable>
-                );
-              })}
-            </View>
-          )}
+          <DateRangeFilter
+            value={dateRange}
+            onChange={(nextRange) => {
+              setDateRange(nextRange);
+              setCurrentPage(1);
+            }}
+            style={{ marginBottom: 10 }}
+          />
 
           <View className="flex-row items-center justify-between border-t border-[#EEF0ED] pt-3">
             <Text className="text-xs font-medium text-[#7C8880]">
@@ -1139,54 +1059,6 @@ export default function Reports() {
           </View>
         )}
       </ScrollView>
-
-      {Platform.OS === "android" && datePickerField && (
-        <DateTimePicker
-          value={dateDraft}
-          mode="date"
-          display="default"
-          onChange={(event, date) => {
-            if (event.type === "set" && date) applyDate(datePickerField, date);
-            setDatePickerField(null);
-          }}
-        />
-      )}
-      <Modal
-        animationType="fade"
-        onRequestClose={() => setDatePickerField(null)}
-        transparent
-        visible={Platform.OS === "ios" && datePickerField !== null}
-      >
-        <View className="flex-1 justify-end bg-black/40">
-          <View className="rounded-t-[24px] bg-white px-5 pb-8 pt-4">
-            <View className="mb-2 flex-row items-center justify-between">
-              <Text className="text-base font-bold text-[#293930]">
-                Select {datePickerField === "from" ? "start" : "end"} date
-              </Text>
-              <Pressable onPress={() => setDatePickerField(null)}>
-                <Text className="text-sm font-bold text-[#315640]">Done</Text>
-              </Pressable>
-            </View>
-            <DateTimePicker
-              value={dateDraft}
-              mode="date"
-              display="spinner"
-              onChange={(_, date) => {
-                if (date) setDateDraft(date);
-              }}
-            />
-            <Pressable
-              className="mt-2 items-center rounded-xl bg-[#315640] py-3"
-              onPress={() => {
-                if (datePickerField) applyDate(datePickerField, dateDraft);
-                setDatePickerField(null);
-              }}
-            >
-              <Text className="text-sm font-bold text-white">Apply date</Text>
-            </Pressable>
-          </View>
-        </View>
-      </Modal>
     </SafeAreaView>
   );
 }

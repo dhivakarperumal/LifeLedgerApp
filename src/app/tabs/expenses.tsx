@@ -1296,7 +1296,7 @@ function HeroStatCard({
     <View
       style={{
         flex: 1,
-        backgroundColor: "#FFFFFF",
+        backgroundColor: "#F8FCF8",
         borderRadius: 20,
         padding: 10,
         shadowColor: "#000",
@@ -1307,16 +1307,17 @@ function HeroStatCard({
         overflow: "hidden",
       }}
     >
-      {/* Decorative background circle */}
+      {/* Decorative wavy background approximation */}
       <View
         style={{
           position: "absolute",
-          bottom: -30,
-          right: -30,
-          width: 120,
-          height: 120,
-          borderRadius: 60,
-          backgroundColor: "#F0Fdf4",
+          bottom: -20,
+          left: -40,
+          right: -40,
+          height: "60%",
+          backgroundColor: "#E8F5E9",
+          borderTopLeftRadius: 150,
+          borderTopRightRadius: 150,
           opacity: 0.6,
         }}
       />
@@ -1340,25 +1341,25 @@ function HeroStatCard({
         >
           <View
             style={{
-              width: 38,
-              height: 38,
-              borderRadius: 12,
+              width: 40,
+              height: 40,
+              borderRadius: 14,
               backgroundColor: iconBg,
               justifyContent: "center",
               alignItems: "center",
             }}
           >
-            <Ionicons name={icon} size={18} color={iconColor} />
+            <Ionicons name={icon} size={22} color={iconColor} />
           </View>
           <View style={{ flex: 1 }}>
             <Text
-              style={{ fontSize: 13, fontWeight: "800", color: "#111827" }}
+              style={{ fontSize: 14, fontWeight: "900", color: "#000000" }}
               numberOfLines={1}
             >
               {title}
             </Text>
             <Text
-              style={{ fontSize: 10, color: "#8b929c", marginTop: 2 }}
+              style={{ fontSize: 11, color: "#8b929c", marginTop: 2 }}
               numberOfLines={1}
             >
               {subtitle}
@@ -1377,16 +1378,16 @@ function HeroStatCard({
       >
         <Text
           style={{
-            fontSize: 22,
+            fontSize: 24,
             fontWeight: "900",
-            color: "#111827",
+            color: "#163316",
             letterSpacing: -0.5,
           }}
         >
           {whole}
         </Text>
         {fraction && (
-          <Text style={{ fontSize: 14, fontWeight: "800", color: "#111827" }}>
+          <Text style={{ fontSize: 18, fontWeight: "900", color: "#163316" }}>
             .{fraction}
           </Text>
         )}
@@ -1398,18 +1399,18 @@ function HeroStatCard({
           style={{
             flexDirection: "row",
             alignItems: "center",
-            backgroundColor: "#Edf7ed",
-            paddingHorizontal: 6,
+            backgroundColor: "#E3F0E4",
+            paddingHorizontal: 8,
             paddingVertical: 4,
             borderRadius: 8,
           }}
         >
-          <Ionicons name="trending-up" size={12} color="#388e3c" />
+          <Ionicons name="trending-up" size={14} color="#337833" />
         </View>
-        <Text style={{ fontSize: 12, fontWeight: "800", color: "#388e3c" }}>
+        <Text style={{ fontSize: 13, fontWeight: "900", color: "#337833" }}>
           {trendPercent}
         </Text>
-        <Text style={{ fontSize: 10, color: "#8b929c", flexShrink: 1 }}>
+        <Text style={{ fontSize: 11, color: "#8b929c", flexShrink: 1 }}>
           {trendText}
         </Text>
       </View>
