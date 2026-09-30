@@ -33,7 +33,9 @@ function notificationDateKey(value?: string) {
   if (!value) return "";
   if (/^\d{4}-\d{2}-\d{2}/.test(value)) return value.slice(0, 10);
   const parsed = new Date(value);
-  return Number.isNaN(parsed.getTime()) ? "" : `${parsed.getFullYear()}-${String(parsed.getMonth() + 1).padStart(2, "0")}-${String(parsed.getDate()).padStart(2, "0")}`;
+  return Number.isNaN(parsed.getTime())
+    ? ""
+    : `${parsed.getFullYear()}-${String(parsed.getMonth() + 1).padStart(2, "0")}-${String(parsed.getDate()).padStart(2, "0")}`;
 }
 
 function formatNotificationDate(value?: string) {
@@ -106,7 +108,9 @@ export function TopHeader() {
           if (!item?.title && !item?.name) return null;
 
           return {
-            id: item?.id ?? `${item?.title ?? item?.name ?? "event"}-${date}-${time}`,
+            id:
+              item?.id ??
+              `${item?.title ?? item?.name ?? "event"}-${date}-${time}`,
             name: item?.title || item?.name || "Upcoming Event",
             type: (item?.category || item?.type || "EVENT").toUpperCase(),
             date: date ? formatNotificationDate(date) : "",
@@ -130,9 +134,9 @@ export function TopHeader() {
           .filter((item): item is NotificationItem => !!item)
           .filter((item) => item.date || item.time)
           .sort((a, b) => {
-            const dateDiff = (notificationDateKey(a.date) || "9999-99-99").localeCompare(
-              notificationDateKey(b.date) || "9999-99-99",
-            );
+            const dateDiff = (
+              notificationDateKey(a.date) || "9999-99-99"
+            ).localeCompare(notificationDateKey(b.date) || "9999-99-99");
             if (dateDiff !== 0) return dateDiff;
             return (a.time || "99:99").localeCompare(b.time || "99:99");
           })
@@ -267,35 +271,48 @@ export function TopHeader() {
         onRequestClose={() => setNotificationsVisible(false)}
       >
         <Pressable
-          className="flex-1 items-center justify-center bg-[rgba(16,28,18,0.48)] px-5"
+          className="flex-1 items-center justify-center bg-[rgba(9,18,11,0.56)] px-6"
           onPress={() => setNotificationsVisible(false)}
         >
           <Pressable
-            className="w-full overflow-hidden rounded-[30px] bg-[#F4F5F3] p-5 shadow-2xl"
+            className="w-full overflow-hidden rounded-[30px] bg-[#F4F5F3] p-6 shadow-2xl"
             onPress={(event) => event.stopPropagation()}
-            style={{ maxWidth: 430, marginVertical: 24 }}
+            style={{ maxWidth: 440, marginVertical: 28 }}
           >
             <View className="mb-4 flex-row items-center justify-between gap-3">
               <Text className="text-[18px] font-black text-[#1D2B1D]">
                 Notifications
               </Text>
-              <View className="rounded-full border border-[#E74C4C] bg-[#FDE7E7] px-3 py-1.5">
-                <Text className="text-[9px] font-bold text-[#E74C4C]">
-                  {notifications.length || 0} UPCOMING
-                </Text>
+              <View className="flex-row items-center gap-2">
+                <View className="rounded-full border border-[#E74C4C] bg-[#FDE7E7] px-2.5 py-1.5">
+                  <Text className="text-[8px] font-bold text-[#E74C4C]">
+                    {notifications.length || 0} UPCOMING
+                  </Text>
+                </View>
+                <Pressable
+                  accessibilityLabel="Close notifications"
+                  onPress={() => setNotificationsVisible(false)}
+                  className="h-9 w-9 items-center justify-center rounded-full border border-[#D7DDD8] bg-[#EEF2EF]"
+                >
+                  <Ionicons name="close" size={18} color="#1D2B1D" />
+                </Pressable>
               </View>
             </View>
 
             <View className="mt-1 gap-3">
               {notifications.length > 0 ? (
                 notifications.map((item) => (
-                  <View key={item.id} className="border-b border-[#D7DDD8] pb-3">
+                  <View
+                    key={item.id}
+                    className="border-b border-[#D7DDD8] pb-3"
+                  >
                     <View className="flex-row items-end justify-between gap-3">
-                      <Text className="flex-1 text-[15px] font-black text-[#1D2B1D]">
+                      <Text className="flex-1 text-[13px] font-black text-[#1D2B1D]">
                         {item.name}
                       </Text>
-                      <Text className="text-[11px] font-medium text-[#5D6A5D]">
-                        {item.date}{item.time ? ` • ${item.time}` : ""}
+                      <Text className="text-[10px] font-medium text-[#5D6A5D]">
+                        {item.date}
+                        {item.time ? ` • ${item.time}` : ""}
                       </Text>
                     </View>
                     <Text className="mt-1 text-[9px] font-bold tracking-[1.2px] text-[#5D6A5D]">
