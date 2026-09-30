@@ -15,13 +15,17 @@ import api, { getApiErrorMessage, logoutUser } from "../../api";
 import { AddButton } from "../../components/AddButton";
 import {
   createDateRangeSelection,
-  DateRangeFilter,
   isDateInRange,
   type DateRangeSelection,
 } from "../../components/DateRangeFilter";
 import { FormInput, FormOption } from "../../components/FormControls";
 import { GradientSafeAreaView as SafeAreaView } from "../../components/GradientSafeAreaView";
 import { SearchBar } from "../../components/SearchBar";
+import {
+  DEFAULT_FILTER_STATE,
+  type FilterState,
+  type SortOption,
+} from "../../components/filters";
 import { Colors } from "../../constants/colors";
 
 type ExpenseItem = {
@@ -141,6 +145,9 @@ export default function Expenses() {
   const [dateRange, setDateRange] = useState<DateRangeSelection>(() =>
     createDateRangeSelection("All"),
   );
+  const [amountMin, setAmountMin] = useState("");
+  const [amountMax, setAmountMax] = useState("");
+  const [sort, setSort] = useState<SortOption>(DEFAULT_FILTER_STATE.sort);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
   const [isModalVisible, setIsModalVisible] = useState(false);
@@ -155,6 +162,26 @@ export default function Expenses() {
     time: getCurrentTime(),
     notes: "",
   });
+
+  const filterValues = useMemo<FilterState>(
+    () => ({
+      ...DEFAULT_FILTER_STATE,
+      dateRange,
+      category: selectedCategory === "All" ? "" : selectedCategory,
+      amountMin,
+      amountMax,
+      sort,
+    }),
+    [dateRange, selectedCategory, amountMin, amountMax, sort],
+  );
+
+  const applyExpenseFilters = (filters: FilterState) => {
+    setDateRange(filters.dateRange);
+    setSelectedCategory(filters.category || "All");
+    setAmountMin(filters.amountMin);
+    setAmountMax(filters.amountMax);
+    setSort(filters.sort);
+  };
 
   const handleUnauthorized = useCallback(async () => {
     await logoutUser();
@@ -235,18 +262,45 @@ export default function Expenses() {
 
   const visibleExpenses = useMemo(() => {
     const query = search.trim().toLowerCase();
-    return expenses.filter((expense) => {
+    const filtered = expenses.filter((expense) => {
       const matchesCategory =
         selectedCategory === "All" ||
         (expense.category || "Other") === selectedCategory;
       const matchesDate = isDateInRange(expense.expense_date, dateRange);
+      const amount = Number(expense.expense_amount ?? expense.amount ?? 0);
+      const matchesMin = amountMin === "" || amount >= Number(amountMin);
+      const matchesMax = amountMax === "" || amount <= Number(amountMax);
       const haystack = `${expense.title || ""} ${expense.category || ""} ${
         expense.notes || ""
       }`.toLowerCase();
       const matchesSearch = !query || haystack.includes(query);
-      return matchesCategory && matchesSearch && matchesDate;
+      return (
+        matchesCategory &&
+        matchesSearch &&
+        matchesDate &&
+        matchesMin &&
+        matchesMax
+      );
     });
-  }, [expenses, search, selectedCategory, dateRange]);
+    return filtered.sort((left, right) => {
+      const leftAmount = Number(left.expense_amount ?? left.amount ?? 0);
+      const rightAmount = Number(right.expense_amount ?? right.amount ?? 0);
+      const leftDate = new Date(left.expense_date || "").getTime() || 0;
+      const rightDate = new Date(right.expense_date || "").getTime() || 0;
+      if (sort === "Oldest First") return leftDate - rightDate;
+      if (sort === "Amount: High to Low") return rightAmount - leftAmount;
+      if (sort === "Amount: Low to High") return leftAmount - rightAmount;
+      return rightDate - leftDate;
+    });
+  }, [
+    expenses,
+    search,
+    selectedCategory,
+    dateRange,
+    amountMin,
+    amountMax,
+    sort,
+  ]);
 
   const totals = useMemo(
     () => ({
@@ -426,14 +480,13 @@ export default function Expenses() {
             value={search}
             onChangeText={setSearch}
             placeholder="Search expenses…"
-            onFilterPress={() => setIsFilterSheetVisible(true)}
-            filterActive={selectedCategory !== "All"}
+            filterSheet={{
+              currentFilters: filterValues,
+              onApply: applyExpenseFilters,
+              categories: categoryOptions,
+              sections: ["date", "category", "amount", "sort"],
+            }}
             style={{ marginBottom: 12 }}
-          />
-          <DateRangeFilter
-            value={dateRange}
-            onChange={setDateRange}
-            style={{ marginBottom: 14 }}
           />
 
           {/* Active filter chip */}

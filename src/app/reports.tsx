@@ -14,7 +14,6 @@ import {
     ScrollView,
     Share,
     Text,
-    TextInput,
     useWindowDimensions,
     View,
 } from "react-native";
@@ -23,11 +22,17 @@ import Svg, { Path, Rect } from "react-native-svg";
 import api, { getApiErrorMessage, logoutUser } from "../api";
 import {
     createDateRangeSelection,
-    DateRangeFilter,
     isDateInRange,
     type DateRangeSelection,
 } from "../components/DateRangeFilter";
 import { GradientSafeAreaView as SafeAreaView } from "../components/GradientSafeAreaView";
+import { SearchBar } from "../components/SearchBar";
+import {
+    countActiveFilters,
+    DEFAULT_FILTER_STATE,
+    type FilterState,
+    type SortOption,
+} from "../components/filters";
 import { Colors } from "../constants/colors";
 
 type ReportType = "expense" | "transfer";
@@ -357,9 +362,33 @@ export default function Reports() {
   const [dateRange, setDateRange] = useState<DateRangeSelection>(() =>
     createDateRangeSelection("All"),
   );
+  const [amountMin, setAmountMin] = useState("");
+  const [amountMax, setAmountMax] = useState("");
+  const [sort, setSort] = useState<SortOption>(DEFAULT_FILTER_STATE.sort);
   const [viewMode, setViewMode] = useState<"list" | "grid">("list");
   const [currentPage, setCurrentPage] = useState(1);
   const [exporting, setExporting] = useState<"pdf" | "csv" | null>(null);
+
+  const filterValues = useMemo<FilterState>(
+    () => ({
+      ...DEFAULT_FILTER_STATE,
+      dateRange,
+      category: categoryFilter === "All" ? "" : categoryFilter,
+      amountMin,
+      amountMax,
+      sort,
+    }),
+    [dateRange, categoryFilter, amountMin, amountMax, sort],
+  );
+
+  const applyReportFilters = (filters: FilterState) => {
+    setDateRange(filters.dateRange);
+    setCategoryFilter(filters.category || "All");
+    setAmountMin(filters.amountMin);
+    setAmountMax(filters.amountMax);
+    setSort(filters.sort);
+    setCurrentPage(1);
+  };
 
   const handleUnauthorized = useCallback(async () => {
     await logoutUser();
@@ -442,9 +471,10 @@ export default function Reports() {
   );
   const visible = useMemo(() => {
     const query = search.trim().toLowerCase();
-    return allRecords.filter((record) => {
+    const filtered = allRecords.filter((record) => {
       const payment = record.payment_method || record.paymentMethod || "";
-      const amount = String(getRecordAmount(record));
+      const recordAmount = getRecordAmount(record);
+      const amount = String(recordAmount);
       const matchesSearch =
         !query ||
         `${record.title || ""} ${record.category || ""} ${record.notes || ""} ${amount}`
@@ -455,9 +485,37 @@ export default function Reports() {
       const matchesPayment =
         paymentFilter === "All" || payment === paymentFilter;
       const matchesDate = isDateInRange(record._date, dateRange);
-      return matchesSearch && matchesCategory && matchesPayment && matchesDate;
+      const matchesMin = amountMin === "" || recordAmount >= Number(amountMin);
+      const matchesMax = amountMax === "" || recordAmount <= Number(amountMax);
+      return (
+        matchesSearch &&
+        matchesCategory &&
+        matchesPayment &&
+        matchesDate &&
+        matchesMin &&
+        matchesMax
+      );
     });
-  }, [allRecords, search, categoryFilter, paymentFilter, dateRange]);
+    return filtered.sort((left, right) => {
+      const leftAmount = getRecordAmount(left);
+      const rightAmount = getRecordAmount(right);
+      const leftDate = new Date(left._date || "").getTime() || 0;
+      const rightDate = new Date(right._date || "").getTime() || 0;
+      if (sort === "Oldest First") return leftDate - rightDate;
+      if (sort === "Amount: High to Low") return rightAmount - leftAmount;
+      if (sort === "Amount: Low to High") return leftAmount - rightAmount;
+      return rightDate - leftDate;
+    });
+  }, [
+    allRecords,
+    search,
+    categoryFilter,
+    paymentFilter,
+    dateRange,
+    amountMin,
+    amountMax,
+    sort,
+  ]);
 
   const totalPages = Math.max(1, Math.ceil(visible.length / pageSize));
   const safeCurrentPage = Math.min(currentPage, totalPages);
@@ -557,6 +615,9 @@ export default function Reports() {
     setCategoryFilter("All");
     setPaymentFilter("All");
     setDateRange(createDateRangeSelection("All"));
+    setAmountMin("");
+    setAmountMax("");
+    setSort(DEFAULT_FILTER_STATE.sort);
     setCurrentPage(1);
   };
 
@@ -719,7 +780,10 @@ export default function Reports() {
     !!search ||
     categoryFilter !== "All" ||
     paymentFilter !== "All" ||
-    dateRange.filter !== "All";
+    dateRange.filter !== "All" ||
+    amountMin !== "" ||
+    amountMax !== "" ||
+    sort !== DEFAULT_FILTER_STATE.sort;
 
   return (
     <SafeAreaView className="flex-1 bg-[#F5F6F2]" edges={["bottom"]}>
@@ -930,31 +994,25 @@ export default function Reports() {
         </View>
 
         <View className="mb-4 rounded-2xl border border-[#E4E8E3] bg-white p-3.5">
-          <View className="mb-3 flex-row items-center rounded-xl border border-[#E4E8E3] bg-[#F9FAF8] px-3">
-            <Ionicons name="search-outline" size={18} color="#87918A" />
-            <TextInput
-              accessibilityLabel="Search report records"
-              className="h-11 flex-1 px-3 text-sm text-[#25332C]"
-              placeholder="Search title, category, notes, amount"
-              placeholderTextColor="#9AA39D"
-              value={search}
-              onChangeText={(value) => {
-                setSearch(value);
-                setCurrentPage(1);
-              }}
-            />
-            {!!search && (
-              <Pressable
-                onPress={() => {
-                  setSearch("");
-                  setCurrentPage(1);
-                }}
-                accessibilityLabel="Clear search"
-              >
-                <Ionicons name="close-circle" size={18} color="#87918A" />
-              </Pressable>
-            )}
-          </View>
+          <SearchBar
+            value={search}
+            onChangeText={(value) => {
+              setSearch(value);
+              setCurrentPage(1);
+            }}
+            placeholder="Search title, category, notes, amount"
+            activeFilterCount={
+              countActiveFilters(filterValues) +
+              (paymentFilter === "All" ? 0 : 1)
+            }
+            filterSheet={{
+              currentFilters: filterValues,
+              onApply: applyReportFilters,
+              categories: categories.filter((category) => category !== "All"),
+              sections: ["date", "category", "amount", "sort"],
+            }}
+            style={{ marginBottom: 12 }}
+          />
 
           <View className="mb-3 flex-row rounded-xl border border-[#E4E8E3] bg-[#F5F6F2] p-1">
             {(
@@ -977,35 +1035,6 @@ export default function Reports() {
               </Pressable>
             ))}
           </View>
-
-          <Text className="mb-1.5 text-xs font-bold uppercase tracking-[0.8px] text-[#87918A]">
-            Category
-          </Text>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={{ gap: 7, paddingBottom: 12 }}
-          >
-            {categories.map((category) => {
-              const selected = categoryFilter === category;
-              return (
-                <Pressable
-                  key={category}
-                  className={`rounded-full border px-3 py-2 ${selected ? "border-[#315640] bg-[#315640]" : "border-[#E1E6E0] bg-white"}`}
-                  onPress={() => {
-                    setCategoryFilter(category);
-                    setCurrentPage(1);
-                  }}
-                >
-                  <Text
-                    className={`text-xs font-bold ${selected ? "text-white" : "text-[#637068]"}`}
-                  >
-                    {category === "All" ? "All categories" : category}
-                  </Text>
-                </Pressable>
-              );
-            })}
-          </ScrollView>
 
           <Text className="mb-1.5 text-xs font-bold uppercase tracking-[0.8px] text-[#87918A]">
             Payment method
@@ -1035,15 +1064,6 @@ export default function Reports() {
               );
             })}
           </ScrollView>
-
-          <DateRangeFilter
-            value={dateRange}
-            onChange={(nextRange) => {
-              setDateRange(nextRange);
-              setCurrentPage(1);
-            }}
-            style={{ marginBottom: 10 }}
-          />
 
           <View className="flex-row items-center justify-between border-t border-[#EEF0ED] pt-3">
             <Text className="text-xs font-medium text-[#7C8880]">

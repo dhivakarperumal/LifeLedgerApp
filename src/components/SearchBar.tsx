@@ -1,34 +1,72 @@
+import {
+  Poppins_400Regular,
+  Poppins_500Medium,
+  Poppins_600SemiBold,
+  Poppins_700Bold,
+} from "@expo-google-fonts/poppins";
 import { Ionicons } from "@expo/vector-icons";
-import { Pressable, TextInput, View, ViewStyle } from "react-native";
+import { useFonts } from "expo-font";
+import { useState } from "react";
+import { Pressable, TextInput, View, type ViewStyle } from "react-native";
 import { Colors } from "../constants/colors";
+import {
+  FilterBottomSheet,
+  type FilterBottomSheetProps,
+} from "./filters/FilterBottomSheet";
+import { FilterButton } from "./filters/FilterButton";
+import { countActiveFilters } from "./filters/filterTypes";
+
+type SearchBarFilterSheet = Omit<FilterBottomSheetProps, "visible" | "onClose">;
+
+const poppinsFontMap = {
+  Poppins_400Regular,
+  Poppins_500Medium,
+  Poppins_600SemiBold,
+  Poppins_700Bold,
+};
 
 type Props = {
   value: string;
   onChangeText: (text: string) => void;
   placeholder?: string;
-  /** Called when the right filter/action icon is pressed */
+  /** Called when the filter button is pressed */
   onFilterPress?: () => void;
-  /** Whether a filter is currently active (highlights the filter button) */
+  /** Number of active filters — shows badge when > 0 */
+  activeFilterCount?: number;
+  /** Backward-compatible single active-filter indicator. */
   filterActive?: boolean;
+  /** Enables the shared bottom sheet while keeping committed state in the parent. */
+  filterSheet?: SearchBarFilterSheet;
   /** Pass a custom right icon name; defaults to the sliders/options icon */
   filterIcon?: keyof typeof Ionicons.glyphMap;
   style?: ViewStyle;
 };
 
 /**
- * A consistent, app-wide search bar that matches the design shown in the
- * image: white pill container, leading magnifier icon, text input, and an
- * optional right-side filter/action button.
+ * Full-width rounded search bar with optional inline FilterButton on the right.
+ * Pass `onFilterPress` and `activeFilterCount` to show the filter button.
  */
 export function SearchBar({
   value,
   onChangeText,
   placeholder = "Search...",
   onFilterPress,
+  activeFilterCount,
   filterActive = false,
-  filterIcon = "options-outline",
+  filterSheet,
   style,
 }: Props) {
+  const [fontsLoaded] = useFonts(poppinsFontMap);
+  const [filterSheetVisible, setFilterSheetVisible] = useState(false);
+  const [filterSheetKey, setFilterSheetKey] = useState(0);
+  const filterCount =
+    activeFilterCount ??
+    (filterSheet
+      ? countActiveFilters(filterSheet.currentFilters)
+      : filterActive
+        ? 1
+        : 0);
+
   return (
     <View
       style={[
@@ -46,7 +84,7 @@ export function SearchBar({
           flex: 1,
           flexDirection: "row",
           alignItems: "center",
-          minHeight: 52,
+          minHeight: 50,
           backgroundColor: Colors.white,
           borderRadius: 50,
           paddingHorizontal: 16,
@@ -74,6 +112,7 @@ export function SearchBar({
             flex: 1,
             marginLeft: 10,
             fontSize: 14,
+            fontFamily: fontsLoaded ? "Poppins_400Regular" : undefined,
             color: Colors.textPrimary,
             padding: 0,
           }}
@@ -89,44 +128,30 @@ export function SearchBar({
             />
           </Pressable>
         )}
-        {onFilterPress && (
-          <Pressable
-            onPress={onFilterPress}
-            accessibilityRole="button"
-            accessibilityLabel="Filter"
-            style={{
-              width: 36,
-              height: 36,
-              marginLeft: 8,
-              borderRadius: 18,
-              backgroundColor: filterActive ? Colors.primary : "transparent",
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-          >
-            <Ionicons
-              name={filterIcon}
-              size={20}
-              color={filterActive ? Colors.white : Colors.textPrimary}
-            />
-            {filterActive && (
-              <View
-                style={{
-                  position: "absolute",
-                  top: 5,
-                  right: 5,
-                  width: 8,
-                  height: 8,
-                  borderRadius: 4,
-                  backgroundColor: Colors.accent,
-                  borderWidth: 1.5,
-                  borderColor: Colors.primary,
-                }}
-              />
-            )}
-          </Pressable>
-        )}
       </View>
+
+      {/* Inline filter button */}
+      {(onFilterPress || filterSheet) && (
+        <FilterButton
+          onPress={
+            filterSheet
+              ? () => {
+                  setFilterSheetKey((key) => key + 1);
+                  setFilterSheetVisible(true);
+                }
+              : onFilterPress || (() => undefined)
+          }
+          activeCount={filterCount}
+        />
+      )}
+      {filterSheet && (
+        <FilterBottomSheet
+          key={filterSheetKey}
+          {...filterSheet}
+          visible={filterSheetVisible}
+          onClose={() => setFilterSheetVisible(false)}
+        />
+      )}
     </View>
   );
 }

@@ -18,6 +18,7 @@ import {
 import {
     ActivityIndicator,
     Alert,
+    Image,
     Modal,
     Platform,
     Pressable,
@@ -27,17 +28,21 @@ import {
     View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import api, { getApiErrorMessage, logoutUser } from "../../api";
+import api, { API_BASE_URL, getApiErrorMessage, logoutUser } from "../../api";
 import { AddButton } from "../../components/AddButton";
 import {
     createDateRangeSelection,
-    DateRangeFilter,
     isDateInRange,
     type DateRangeSelection,
 } from "../../components/DateRangeFilter";
 import { FormInput, FormOption } from "../../components/FormControls";
 import { GradientSafeAreaView as SafeAreaView } from "../../components/GradientSafeAreaView";
 import { SearchBar } from "../../components/SearchBar";
+import {
+    countActiveFilters,
+    DEFAULT_FILTER_STATE,
+    type FilterState,
+} from "../../components/filters";
 import { Colors } from "../../constants/colors";
 
 type DiaryEntry = {
@@ -110,6 +115,20 @@ const entryFilterLabels: Record<EntryFilter, string> = {
   favorites: "Favorites",
   drafts: "Drafts",
 };
+const diaryDateTileColors = [
+  "#EAF5E8",
+  "#FCEBF0",
+  "#FFF5D9",
+  "#E8F3FC",
+  "#F0EAFF",
+];
+const diaryTagColors = [
+  { background: "#E5F1FF", color: "#2465A6" },
+  { background: "#EAF4E6", color: "#386A38" },
+  { background: "#FCE8EC", color: "#A3314A" },
+  { background: "#EEE9FF", color: "#6241A8" },
+  { background: "#FFF3D4", color: "#8B5C12" },
+];
 
 function todayKey() {
   const now = new Date();
@@ -200,6 +219,31 @@ function formatDate(value?: string) {
   });
 }
 
+function diaryDateParts(value?: string) {
+  const date = value
+    ? parseDateKey(value.slice(0, 10)) || new Date(value)
+    : new Date(Number.NaN);
+  if (Number.isNaN(date.getTime()))
+    return { month: "—", day: "—", weekday: "" };
+  return {
+    month: date.toLocaleDateString("en-IN", { month: "short" }).toUpperCase(),
+    day: String(date.getDate()),
+    weekday: date.toLocaleDateString("en-IN", { weekday: "short" }),
+  };
+}
+
+function formatEntryTime(value?: string) {
+  if (!value) return "";
+  const match = value.match(/^(\d{1,2}):(\d{2})/);
+  if (!match) return value;
+  const date = new Date();
+  date.setHours(Number(match[1]), Number(match[2]), 0, 0);
+  return date.toLocaleTimeString("en-IN", {
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
+
 function attachmentName(file: string | Record<string, any>, index: number) {
   if (typeof file === "string")
     return file.split("/").pop() || `Attachment ${index + 1}`;
@@ -233,6 +277,33 @@ function attachmentKind(file: string | Record<string, any>) {
   )
     return "zip";
   return "file";
+}
+
+function diaryImageUrl(entry: DiaryEntry) {
+  const files = [...(entry.attachments || []), ...(entry.media_files || [])];
+  const image = files.find((file) => {
+    const type =
+      typeof file === "string"
+        ? ""
+        : String(file.file_type || file.type || "").toLowerCase();
+    const url =
+      typeof file === "string"
+        ? file
+        : String(file.file_url || file.url || file.src || file.path || "");
+    return (
+      type.includes("image") || /\.(png|jpe?g|gif|webp|bmp)(\?|$)/i.test(url)
+    );
+  });
+  if (!image) return "";
+
+  const value =
+    typeof image === "string"
+      ? image
+      : String(image.file_url || image.url || image.src || image.path || "");
+  if (!value) return "";
+  if (/^(https?:|file:|content:|data:)/i.test(value)) return value;
+  const baseUrl = API_BASE_URL.replace(/\/api\/?$/, "");
+  return `${baseUrl}${value.startsWith("/") ? value : `/${value}`}`;
 }
 
 function initialDiaryForm(categoryId = ""): DiaryForm {
@@ -290,6 +361,27 @@ export default function Diary() {
     zip: [] as string[],
   });
   const [isRecording, setIsRecording] = useState(false);
+
+  const filterValues = useMemo<FilterState>(
+    () => ({
+      ...DEFAULT_FILTER_STATE,
+      dateRange,
+      category: selectedCategory === "all" ? "" : selectedCategory,
+    }),
+    [dateRange, selectedCategory],
+  );
+  const filterCategories = useMemo(
+    () =>
+      categories.map((category) => ({
+        value: String(category.id),
+        label: category.name,
+      })),
+    [categories],
+  );
+  const applyDiaryFilters = (filters: FilterState) => {
+    setDateRange(filters.dateRange);
+    setSelectedCategory(filters.category || "all");
+  };
 
   const handleUnauthorized = useCallback(async () => {
     await logoutUser();
@@ -779,9 +871,17 @@ export default function Diary() {
           value={search}
           onChangeText={setSearch}
           placeholder="Search title, mood, tags..."
-          onFilterPress={() => setFilterMenuVisible(true)}
-          filterActive={selectedFilter !== "all" || dateRange.filter !== "All"}
-          filterIcon="options-outline"
+          activeFilterCount={
+            countActiveFilters(filterValues) +
+            (selectedFilter === "all" ? 0 : 1) +
+            (selectedMood === "all" ? 0 : 1)
+          }
+          filterSheet={{
+            currentFilters: filterValues,
+            onApply: applyDiaryFilters,
+            categories: filterCategories,
+            sections: ["date", "category"],
+          }}
           style={{ marginBottom: 12 }}
         />
 
@@ -809,48 +909,6 @@ export default function Diary() {
           </Text>
           <Ionicons name="chevron-down" size={18} color={Colors.sage} />
         </Pressable>
-
-        <DateRangeFilter
-          value={dateRange}
-          onChange={setDateRange}
-          style={{ marginBottom: 12 }}
-        />
-
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={{ gap: 7, paddingBottom: 11 }}
-        >
-          {[{ id: "all", name: "All categories" }, ...categories].map(
-            (category) => {
-              const active = selectedCategory === String(category.id);
-              return (
-                <Pressable
-                  key={String(category.id)}
-                  onPress={() => setSelectedCategory(String(category.id))}
-                  style={{
-                    paddingHorizontal: 12,
-                    paddingVertical: 8,
-                    borderRadius: 15,
-                    backgroundColor: active ? "#E6F1E9" : Colors.white,
-                    borderWidth: 1,
-                    borderColor: active ? "#BCD5C4" : "#DCE7E2",
-                  }}
-                >
-                  <Text
-                    style={{
-                      color: Colors.forest,
-                      fontSize: 12,
-                      fontWeight: "600",
-                    }}
-                  >
-                    {category.name}
-                  </Text>
-                </Pressable>
-              );
-            },
-          )}
-        </ScrollView>
 
         <Pressable
           onPress={() => setMoodMenuVisible(true)}
@@ -915,172 +973,339 @@ export default function Diary() {
             </Text>
           </View>
         ) : (
-          filteredEntries.map((entry) => (
-            <View
-              key={String(entry.id)}
-              style={{
-                marginBottom: 12,
-                padding: 15,
-                borderRadius: 17,
-                borderWidth: 1,
-                borderColor: "#E0E8E3",
-                backgroundColor: Colors.white,
-              }}
-            >
-              <View
+          filteredEntries.map((entry, index) => {
+            const date = diaryDateParts(entry.entry_date);
+            const tags = parseTags(entry.tags);
+            const photoUrl = diaryImageUrl(entry);
+            const mood = moods.find((item) => item.name === entry.mood);
+            const moodTone = diaryTagColors[index % diaryTagColors.length];
+            const attachmentCount =
+              entry.attachment_count ||
+              (entry.attachments?.length || 0) +
+                (entry.media_files?.length || 0);
+
+            return (
+              <Pressable
+                key={String(entry.id)}
+                onPress={() =>
+                  router.push({
+                    pathname: "/diary/[id]",
+                    params: { id: String(entry.id) },
+                  })
+                }
+                accessibilityRole="button"
+                accessibilityLabel={`View diary entry: ${entry.title}`}
                 style={{
+                  position: "relative",
                   flexDirection: "row",
-                  justifyContent: "space-between",
-                  alignItems: "flex-start",
-                  gap: 8,
+                  alignItems: "center",
+                  gap: 10,
+                  minHeight: 152,
+                  marginBottom: 12,
+                  padding: 11,
+                  paddingRight: 12,
+                  borderRadius: 19,
+                  borderWidth: 1,
+                  borderColor: "#E8EEEA",
+                  backgroundColor: Colors.white,
+                  shadowColor: "#26382E",
+                  shadowOffset: { width: 0, height: 3 },
+                  shadowOpacity: 0.05,
+                  shadowRadius: 9,
+                  elevation: 2,
                 }}
               >
-                <View style={{ flex: 1 }}>
+                <View
+                  style={{
+                    width: 68,
+                    minHeight: 110,
+                    alignItems: "center",
+                    justifyContent: "center",
+                    paddingHorizontal: 4,
+                    borderRadius: 16,
+                    backgroundColor:
+                      diaryDateTileColors[index % diaryDateTileColors.length],
+                  }}
+                >
+                  <Text style={{ color: Colors.textPrimary, fontSize: 12 }}>
+                    {date.month}
+                  </Text>
                   <Text
                     style={{
+                      color: "#111D20",
+                      fontSize: 26,
+                      fontWeight: "800",
+                      lineHeight: 31,
+                    }}
+                  >
+                    {date.day}
+                  </Text>
+                  <Text style={{ color: Colors.textSecondary, fontSize: 12 }}>
+                    {date.weekday}
+                  </Text>
+                </View>
+
+                <View
+                  style={{
+                    flex: 1,
+                    minWidth: 0,
+                    justifyContent: "center",
+                    paddingVertical: 7,
+                  }}
+                >
+                  <Text
+                    numberOfLines={1}
+                    style={{
+                      paddingRight: 20,
                       color: Colors.textPrimary,
-                      fontSize: 18,
+                      fontSize: 16,
                       fontWeight: "800",
                     }}
                   >
                     {entry.title}
                   </Text>
-                  <Text
-                    style={{ color: Colors.sage, fontSize: 12, marginTop: 4 }}
+                  <View
+                    style={{
+                      flexDirection: "row",
+                      alignItems: "center",
+                      gap: 5,
+                      marginTop: 4,
+                    }}
                   >
-                    {formatDate(entry.entry_date)}
-                    {entry.entry_time
-                      ? `  ·  ${entry.entry_time.slice(0, 5)}`
-                      : ""}
-                  </Text>
+                    <Ionicons
+                      name="time-outline"
+                      size={14}
+                      color={Colors.textSecondary}
+                    />
+                    <Text
+                      numberOfLines={1}
+                      style={{ color: Colors.textSecondary, fontSize: 12 }}
+                    >
+                      {formatEntryTime(entry.entry_time) ||
+                        formatDate(entry.entry_date)}
+                    </Text>
+                    {asBoolean(entry.is_private) ||
+                    asBoolean(entry.is_locked) ? (
+                      <Ionicons
+                        name="lock-closed-outline"
+                        size={13}
+                        color={Colors.olive}
+                      />
+                    ) : null}
+                  </View>
+                  {plainContent(entry.content) ? (
+                    <Text
+                      numberOfLines={2}
+                      style={{
+                        color: "#596367",
+                        fontSize: 13,
+                        lineHeight: 18,
+                        marginTop: 5,
+                      }}
+                    >
+                      {plainContent(entry.content)}
+                    </Text>
+                  ) : null}
+                  <View
+                    style={{
+                      flexDirection: "row",
+                      flexWrap: "wrap",
+                      alignItems: "center",
+                      gap: 6,
+                      marginTop: 8,
+                    }}
+                  >
+                    {[
+                      entry.category_name || "General",
+                      ...tags.slice(0, 2),
+                    ].map((label, tagIndex) => {
+                      const tone =
+                        diaryTagColors[tagIndex % diaryTagColors.length];
+                      return (
+                        <Text
+                          key={`${entry.id}-${label}`}
+                          numberOfLines={1}
+                          style={{
+                            maxWidth: 100,
+                            overflow: "hidden",
+                            paddingHorizontal: 9,
+                            paddingVertical: 5,
+                            borderRadius: 14,
+                            backgroundColor: tone.background,
+                            color: tone.color,
+                            fontSize: 11,
+                            fontWeight: "600",
+                          }}
+                        >
+                          {label}
+                        </Text>
+                      );
+                    })}
+                    {tags.length > 2 ? (
+                      <Text
+                        style={{
+                          paddingHorizontal: 8,
+                          paddingVertical: 5,
+                          borderRadius: 14,
+                          backgroundColor: "#F0F3F2",
+                          color: Colors.textSecondary,
+                          fontSize: 11,
+                        }}
+                      >
+                        +{tags.length - 2}
+                      </Text>
+                    ) : null}
+                    {attachmentCount > 0 ? (
+                      <View
+                        style={{
+                          flexDirection: "row",
+                          alignItems: "center",
+                          gap: 3,
+                          paddingHorizontal: 7,
+                          paddingVertical: 5,
+                          borderRadius: 14,
+                          backgroundColor: "#F0F3F2",
+                        }}
+                      >
+                        <Ionicons
+                          name="attach-outline"
+                          size={12}
+                          color={Colors.textSecondary}
+                        />
+                        <Text
+                          style={{ color: Colors.textSecondary, fontSize: 11 }}
+                        >
+                          {attachmentCount}
+                        </Text>
+                      </View>
+                    ) : null}
+                    {entry.status === "draft" ? (
+                      <Text
+                        style={{
+                          paddingHorizontal: 8,
+                          paddingVertical: 5,
+                          borderRadius: 14,
+                          backgroundColor: "#FFF3D4",
+                          color: "#8B5C12",
+                          fontSize: 11,
+                          fontWeight: "600",
+                        }}
+                      >
+                        Draft
+                      </Text>
+                    ) : null}
+                  </View>
                 </View>
+
+                <View
+                  style={{
+                    width: "28%",
+                    minWidth: 88,
+                    maxWidth: 176,
+                    gap: 7,
+                    alignItems: "stretch",
+                  }}
+                >
+                  <View
+                    style={{
+                      alignSelf: "flex-end",
+                      maxWidth: "100%",
+                      marginRight: 18,
+                      paddingHorizontal: 9,
+                      paddingVertical: 5,
+                      borderRadius: 16,
+                      backgroundColor: moodTone.background,
+                    }}
+                  >
+                    <Text
+                      numberOfLines={1}
+                      style={{
+                        color: moodTone.color,
+                        fontSize: 11,
+                        fontWeight: "600",
+                      }}
+                    >
+                      {mood?.emoji || "😊"} {entry.mood || "Happy"}
+                    </Text>
+                  </View>
+                  <View
+                    style={{
+                      height: 96,
+                      overflow: "hidden",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      borderRadius: 15,
+                      backgroundColor: "#E7EEE9",
+                    }}
+                  >
+                    {photoUrl ? (
+                      <Image
+                        source={{ uri: photoUrl }}
+                        resizeMode="cover"
+                        style={{
+                          position: "absolute",
+                          top: 0,
+                          right: 0,
+                          bottom: 0,
+                          left: 0,
+                        }}
+                      />
+                    ) : (
+                      <Ionicons
+                        name="image-outline"
+                        size={26}
+                        color={Colors.sage}
+                      />
+                    )}
+                  </View>
+                </View>
+
                 <Pressable
-                  onPress={() => void toggleFavorite(entry)}
+                  onPress={(event) => {
+                    event.stopPropagation();
+                    Alert.alert(entry.title, "Entry options", [
+                      {
+                        text: "View",
+                        onPress: () =>
+                          router.push({
+                            pathname: "/diary/[id]",
+                            params: { id: String(entry.id) },
+                          }),
+                      },
+                      { text: "Edit", onPress: () => openEditEntry(entry) },
+                      {
+                        text: asBoolean(entry.is_favorite)
+                          ? "Remove favorite"
+                          : "Add favorite",
+                        onPress: () => void toggleFavorite(entry),
+                      },
+                      {
+                        text: "Delete",
+                        style: "destructive",
+                        onPress: () => deleteEntry(entry),
+                      },
+                      { text: "Cancel", style: "cancel" },
+                    ]);
+                  }}
                   accessibilityRole="button"
-                  accessibilityLabel={
-                    asBoolean(entry.is_favorite)
-                      ? "Remove favorite"
-                      : "Add favorite"
-                  }
-                  hitSlop={6}
-                  style={{ padding: 4 }}
+                  accessibilityLabel={`Options for ${entry.title}`}
+                  hitSlop={7}
+                  style={{
+                    position: "absolute",
+                    top: 8,
+                    right: 5,
+                    padding: 4,
+                  }}
                 >
                   <Ionicons
-                    name={
-                      asBoolean(entry.is_favorite) ? "heart" : "heart-outline"
-                    }
-                    size={21}
-                    color={
-                      asBoolean(entry.is_favorite) ? "#D64D5A" : Colors.sage
-                    }
+                    name="ellipsis-vertical"
+                    size={18}
+                    color={Colors.textPrimary}
                   />
                 </Pressable>
-              </View>
-              <Text
-                numberOfLines={4}
-                style={{
-                  color: "#475A53",
-                  fontSize: 14,
-                  lineHeight: 20,
-                  marginTop: 11,
-                }}
-              >
-                {plainContent(entry.content)}
-              </Text>
-              <View
-                style={{
-                  flexDirection: "row",
-                  flexWrap: "wrap",
-                  gap: 7,
-                  marginTop: 11,
-                }}
-              >
-                <MetaPill
-                  label={entry.category_name || "General"}
-                  icon="pricetag-outline"
-                />
-                <MetaPill
-                  label={`${moods.find((item) => item.name === entry.mood)?.emoji || "😊"} ${entry.mood || "Happy"}`}
-                />
-                {entry.location ? (
-                  <MetaPill label={entry.location} icon="location-outline" />
-                ) : null}
-                {entry.attachment_count ||
-                entry.attachments?.length ||
-                entry.media_files?.length ? (
-                  <MetaPill
-                    label={`${entry.attachment_count || (entry.attachments?.length || 0) + (entry.media_files?.length || 0)} files`}
-                    icon="attach-outline"
-                  />
-                ) : null}
-                {entry.status === "draft" ? (
-                  <MetaPill label="Draft" icon="bookmark-outline" />
-                ) : null}
-                {asBoolean(entry.is_private) || asBoolean(entry.is_locked) ? (
-                  <MetaPill
-                    label={asBoolean(entry.is_locked) ? "Locked" : "Private"}
-                    icon="lock-closed-outline"
-                  />
-                ) : null}
-              </View>
-              {parseTags(entry.tags).length > 0 ? (
-                <Text
-                  numberOfLines={1}
-                  style={{ color: Colors.olive, fontSize: 12, marginTop: 10 }}
-                >
-                  {parseTags(entry.tags)
-                    .slice(0, 4)
-                    .map((tag) => `#${tag}`)
-                    .join("  ")}
-                </Text>
-              ) : null}
-              <View
-                style={{
-                  flexDirection: "row",
-                  justifyContent: "flex-end",
-                  gap: 15,
-                  marginTop: 10,
-                  borderTopWidth: 1,
-                  borderTopColor: "#EEF2EF",
-                  paddingTop: 9,
-                }}
-              >
-                <Pressable
-                  onPress={() =>
-                    router.push({
-                      pathname: "/diary/[id]",
-                      params: { id: String(entry.id) },
-                    })
-                  }
-                  accessibilityRole="button"
-                  accessibilityLabel="View entry details"
-                  style={{ padding: 5 }}
-                >
-                  <Ionicons name="eye-outline" size={19} color={Colors.sage} />
-                </Pressable>
-                <Pressable
-                  onPress={() => openEditEntry(entry)}
-                  accessibilityRole="button"
-                  accessibilityLabel="Edit entry"
-                  style={{ padding: 5 }}
-                >
-                  <Ionicons
-                    name="create-outline"
-                    size={19}
-                    color={Colors.forest}
-                  />
-                </Pressable>
-                <Pressable
-                  onPress={() => deleteEntry(entry)}
-                  accessibilityRole="button"
-                  accessibilityLabel="Delete entry"
-                  style={{ padding: 5 }}
-                >
-                  <Ionicons name="trash-outline" size={19} color="#C84C4C" />
-                </Pressable>
-              </View>
-            </View>
-          ))
+              </Pressable>
+            );
+          })
         )}
       </ScrollView>
 
@@ -1792,34 +2017,6 @@ function StatCard({
         }}
       >
         {value}
-      </Text>
-    </View>
-  );
-}
-
-function MetaPill({
-  label,
-  icon,
-}: {
-  label: string;
-  icon?: keyof typeof Ionicons.glyphMap;
-}) {
-  return (
-    <View
-      style={{
-        flexDirection: "row",
-        alignItems: "center",
-        gap: 4,
-        maxWidth: "100%",
-        paddingHorizontal: 8,
-        paddingVertical: 5,
-        borderRadius: 12,
-        backgroundColor: "#F0F5F1",
-      }}
-    >
-      {icon ? <Ionicons name={icon} size={12} color={Colors.forest} /> : null}
-      <Text numberOfLines={1} style={{ color: Colors.forest, fontSize: 12 }}>
-        {label}
       </Text>
     </View>
   );

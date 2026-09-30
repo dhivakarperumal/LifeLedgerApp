@@ -12,9 +12,8 @@ import {
     RefreshControl,
     ScrollView,
     Text,
-    TextInput,
     useWindowDimensions,
-    View,
+    View
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Svg, { Path, Rect } from "react-native-svg";
@@ -22,12 +21,18 @@ import api, { API_BASE_URL, getApiErrorMessage, logoutUser } from "../api";
 import { AddButton } from "../components/AddButton";
 import {
     createDateRangeSelection,
-    DateRangeFilter,
     isDateInRange,
     type DateRangeSelection,
 } from "../components/DateRangeFilter";
+import {
+    countActiveFilters,
+    DEFAULT_FILTER_STATE,
+    type FilterState,
+    type SortOption,
+} from "../components/filters";
 import { FormInput, FormOption } from "../components/FormControls";
 import { GradientSafeAreaView as SafeAreaView } from "../components/GradientSafeAreaView";
+import { SearchBar } from "../components/SearchBar";
 import { Colors } from "../constants/colors";
 
 type TransferRecord = {
@@ -375,6 +380,9 @@ export default function Transfers() {
   const [dateRange, setDateRange] = useState<DateRangeSelection>(() =>
     createDateRangeSelection("All"),
   );
+  const [amountMin, setAmountMin] = useState("");
+  const [amountMax, setAmountMax] = useState("");
+  const [sort, setSort] = useState<SortOption>(DEFAULT_FILTER_STATE.sort);
   const [viewMode, setViewMode] = useState<"list" | "grid">("list");
   const [currentPage, setCurrentPage] = useState(1);
   const [deletingId, setDeletingId] = useState<number | string | null>(null);
@@ -507,9 +515,30 @@ export default function Transfers() {
   );
   const metricCardWidth = Math.min(500, (screenWidth - 36 - 14) / 2);
 
+  const filterValues = useMemo<FilterState>(
+    () => ({
+      ...DEFAULT_FILTER_STATE,
+      dateRange,
+      category: categoryFilter === "All Transfers" ? "" : categoryFilter,
+      amountMin,
+      amountMax,
+      sort,
+    }),
+    [dateRange, categoryFilter, amountMin, amountMax, sort],
+  );
+
+  const applyTransferFilters = (filters: FilterState) => {
+    setDateRange(filters.dateRange);
+    setCategoryFilter(filters.category || "All Transfers");
+    setAmountMin(filters.amountMin);
+    setAmountMax(filters.amountMax);
+    setSort(filters.sort);
+    setCurrentPage(1);
+  };
+
   const visibleTransfers = useMemo(() => {
     const query = search.trim().toLowerCase();
-    return transfers.filter((transfer) => {
+    const filtered = transfers.filter((transfer) => {
       const searchable =
         `${transfer.title || ""} ${transfer.category || ""}`.toLowerCase();
       const matchesSearch = !query || searchable.includes(query);
@@ -517,9 +546,36 @@ export default function Transfers() {
         categoryFilter === "All Transfers" ||
         transfer.category === categoryFilter;
       const matchesDate = isDateInRange(transfer.transfer_date, dateRange);
-      return matchesSearch && matchesCategory && matchesDate;
+      const amount = Number(transfer.amount || 0);
+      const matchesMin = amountMin === "" || amount >= Number(amountMin);
+      const matchesMax = amountMax === "" || amount <= Number(amountMax);
+      return (
+        matchesSearch &&
+        matchesCategory &&
+        matchesDate &&
+        matchesMin &&
+        matchesMax
+      );
     });
-  }, [transfers, search, categoryFilter, dateRange]);
+    return filtered.sort((left, right) => {
+      const leftAmount = Number(left.amount || 0);
+      const rightAmount = Number(right.amount || 0);
+      const leftDate = new Date(left.transfer_date || "").getTime() || 0;
+      const rightDate = new Date(right.transfer_date || "").getTime() || 0;
+      if (sort === "Oldest First") return leftDate - rightDate;
+      if (sort === "Amount: High to Low") return rightAmount - leftAmount;
+      if (sort === "Amount: Low to High") return leftAmount - rightAmount;
+      return rightDate - leftDate;
+    });
+  }, [
+    transfers,
+    search,
+    categoryFilter,
+    dateRange,
+    amountMin,
+    amountMax,
+    sort,
+  ]);
   const totalPages = Math.max(1, Math.ceil(visibleTransfers.length / pageSize));
   const safeCurrentPage = Math.min(currentPage, totalPages);
   const pageTransfers = visibleTransfers.slice(
@@ -829,66 +885,25 @@ export default function Transfers() {
           </Pressable>
         </View>
 
-        <View className="mb-3 flex-row items-center rounded-xl border border-[#E4E8E3] bg-white px-3">
-          <Ionicons name="search-outline" size={18} color="#87918A" />
-          <TextInput
-            accessibilityLabel="Search transfers"
-            className="h-12 flex-1 px-3 text-sm text-[#25332C]"
-            placeholder="Search title or category"
-            placeholderTextColor="#9AA39D"
-            value={search}
-            onChangeText={(value) => {
-              setSearch(value);
-              setCurrentPage(1);
-            }}
-          />
-          {!!search && (
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Clear search"
-              onPress={() => setSearch("")}
-            >
-              <Ionicons name="close-circle" size={18} color="#87918A" />
-            </Pressable>
-          )}
-        </View>
-
-        <DateRangeFilter
-          value={dateRange}
-          onChange={(nextRange) => {
-            setDateRange(nextRange);
+        <SearchBar
+          value={search}
+          onChangeText={(value) => {
+            setSearch(value);
             setCurrentPage(1);
+          }}
+          placeholder="Search title or category"
+          activeFilterCount={countActiveFilters(filterValues)}
+          filterSheet={{
+            currentFilters: filterValues,
+            onApply: applyTransferFilters,
+            categories: categoryOptions,
+            sections: ["date", "category", "amount", "sort"],
           }}
           style={{ marginBottom: 12 }}
         />
 
-        <View className="mb-4 flex-row items-center justify-between">
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={{ gap: 7 }}
-          >
-            {["All Transfers", ...categoryOptions].map((category) => {
-              const selected = categoryFilter === category;
-              return (
-                <Pressable
-                  key={category}
-                  className={`rounded-full border px-3 py-2 ${selected ? "border-[#315640] bg-[#315640]" : "border-[#E0E5DF] bg-white"}`}
-                  onPress={() => {
-                    setCategoryFilter(category);
-                    setCurrentPage(1);
-                  }}
-                >
-                  <Text
-                    className={`text-xs font-bold ${selected ? "text-white" : "text-[#637068]"}`}
-                  >
-                    {category}
-                  </Text>
-                </Pressable>
-              );
-            })}
-          </ScrollView>
-          <View className="ml-2 flex-row rounded-xl border border-[#E1E6E0] bg-white p-1">
+        <View className="mb-4 flex-row justify-end">
+          <View className="flex-row rounded-xl border border-[#E1E6E0] bg-white p-1">
             <Pressable
               accessibilityRole="button"
               accessibilityLabel="List view"
@@ -915,157 +930,6 @@ export default function Transfers() {
             </Pressable>
           </View>
         </View>
-
-        {loading ? (
-          <View className="items-center py-16">
-            <ActivityIndicator size="large" color="#315640" />
-            <Text className="mt-3 text-sm font-medium text-[#7B8580]">
-              Loading transfers...
-            </Text>
-          </View>
-        ) : visibleTransfers.length === 0 ? (
-          <View className="items-center rounded-2xl border border-[#E4E8E3] bg-white px-6 py-12">
-            <Ionicons
-              name="swap-horizontal-outline"
-              size={34}
-              color="#A4ADA6"
-            />
-            <Text className="mt-3 text-base font-bold text-[#25332C]">
-              No transfer records found
-            </Text>
-            <Text className="mt-1 text-center text-sm text-[#7B8580]">
-              Add a transfer or adjust your search.
-            </Text>
-          </View>
-        ) : (
-          <View
-            className={
-              viewMode === "grid"
-                ? "flex-row flex-wrap justify-between"
-                : "gap-3"
-            }
-          >
-            {pageTransfers.map((transfer) => {
-              const amount = Number(transfer.amount || 0);
-              const expense = Number(transfer.total_expense || 0);
-              const remaining = Math.max(amount - expense, 0);
-              const progress =
-                amount > 0 ? Math.min((expense / amount) * 100, 100) : 0;
-              return (
-                <View
-                  key={transfer.id}
-                  className={`mb-3 rounded-2xl border border-[#E4E8E3] bg-white p-4 ${viewMode === "grid" ? "w-[48%]" : "w-full"}`}
-                >
-                  <View className="flex-row items-start justify-between gap-2">
-                    <View className="min-w-0 flex-1">
-                      <Text
-                        className="text-sm font-bold text-[#293930]"
-                        numberOfLines={2}
-                      >
-                        {transfer.title}
-                      </Text>
-                      <Text
-                        className="mt-1 text-xs font-medium text-[#818D84]"
-                        numberOfLines={1}
-                      >
-                        {transfer.category || "Uncategorized"} ·{" "}
-                        {formatDate(transfer.transfer_date)}
-                      </Text>
-                    </View>
-                    <Text
-                      className="text-sm font-extrabold text-[#293930]"
-                      numberOfLines={1}
-                    >
-                      {formatAmount(amount)}
-                    </Text>
-                  </View>
-                  <View className="mt-3 h-2 overflow-hidden rounded-full bg-[#EDF0EC]">
-                    <View
-                      className="h-full rounded-full bg-[#D87967]"
-                      style={{ width: `${progress}%` }}
-                    />
-                  </View>
-                  <View className="mt-3 flex-row gap-2">
-                    <View className="flex-1 rounded-lg bg-[#FBEFED] p-2">
-                      <Text className="text-[9px] font-semibold text-[#A36B64]">
-                        Spent
-                      </Text>
-                      <Text
-                        className="mt-0.5 text-xs font-extrabold text-[#B64C45]"
-                        numberOfLines={1}
-                      >
-                        {formatAmount(expense)}
-                      </Text>
-                    </View>
-                    <View className="flex-1 rounded-lg bg-[#EFF7F1] p-2">
-                      <Text className="text-[9px] font-semibold text-[#6F9077]">
-                        Remaining
-                      </Text>
-                      <Text
-                        className="mt-0.5 text-xs font-extrabold text-[#25805A]"
-                        numberOfLines={1}
-                      >
-                        {formatAmount(remaining)}
-                      </Text>
-                    </View>
-                  </View>
-                  <View className="mt-3 flex-row items-center justify-between border-t border-[#EEF0ED] pt-3">
-                    <View className="flex-row items-center gap-2">
-                      <Text className="text-xs font-medium text-[#7C8880]">
-                        {transfer.payment_method || "-"}
-                      </Text>
-                      {transfer.receipt && (
-                        <Pressable
-                          accessibilityRole="button"
-                          accessibilityLabel="View transfer receipt"
-                          className="h-7 w-7 items-center justify-center rounded-full bg-[#EEF3F8]"
-                          onPress={() => setSelectedTransfer(transfer)}
-                        >
-                          <Ionicons
-                            name="attach-outline"
-                            size={15}
-                            color="#426C92"
-                          />
-                        </Pressable>
-                      )}
-                    </View>
-                    <View className="flex-row gap-2">
-                      <Pressable
-                        accessibilityRole="button"
-                        accessibilityLabel={`Edit ${transfer.title}`}
-                        className="h-8 w-8 items-center justify-center rounded-full bg-[#EEF3F8]"
-                        onPress={() => openEditTransfer(transfer)}
-                      >
-                        <Ionicons
-                          name="create-outline"
-                          size={16}
-                          color="#426C92"
-                        />
-                      </Pressable>
-                      <Pressable
-                        accessibilityRole="button"
-                        accessibilityLabel={`Delete ${transfer.title}`}
-                        className="h-8 w-8 items-center justify-center rounded-full bg-[#FBEDEC]"
-                        disabled={deletingId === transfer.id}
-                        onPress={() => deleteTransfer(transfer)}
-                      >
-                        {deletingId === transfer.id ? (
-                          <ActivityIndicator size="small" color="#B64C45" />
-                        ) : (
-                          <Ionicons
-                            name="trash-outline"
-                            size={16}
-                            color="#B64C45"
-                          />
-                        )}
-                      </Pressable>
-                    </View>
-                  </View>
-                </View>
-              );
-            })}
-          </View>
-        )}
 
         {!loading && visibleTransfers.length > 0 && (
           <View className="mt-1 flex-row items-center justify-between rounded-xl border border-[#E4E8E3] bg-white px-3 py-2.5">

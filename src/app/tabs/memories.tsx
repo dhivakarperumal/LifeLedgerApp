@@ -24,13 +24,17 @@ import api, { API_BASE_URL, getApiErrorMessage, logoutUser } from "../../api";
 import { AddButton } from "../../components/AddButton";
 import {
     createDateRangeSelection,
-    DateRangeFilter,
     isDateInRange,
     type DateRangeSelection,
 } from "../../components/DateRangeFilter";
 import { FormInput, FormOption } from "../../components/FormControls";
 import { GradientSafeAreaView as SafeAreaView } from "../../components/GradientSafeAreaView";
 import { SearchBar } from "../../components/SearchBar";
+import {
+    countActiveFilters,
+    DEFAULT_FILTER_STATE,
+    type FilterState,
+} from "../../components/filters";
 import { Colors } from "../../constants/colors";
 
 type Memory = {
@@ -222,7 +226,6 @@ export default function Memories() {
   const [dateRange, setDateRange] = useState<DateRangeSelection>(() =>
     createDateRangeSelection("All"),
   );
-  const [showCategoryFilters, setShowCategoryFilters] = useState(false);
   const [loading, setLoading] = useState(true);
   const [editorVisible, setEditorVisible] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -230,6 +233,27 @@ export default function Memories() {
   const [form, setForm] = useState<MemoryForm>(initialForm);
   const [newMedia, setNewMedia] = useState<LocalMedia[]>([]);
   const [isRecording, setIsRecording] = useState(false);
+
+  const filterValues = useMemo<FilterState>(
+    () => ({
+      ...DEFAULT_FILTER_STATE,
+      dateRange,
+      category: selectedCategory === "all" ? "" : selectedCategory,
+    }),
+    [dateRange, selectedCategory],
+  );
+  const filterCategories = useMemo(
+    () =>
+      categories.map((category) => ({
+        value: String(category.id),
+        label: category.name,
+      })),
+    [categories],
+  );
+  const applyMemoryFilters = (filters: FilterState) => {
+    setDateRange(filters.dateRange);
+    setSelectedCategory(filters.category || "all");
+  };
 
   const handleUnauthorized = useCallback(async () => {
     await logoutUser();
@@ -700,58 +724,18 @@ export default function Memories() {
           value={search}
           onChangeText={setSearch}
           placeholder="Search moments, places..."
-          onFilterPress={() => setShowCategoryFilters((value) => !value)}
-          filterActive={
-            selectedCategory !== "all" || dateRange.filter !== "All"
+          activeFilterCount={
+            countActiveFilters(filterValues) +
+            (selectedMediaType === "all" ? 0 : 1)
           }
-          filterIcon="options-outline"
+          filterSheet={{
+            currentFilters: filterValues,
+            onApply: applyMemoryFilters,
+            categories: filterCategories,
+            sections: ["date", "category"],
+          }}
           style={{ marginBottom: 14 }}
         />
-
-        {showCategoryFilters && (
-          <View style={{ marginBottom: 14 }}>
-            <DateRangeFilter
-              value={dateRange}
-              onChange={setDateRange}
-              style={{ marginBottom: 10 }}
-            />
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={{ gap: 8, paddingBottom: 4 }}
-            >
-              {[{ id: "all", name: "All categories" }, ...categories].map(
-                (category) => {
-                  const active = selectedCategory === String(category.id);
-                  return (
-                    <Pressable
-                      key={String(category.id)}
-                      onPress={() => setSelectedCategory(String(category.id))}
-                      style={{
-                        paddingHorizontal: 13,
-                        paddingVertical: 8,
-                        borderRadius: 18,
-                        backgroundColor: active ? Colors.forest : Colors.white,
-                        borderWidth: 1,
-                        borderColor: active ? Colors.forest : "#DCE7E2",
-                      }}
-                    >
-                      <Text
-                        style={{
-                          fontSize: 13,
-                          fontWeight: "700",
-                          color: active ? Colors.white : Colors.textPrimary,
-                        }}
-                      >
-                        {category.name}
-                      </Text>
-                    </Pressable>
-                  );
-                },
-              )}
-            </ScrollView>
-          </View>
-        )}
 
         {loading ? (
           <View style={{ paddingVertical: 54, alignItems: "center" }}>

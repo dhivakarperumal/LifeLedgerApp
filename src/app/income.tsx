@@ -12,9 +12,8 @@ import {
   RefreshControl,
   ScrollView,
   Text,
-  TextInput,
   useWindowDimensions,
-  View,
+  View
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Svg, { Path } from "react-native-svg";
@@ -22,12 +21,18 @@ import api, { API_BASE_URL, getApiErrorMessage, logoutUser } from "../api";
 import { AddButton } from "../components/AddButton";
 import {
   createDateRangeSelection,
-  DateRangeFilter,
   isDateInRange,
   type DateRangeSelection,
 } from "../components/DateRangeFilter";
+import {
+  countActiveFilters,
+  DEFAULT_FILTER_STATE,
+  type FilterState,
+  type SortOption,
+} from "../components/filters";
 import { FormInput, FormOption } from "../components/FormControls";
 import { GradientSafeAreaView as SafeAreaView } from "../components/GradientSafeAreaView";
+import { SearchBar } from "../components/SearchBar";
 import { Colors } from "../constants/colors";
 
 type IncomeRecord = {
@@ -381,9 +386,13 @@ export default function Income() {
   const [budgetSaving, setBudgetSaving] = useState(false);
   const [search, setSearch] = useState("");
   const [incomeFilter, setIncomeFilter] = useState("All Income");
+  const [selectedCategory, setSelectedCategory] = useState("");
   const [dateRange, setDateRange] = useState<DateRangeSelection>(() =>
     createDateRangeSelection("All"),
   );
+  const [amountMin, setAmountMin] = useState("");
+  const [amountMax, setAmountMax] = useState("");
+  const [sort, setSort] = useState<SortOption>(DEFAULT_FILTER_STATE.sort);
   const [viewMode, setViewMode] = useState<"list" | "grid">("list");
   const [currentPage, setCurrentPage] = useState(1);
   const [editorVisible, setEditorVisible] = useState(false);
@@ -398,6 +407,27 @@ export default function Income() {
   const [attachment, setAttachment] = useState<PickedAttachment | null>(null);
   const [form, setForm] = useState<IncomeForm>(createInitialForm);
   const [budgetDraft, setBudgetDraft] = useState("0");
+
+  const filterValues = useMemo<FilterState>(
+    () => ({
+      ...DEFAULT_FILTER_STATE,
+      dateRange,
+      category: selectedCategory,
+      amountMin,
+      amountMax,
+      sort,
+    }),
+    [dateRange, selectedCategory, amountMin, amountMax, sort],
+  );
+
+  const applyIncomeFilters = (filters: FilterState) => {
+    setDateRange(filters.dateRange);
+    setSelectedCategory(filters.category);
+    setAmountMin(filters.amountMin);
+    setAmountMax(filters.amountMax);
+    setSort(filters.sort);
+    setCurrentPage(1);
+  };
 
   const handleUnauthorized = useCallback(async () => {
     await logoutUser();
@@ -477,18 +507,49 @@ export default function Income() {
 
   const filteredIncomes = useMemo(() => {
     const query = search.trim().toLowerCase();
-    return incomes.filter((income) => {
+    const filtered = incomes.filter((income) => {
       const searchable =
         `${income.title || ""} ${income.category || ""} ${income.payment_method || ""}`.toLowerCase();
       const matchesSearch = !query || searchable.includes(query);
+      const matchesCategory =
+        !selectedCategory || income.category === selectedCategory;
       const matchesFilter =
         incomeFilter === "All Income" ||
         (incomeFilter === "Recurring" && income.recurring === "Yes") ||
         (incomeFilter === "One-time" && income.recurring !== "Yes");
       const matchesDate = isDateInRange(income.income_date, dateRange);
-      return matchesSearch && matchesFilter && matchesDate;
+      const amount = Number(income.amount || 0);
+      const matchesMin = amountMin === "" || amount >= Number(amountMin);
+      const matchesMax = amountMax === "" || amount <= Number(amountMax);
+      return (
+        matchesSearch &&
+        matchesCategory &&
+        matchesFilter &&
+        matchesDate &&
+        matchesMin &&
+        matchesMax
+      );
     });
-  }, [incomes, incomeFilter, search, dateRange]);
+    return filtered.sort((left, right) => {
+      const leftAmount = Number(left.amount || 0);
+      const rightAmount = Number(right.amount || 0);
+      const leftDate = new Date(left.income_date || "").getTime() || 0;
+      const rightDate = new Date(right.income_date || "").getTime() || 0;
+      if (sort === "Oldest First") return leftDate - rightDate;
+      if (sort === "Amount: High to Low") return rightAmount - leftAmount;
+      if (sort === "Amount: Low to High") return leftAmount - rightAmount;
+      return rightDate - leftDate;
+    });
+  }, [
+    incomes,
+    incomeFilter,
+    search,
+    dateRange,
+    selectedCategory,
+    amountMin,
+    amountMax,
+    sort,
+  ]);
 
   const totalPages = Math.max(1, Math.ceil(filteredIncomes.length / pageSize));
   const safeCurrentPage = Math.min(currentPage, totalPages);
@@ -854,34 +915,22 @@ export default function Income() {
           </Pressable>
         </View>
 
-        <View className="mb-3 flex-row items-center rounded-xl border border-[#E4E8E3] bg-white px-3">
-          <Ionicons name="search-outline" size={18} color="#87918A" />
-          <TextInput
-            accessibilityLabel="Search income"
-            className="h-12 flex-1 px-3 text-sm text-[#25332C]"
-            placeholder="Search title, category, payment"
-            placeholderTextColor="#9AA39D"
-            value={search}
-            onChangeText={(value) => {
-              setSearch(value);
-              setCurrentPage(1);
-            }}
-          />
-          {!!search && (
-            <Pressable
-              onPress={() => setSearch("")}
-              accessibilityLabel="Clear search"
-            >
-              <Ionicons name="close-circle" size={18} color="#87918A" />
-            </Pressable>
-          )}
-        </View>
-
-        <DateRangeFilter
-          value={dateRange}
-          onChange={(nextRange) => {
-            setDateRange(nextRange);
+        <SearchBar
+          value={search}
+          onChangeText={(value) => {
+            setSearch(value);
             setCurrentPage(1);
+          }}
+          placeholder="Search title, category, payment"
+          activeFilterCount={
+            countActiveFilters(filterValues) +
+            (incomeFilter === "All Income" ? 0 : 1)
+          }
+          filterSheet={{
+            currentFilters: filterValues,
+            onApply: applyIncomeFilters,
+            categories: incomeCategories,
+            sections: ["date", "category", "amount", "sort"],
           }}
           style={{ marginBottom: 12 }}
         />
