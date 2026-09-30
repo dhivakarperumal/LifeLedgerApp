@@ -16,6 +16,8 @@ export type SortOption = (typeof SORT_OPTIONS)[number];
 export const STATUS_OPTIONS = ["All", "Active", "Inactive"] as const;
 export type StatusOption = (typeof STATUS_OPTIONS)[number];
 
+export type ViewModeOption = "card" | "table";
+
 // ─── Filter State ─────────────────────────────────────────────────────────────
 
 export type FilterState = {
@@ -25,6 +27,7 @@ export type FilterState = {
   amountMin: string; // raw string from input
   amountMax: string;
   sort: SortOption;
+  viewMode: ViewModeOption;
   custom?: Record<string, string>;
 };
 
@@ -35,6 +38,7 @@ export const DEFAULT_FILTER_STATE: FilterState = {
   amountMin: "",
   amountMax: "",
   sort: "Newest First",
+  viewMode: "card",
   custom: {},
 };
 

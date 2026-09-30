@@ -383,7 +383,7 @@ export default function Transfers() {
   const [amountMin, setAmountMin] = useState("");
   const [amountMax, setAmountMax] = useState("");
   const [sort, setSort] = useState<SortOption>(DEFAULT_FILTER_STATE.sort);
-  const [viewMode, setViewMode] = useState<"list" | "grid">("list");
+  const [viewMode, setViewMode] = useState<"list" | "grid">("grid");
   const [currentPage, setCurrentPage] = useState(1);
   const [deletingId, setDeletingId] = useState<number | string | null>(null);
 
@@ -523,8 +523,9 @@ export default function Transfers() {
       amountMin,
       amountMax,
       sort,
+      viewMode: viewMode === "grid" ? "card" : "table",
     }),
-    [dateRange, categoryFilter, amountMin, amountMax, sort],
+    [dateRange, categoryFilter, amountMin, amountMax, sort, viewMode],
   );
 
   const applyTransferFilters = (filters: FilterState) => {
@@ -533,6 +534,7 @@ export default function Transfers() {
     setAmountMin(filters.amountMin);
     setAmountMax(filters.amountMax);
     setSort(filters.sort);
+    setViewMode(filters.viewMode === "card" ? "grid" : "list");
     setCurrentPage(1);
   };
 
@@ -897,7 +899,7 @@ export default function Transfers() {
             currentFilters: filterValues,
             onApply: applyTransferFilters,
             categories: categoryOptions,
-            sections: ["date", "category", "amount", "sort"],
+            sections: ["date", "category", "amount", "sort", "viewMode"],
           }}
           style={{ marginBottom: 12 }}
         />

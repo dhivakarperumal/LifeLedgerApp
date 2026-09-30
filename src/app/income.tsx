@@ -393,7 +393,7 @@ export default function Income() {
   const [amountMin, setAmountMin] = useState("");
   const [amountMax, setAmountMax] = useState("");
   const [sort, setSort] = useState<SortOption>(DEFAULT_FILTER_STATE.sort);
-  const [viewMode, setViewMode] = useState<"list" | "grid">("list");
+  const [viewMode, setViewMode] = useState<"list" | "grid">("grid");
   const [currentPage, setCurrentPage] = useState(1);
   const [editorVisible, setEditorVisible] = useState(false);
   const [budgetVisible, setBudgetVisible] = useState(false);
@@ -416,8 +416,9 @@ export default function Income() {
       amountMin,
       amountMax,
       sort,
+      viewMode: viewMode === "grid" ? "card" : "table",
     }),
-    [dateRange, selectedCategory, amountMin, amountMax, sort],
+    [dateRange, selectedCategory, amountMin, amountMax, sort, viewMode],
   );
 
   const applyIncomeFilters = (filters: FilterState) => {
@@ -426,6 +427,7 @@ export default function Income() {
     setAmountMin(filters.amountMin);
     setAmountMax(filters.amountMax);
     setSort(filters.sort);
+    setViewMode(filters.viewMode === "card" ? "grid" : "list");
     setCurrentPage(1);
   };
 
@@ -931,7 +933,7 @@ export default function Income() {
             onApply: applyIncomeFilters,
             onReset: () => setIncomeFilter("All Income"),
             categories: incomeCategories,
-            sections: ["date", "category", "amount", "sort"],
+            sections: ["date", "category", "amount", "sort", "viewMode"],
           }}
           style={{ marginBottom: 12 }}
         />

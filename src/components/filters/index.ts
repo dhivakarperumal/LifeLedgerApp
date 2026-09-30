@@ -20,7 +20,12 @@ export {
     SORT_OPTIONS,
     STATUS_OPTIONS
 } from "./filterTypes";
-export type { FilterState, SortOption, StatusOption } from "./filterTypes";
+export type {
+    FilterState,
+    SortOption,
+    StatusOption,
+    ViewModeOption
+} from "./filterTypes";
 export { SortFilter } from "./SortFilter";
 export { StatusFilter } from "./StatusFilter";
 export { useFilterState } from "./useFilterState";

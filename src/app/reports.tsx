@@ -365,7 +365,7 @@ export default function Reports() {
   const [amountMin, setAmountMin] = useState("");
   const [amountMax, setAmountMax] = useState("");
   const [sort, setSort] = useState<SortOption>(DEFAULT_FILTER_STATE.sort);
-  const [viewMode, setViewMode] = useState<"list" | "grid">("list");
+  const [viewMode, setViewMode] = useState<"list" | "grid">("grid");
   const [currentPage, setCurrentPage] = useState(1);
   const [exporting, setExporting] = useState<"pdf" | "csv" | null>(null);
 
@@ -377,8 +377,9 @@ export default function Reports() {
       amountMin,
       amountMax,
       sort,
+      viewMode: viewMode === "grid" ? "card" : "table",
     }),
-    [dateRange, categoryFilter, amountMin, amountMax, sort],
+    [dateRange, categoryFilter, amountMin, amountMax, sort, viewMode],
   );
 
   const applyReportFilters = (filters: FilterState) => {
@@ -387,6 +388,7 @@ export default function Reports() {
     setAmountMin(filters.amountMin);
     setAmountMax(filters.amountMax);
     setSort(filters.sort);
+    setViewMode(filters.viewMode === "card" ? "grid" : "list");
     setCurrentPage(1);
   };
 
@@ -1013,7 +1015,7 @@ export default function Reports() {
                 setPaymentFilter("All");
               },
               categories: categories.filter((category) => category !== "All"),
-              sections: ["date", "category", "amount", "sort"],
+              sections: ["date", "category", "amount", "sort", "viewMode"],
             }}
             style={{ marginBottom: 12 }}
           />

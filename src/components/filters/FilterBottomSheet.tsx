@@ -32,6 +32,7 @@ import {
     type FilterState,
     type SortOption,
     type StatusOption,
+    type ViewModeOption,
 } from "./filterTypes";
 
 const poppinsFontMap = {
@@ -43,7 +44,8 @@ const poppinsFontMap = {
 
 const { height: SCREEN_HEIGHT } = Dimensions.get("window");
 
-type SectionKey = "date" | "category" | "status" | "amount" | "sort";
+type SectionKey =
+  "date" | "category" | "status" | "amount" | "sort" | "viewMode";
 
 type SectionConfig = {
   key: SectionKey;
@@ -57,6 +59,16 @@ const SECTIONS: SectionConfig[] = [
   { key: "status", label: "Status", icon: "toggle-outline" },
   { key: "amount", label: "Amount Range", icon: "cash-outline" },
   { key: "sort", label: "Sort By", icon: "swap-vertical-outline" },
+  { key: "viewMode", label: "View Mode", icon: "grid-outline" },
+];
+
+const VIEW_MODE_OPTIONS: {
+  value: ViewModeOption;
+  label: string;
+  icon: keyof typeof Ionicons.glyphMap;
+}[] = [
+  { value: "card", label: "Card Mode", icon: "grid-outline" },
+  { value: "table", label: "Table Mode", icon: "list-outline" },
 ];
 
 export type FilterBottomSheetProps = {
@@ -92,7 +104,7 @@ export function FilterBottomSheet({
   categories = [],
   multiSelectCategories = false,
   additionalFilters = [],
-  sections = ["date", "category", "status", "amount", "sort"],
+  sections = ["date", "category", "status", "amount", "sort", "viewMode"],
 }: FilterBottomSheetProps) {
   const [fontsLoaded] = useFonts(poppinsFontMap);
   const insets = useSafeAreaInsets();
@@ -107,6 +119,7 @@ export function FilterBottomSheet({
     status: false,
     amount: false,
     sort: false,
+    viewMode: false,
   });
 
   // Slide-up animation
@@ -378,6 +391,71 @@ export function FilterBottomSheet({
                               value={draft.sort as SortOption}
                               onChange={(sort) => updateDraft({ sort })}
                             />
+                          </View>
+                        )}
+                        {section.key === "viewMode" && (
+                          <View
+                            style={{
+                              flexDirection: "row",
+                              gap: 10,
+                              marginTop: 8,
+                            }}
+                          >
+                            {VIEW_MODE_OPTIONS.map((option) => {
+                              const selected = draft.viewMode === option.value;
+                              return (
+                                <Pressable
+                                  key={option.value}
+                                  onPress={() =>
+                                    updateDraft({ viewMode: option.value })
+                                  }
+                                  accessibilityRole="radio"
+                                  accessibilityState={{ checked: selected }}
+                                  style={{
+                                    flex: 1,
+                                    minHeight: 76,
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                    gap: 7,
+                                    padding: 10,
+                                    borderWidth: 1.5,
+                                    borderColor: selected
+                                      ? "#8EA66B"
+                                      : Colors.border,
+                                    borderRadius: 14,
+                                    backgroundColor: selected
+                                      ? "#F3F7EF"
+                                      : Colors.white,
+                                  }}
+                                >
+                                  <Ionicons
+                                    name={option.icon}
+                                    size={21}
+                                    color={
+                                      selected
+                                        ? "#8EA66B"
+                                        : Colors.textSecondary
+                                    }
+                                  />
+                                  <Text
+                                    style={{
+                                      color: selected
+                                        ? Colors.forest
+                                        : Colors.textSecondary,
+                                      fontSize: 12,
+                                      fontWeight: selected ? "700" : "500",
+                                      fontFamily: fontsLoaded
+                                        ? selected
+                                          ? "Poppins_600SemiBold"
+                                          : "Poppins_500Medium"
+                                        : undefined,
+                                    }}
+                                  >
+                                    {option.label}
+                                  </Text>
+                                </Pressable>
+                              );
+                            })}
                           </View>
                         )}
                       </View>
