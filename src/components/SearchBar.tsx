@@ -46,11 +46,11 @@ export function SearchBar({
           flex: 1,
           flexDirection: "row",
           alignItems: "center",
-          minHeight: 60,
+          minHeight: 52,
           backgroundColor: Colors.white,
           borderRadius: 50,
           paddingHorizontal: 16,
-          paddingVertical: 11,
+          paddingVertical: 8,
           shadowColor: "#000",
           shadowOffset: { width: 0, height: 2 },
           shadowOpacity: 0.06,
@@ -89,52 +89,44 @@ export function SearchBar({
             />
           </Pressable>
         )}
-      </View>
-
-      {/* Filter / action button */}
-      {onFilterPress && (
-        <Pressable
-          onPress={onFilterPress}
-          accessibilityRole="button"
-          accessibilityLabel="Filter"
-          style={{
-            width: 60,
-            height: 60,
-            borderRadius: 30,
-            backgroundColor: filterActive ? Colors.primary : Colors.white,
-            alignItems: "center",
-            justifyContent: "center",
-            shadowColor: filterActive ? Colors.primaryDark : "#000",
-            shadowOffset: { width: 0, height: 2 },
-            shadowOpacity: filterActive ? 0.25 : 0.06,
-            shadowRadius: filterActive ? 8 : 6,
-            elevation: filterActive ? 6 : 3,
-            borderWidth: 1,
-            borderColor: filterActive ? Colors.primary : Colors.border,
-          }}
-        >
-          <Ionicons
-            name={filterIcon}
-            size={20}
-            color={filterActive ? Colors.white : Colors.textPrimary}
-          />
-          {filterActive && (
-            <View
-              style={{
-                position: "absolute",
-                top: 7,
-                right: 7,
-                width: 8,
-                height: 8,
-                borderRadius: 4,
-                backgroundColor: Colors.accent,
-                borderWidth: 1.5,
-                borderColor: Colors.primary,
-              }}
+        {onFilterPress && (
+          <Pressable
+            onPress={onFilterPress}
+            accessibilityRole="button"
+            accessibilityLabel="Filter"
+            style={{
+              width: 36,
+              height: 36,
+              marginLeft: 8,
+              borderRadius: 18,
+              backgroundColor: filterActive ? Colors.primary : "transparent",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <Ionicons
+              name={filterIcon}
+              size={20}
+              color={filterActive ? Colors.white : Colors.textPrimary}
             />
-          )}
-        </Pressable>
-      )}
+            {filterActive && (
+              <View
+                style={{
+                  position: "absolute",
+                  top: 5,
+                  right: 5,
+                  width: 8,
+                  height: 8,
+                  borderRadius: 4,
+                  backgroundColor: Colors.accent,
+                  borderWidth: 1.5,
+                  borderColor: Colors.primary,
+                }}
+              />
+            )}
+          </Pressable>
+        )}
+      </View>
     </View>
   );
 }

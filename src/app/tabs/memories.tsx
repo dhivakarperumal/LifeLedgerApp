@@ -184,7 +184,7 @@ export default function Memories() {
   const [categories, setCategories] = useState<MemoryCategory[]>([]);
   const [search, setSearch] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
-  const [favoriteOnly, setFavoriteOnly] = useState(false);
+  const [showCategoryFilters, setShowCategoryFilters] = useState(false);
   const [loading, setLoading] = useState(true);
   const [editorVisible, setEditorVisible] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -250,7 +250,6 @@ export default function Memories() {
       const categoryMatches =
         selectedCategory === "all" ||
         String(memory.category_id) === selectedCategory;
-      const favoriteMatches = !favoriteOnly || isFavorite(memory);
       const searchable = [
         memory.title,
         memory.description,
@@ -263,11 +262,10 @@ export default function Memories() {
         .toLowerCase();
       return (
         categoryMatches &&
-        favoriteMatches &&
         (!query || searchable.includes(query))
       );
     });
-  }, [memories, search, selectedCategory, favoriteOnly]);
+  }, [memories, search, selectedCategory]);
 
   const openNewMemory = () => {
     setEditingId(null);
@@ -571,45 +569,49 @@ export default function Memories() {
           value={search}
           onChangeText={setSearch}
           placeholder="Search moments, places..."
-          onFilterPress={() => setFavoriteOnly((value) => !value)}
-          filterActive={favoriteOnly}
-          filterIcon={favoriteOnly ? "heart" : "heart-outline"}
+          onFilterPress={() =>
+            setShowCategoryFilters((value) => !value)
+          }
+          filterActive={selectedCategory !== "all"}
+          filterIcon="options-outline"
           style={{ marginBottom: 14 }}
         />
 
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={{ gap: 8, paddingBottom: 16 }}
-        >
-          {[{ id: "all", name: "All" }, ...categories].map((category) => {
-            const active = selectedCategory === String(category.id);
-            return (
-              <Pressable
-                key={String(category.id)}
-                onPress={() => setSelectedCategory(String(category.id))}
-                style={{
-                  paddingHorizontal: 15,
-                  paddingVertical: 9,
-                  borderRadius: 18,
-                  backgroundColor: active ? Colors.forest : Colors.white,
-                  borderWidth: 1,
-                  borderColor: active ? Colors.forest : "#DCE7E2",
-                }}
-              >
-                <Text
+        {showCategoryFilters && (
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={{ gap: 8, paddingBottom: 16 }}
+          >
+            {[{ id: "all", name: "All" }, ...categories].map((category) => {
+              const active = selectedCategory === String(category.id);
+              return (
+                <Pressable
+                  key={String(category.id)}
+                  onPress={() => setSelectedCategory(String(category.id))}
                   style={{
-                    fontSize: 13,
-                    fontWeight: "700",
-                    color: active ? Colors.white : Colors.textPrimary,
+                    paddingHorizontal: 15,
+                    paddingVertical: 9,
+                    borderRadius: 18,
+                    backgroundColor: active ? Colors.forest : Colors.white,
+                    borderWidth: 1,
+                    borderColor: active ? Colors.forest : "#DCE7E2",
                   }}
                 >
-                  {category.name}
-                </Text>
-              </Pressable>
-            );
-          })}
-        </ScrollView>
+                  <Text
+                    style={{
+                      fontSize: 13,
+                      fontWeight: "700",
+                      color: active ? Colors.white : Colors.textPrimary,
+                    }}
+                  >
+                    {category.name}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </ScrollView>
+        )}
 
         {loading ? (
           <View style={{ paddingVertical: 54, alignItems: "center" }}>

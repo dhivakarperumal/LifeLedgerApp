@@ -813,7 +813,7 @@ export default function Diary() {
           placeholder="Search title, mood, tags..."
           onFilterPress={() => setFilterMenuVisible(true)}
           filterActive={selectedFilter !== "all"}
-          filterIcon="filter-outline"
+          filterIcon="options-outline"
           style={{ marginBottom: 12 }}
         />
 

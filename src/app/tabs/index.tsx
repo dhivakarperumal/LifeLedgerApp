@@ -736,7 +736,7 @@ export default function Index() {
                       </View>
 
                       <Text
-                        className="mt-5 text-[30px] font-black leading-none"
+                        className="mt-8 w-full text-center  text-[30px] font-black leading-none"
                         style={{ color: Colors.textPrimary }}
                       >
                         ₹{overview.todaySpent || 0}
