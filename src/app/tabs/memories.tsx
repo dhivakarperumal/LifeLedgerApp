@@ -98,6 +98,14 @@ const initialForm: MemoryForm = {
   is_favorite: false,
   voice_note: "",
 };
+const memoryMediaFilterOptions = [
+  { value: "all", label: "All" },
+  { value: "photos", label: "Photos" },
+  { value: "videos", label: "Videos" },
+  { value: "audio", label: "Audio" },
+  { value: "places", label: "Places" },
+  { value: "favorites", label: "Favorites" },
+];
 
 function getList<T>(data: any, keys: string[] = []): T[] {
   if (Array.isArray(data)) return data;
@@ -239,8 +247,9 @@ export default function Memories() {
       ...DEFAULT_FILTER_STATE,
       dateRange,
       category: selectedCategory === "all" ? "" : selectedCategory,
+      custom: { mediaType: selectedMediaType },
     }),
-    [dateRange, selectedCategory],
+    [dateRange, selectedCategory, selectedMediaType],
   );
   const filterCategories = useMemo(
     () =>
@@ -253,6 +262,7 @@ export default function Memories() {
   const applyMemoryFilters = (filters: FilterState) => {
     setDateRange(filters.dateRange);
     setSelectedCategory(filters.category || "all");
+    setSelectedMediaType(filters.custom?.mediaType || "all");
   };
 
   const handleUnauthorized = useCallback(async () => {
@@ -671,55 +681,6 @@ export default function Memories() {
           paddingBottom: insets.bottom + 112,
         }}
       >
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={{ gap: 8, paddingBottom: 14 }}
-        >
-          {[
-            { id: "all", label: "All", icon: "images-outline" },
-            { id: "photos", label: "Photos", icon: "image-outline" },
-            { id: "videos", label: "Videos", icon: "videocam-outline" },
-            { id: "audio", label: "Audio", icon: "musical-notes-outline" },
-            { id: "places", label: "Places", icon: "location-outline" },
-            { id: "favorites", label: "Favorites", icon: "heart-outline" },
-          ].map((filter) => {
-            const active = selectedMediaType === filter.id;
-            return (
-              <Pressable
-                key={filter.id}
-                onPress={() => setSelectedMediaType(filter.id)}
-                accessibilityRole="button"
-                accessibilityState={{ selected: active }}
-                style={{
-                  flexDirection: "row",
-                  alignItems: "center",
-                  gap: 7,
-                  minHeight: 40,
-                  paddingHorizontal: 14,
-                  borderRadius: 22,
-                  backgroundColor: active ? Colors.forest : "#F0F3F1",
-                }}
-              >
-                <Ionicons
-                  name={filter.icon as keyof typeof Ionicons.glyphMap}
-                  size={17}
-                  color={active ? Colors.white : Colors.textPrimary}
-                />
-                <Text
-                  style={{
-                    color: active ? Colors.white : Colors.textPrimary,
-                    fontSize: 13,
-                    fontWeight: active ? "700" : "500",
-                  }}
-                >
-                  {filter.label}
-                </Text>
-              </Pressable>
-            );
-          })}
-        </ScrollView>
-
         <SearchBar
           value={search}
           onChangeText={setSearch}
@@ -734,6 +695,13 @@ export default function Memories() {
             onReset: () => setSelectedMediaType("all"),
             categories: filterCategories,
             sections: ["date", "category"],
+            additionalFilters: [
+              {
+                key: "mediaType",
+                label: "Media type",
+                options: memoryMediaFilterOptions,
+              },
+            ],
           }}
           style={{ marginBottom: 14 }}
         />
