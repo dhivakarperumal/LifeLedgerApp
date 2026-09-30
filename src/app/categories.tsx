@@ -3,17 +3,20 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useMemo, useState } from "react";
 import {
-    ActivityIndicator,
-    Alert,
-    Modal,
-    Pressable,
-    RefreshControl,
-    ScrollView,
-    Text,
-    TextInput,
-    View,
+  ActivityIndicator,
+  Alert,
+  Modal,
+  Pressable,
+  RefreshControl,
+  ScrollView,
+  Text,
+  TextInput,
+  View,
+  useWindowDimensions,
+  type ViewStyle,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import Svg, { Path, Rect } from "react-native-svg";
 import api, { getApiErrorMessage, getStoredUser, logoutUser } from "../api";
 import { AddButton } from "../components/AddButton";
 import { FormInput, FormOption } from "../components/FormControls";
@@ -98,6 +101,9 @@ function getTypeColors(type: string) {
 export default function Categories() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { width: screenWidth } = useWindowDimensions();
+  const statCardWidth: ViewStyle["width"] = "31.8%";
+  const compactStats = screenWidth < 480;
   const [categories, setCategories] = useState<Category[]>([]);
   const [userId, setUserId] = useState<string | number | null>(null);
   const [loading, setLoading] = useState(true);
@@ -317,27 +323,42 @@ export default function Categories() {
           paddingBottom: insets.bottom + 90,
         }}
       >
-        <View className="mb-4 mt-6 flex-row gap-3">
+        <View
+          style={{
+            flexDirection: "row",
+            flexWrap: "nowrap",
+            justifyContent: "space-between",
+            marginTop: 24,
+            marginBottom: 16,
+          }}
+        >
           <SummaryStatCard
             title="Total"
             value={categories.length}
-            icon="layers-outline"
-            iconBg="#E2E8F0"
-            iconColor="#475569"
+            caption="Total items"
+            icon="document-text-outline"
+            tone="total"
+            cardWidth={statCardWidth}
+            compact={compactStats}
+            badgeText="Σ"
           />
           <SummaryStatCard
             title="Active"
             value={activeCount}
-            icon="checkmark-circle-outline"
-            iconBg="#DDF2D1"
-            iconColor="#388e3c"
+            caption="Active items"
+            icon="checkmark"
+            tone="active"
+            cardWidth={statCardWidth}
+            compact={compactStats}
           />
           <SummaryStatCard
             title="Inactive"
             value={inactiveCount}
-            icon="close-circle-outline"
-            iconBg="#FEE2E2"
-            iconColor="#EF4444"
+            caption="Inactive items"
+            icon="close"
+            tone="inactive"
+            cardWidth={statCardWidth}
+            compact={compactStats}
           />
         </View>
 
@@ -656,66 +677,249 @@ export default function Categories() {
 function SummaryStatCard({
   title,
   value,
+  caption,
   icon,
-  iconBg,
-  iconColor,
+  tone,
+  cardWidth,
+  compact,
+  badgeText,
 }: {
   title: string;
   value: number;
+  caption: string;
   icon: keyof typeof Ionicons.glyphMap;
-  iconBg: string;
-  iconColor: string;
+  tone: "total" | "active" | "inactive";
+  cardWidth: ViewStyle["width"];
+  compact: boolean;
+  badgeText?: string;
 }) {
+  const palette = {
+    total: {
+      background: "#FCFEFA",
+      border: "#E7F0E2",
+      iconGradient: ["#9ACD6D", "#4B8E3D"] as const,
+      iconColor: "#FFFFFF",
+      value: "#102D17",
+      caption: "#87938A",
+      waveBack: "#E6F5DD",
+      waveFront: "#D1EEBF",
+      chart: "#75A95B",
+      dots: "#AFBEA8",
+    },
+    active: {
+      background: "#FCFEFA",
+      border: "#E7F0E2",
+      iconGradient: ["#A6DB77", "#5EA544"] as const,
+      iconColor: "#168632",
+      value: "#087A2F",
+      caption: "#87938A",
+      waveBack: "#E6F5DD",
+      waveFront: "#D1EEBF",
+      chart: "#4D9D48",
+      dots: "#AFBEA8",
+    },
+    inactive: {
+      background: "#FFFCFC",
+      border: "#F4E6E5",
+      iconGradient: ["#FFB8B7", "#F57B7A"] as const,
+      iconColor: "#C31E1B",
+      value: "#A41412",
+      caption: "#92939A",
+      waveBack: "#FCE9E9",
+      waveFront: "#F8D5D7",
+      chart: "#DA777A",
+      dots: "#D5B7B8",
+    },
+  }[tone];
+
   return (
     <View
       style={{
-        flex: 1,
-        backgroundColor: "#FFFFFF",
-        borderRadius: 20,
-        padding: 10,
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.05,
-        shadowRadius: 12,
-        elevation: 4,
+        width: cardWidth,
+        height: 110,
+        marginBottom: 12,
+        padding: compact ? 6 : 10,
         overflow: "hidden",
+        borderWidth: 1,
+        borderColor: palette.border,
+        borderRadius: compact ? 15 : 20,
+        backgroundColor: palette.background,
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 7 },
+        shadowOpacity: 0.07,
+        shadowRadius: 17,
+        elevation: 5,
       }}
     >
-      <View
+      <Svg
+        width="100%"
+        height={compact ? 55 : 65}
+        viewBox="0 0 320 100"
+        preserveAspectRatio="none"
         style={{
           position: "absolute",
-          bottom: -20,
-          right: -20,
-          width: 80,
-          height: 80,
-          borderRadius: 40,
-          backgroundColor: "#F0Fdf4",
-          opacity: 0.6,
+          bottom: 0,
+          left: 0,
         }}
-      />
-      <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 8 }}>
-        <View
+      >
+        <Path
+          d="M0 50 C45 38 66 72 113 62 C162 50 176 26 226 40 C268 51 291 56 320 48 L320 100 L0 100 Z"
+          fill={palette.waveBack}
+        />
+        <Path
+          d="M0 73 C45 60 74 87 122 79 C176 70 193 49 241 61 C276 70 299 79 320 70 L320 100 L0 100 Z"
+          fill={palette.waveFront}
+        />
+      </Svg>
+
+      <View
+        style={{
+          flexDirection: "row",
+          alignItems: "flex-start",
+          justifyContent: "space-between",
+        }}
+      >
+        <LinearGradient
+          colors={palette.iconGradient}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
           style={{
-            width: 32,
-            height: 32,
-            borderRadius: 10,
-            backgroundColor: iconBg,
-            justifyContent: "center",
+            width: compact ? 32 : 42,
+            height: compact ? 32 : 42,
             alignItems: "center",
-            marginRight: 8,
+            justifyContent: "center",
+            borderRadius: compact ? 12 : 16,
           }}
         >
-          <Ionicons name={icon} size={16} color={iconColor} />
-        </View>
-        <Text style={{ fontSize: 11, fontWeight: "800", color: "#8b929c", flexShrink: 1 }} numberOfLines={1}>
-          {title.toUpperCase()}
-        </Text>
+          {tone === "total" ? (
+            <Ionicons
+              name={icon}
+              size={compact ? 18 : 23}
+              color={palette.iconColor}
+            />
+          ) : (
+            <View
+              style={{
+                width: compact ? 24 : 30,
+                height: compact ? 24 : 30,
+                alignItems: "center",
+                justifyContent: "center",
+                borderRadius: compact ? 12 : 16,
+                backgroundColor: "#FFFFFF",
+              }}
+            >
+              <Ionicons
+                name={icon}
+                size={compact ? 15 : 19}
+                color={palette.iconColor}
+              />
+            </View>
+          )}
+          {badgeText ? (
+            <View
+              style={{
+                position: "absolute",
+                right: compact ? -3 : -4,
+                bottom: compact ? -2 : -3,
+                width: compact ? 18 : 24,
+                height: compact ? 18 : 24,
+                alignItems: "center",
+                justifyContent: "center",
+                borderWidth: 2,
+                borderColor: palette.iconGradient[1],
+                borderRadius: compact ? 9 : 12,
+                backgroundColor: "#FFFFFF",
+              }}
+            >
+              <Text
+                style={{
+                  color: palette.iconGradient[1],
+                  fontSize: compact ? 10 : 13,
+                  fontWeight: "900",
+                }}
+              >
+                {badgeText}
+              </Text>
+            </View>
+          ) : null}
+        </LinearGradient>
+        <Ionicons
+          name="ellipsis-horizontal"
+          size={compact ? 14 : 18}
+          color={palette.dots}
+        />
       </View>
-      <View>
-        <Text style={{ fontSize: 24, fontWeight: "900", color: "#111827", letterSpacing: -0.5 }}>
-          {value}
-        </Text>
-      </View>
+
+      <Text
+        style={{
+          marginTop: compact ? 3 : 6,
+          color: "#18221B",
+          fontSize: compact ? 10 : 14,
+          fontWeight: "700",
+        }}
+      >
+        {title}
+      </Text>
+      <Text
+        style={{
+          marginTop: 1,
+          color: palette.value,
+          fontSize: compact ? 25 : 34,
+          lineHeight: compact ? 28 : 36,
+          fontWeight: "900",
+        }}
+      >
+        {value}
+      </Text>
+      <Text
+        style={{
+          marginTop: 2,
+          maxWidth: compact ? "52%" : "60%",
+          color: palette.caption,
+          fontSize: compact ? 8 : 10,
+          fontWeight: "500",
+        }}
+        numberOfLines={2}
+      >
+        {caption}
+      </Text>
+
+      <Svg
+        width={compact ? 26 : 48}
+        height={compact ? 21 : 36}
+        viewBox="0 0 90 64"
+        style={{
+          position: "absolute",
+          right: compact ? 5 : 11,
+          bottom: compact ? 8 : 10,
+        }}
+      >
+        <Rect x={1} y={42} width={17} height={20} rx={5} fill={palette.chart} />
+        <Rect
+          x={25}
+          y={30}
+          width={17}
+          height={32}
+          rx={5}
+          fill={palette.chart}
+        />
+        <Rect
+          x={49}
+          y={17}
+          width={17}
+          height={45}
+          rx={5}
+          fill={palette.chart}
+        />
+        <Path
+          d="M7 36 C22 28 29 19 42 22 C55 25 58 12 74 7 M64 6 L75 6 L74 17"
+          fill="none"
+          stroke={palette.chart}
+          strokeWidth={4}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </Svg>
     </View>
   );
 }
