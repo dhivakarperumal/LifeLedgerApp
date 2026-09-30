@@ -260,10 +260,7 @@ export default function Memories() {
       ]
         .join(" ")
         .toLowerCase();
-      return (
-        categoryMatches &&
-        (!query || searchable.includes(query))
-      );
+      return categoryMatches && (!query || searchable.includes(query));
     });
   }, [memories, search, selectedCategory]);
 
@@ -569,9 +566,7 @@ export default function Memories() {
           value={search}
           onChangeText={setSearch}
           placeholder="Search moments, places..."
-          onFilterPress={() =>
-            setShowCategoryFilters((value) => !value)
-          }
+          onFilterPress={() => setShowCategoryFilters((value) => !value)}
           filterActive={selectedCategory !== "all"}
           filterIcon="options-outline"
           style={{ marginBottom: 14 }}

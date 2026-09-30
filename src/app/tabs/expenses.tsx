@@ -1,15 +1,14 @@
 import { Ionicons } from "@expo/vector-icons";
-import { LinearGradient } from "expo-linear-gradient";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useMemo, useState } from "react";
 import {
-    Alert,
-    Modal,
-    Pressable,
-    RefreshControl,
-    ScrollView,
-    Text,
-    View,
+  Alert,
+  Modal,
+  Pressable,
+  RefreshControl,
+  ScrollView,
+  Text,
+  View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import api, { getApiErrorMessage, logoutUser } from "../../api";
@@ -364,10 +363,7 @@ export default function Expenses() {
     >
       <View style={{ flex: 1, backgroundColor: "#F0F4F8" }}>
         {/* ── Hero Header ── */}
-        <LinearGradient
-          colors={Colors.greenGradient}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
+        <View
           style={{
             paddingTop: insets.top + 16,
             paddingBottom: 28,
@@ -380,16 +376,14 @@ export default function Expenses() {
               label="Total Spent"
               value={formatAmount(stats.totalAmount || totals.totalExpense)}
               icon="trending-down-outline"
-              accentBg="rgba(255,255,255,0.18)"
             />
             <HeroStatCard
               label="Today"
               value={formatAmount(totals.todayExpense)}
               icon="today-outline"
-              accentBg="rgba(255,255,255,0.18)"
             />
           </View>
-        </LinearGradient>
+        </View>
 
         <ScrollView
           showsVerticalScrollIndicator={false}
@@ -1255,22 +1249,17 @@ function HeroStatCard({
   label,
   value,
   icon,
-  accentBg,
 }: {
   label: string;
   value: string;
   icon: keyof typeof Ionicons.glyphMap;
-  accentBg: string;
 }) {
   return (
     <View
       style={{
         flex: 1,
-        backgroundColor: accentBg,
         borderRadius: 18,
         padding: 14,
-        borderWidth: 1,
-        borderColor: "rgba(255,255,255,0.2)",
       }}
     >
       <View
@@ -1281,11 +1270,11 @@ function HeroStatCard({
           marginBottom: 8,
         }}
       >
-        <Ionicons name={icon} size={15} color="rgba(255,255,255,0.8)" />
+        <Ionicons name={icon} size={15} color={Colors.forest} />
         <Text
           style={{
             fontSize: 12,
-            color: "rgba(255,255,255,0.8)",
+            color: Colors.textSecondary,
             fontWeight: "600",
             letterSpacing: 0.8,
           }}
@@ -1296,7 +1285,7 @@ function HeroStatCard({
       <Text
         style={{
           fontSize: 20,
-          color: "#FFFFFF",
+          color: Colors.textPrimary,
           fontWeight: "900",
         }}
         numberOfLines={1}
