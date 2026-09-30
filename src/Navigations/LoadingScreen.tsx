@@ -1,7 +1,7 @@
 import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useEffect } from "react";
-import { Image, View } from "react-native";
+import { ActivityIndicator, ImageBackground, View } from "react-native";
 import { isLoggedIn } from "../api";
 
 export function LoadingScreen() {
@@ -28,11 +28,15 @@ export function LoadingScreen() {
   return (
     <View className="flex-1 bg-[#F5F8F2]">
       <StatusBar hidden />
-      <Image
-        source={require("../../assets/images/loading_bg.png")}
+      <ImageBackground
+        source={require("../../assets/images/bgbanner.png")}
         style={{ width: "100%", height: "100%" }}
         resizeMode="cover"
-      />
+      >
+        <View className="absolute inset-0 items-center justify-center">
+          <ActivityIndicator size="large" color="#366039" style={{ marginTop: 20 }} />
+        </View>
+      </ImageBackground>
     </View>
   );
 }

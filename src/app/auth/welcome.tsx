@@ -44,17 +44,17 @@ export default function WelcomeScreen() {
                 className="h-[56px] flex-row items-center bg-black justify-center rounded-2xl active:opacity-80"
               >
                 <Text className="text-lg font-bold text-white">
-                  Login
+                  Next
                 </Text>
               </Pressable>
               
               <Pressable
                 accessibilityRole="button"
-                onPress={() => router.push("/auth/register")}
-                className="h-[56px] flex-row items-center bg-white justify-center rounded-2xl active:opacity-80 border-2 border-transparent"
+                onPress={() => router.push("/auth/login")}
+                className="h-[56px] flex-row items-center justify-center rounded-2xl active:opacity-80"
               >
-                <Text className="text-lg font-bold text-[#1E5128]">
-                  Sign Up
+                <Text className="text-lg font-bold text-white/80">
+                  Skip
                 </Text>
               </Pressable>
             </View>
