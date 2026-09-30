@@ -1,12 +1,16 @@
 // Filter system — import everything from here
 export {
-    createDateRangeSelection, DATE_RANGE_PRESETS,
-    DateRangeFilter, isDateInRange
+    createDateRangeSelection,
+    DATE_RANGE_PRESETS,
+    DateRangeFilter,
+    isDateInRange
 } from "../DateRangeFilter";
 export type { DateRangePreset, DateRangeSelection } from "../DateRangeFilter";
 export { AmountRangeFilter } from "./AmountRangeFilter";
 export { CategoryFilter } from "./CategoryFilter";
 export type { CategoryOption } from "./CategoryFilter";
+export { ChoiceFilter } from "./ChoiceFilter";
+export type { ChoiceFilterGroup, ChoiceFilterOption } from "./ChoiceFilter";
 export { FilterBottomSheet } from "./FilterBottomSheet";
 export type { FilterBottomSheetProps } from "./FilterBottomSheet";
 export { FilterButton } from "./FilterButton";

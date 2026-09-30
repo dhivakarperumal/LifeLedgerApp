@@ -20,11 +20,12 @@ export type StatusOption = (typeof STATUS_OPTIONS)[number];
 
 export type FilterState = {
   dateRange: DateRangeSelection;
-  category: string;   // "" means All Categories
+  category: string; // "" means All Categories
   status: StatusOption;
-  amountMin: string;  // raw string from input
+  amountMin: string; // raw string from input
   amountMax: string;
   sort: SortOption;
+  custom?: Record<string, string>;
 };
 
 export const DEFAULT_FILTER_STATE: FilterState = {
@@ -34,6 +35,7 @@ export const DEFAULT_FILTER_STATE: FilterState = {
   amountMin: "",
   amountMax: "",
   sort: "Newest First",
+  custom: {},
 };
 
 /** Returns the number of non-default active filters (for the badge). */

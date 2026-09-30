@@ -24,6 +24,7 @@ import { Colors } from "../../constants/colors";
 import { DateRangeFilter, type DateRangeSelection } from "../DateRangeFilter";
 import { AmountRangeFilter } from "./AmountRangeFilter";
 import { CategoryFilter, type CategoryOption } from "./CategoryFilter";
+import { ChoiceFilter, type ChoiceFilterGroup } from "./ChoiceFilter";
 import { SortFilter } from "./SortFilter";
 import { StatusFilter } from "./StatusFilter";
 import {
@@ -71,6 +72,8 @@ export type FilterBottomSheetProps = {
   categories?: CategoryOption[];
   /** Allow multiple categories when the parent supports a comma-separated value. */
   multiSelectCategories?: boolean;
+  /** Additional parent-controlled choice filters, such as Diary mood. */
+  additionalFilters?: ChoiceFilterGroup[];
   /** Control which filter sections to show */
   sections?: SectionKey[];
 };
@@ -88,6 +91,7 @@ export function FilterBottomSheet({
   onReset,
   categories = [],
   multiSelectCategories = false,
+  additionalFilters = [],
   sections = ["date", "category", "status", "amount", "sort"],
 }: FilterBottomSheetProps) {
   const [fontsLoaded] = useFonts(poppinsFontMap);
@@ -378,6 +382,46 @@ export function FilterBottomSheet({
                         )}
                       </View>
                     )}
+                  </View>
+                ))}
+                {additionalFilters.map((filter) => (
+                  <View
+                    key={filter.key}
+                    style={{
+                      marginBottom: 10,
+                      padding: 14,
+                      borderWidth: 1,
+                      borderColor: Colors.border,
+                      borderRadius: 16,
+                      backgroundColor: Colors.white,
+                    }}
+                  >
+                    <Text
+                      style={{
+                        marginBottom: 11,
+                        color: Colors.textPrimary,
+                        fontSize: 14,
+                        fontWeight: "700",
+                        fontFamily: fontsLoaded
+                          ? "Poppins_600SemiBold"
+                          : undefined,
+                      }}
+                    >
+                      {filter.label}
+                    </Text>
+                    <ChoiceFilter
+                      value={
+                        draft.custom?.[filter.key] ??
+                        filter.options[0]?.value ??
+                        ""
+                      }
+                      options={filter.options}
+                      onChange={(value) =>
+                        updateDraft({
+                          custom: { ...draft.custom, [filter.key]: value },
+                        })
+                      }
+                    />
                   </View>
                 ))}
               </ScrollView>
