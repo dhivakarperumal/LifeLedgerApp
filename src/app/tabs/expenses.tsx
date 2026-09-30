@@ -418,7 +418,7 @@ export default function Expenses() {
           contentContainerStyle={{
             paddingHorizontal: 16,
             paddingTop: 18,
-            paddingBottom: insets.bottom + 120,
+            paddingBottom: insets.bottom + 100,
           }}
         >
           {/* ── Search bar + Filter button ── */}

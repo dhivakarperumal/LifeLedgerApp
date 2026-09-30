@@ -135,6 +135,34 @@ function getMemoryImage(memory: Memory) {
   );
 }
 
+function getMemoryMediaType(memory: Memory) {
+  const declaredType = String(memory.media_type || "").toLowerCase();
+  if (declaredType.startsWith("image") || declaredType === "photo")
+    return "photos";
+  if (declaredType.startsWith("video")) return "videos";
+  if (declaredType.startsWith("audio") || memory.voice_note) return "audio";
+
+  const gallery = Array.isArray(memory.media_gallery)
+    ? memory.media_gallery
+    : [];
+  const types = gallery.map((item) => {
+    const value =
+      typeof item === "string"
+        ? item
+        : String(
+            item.file_type || item.type || item.file_url || item.url || "",
+          );
+    if (/^image\//i.test(value) || /\.(png|jpe?g|gif|webp|bmp)$/i.test(value))
+      return "photos";
+    if (/^video\//i.test(value) || /\.(mp4|mov|webm|m4v)$/i.test(value))
+      return "videos";
+    if (/^audio\//i.test(value) || /\.(mp3|m4a|wav|aac|ogg)$/i.test(value))
+      return "audio";
+    return "";
+  });
+  return types.find(Boolean) || "all";
+}
+
 function getTags(tags?: string[] | string) {
   if (Array.isArray(tags)) return tags;
   if (typeof tags !== "string") return [];
@@ -189,6 +217,7 @@ export default function Memories() {
   const [memories, setMemories] = useState<Memory[]>([]);
   const [categories, setCategories] = useState<MemoryCategory[]>([]);
   const [search, setSearch] = useState("");
+  const [selectedMediaType, setSelectedMediaType] = useState("all");
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [dateRange, setDateRange] = useState<DateRangeSelection>(() =>
     createDateRangeSelection("All"),
@@ -260,6 +289,13 @@ export default function Memories() {
         selectedCategory === "all" ||
         String(memory.category_id) === selectedCategory;
       const dateMatches = isDateInRange(memory.memory_date, dateRange);
+      const mediaMatches =
+        selectedMediaType === "all" ||
+        (selectedMediaType === "places"
+          ? Boolean(memory.location)
+          : selectedMediaType === "favorites"
+            ? isFavorite(memory)
+            : getMemoryMediaType(memory) === selectedMediaType);
       const searchable = [
         memory.title,
         memory.description,
@@ -271,10 +307,56 @@ export default function Memories() {
         .join(" ")
         .toLowerCase();
       return (
-        categoryMatches && dateMatches && (!query || searchable.includes(query))
+        categoryMatches &&
+        dateMatches &&
+        mediaMatches &&
+        (!query || searchable.includes(query))
       );
     });
-  }, [memories, search, selectedCategory, dateRange]);
+  }, [memories, search, selectedCategory, selectedMediaType, dateRange]);
+
+  const memoryGroups = useMemo(() => {
+    const groups = new Map<string, { label: string; memories: Memory[] }>();
+    const sortedMemories = [...filteredMemories].sort((left, right) => {
+      const leftDate = new Date(
+        `${String(left.memory_date || "").slice(0, 10)}T12:00:00`,
+      );
+      const rightDate = new Date(
+        `${String(right.memory_date || "").slice(0, 10)}T12:00:00`,
+      );
+      const leftTime = Number.isNaN(leftDate.getTime())
+        ? 0
+        : leftDate.getTime();
+      const rightTime = Number.isNaN(rightDate.getTime())
+        ? 0
+        : rightDate.getTime();
+      return rightTime - leftTime;
+    });
+
+    sortedMemories.forEach((memory) => {
+      const rawDate = String(memory.memory_date || "").slice(0, 10);
+      const date = /^\d{4}-\d{2}-\d{2}$/.test(rawDate)
+        ? new Date(`${rawDate}T12:00:00`)
+        : new Date("");
+      const key = Number.isNaN(date.getTime())
+        ? "undated"
+        : `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+      const label = Number.isNaN(date.getTime())
+        ? "Undated"
+        : date.toLocaleDateString("en-IN", {
+            month: "long",
+            year: "numeric",
+          });
+      const group = groups.get(key) || { label, memories: [] };
+      group.memories.push(memory);
+      groups.set(key, group);
+    });
+
+    return Array.from(groups.entries()).map(([key, group]) => ({
+      key,
+      ...group,
+    }));
+  }, [filteredMemories]);
 
   const openNewMemory = () => {
     setEditingId(null);
@@ -565,65 +647,110 @@ export default function Memories() {
           paddingBottom: insets.bottom + 112,
         }}
       >
-        <View
-          style={{
-            flexDirection: "row",
-            alignItems: "center",
-            justifyContent: "space-between",
-            marginBottom: 16,
-          }}
-        ></View>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={{ gap: 8, paddingBottom: 14 }}
+        >
+          {[
+            { id: "all", label: "All", icon: "images-outline" },
+            { id: "photos", label: "Photos", icon: "image-outline" },
+            { id: "videos", label: "Videos", icon: "videocam-outline" },
+            { id: "audio", label: "Audio", icon: "musical-notes-outline" },
+            { id: "places", label: "Places", icon: "location-outline" },
+            { id: "favorites", label: "Favorites", icon: "heart-outline" },
+          ].map((filter) => {
+            const active = selectedMediaType === filter.id;
+            return (
+              <Pressable
+                key={filter.id}
+                onPress={() => setSelectedMediaType(filter.id)}
+                accessibilityRole="button"
+                accessibilityState={{ selected: active }}
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  gap: 7,
+                  minHeight: 40,
+                  paddingHorizontal: 14,
+                  borderRadius: 22,
+                  backgroundColor: active ? Colors.forest : "#F0F3F1",
+                }}
+              >
+                <Ionicons
+                  name={filter.icon as keyof typeof Ionicons.glyphMap}
+                  size={17}
+                  color={active ? Colors.white : Colors.textPrimary}
+                />
+                <Text
+                  style={{
+                    color: active ? Colors.white : Colors.textPrimary,
+                    fontSize: 13,
+                    fontWeight: active ? "700" : "500",
+                  }}
+                >
+                  {filter.label}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </ScrollView>
 
         <SearchBar
           value={search}
           onChangeText={setSearch}
           placeholder="Search moments, places..."
           onFilterPress={() => setShowCategoryFilters((value) => !value)}
-          filterActive={selectedCategory !== "all"}
+          filterActive={
+            selectedCategory !== "all" || dateRange.filter !== "All"
+          }
           filterIcon="options-outline"
           style={{ marginBottom: 14 }}
         />
 
-        <DateRangeFilter
-          value={dateRange}
-          onChange={setDateRange}
-          style={{ marginBottom: 14 }}
-        />
-
         {showCategoryFilters && (
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={{ gap: 8, paddingBottom: 16 }}
-          >
-            {[{ id: "all", name: "All" }, ...categories].map((category) => {
-              const active = selectedCategory === String(category.id);
-              return (
-                <Pressable
-                  key={String(category.id)}
-                  onPress={() => setSelectedCategory(String(category.id))}
-                  style={{
-                    paddingHorizontal: 15,
-                    paddingVertical: 9,
-                    borderRadius: 18,
-                    backgroundColor: active ? Colors.forest : Colors.white,
-                    borderWidth: 1,
-                    borderColor: active ? Colors.forest : "#DCE7E2",
-                  }}
-                >
-                  <Text
-                    style={{
-                      fontSize: 13,
-                      fontWeight: "700",
-                      color: active ? Colors.white : Colors.textPrimary,
-                    }}
-                  >
-                    {category.name}
-                  </Text>
-                </Pressable>
-              );
-            })}
-          </ScrollView>
+          <View style={{ marginBottom: 14 }}>
+            <DateRangeFilter
+              value={dateRange}
+              onChange={setDateRange}
+              style={{ marginBottom: 10 }}
+            />
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={{ gap: 8, paddingBottom: 4 }}
+            >
+              {[{ id: "all", name: "All categories" }, ...categories].map(
+                (category) => {
+                  const active = selectedCategory === String(category.id);
+                  return (
+                    <Pressable
+                      key={String(category.id)}
+                      onPress={() => setSelectedCategory(String(category.id))}
+                      style={{
+                        paddingHorizontal: 13,
+                        paddingVertical: 8,
+                        borderRadius: 18,
+                        backgroundColor: active ? Colors.forest : Colors.white,
+                        borderWidth: 1,
+                        borderColor: active ? Colors.forest : "#DCE7E2",
+                      }}
+                    >
+                      <Text
+                        style={{
+                          fontSize: 13,
+                          fontWeight: "700",
+                          color: active ? Colors.white : Colors.textPrimary,
+                        }}
+                      >
+                        {category.name}
+                      </Text>
+                    </Pressable>
+                  );
+                },
+              )}
+            </ScrollView>
+          </View>
         )}
 
         {loading ? (
@@ -663,143 +790,48 @@ export default function Memories() {
             </Text>
           </View>
         ) : (
-          <View
-            style={{
-              flexDirection: "row",
-              flexWrap: "wrap",
-              justifyContent: "space-between",
-            }}
-          >
-            {filteredMemories.map((memory) => {
-              const imageUrl = getMemoryImage(memory);
-              return (
+          <View>
+            {memoryGroups.map((group) => (
+              <View key={group.key} style={{ marginBottom: 18 }}>
                 <View
-                  key={String(memory.id)}
                   style={{
-                    width: "48.5%",
-                    overflow: "hidden",
-                    borderRadius: 18,
-                    marginBottom: 14,
-                    backgroundColor: Colors.white,
-                    borderWidth: 1,
-                    borderColor: "#DCE7E2",
+                    flexDirection: "row",
+                    alignItems: "center",
+                    marginBottom: 10,
                   }}
                 >
-                  <View style={{ height: 158, backgroundColor: "#DDE9E4" }}>
-                    {imageUrl ? (
-                      <Image
-                        source={{ uri: imageUrl }}
-                        resizeMode="cover"
-                        style={{ width: "100%", height: "100%" }}
-                      />
-                    ) : (
-                      <View
-                        style={{
-                          flex: 1,
-                          alignItems: "center",
-                          justifyContent: "center",
-                        }}
-                      >
-                        <Ionicons
-                          name={
-                            memory.media_type === "video"
-                              ? "videocam-outline"
-                              : memory.media_type === "audio"
-                                ? "musical-notes-outline"
-                                : "book-outline"
-                          }
-                          size={36}
-                          color={Colors.forest}
-                        />
-                      </View>
-                    )}
-                    <Pressable
-                      onPress={() => void toggleFavorite(memory)}
-                      accessibilityRole="button"
-                      accessibilityLabel={
-                        isFavorite(memory) ? "Remove favorite" : "Add favorite"
-                      }
-                      style={{
-                        position: "absolute",
-                        top: 9,
-                        right: 9,
-                        width: 34,
-                        height: 34,
-                        alignItems: "center",
-                        justifyContent: "center",
-                        borderRadius: 17,
-                        backgroundColor: "rgba(255,255,255,0.94)",
-                      }}
-                    >
-                      <Ionicons
-                        name={isFavorite(memory) ? "heart" : "heart-outline"}
-                        size={19}
-                        color={isFavorite(memory) ? "#D64555" : Colors.forest}
-                      />
-                    </Pressable>
-                  </View>
-                  <View style={{ padding: 12 }}>
-                    <Text
-                      numberOfLines={1}
-                      style={{
-                        color: Colors.textPrimary,
-                        fontSize: 17,
-                        fontWeight: "800",
-                      }}
-                    >
-                      {memory.title}
-                    </Text>
-                    <Text
-                      numberOfLines={1}
-                      style={{
-                        color: Colors.olive,
-                        fontSize: 12,
-                        fontWeight: "700",
-                        marginTop: 3,
-                      }}
-                    >
-                      {memory.category_name || "General"}
-                    </Text>
-                    {memory.location ? (
-                      <View
-                        style={{
-                          flexDirection: "row",
-                          alignItems: "center",
-                          marginTop: 8,
-                        }}
-                      >
-                        <Ionicons
-                          name="location-outline"
-                          size={13}
-                          color={Colors.sage}
-                        />
-                        <Text
-                          numberOfLines={1}
-                          style={{
-                            color: Colors.sage,
-                            fontSize: 12,
-                            marginLeft: 4,
-                            flex: 1,
-                          }}
-                        >
-                          {memory.location}
-                        </Text>
-                      </View>
-                    ) : null}
-                    <Text
-                      style={{ color: Colors.sage, fontSize: 12, marginTop: 7 }}
-                    >
-                      {formatDate(memory.memory_date)}
-                    </Text>
-                    <View
-                      style={{
-                        flexDirection: "row",
-                        justifyContent: "flex-end",
-                        gap: 5,
-                        marginTop: 9,
-                      }}
-                    >
+                  <Text
+                    style={{
+                      color: Colors.textPrimary,
+                      fontSize: 16,
+                      fontWeight: "800",
+                    }}
+                  >
+                    {group.label}
+                  </Text>
+                  <Text
+                    style={{
+                      color: Colors.textSecondary,
+                      fontSize: 13,
+                      marginLeft: 10,
+                    }}
+                  >
+                    {group.memories.length}{" "}
+                    {group.memories.length === 1 ? "memory" : "memories"}
+                  </Text>
+                </View>
+                <View
+                  style={{
+                    gap: 10,
+                  }}
+                >
+                  {group.memories.map((memory) => {
+                    const imageUrl = getMemoryImage(memory);
+                    const mediaType = getMemoryMediaType(memory);
+                    const memoryTags = getTags(memory.tags);
+                    return (
                       <Pressable
+                        key={String(memory.id)}
                         onPress={() =>
                           router.push({
                             pathname: "/memories/[id]",
@@ -807,47 +839,288 @@ export default function Memories() {
                           })
                         }
                         accessibilityRole="button"
-                        accessibilityLabel="View memory details"
-                        hitSlop={5}
-                        style={{ padding: 6 }}
+                        accessibilityLabel={`View ${memory.title}`}
+                        style={{
+                          flexDirection: "row",
+                          minHeight: 148,
+                          overflow: "hidden",
+                          borderRadius: 18,
+                          backgroundColor: Colors.white,
+                          borderWidth: 1,
+                          borderColor: "#E9EEEB",
+                          shadowColor: "#24352B",
+                          shadowOffset: { width: 0, height: 3 },
+                          shadowOpacity: 0.06,
+                          shadowRadius: 10,
+                          elevation: 2,
+                        }}
                       >
-                        <Ionicons
-                          name="eye-outline"
-                          size={19}
-                          color={Colors.sage}
-                        />
+                        <View
+                          style={{
+                            width: "31%",
+                            minHeight: 154,
+                            position: "relative",
+                            backgroundColor: "#DDE9E4",
+                          }}
+                        >
+                          {imageUrl ? (
+                            <Image
+                              source={{ uri: imageUrl }}
+                              resizeMode="cover"
+                              style={{
+                                position: "absolute",
+                                top: 0,
+                                right: 0,
+                                bottom: 0,
+                                left: 0,
+                              }}
+                            />
+                          ) : (
+                            <View
+                              style={{
+                                flex: 1,
+                                alignItems: "center",
+                                justifyContent: "center",
+                                backgroundColor:
+                                  getMemoryMediaType(memory) === "audio"
+                                    ? "#27312F"
+                                    : "#DDE9E4",
+                              }}
+                            >
+                              <Ionicons
+                                name={
+                                  mediaType === "videos"
+                                    ? "videocam-outline"
+                                    : mediaType === "audio"
+                                      ? "musical-notes"
+                                      : "image-outline"
+                                }
+                                size={38}
+                                color={
+                                  getMemoryMediaType(memory) === "audio"
+                                    ? Colors.white
+                                    : Colors.forest
+                                }
+                              />
+                            </View>
+                          )}
+                          <View
+                            style={{
+                              position: "absolute",
+                              left: 8,
+                              bottom: 8,
+                              width: 28,
+                              height: 28,
+                              alignItems: "center",
+                              justifyContent: "center",
+                              borderRadius: 14,
+                              backgroundColor: "rgba(16,26,22,0.68)",
+                            }}
+                          >
+                            <Ionicons
+                              name={
+                                mediaType === "videos"
+                                  ? "play"
+                                  : mediaType === "audio"
+                                    ? "musical-notes"
+                                    : "image-outline"
+                              }
+                              size={16}
+                              color={Colors.white}
+                            />
+                          </View>
+                        </View>
+                        <View
+                          style={{
+                            flex: 1,
+                            justifyContent: "center",
+                            paddingVertical: 12,
+                            paddingLeft: 12,
+                            paddingRight: 8,
+                          }}
+                        >
+                          <View
+                            style={{
+                              flexDirection: "row",
+                              alignItems: "center",
+                              justifyContent: "space-between",
+                              gap: 4,
+                            }}
+                          >
+                            <Text
+                              numberOfLines={1}
+                              style={{
+                                flex: 1,
+                                color: Colors.textPrimary,
+                                fontSize: 16,
+                                fontWeight: "800",
+                              }}
+                            >
+                              {memory.title}
+                            </Text>
+                            <Pressable
+                              onPress={(event) => {
+                                event.stopPropagation();
+                                Alert.alert(memory.title, "Memory options", [
+                                  {
+                                    text: "View",
+                                    onPress: () =>
+                                      router.push({
+                                        pathname: "/memories/[id]",
+                                        params: { id: String(memory.id) },
+                                      }),
+                                  },
+                                  {
+                                    text: "Edit",
+                                    onPress: () => openEditMemory(memory),
+                                  },
+                                  {
+                                    text: isFavorite(memory)
+                                      ? "Remove favorite"
+                                      : "Add favorite",
+                                    onPress: () => void toggleFavorite(memory),
+                                  },
+                                  {
+                                    text: "Delete",
+                                    style: "destructive",
+                                    onPress: () => handleDelete(memory),
+                                  },
+                                  { text: "Cancel", style: "cancel" },
+                                ]);
+                              }}
+                              accessibilityRole="button"
+                              accessibilityLabel={`Options for ${memory.title}`}
+                              hitSlop={7}
+                              style={{ paddingLeft: 5, paddingVertical: 3 }}
+                            >
+                              <Ionicons
+                                name="ellipsis-vertical"
+                                size={19}
+                                color={Colors.textSecondary}
+                              />
+                            </Pressable>
+                          </View>
+                          <View
+                            style={{
+                              flexDirection: "row",
+                              alignItems: "center",
+                              marginTop: 3,
+                            }}
+                          >
+                            <Ionicons
+                              name="calendar-outline"
+                              size={14}
+                              color={Colors.textSecondary}
+                            />
+                            <Text
+                              numberOfLines={1}
+                              style={{
+                                color: Colors.textSecondary,
+                                fontSize: 12,
+                                marginLeft: 5,
+                              }}
+                            >
+                              {formatDate(memory.memory_date)}
+                            </Text>
+                          </View>
+                          {memory.description ? (
+                            <Text
+                              numberOfLines={2}
+                              style={{
+                                color: "#596367",
+                                fontSize: 13,
+                                lineHeight: 18,
+                                marginTop: 5,
+                              }}
+                            >
+                              {memory.description}
+                            </Text>
+                          ) : null}
+                          <View
+                            style={{
+                              flexDirection: "row",
+                              flexWrap: "wrap",
+                              alignItems: "center",
+                              gap: 6,
+                              marginTop: 8,
+                            }}
+                          >
+                            {memory.location ? (
+                              <View
+                                style={{
+                                  flexDirection: "row",
+                                  alignItems: "center",
+                                  gap: 4,
+                                  paddingHorizontal: 9,
+                                  paddingVertical: 5,
+                                  borderRadius: 15,
+                                  backgroundColor: "#E7F1E8",
+                                }}
+                              >
+                                <Ionicons
+                                  name="location-outline"
+                                  size={13}
+                                  color={Colors.forest}
+                                />
+                                <Text
+                                  numberOfLines={1}
+                                  style={{
+                                    maxWidth: 100,
+                                    color: Colors.forest,
+                                    fontSize: 11,
+                                    fontWeight: "600",
+                                  }}
+                                >
+                                  {memory.location}
+                                </Text>
+                              </View>
+                            ) : null}
+                            {memory.category_name ? (
+                              <Text
+                                numberOfLines={1}
+                                style={{
+                                  maxWidth: 100,
+                                  overflow: "hidden",
+                                  paddingHorizontal: 10,
+                                  paddingVertical: 5,
+                                  borderRadius: 15,
+                                  backgroundColor: "#FBF0DD",
+                                  color: "#775323",
+                                  fontSize: 11,
+                                  fontWeight: "600",
+                                }}
+                              >
+                                {memory.category_name}
+                              </Text>
+                            ) : null}
+                            {memoryTags.slice(0, 2).map((tag, index) => (
+                              <Text
+                                key={`${memory.id}-${tag}`}
+                                numberOfLines={1}
+                                style={{
+                                  maxWidth: 92,
+                                  overflow: "hidden",
+                                  paddingHorizontal: 9,
+                                  paddingVertical: 5,
+                                  borderRadius: 15,
+                                  backgroundColor:
+                                    index === 0 ? "#EAF0E5" : "#F7E8EC",
+                                  color: Colors.textPrimary,
+                                  fontSize: 11,
+                                  fontWeight: "600",
+                                }}
+                              >
+                                {tag}
+                              </Text>
+                            ))}
+                          </View>
+                        </View>
                       </Pressable>
-                      <Pressable
-                        onPress={() => openEditMemory(memory)}
-                        accessibilityRole="button"
-                        accessibilityLabel="Edit memory"
-                        hitSlop={5}
-                        style={{ padding: 6 }}
-                      >
-                        <Ionicons
-                          name="create-outline"
-                          size={19}
-                          color={Colors.forest}
-                        />
-                      </Pressable>
-                      <Pressable
-                        onPress={() => handleDelete(memory)}
-                        accessibilityRole="button"
-                        accessibilityLabel="Delete memory"
-                        hitSlop={5}
-                        style={{ padding: 6 }}
-                      >
-                        <Ionicons
-                          name="trash-outline"
-                          size={19}
-                          color="#C84C4C"
-                        />
-                      </Pressable>
-                    </View>
-                  </View>
+                    );
+                  })}
                 </View>
-              );
-            })}
+              </View>
+            ))}
           </View>
         )}
       </ScrollView>
