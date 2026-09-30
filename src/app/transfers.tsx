@@ -13,9 +13,11 @@ import {
     ScrollView,
     Text,
     TextInput,
+    useWindowDimensions,
     View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+  import Svg, { Path, Rect } from "react-native-svg";
 import api, { API_BASE_URL, getApiErrorMessage, logoutUser } from "../api";
 import { AddButton } from "../components/AddButton";
 import {
@@ -127,38 +129,197 @@ function getReceiptUrl(receipt: string) {
   return `${API_BASE_URL.replace(/\/api\/?$/, "")}${receipt.startsWith("/") ? "" : "/"}${receipt}`;
 }
 
+type MetricTone = "transfer" | "moved" | "spent" | "remaining";
+
+const metricPalettes = {
+  transfer: {
+    background: "#FCFBFF",
+    border: "#EBE6F8",
+    icon: ["#B39AFF", "#7651E8"] as const,
+    value: "#3224B8",
+    caption: "#7F8792",
+    waveBack: "#EEEAFE",
+    waveFront: "#DDD7FF",
+    accent: "#8664F3",
+    badge: "#ECE8FF",
+  },
+  moved: {
+    background: "#FFFCF6",
+    border: "#F1E9D8",
+    icon: ["#FFD360", "#F3A900"] as const,
+    value: "#E36C00",
+    caption: "#858B92",
+    waveBack: "#FFF3D9",
+    waveFront: "#FFE3A9",
+    accent: "#F7B52C",
+    badge: "#FFF0CD",
+  },
+  spent: {
+    background: "#FFFAFA",
+    border: "#F4E5E5",
+    icon: ["#FF8787", "#EF4149"] as const,
+    value: "#C51B20",
+    caption: "#858B92",
+    waveBack: "#FDEBEC",
+    waveFront: "#F9D5D9",
+    accent: "#EF6E7A",
+    badge: "#FCE4E6",
+  },
+  remaining: {
+    background: "#FBFFFC",
+    border: "#E4F0E8",
+    icon: ["#5BE49A", "#13A95C"] as const,
+    value: "#0C4B2A",
+    caption: "#858F91",
+    waveBack: "#E3F6EA",
+    waveFront: "#C9EED8",
+    accent: "#48CC85",
+    badge: "#E0F5E8",
+  },
+} as const;
+
 function Metric({
   label,
   value,
   caption,
-  background,
-  valueColor,
+  tone,
+  icon,
+  cardWidth,
 }: {
   label: string;
   value: string;
   caption: string;
-  background: string;
-  valueColor: string;
+  tone: MetricTone;
+  icon: keyof typeof Ionicons.glyphMap;
+  cardWidth: number;
 }) {
+  const palette = metricPalettes[tone];
+  const iconSize = Math.min(40, Math.max(36, cardWidth * 0.14));
+  const secondaryIconSize = Math.min(34, Math.max(28, cardWidth * 0.08));
+  const cardHeight = 140;
+
   return (
     <View
-      className={`mb-3 min-h-[104px] flex-1 rounded-2xl border border-[#E4E8E3] p-3.5 ${background}`}
+      style={{
+        width: cardWidth,
+        height: cardHeight,
+        paddingHorizontal: Math.min(18, Math.max(12, cardWidth * 0.04)),
+        paddingVertical: 8,
+        overflow: "hidden",
+        borderWidth: 1,
+        borderColor: palette.border,
+        borderRadius: 24,
+        backgroundColor: palette.background,
+        shadowColor: "#26352A",
+        shadowOffset: { width: 0, height: 6 },
+        shadowOpacity: 0.08,
+        shadowRadius: 14,
+        elevation: 4,
+      }}
     >
-      <Text className="text-xs font-bold uppercase tracking-[0.8px] text-[#7C8880]">
+      <Svg
+        width="100%"
+        height={cardHeight * 0.22}
+        viewBox="0 0 320 100"
+        preserveAspectRatio="none"
+        pointerEvents="none"
+        style={{ position: "absolute", left: 0, bottom: 0 }}
+      >
+        <Path
+          d="M0 48 C48 34 70 76 122 60 C175 44 195 30 238 43 C271 53 294 59 320 47 L320 100 L0 100 Z"
+          fill={palette.waveBack}
+        />
+        <Path
+          d="M0 73 C55 58 86 91 137 77 C190 63 213 49 254 63 C282 72 301 80 320 70 L320 100 L0 100 Z"
+          fill={palette.waveFront}
+        />
+      </Svg>
+      <View
+        style={{
+          flexDirection: "row",
+          alignItems: "flex-start",
+          justifyContent: "space-between",
+        }}
+      >
+        <LinearGradient
+          colors={palette.icon}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={{
+            width: iconSize,
+            height: iconSize,
+            alignItems: "center",
+            justifyContent: "center",
+            borderRadius: iconSize * 0.31,
+          }}
+        >
+          <Ionicons name={icon} size={iconSize * 0.48} color="#FFFFFF" />
+        </LinearGradient>
+        <View
+          style={{
+            width: secondaryIconSize,
+            height: secondaryIconSize,
+            alignItems: "center",
+            justifyContent: "center",
+            borderRadius: secondaryIconSize / 2,
+            backgroundColor: palette.badge,
+          }}
+        >
+          <Ionicons
+            name="chevron-forward"
+            size={secondaryIconSize * 0.58}
+            color={palette.value}
+          />
+        </View>
+      </View>
+      <Text
+        numberOfLines={1}
+        style={{
+          marginTop: 2,
+          color: "#17221A",
+          fontSize: Math.min(14, Math.max(12, cardWidth * 0.04)),
+          lineHeight: Math.min(16, Math.max(14, cardWidth * 0.045)),
+          fontWeight: "700",
+        }}
+      >
         {label}
       </Text>
       <Text
-        className={`mt-2 text-lg font-extrabold ${valueColor}`}
+        adjustsFontSizeToFit
         numberOfLines={1}
+        style={{
+          marginTop: 1,
+          color: palette.value,
+          fontSize: Math.min(30, Math.max(20, cardWidth * 0.075)),
+          lineHeight: Math.min(32, Math.max(24, cardWidth * 0.082)),
+          fontWeight: "900",
+        }}
       >
         {value}
       </Text>
       <Text
-        className="mt-1 text-xs font-medium text-[#818D84]"
         numberOfLines={1}
+        style={{
+          maxWidth: "74%",
+          marginTop: 1,
+          color: palette.caption,
+          fontSize: Math.min(11, Math.max(10, cardWidth * 0.027)),
+          fontWeight: "500",
+        }}
       >
         {caption}
       </Text>
+      <Svg
+        width={36}
+        height={29}
+        viewBox="0 0 40 32"
+        pointerEvents="none"
+        style={{ position: "absolute", right: 9, bottom: 9 }}
+      >
+        <Rect x={1} y={20} width={9} height={11} rx={3} fill={palette.accent} opacity={0.55} />
+        <Rect x={14} y={13} width={9} height={18} rx={3} fill={palette.accent} opacity={0.68} />
+        <Rect x={27} y={4} width={9} height={27} rx={3} fill={palette.accent} opacity={0.82} />
+      </Svg>
     </View>
   );
 }
@@ -166,6 +327,7 @@ function Metric({
 export default function Transfers() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { width: screenWidth } = useWindowDimensions();
   const [transfers, setTransfers] = useState<TransferRecord[]>([]);
   const [incomes, setIncomes] = useState<IncomeRecord[]>([]);
   const [expenses, setExpenses] = useState<ExpenseRecord[]>([]);
@@ -319,6 +481,7 @@ export default function Transfers() {
       ),
     0,
   );
+  const metricCardWidth = Math.min(500, (screenWidth - 36 - 14) / 2);
 
   const visibleTransfers = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -577,36 +740,47 @@ export default function Transfers() {
           paddingBottom: insets.bottom + 140,
         }}
       >
-        <View className="flex-row mt-6 gap-3">
+        <View
+          style={{
+            flexDirection: "row",
+            flexWrap: "wrap",
+            justifyContent: "space-between",
+            gap: 14,
+            paddingTop: 24,
+            paddingBottom: 16,
+          }}
+        >
           <Metric
-            label="Transfers"
+            label="Transfer"
             value={String(transfers.length)}
             caption="All records"
-            background="bg-[#315640]"
-            valueColor="text-white"
+            tone="transfer"
+            icon="swap-horizontal-outline"
+            cardWidth={metricCardWidth}
           />
           <Metric
             label="Moved"
             value={formatAmount(totalTransferred)}
-            caption="Amount transferred"
-            background="bg-white"
-            valueColor="text-[#293930]"
+            caption="Total amount moved"
+            tone="moved"
+            icon="paper-plane-outline"
+            cardWidth={metricCardWidth}
           />
-        </View>
-        <View className="flex-row gap-3">
           <Metric
-            label="Spent"
+            label="Spend"
             value={formatAmount(totalExpense)}
-            caption="Expense from transfers"
-            background="bg-[#FFF4F1]"
-            valueColor="text-[#B64C45]"
+            caption="Total amount spent"
+            tone="spent"
+            icon="cart-outline"
+            cardWidth={metricCardWidth}
           />
           <Metric
             label="Remaining"
             value={formatAmount(totalRemaining)}
-            caption="Balance in transfers"
-            background="bg-[#EFF7F1]"
-            valueColor="text-[#25805A]"
+            caption="Available balance"
+            tone="remaining"
+            icon="wallet-outline"
+            cardWidth={metricCardWidth}
           />
         </View>
 
