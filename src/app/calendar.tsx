@@ -171,6 +171,7 @@ export default function CalendarScreen() {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [calendarMonth, setCalendarMonth] = useState(() => new Date());
   const [modalType, setModalType] = useState<EntryType | null>(null);
+  const [dayPopupDate, setDayPopupDate] = useState<Date | null>(null);
   const [form, setForm] = useState<EntryForm>({
     title: "",
     category: "Personal",
@@ -436,7 +437,10 @@ export default function CalendarScreen() {
                   return (
                     <Pressable
                       key={key}
-                      onPress={() => setSelectedDate(date)}
+                      onPress={() => {
+                        setSelectedDate(date);
+                        if (hasItems) setDayPopupDate(date);
+                      }}
                       className="h-10 flex-1 items-center justify-center"
                       accessibilityRole="button"
                       accessibilityLabel={date.toLocaleDateString("en-IN", {
@@ -598,6 +602,143 @@ export default function CalendarScreen() {
             : "Opens the new reminder form"
         }
       />
+
+      {/* Day Entries Popup */}
+      <Modal
+        visible={dayPopupDate !== null}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setDayPopupDate(null)}
+      >
+        <Pressable
+          className="flex-1 justify-center bg-black/50 px-4"
+          onPress={() => setDayPopupDate(null)}
+        >
+          <Pressable onPress={(e) => e.stopPropagation()}>
+            <View className="rounded-3xl bg-white px-5 pb-5 pt-5">
+              {/* Header */}
+              <View className="mb-1 flex-row items-start justify-between">
+                <View>
+                  <Text className="text-2xl font-extrabold text-[#263238]">
+                    {dayPopupDate
+                      ? dayPopupDate.toLocaleDateString("en-IN", {
+                          day: "numeric",
+                          month: "long",
+                        })
+                      : ""}
+                  </Text>
+                  <Text className="mt-0.5 text-[10px] font-bold uppercase tracking-[1px] text-[#7B8589]">
+                    Scheduled Reminders
+                  </Text>
+                </View>
+                <Pressable
+                  onPress={() => setDayPopupDate(null)}
+                  className="h-8 w-8 items-center justify-center rounded-full bg-[#F2F2F2]"
+                >
+                  <Ionicons name="close" size={18} color="#263238" />
+                </Pressable>
+              </View>
+
+              {/* Entry list */}
+              <ScrollView
+                style={{ maxHeight: 340 }}
+                showsVerticalScrollIndicator={false}
+                className="mt-3"
+              >
+                {(() => {
+                  const popupKey = dayPopupDate ? dateKey(dayPopupDate) : "";
+                  const popupEntries = [
+                    ...events
+                      .filter((e) => entryDateKey(e.startDate) === popupKey)
+                      .map((e) => ({ entry: e, type: "event" as EntryType })),
+                    ...reminders
+                      .filter((r) => entryDateKey(r.reminderDate) === popupKey)
+                      .map((r) => ({ entry: r, type: "reminder" as EntryType })),
+                  ];
+                  return popupEntries.map(({ entry, type }) => (
+                    <View
+                      key={`${type}-${entry.id}`}
+                      className="mb-3 rounded-2xl border border-[#E5EAE7] bg-[#F9FAFC] px-3 py-3"
+                    >
+                      <View className="flex-row items-center">
+                        <View className="mr-3 h-10 w-10 items-center justify-center rounded-full bg-[#FFE4EE]">
+                          <Ionicons
+                            name={type === "reminder" ? "gift-outline" : "calendar-outline"}
+                            size={20}
+                            color="#E91E63"
+                          />
+                        </View>
+                        <View className="flex-1">
+                          <Text className="text-base font-extrabold text-[#263238]">
+                            {entry.title}
+                          </Text>
+                          <Text className="text-[11px] font-bold uppercase tracking-[0.5px] text-[#E91E63]">
+                            {entry.category || (type === "reminder" ? "Reminder" : "Event")}
+                          </Text>
+                        </View>
+                        <View className="rounded-xl border border-[#E5EAE7] bg-white px-3 py-1">
+                          <Text className="text-xs font-bold text-[#263238]">
+                            {type === "reminder"
+                              ? entry.reminderTime || "All day"
+                              : entry.startTime || "All day"}
+                          </Text>
+                        </View>
+                      </View>
+                      {/* Edit / Delete row */}
+                      <View className="mt-3 flex-row">
+                        <Pressable
+                          onPress={() => {
+                            setDayPopupDate(null);
+                            // Open edit via alert for now
+                            Alert.alert(
+                              entry.title,
+                              [
+                                formatDate(type === "event" ? entry.startDate : entry.reminderDate),
+                                entry.location,
+                                entry.description,
+                                entry.notes,
+                              ]
+                                .filter(Boolean)
+                                .join("\n"),
+                            );
+                          }}
+                          className="mr-2 flex-1 flex-row items-center justify-center rounded-xl border border-[#4CAF50] py-2"
+                        >
+                          <Ionicons name="create-outline" size={15} color="#4CAF50" />
+                          <Text className="ml-1 text-sm font-bold text-[#4CAF50]">Edit</Text>
+                        </Pressable>
+                        <Pressable
+                          onPress={() => {
+                            setDayPopupDate(null);
+                            deleteEntry(type, entry);
+                          }}
+                          className="flex-1 flex-row items-center justify-center rounded-xl border border-[#FF5252] py-2"
+                        >
+                          <Ionicons name="trash-outline" size={15} color="#FF5252" />
+                          <Text className="ml-1 text-sm font-bold text-[#FF5252]">Delete</Text>
+                        </Pressable>
+                      </View>
+                    </View>
+                  ));
+                })()}
+              </ScrollView>
+
+              {/* Add One More button */}
+              <Pressable
+                onPress={() => {
+                  setDayPopupDate(null);
+                  openForm(activeType);
+                }}
+                className="mt-3 items-center rounded-2xl bg-[#1A1A2E] py-4"
+              >
+                <Text className="text-sm font-extrabold uppercase tracking-[1.5px] text-white">
+                  ADD ONE MORE
+                </Text>
+              </Pressable>
+            </View>
+          </Pressable>
+        </Pressable>
+      </Modal>
 
       <Modal
         visible={modalType !== null}

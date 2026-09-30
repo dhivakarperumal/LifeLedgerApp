@@ -17,7 +17,7 @@ import {
     View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-  import Svg, { Path, Rect } from "react-native-svg";
+import Svg, { Path, Rect } from "react-native-svg";
 import api, { API_BASE_URL, getApiErrorMessage, logoutUser } from "../api";
 import { AddButton } from "../components/AddButton";
 import {
@@ -316,9 +316,33 @@ function Metric({
         pointerEvents="none"
         style={{ position: "absolute", right: 9, bottom: 9 }}
       >
-        <Rect x={1} y={20} width={9} height={11} rx={3} fill={palette.accent} opacity={0.55} />
-        <Rect x={14} y={13} width={9} height={18} rx={3} fill={palette.accent} opacity={0.68} />
-        <Rect x={27} y={4} width={9} height={27} rx={3} fill={palette.accent} opacity={0.82} />
+        <Rect
+          x={1}
+          y={20}
+          width={9}
+          height={11}
+          rx={3}
+          fill={palette.accent}
+          opacity={0.55}
+        />
+        <Rect
+          x={14}
+          y={13}
+          width={9}
+          height={18}
+          rx={3}
+          fill={palette.accent}
+          opacity={0.68}
+        />
+        <Rect
+          x={27}
+          y={4}
+          width={9}
+          height={27}
+          rx={3}
+          fill={palette.accent}
+          opacity={0.82}
+        />
       </Svg>
     </View>
   );

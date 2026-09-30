@@ -15,9 +15,11 @@ import {
     Share,
     Text,
     TextInput,
-    View
+    useWindowDimensions,
+    View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import Svg, { Path, Rect } from "react-native-svg";
 import api, { getApiErrorMessage, logoutUser } from "../api";
 import {
     createDateRangeSelection,
@@ -100,84 +102,242 @@ function getRecordAmount(record: ReportRecord) {
     : Number(record.amount || 0);
 }
 
+type MetricTone =
+  "report" | "expense" | "transfer" | "spent" | "moved" | "remaining";
+
+const metricPalettes = {
+  report: {
+    background: "#FCFBFF",
+    border: "#EBE6F8",
+    icon: ["#B39AFF", "#7651E8"] as const,
+    value: "#3824BD",
+    caption: "#7F8792",
+    waveBack: "#EEEAFE",
+    waveFront: "#DDD7FF",
+    accent: "#8A68F4",
+    badge: "#ECE8FF",
+  },
+  expense: {
+    background: "#FBFFFC",
+    border: "#E4F0E8",
+    icon: ["#77E881", "#16B852"] as const,
+    value: "#0D5425",
+    caption: "#818B89",
+    waveBack: "#E2F8E5",
+    waveFront: "#C8F1CF",
+    accent: "#45C96A",
+    badge: "#E0F7E4",
+  },
+  transfer: {
+    background: "#FAFCFF",
+    border: "#E3EAF5",
+    icon: ["#8FC0FF", "#2877E9"] as const,
+    value: "#1248AA",
+    caption: "#7D8A98",
+    waveBack: "#E7F1FF",
+    waveFront: "#D1E5FF",
+    accent: "#438EEB",
+    badge: "#E1EEFF",
+  },
+  spent: {
+    background: "#FFFCF8",
+    border: "#F2E8DB",
+    icon: ["#FFAA3D", "#F57A00"] as const,
+    value: "#A9410D",
+    caption: "#878A8D",
+    waveBack: "#FFF0DB",
+    waveFront: "#FFE1B9",
+    accent: "#F5A32D",
+    badge: "#FFF0D8",
+  },
+  moved: {
+    background: "#FFFAFC",
+    border: "#F1E4EA",
+    icon: ["#FF90B0", "#F33168"] as const,
+    value: "#BE153F",
+    caption: "#88868D",
+    waveBack: "#FCE8EF",
+    waveFront: "#F8D1DF",
+    accent: "#EC537E",
+    badge: "#FCE5EC",
+  },
+  remaining: {
+    background: "#F8FFFD",
+    border: "#DFF0EC",
+    icon: ["#48E3CE", "#02A994"] as const,
+    value: "#0E4F49",
+    caption: "#828E8B",
+    waveBack: "#DEF6F1",
+    waveFront: "#C4EEE7",
+    accent: "#35CDB9",
+    badge: "#DFF7F2",
+  },
+} as const;
+
 function Metric({
   label,
   value,
+  caption,
   icon,
   tone,
+  cardWidth,
 }: {
   label: string;
   value: string;
+  caption: string;
   icon: keyof typeof Ionicons.glyphMap;
-  tone: "green" | "rose" | "blue" | "amber" | "mint" | "slate";
+  tone: MetricTone;
+  cardWidth: number;
 }) {
-  const styles = {
-    green: {
-      background: "bg-[#315640]",
-      icon: "bg-white/15",
-      value: "text-white",
-      label: "text-white/70",
-      iconColor: "#FFFFFF",
-    },
-    rose: {
-      background: "bg-[#FFF3F1]",
-      icon: "bg-[#FBE0DD]",
-      value: "text-[#A84942]",
-      label: "text-[#9C7975]",
-      iconColor: "#B64C45",
-    },
-    blue: {
-      background: "bg-[#EFF5F9]",
-      icon: "bg-[#DDEAF3]",
-      value: "text-[#356B9A]",
-      label: "text-[#758895]",
-      iconColor: "#356B9A",
-    },
-    amber: {
-      background: "bg-[#FFF7E9]",
-      icon: "bg-[#F9EACA]",
-      value: "text-[#946B2A]",
-      label: "text-[#8B7D62]",
-      iconColor: "#A87932",
-    },
-    mint: {
-      background: "bg-[#EFF7F1]",
-      icon: "bg-[#DCEEE0]",
-      value: "text-[#25805A]",
-      label: "text-[#718579]",
-      iconColor: "#25805A",
-    },
-    slate: {
-      background: "bg-white",
-      icon: "bg-[#EDF0ED]",
-      value: "text-[#293930]",
-      label: "text-[#7C8880]",
-      iconColor: "#526058",
-    },
-  }[tone];
+  const palette = metricPalettes[tone];
+  const compact = cardWidth < 160;
+  const iconSize = compact ? 28 : 34;
+  const secondaryIconSize = compact ? 22 : 28;
+  const cardHeight = 120;
+
   return (
     <View
-      className={`mb-3 min-h-[98px] flex-1 rounded-2xl border border-[#E4E8E3] p-3 ${styles.background}`}
+      style={{
+        width: cardWidth,
+        height: cardHeight,
+        paddingHorizontal: compact ? 10 : 14,
+        paddingVertical: 6,
+        overflow: "hidden",
+        borderWidth: 1,
+        borderColor: palette.border,
+        borderRadius: 20,
+        backgroundColor: palette.background,
+        shadowColor: "#26352A",
+        shadowOffset: { width: 0, height: 5 },
+        shadowOpacity: 0.08,
+        shadowRadius: 12,
+        elevation: 3,
+      }}
     >
-      <View className="flex-row items-center justify-between">
-        <Text
-          className={`text-xs font-bold uppercase tracking-[0.7px] ${styles.label}`}
-          numberOfLines={1}
+      <Svg
+        width="100%"
+        height={cardHeight * 0.2}
+        viewBox="0 0 320 100"
+        preserveAspectRatio="none"
+        pointerEvents="none"
+        style={{ position: "absolute", left: 0, bottom: 0 }}
+      >
+        <Path
+          d="M0 48 C48 34 70 76 122 60 C175 44 195 30 238 43 C271 53 294 59 320 47 L320 100 L0 100 Z"
+          fill={palette.waveBack}
+        />
+        <Path
+          d="M0 73 C55 58 86 91 137 77 C190 63 213 49 254 63 C282 72 301 80 320 70 L320 100 L0 100 Z"
+          fill={palette.waveFront}
+        />
+      </Svg>
+      <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
+        <LinearGradient
+          colors={palette.icon}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={{
+            width: iconSize,
+            height: iconSize,
+            alignItems: "center",
+            justifyContent: "center",
+            borderRadius: iconSize * 0.31,
+          }}
         >
-          {label}
-        </Text>
+          <Ionicons name={icon} size={iconSize * 0.48} color="#FFFFFF" />
+        </LinearGradient>
         <View
-          className={`h-7 w-7 items-center justify-center rounded-lg ${styles.icon}`}
+          style={{
+            width: secondaryIconSize,
+            height: secondaryIconSize,
+            alignItems: "center",
+            justifyContent: "center",
+            borderRadius: secondaryIconSize / 2,
+            backgroundColor: palette.badge,
+          }}
         >
-          <Ionicons name={icon} size={15} color={styles.iconColor} />
+          <Ionicons
+            name="chevron-forward"
+            size={secondaryIconSize * 0.58}
+            color={palette.value}
+          />
         </View>
       </View>
       <Text
-        className={`mt-2 text-lg font-extrabold ${styles.value}`}
+        numberOfLines={2}
+        style={{
+          marginTop: 1,
+          color: "#17221A",
+          fontSize: compact ? 9 : 12,
+          lineHeight: compact ? 10 : 14,
+          fontWeight: "700",
+        }}
+      >
+        {label}
+      </Text>
+      <Text
+        adjustsFontSizeToFit
         numberOfLines={1}
+        style={{
+          marginTop: 1,
+          color: palette.value,
+          fontSize: compact ? 15 : 24,
+          lineHeight: compact ? 17 : 26,
+          fontWeight: "900",
+        }}
       >
         {value}
       </Text>
+      <Text
+        numberOfLines={compact ? 1 : 2}
+        style={{
+          maxWidth: compact ? "100%" : "74%",
+          marginTop: 0,
+          color: palette.caption,
+          fontSize: compact ? 8 : 10,
+          lineHeight: compact ? 9 : 12,
+          fontWeight: "500",
+        }}
+      >
+        {caption}
+      </Text>
+      {cardWidth >= 160 ? (
+        <Svg
+          width={32}
+          height={25}
+          viewBox="0 0 40 32"
+          pointerEvents="none"
+          style={{ position: "absolute", right: 8, bottom: 7 }}
+        >
+          <Rect
+            x={1}
+            y={20}
+            width={9}
+            height={11}
+            rx={3}
+            fill={palette.accent}
+            opacity={0.55}
+          />
+          <Rect
+            x={14}
+            y={13}
+            width={9}
+            height={18}
+            rx={3}
+            fill={palette.accent}
+            opacity={0.68}
+          />
+          <Rect
+            x={27}
+            y={4}
+            width={9}
+            height={27}
+            rx={3}
+            fill={palette.accent}
+            opacity={0.82}
+          />
+        </Svg>
+      ) : null}
     </View>
   );
 }
@@ -185,6 +345,8 @@ function Metric({
 export default function Reports() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { width: screenWidth } = useWindowDimensions();
+  const metricCardWidth = Math.min(500, (screenWidth - 36 - 28) / 3);
   const [expenses, setExpenses] = useState<ReportRecord[]>([]);
   const [transfers, setTransfers] = useState<ReportRecord[]>([]);
   const [loading, setLoading] = useState(true);
@@ -641,44 +803,63 @@ export default function Reports() {
           </Pressable>
         </View>
 
-        <View className="flex-row gap-3">
+        <View
+          style={{
+            flexDirection: "row",
+            flexWrap: "wrap",
+            justifyContent: "space-between",
+            gap: 14,
+            paddingTop: 24,
+            paddingBottom: 16,
+          }}
+        >
           <Metric
-            label="Records"
+            label="Report Records"
             value={String(stats.totalRecords)}
-            icon="list-outline"
-            tone="green"
+            caption="Total report records"
+            icon="document-text-outline"
+            tone="report"
+            cardWidth={metricCardWidth}
           />
           <Metric
-            label="Expenses"
+            label="Expense Count"
             value={String(stats.expenseCount)}
-            icon="trending-down-outline"
-            tone="rose"
+            caption="Total expenses added"
+            icon="wallet-outline"
+            tone="expense"
+            cardWidth={metricCardWidth}
           />
           <Metric
-            label="Transfers"
+            label="Transfers Count"
             value={String(stats.transferCount)}
+            caption="Total transfers done"
             icon="swap-horizontal-outline"
-            tone="blue"
+            tone="transfer"
+            cardWidth={metricCardWidth}
           />
-        </View>
-        <View className="flex-row gap-3">
           <Metric
-            label="Total spent"
+            label="Total Spend Amount"
             value={formatAmount(stats.totalExpense)}
-            icon="remove-circle-outline"
-            tone="rose"
+            caption="Total expense amount"
+            icon="cart-outline"
+            tone="spent"
+            cardWidth={metricCardWidth}
           />
           <Metric
-            label="Transferred"
+            label="Transfer Amount"
             value={formatAmount(stats.totalTransfer)}
-            icon="arrow-forward-circle-outline"
-            tone="amber"
+            caption="Total amount transferred"
+            icon="paper-plane-outline"
+            tone="moved"
+            cardWidth={metricCardWidth}
           />
           <Metric
-            label="Remaining"
+            label="Remaining Amount"
             value={formatAmount(stats.totalRemaining)}
-            icon="checkmark-circle-outline"
-            tone="mint"
+            caption="Available balance"
+            icon="wallet-outline"
+            tone="remaining"
+            cardWidth={metricCardWidth}
           />
         </View>
 
