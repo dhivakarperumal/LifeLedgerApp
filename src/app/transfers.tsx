@@ -18,6 +18,12 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import api, { API_BASE_URL, getApiErrorMessage, logoutUser } from "../api";
 import { AddButton } from "../components/AddButton";
+import {
+  createDateRangeSelection,
+  DateRangeFilter,
+  isDateInRange,
+  type DateRangeSelection,
+} from "../components/DateRangeFilter";
 import { FormInput, FormOption } from "../components/FormControls";
 import { GradientSafeAreaView as SafeAreaView } from "../components/GradientSafeAreaView";
 import { Colors } from "../constants/colors";
@@ -180,6 +186,9 @@ export default function Transfers() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("All Transfers");
+  const [dateRange, setDateRange] = useState<DateRangeSelection>(() =>
+    createDateRangeSelection("All"),
+  );
   const [viewMode, setViewMode] = useState<"list" | "grid">("list");
   const [currentPage, setCurrentPage] = useState(1);
   const [deletingId, setDeletingId] = useState<number | string | null>(null);
@@ -320,9 +329,10 @@ export default function Transfers() {
       const matchesCategory =
         categoryFilter === "All Transfers" ||
         transfer.category === categoryFilter;
-      return matchesSearch && matchesCategory;
+      const matchesDate = isDateInRange(transfer.transfer_date, dateRange);
+      return matchesSearch && matchesCategory && matchesDate;
     });
-  }, [transfers, search, categoryFilter]);
+  }, [transfers, search, categoryFilter, dateRange]);
   const totalPages = Math.max(1, Math.ceil(visibleTransfers.length / pageSize));
   const safeCurrentPage = Math.min(currentPage, totalPages);
   const pageTransfers = visibleTransfers.slice(
@@ -644,6 +654,15 @@ export default function Transfers() {
             </Pressable>
           )}
         </View>
+
+        <DateRangeFilter
+          value={dateRange}
+          onChange={(nextRange) => {
+            setDateRange(nextRange);
+            setCurrentPage(1);
+          }}
+          style={{ marginBottom: 12 }}
+        />
 
         <View className="mb-4 flex-row items-center justify-between">
           <ScrollView

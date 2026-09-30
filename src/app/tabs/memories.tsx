@@ -22,6 +22,12 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import api, { API_BASE_URL, getApiErrorMessage, logoutUser } from "../../api";
 import { AddButton } from "../../components/AddButton";
+import {
+  createDateRangeSelection,
+  DateRangeFilter,
+  isDateInRange,
+  type DateRangeSelection,
+} from "../../components/DateRangeFilter";
 import { FormInput, FormOption } from "../../components/FormControls";
 import { GradientSafeAreaView as SafeAreaView } from "../../components/GradientSafeAreaView";
 import { SearchBar } from "../../components/SearchBar";
@@ -184,6 +190,9 @@ export default function Memories() {
   const [categories, setCategories] = useState<MemoryCategory[]>([]);
   const [search, setSearch] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
+  const [dateRange, setDateRange] = useState<DateRangeSelection>(() =>
+    createDateRangeSelection("All"),
+  );
   const [showCategoryFilters, setShowCategoryFilters] = useState(false);
   const [loading, setLoading] = useState(true);
   const [editorVisible, setEditorVisible] = useState(false);
@@ -250,6 +259,7 @@ export default function Memories() {
       const categoryMatches =
         selectedCategory === "all" ||
         String(memory.category_id) === selectedCategory;
+      const dateMatches = isDateInRange(memory.memory_date, dateRange);
       const searchable = [
         memory.title,
         memory.description,
@@ -260,9 +270,13 @@ export default function Memories() {
       ]
         .join(" ")
         .toLowerCase();
-      return categoryMatches && (!query || searchable.includes(query));
+      return (
+        categoryMatches &&
+        dateMatches &&
+        (!query || searchable.includes(query))
+      );
     });
-  }, [memories, search, selectedCategory]);
+  }, [memories, search, selectedCategory, dateRange]);
 
   const openNewMemory = () => {
     setEditingId(null);
@@ -569,6 +583,12 @@ export default function Memories() {
           onFilterPress={() => setShowCategoryFilters((value) => !value)}
           filterActive={selectedCategory !== "all"}
           filterIcon="options-outline"
+          style={{ marginBottom: 14 }}
+        />
+
+        <DateRangeFilter
+          value={dateRange}
+          onChange={setDateRange}
           style={{ marginBottom: 14 }}
         />
 

@@ -13,6 +13,12 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import api, { getApiErrorMessage, logoutUser } from "../../api";
 import { AddButton } from "../../components/AddButton";
+import {
+  createDateRangeSelection,
+  DateRangeFilter,
+  isDateInRange,
+  type DateRangeSelection,
+} from "../../components/DateRangeFilter";
 import { FormInput, FormOption } from "../../components/FormControls";
 import { GradientSafeAreaView as SafeAreaView } from "../../components/GradientSafeAreaView";
 import { SearchBar } from "../../components/SearchBar";
@@ -132,6 +138,9 @@ export default function Expenses() {
   const [categoryOptions, setCategoryOptions] =
     useState<string[]>(fallbackCategories);
   const [selectedCategory, setSelectedCategory] = useState("All");
+  const [dateRange, setDateRange] = useState<DateRangeSelection>(() =>
+    createDateRangeSelection("All"),
+  );
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
   const [isModalVisible, setIsModalVisible] = useState(false);
@@ -230,13 +239,14 @@ export default function Expenses() {
       const matchesCategory =
         selectedCategory === "All" ||
         (expense.category || "Other") === selectedCategory;
+      const matchesDate = isDateInRange(expense.expense_date, dateRange);
       const haystack = `${expense.title || ""} ${expense.category || ""} ${
         expense.notes || ""
       }`.toLowerCase();
       const matchesSearch = !query || haystack.includes(query);
-      return matchesCategory && matchesSearch;
+      return matchesCategory && matchesSearch && matchesDate;
     });
-  }, [expenses, search, selectedCategory]);
+  }, [expenses, search, selectedCategory, dateRange]);
 
   const totals = useMemo(
     () => ({
@@ -373,14 +383,24 @@ export default function Expenses() {
           {/* Stat cards inside header */}
           <View style={{ flexDirection: "row", gap: 12 }}>
             <HeroStatCard
-              label="Total Spent"
+              title="Total Amount"
+              subtitle="All time expenses"
               value={formatAmount(stats.totalAmount || totals.totalExpense)}
-              icon="trending-down-outline"
+              icon="wallet-outline"
+              iconBg="#8EB379"
+              iconColor="#FFFFFF"
+              trendPercent="8%"
+              trendText="more than last month"
             />
             <HeroStatCard
-              label="Today"
+              title="Today Amount"
+              subtitle="Your expenses today"
               value={formatAmount(totals.todayExpense)}
-              icon="today-outline"
+              icon="calendar-outline"
+              iconBg="#DDF2D1"
+              iconColor="#7E9E67"
+              trendPercent="12%"
+              trendText="more than yesterday"
             />
           </View>
         </View>
@@ -409,6 +429,11 @@ export default function Expenses() {
             onFilterPress={() => setIsFilterSheetVisible(true)}
             filterActive={selectedCategory !== "All"}
             style={{ marginBottom: 12 }}
+          />
+          <DateRangeFilter
+            value={dateRange}
+            onChange={setDateRange}
+            style={{ marginBottom: 14 }}
           />
 
           {/* Active filter chip */}
@@ -1246,53 +1271,148 @@ export default function Expenses() {
 ───────────────────────────────────────── */
 
 function HeroStatCard({
-  label,
+  title,
+  subtitle,
   value,
   icon,
+  iconBg,
+  iconColor,
+  trendPercent,
+  trendText,
 }: {
-  label: string;
+  title: string;
+  subtitle: string;
   value: string;
   icon: keyof typeof Ionicons.glyphMap;
+  iconBg: string;
+  iconColor: string;
+  trendPercent: string;
+  trendText: string;
 }) {
+  const formattedValue = value.replace("₹", "₹ ");
+  const [whole, fraction] = formattedValue.split(".");
+
   return (
     <View
       style={{
         flex: 1,
-        borderRadius: 18,
-        padding: 14,
+        backgroundColor: "#FFFFFF",
+        borderRadius: 20,
+        padding: 10,
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.05,
+        shadowRadius: 12,
+        elevation: 4,
+        overflow: "hidden",
       }}
     >
+      {/* Decorative background circle */}
+      <View
+        style={{
+          position: "absolute",
+          bottom: -30,
+          right: -30,
+          width: 120,
+          height: 120,
+          borderRadius: 60,
+          backgroundColor: "#F0Fdf4",
+          opacity: 0.6,
+        }}
+      />
+
+      {/* Header Row */}
       <View
         style={{
           flexDirection: "row",
           alignItems: "center",
-          gap: 6,
+          justifyContent: "space-between",
           marginBottom: 8,
         }}
       >
-        <Ionicons name={icon} size={15} color={Colors.forest} />
-        <Text
+        <View
           style={{
-            fontSize: 12,
-            color: Colors.textSecondary,
-            fontWeight: "600",
-            letterSpacing: 0.8,
+            flexDirection: "row",
+            alignItems: "center",
+            gap: 10,
+            flex: 1,
           }}
         >
-          {label.toUpperCase()}
+          <View
+            style={{
+              width: 38,
+              height: 38,
+              borderRadius: 12,
+              backgroundColor: iconBg,
+              justifyContent: "center",
+              alignItems: "center",
+            }}
+          >
+            <Ionicons name={icon} size={18} color={iconColor} />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text
+              style={{ fontSize: 13, fontWeight: "800", color: "#111827" }}
+              numberOfLines={1}
+            >
+              {title}
+            </Text>
+            <Text
+              style={{ fontSize: 10, color: "#8b929c", marginTop: 2 }}
+              numberOfLines={1}
+            >
+              {subtitle}
+            </Text>
+          </View>
+        </View>
+      </View>
+
+      {/* Value */}
+      <View
+        style={{
+          flexDirection: "row",
+          alignItems: "baseline",
+          marginBottom: 8,
+        }}
+      >
+        <Text
+          style={{
+            fontSize: 22,
+            fontWeight: "900",
+            color: "#111827",
+            letterSpacing: -0.5,
+          }}
+        >
+          {whole}
+        </Text>
+        {fraction && (
+          <Text style={{ fontSize: 14, fontWeight: "800", color: "#111827" }}>
+            .{fraction}
+          </Text>
+        )}
+      </View>
+
+      {/* Trend Row */}
+      <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+        <View
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            backgroundColor: "#Edf7ed",
+            paddingHorizontal: 6,
+            paddingVertical: 4,
+            borderRadius: 8,
+          }}
+        >
+          <Ionicons name="trending-up" size={12} color="#388e3c" />
+        </View>
+        <Text style={{ fontSize: 12, fontWeight: "800", color: "#388e3c" }}>
+          {trendPercent}
+        </Text>
+        <Text style={{ fontSize: 10, color: "#8b929c", flexShrink: 1 }}>
+          {trendText}
         </Text>
       </View>
-      <Text
-        style={{
-          fontSize: 20,
-          color: Colors.textPrimary,
-          fontWeight: "900",
-        }}
-        numberOfLines={1}
-        adjustsFontSizeToFit
-      >
-        {value}
-      </Text>
     </View>
   );
 }

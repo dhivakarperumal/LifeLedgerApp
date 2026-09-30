@@ -18,6 +18,12 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import api, { API_BASE_URL, getApiErrorMessage, logoutUser } from "../api";
 import { AddButton } from "../components/AddButton";
+import {
+  createDateRangeSelection,
+  DateRangeFilter,
+  isDateInRange,
+  type DateRangeSelection,
+} from "../components/DateRangeFilter";
 import { FormInput, FormOption } from "../components/FormControls";
 import { GradientSafeAreaView as SafeAreaView } from "../components/GradientSafeAreaView";
 import { Colors } from "../constants/colors";
@@ -164,6 +170,9 @@ export default function Income() {
   const [budgetSaving, setBudgetSaving] = useState(false);
   const [search, setSearch] = useState("");
   const [incomeFilter, setIncomeFilter] = useState("All Income");
+  const [dateRange, setDateRange] = useState<DateRangeSelection>(() =>
+    createDateRangeSelection("All"),
+  );
   const [viewMode, setViewMode] = useState<"list" | "grid">("list");
   const [currentPage, setCurrentPage] = useState(1);
   const [editorVisible, setEditorVisible] = useState(false);
@@ -265,9 +274,10 @@ export default function Income() {
         incomeFilter === "All Income" ||
         (incomeFilter === "Recurring" && income.recurring === "Yes") ||
         (incomeFilter === "One-time" && income.recurring !== "Yes");
-      return matchesSearch && matchesFilter;
+      const matchesDate = isDateInRange(income.income_date, dateRange);
+      return matchesSearch && matchesFilter && matchesDate;
     });
-  }, [incomes, incomeFilter, search]);
+  }, [incomes, incomeFilter, search, dateRange]);
 
   const totalPages = Math.max(1, Math.ceil(filteredIncomes.length / pageSize));
   const safeCurrentPage = Math.min(currentPage, totalPages);
@@ -632,6 +642,15 @@ export default function Income() {
             </Pressable>
           )}
         </View>
+
+        <DateRangeFilter
+          value={dateRange}
+          onChange={(nextRange) => {
+            setDateRange(nextRange);
+            setCurrentPage(1);
+          }}
+          style={{ marginBottom: 12 }}
+        />
 
         <View className="mb-4 flex-row items-center justify-between">
           <ScrollView

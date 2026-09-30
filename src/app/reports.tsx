@@ -1,5 +1,4 @@
 import { Ionicons } from "@expo/vector-icons";
-import DateTimePicker from "@react-native-community/datetimepicker";
 import { File, Paths } from "expo-file-system";
 import { LinearGradient } from "expo-linear-gradient";
 import * as Print from "expo-print";
@@ -21,6 +20,12 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import api, { getApiErrorMessage, logoutUser } from "../api";
+import {
+  createDateRangeSelection,
+  DateRangeFilter,
+  isDateInRange,
+  type DateRangeSelection,
+} from "../components/DateRangeFilter";
 import { GradientSafeAreaView as SafeAreaView } from "../components/GradientSafeAreaView";
 import { Colors } from "../constants/colors";
 
@@ -42,34 +47,7 @@ type ReportRecord = {
   _date?: string;
 };
 
-type DatePreset =
-  | "All"
-  | "Today"
-  | "Yesterday"
-  | "This Week"
-  | "Last Week"
-  | "This Month"
-  | "Last Month"
-  | "This Year"
-  | "Last Year"
-  | "Custom Range";
-
-type DateRange = { from: Date | null; to: Date | null };
-type DatePickerField = "from" | "to";
-
 const pageSize = 10;
-const datePresets: DatePreset[] = [
-  "All",
-  "Today",
-  "Yesterday",
-  "This Week",
-  "Last Week",
-  "This Month",
-  "Last Month",
-  "This Year",
-  "Last Year",
-  "Custom Range",
-];
 
 function getRows(data: any, key: string): any[] {
   if (Array.isArray(data)) return data;
@@ -101,77 +79,6 @@ function formatDate(value?: string) {
 
 function dateKey(date: Date) {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
-}
-
-function getDateRange(preset: DatePreset, from: string, to: string): DateRange {
-  const today = new Date();
-  const startToday = new Date(
-    today.getFullYear(),
-    today.getMonth(),
-    today.getDate(),
-  );
-  if (preset === "All") return { from: null, to: null };
-  if (preset === "Custom Range") {
-    return {
-      from: from ? new Date(`${from}T00:00:00`) : null,
-      to: to ? new Date(`${to}T23:59:59.999`) : null,
-    };
-  }
-  if (preset === "Today") {
-    return {
-      from: startToday,
-      to: new Date(startToday.getTime() + 24 * 60 * 60 * 1000 - 1),
-    };
-  }
-  if (preset === "Yesterday") {
-    const start = new Date(startToday);
-    start.setDate(start.getDate() - 1);
-    const end = new Date(start);
-    end.setHours(23, 59, 59, 999);
-    return { from: start, to: end };
-  }
-  if (preset === "This Week" || preset === "Last Week") {
-    const mondayOffset =
-      (startToday.getDay() === 0 ? -6 : 1) - startToday.getDay();
-    const start = new Date(startToday);
-    start.setDate(
-      start.getDate() + mondayOffset + (preset === "Last Week" ? -7 : 0),
-    );
-    const end = new Date(start);
-    end.setDate(end.getDate() + 6);
-    end.setHours(23, 59, 59, 999);
-    return { from: start, to: end };
-  }
-  if (preset === "This Month") {
-    return {
-      from: new Date(today.getFullYear(), today.getMonth(), 1),
-      to: new Date(
-        today.getFullYear(),
-        today.getMonth() + 1,
-        0,
-        23,
-        59,
-        59,
-        999,
-      ),
-    };
-  }
-  if (preset === "Last Month") {
-    return {
-      from: new Date(today.getFullYear(), today.getMonth() - 1, 1),
-      to: new Date(today.getFullYear(), today.getMonth(), 0, 23, 59, 59, 999),
-    };
-  }
-  if (preset === "This Year") {
-    return {
-      from: new Date(today.getFullYear(), 0, 1),
-      to: new Date(today.getFullYear(), 11, 31, 23, 59, 59, 999),
-    };
-  }
-  return {
-    from: new Date(today.getFullYear() - 1, 0, 1),
-    to: new Date(today.getFullYear() - 1, 11, 31, 23, 59, 59, 999),
-  };
 }
 
 function escapeHtml(value: unknown) {
@@ -287,11 +194,9 @@ export default function Reports() {
   const [categoryFilter, setCategoryFilter] = useState("All");
   const [paymentFilter, setPaymentFilter] = useState("All");
   const [datePreset, setDatePreset] = useState<DatePreset>("All");
-  const [dateFrom, setDateFrom] = useState("");
-  const [dateTo, setDateTo] = useState("");
-  const [datePickerField, setDatePickerField] =
-    useState<DatePickerField | null>(null);
-  const [dateDraft, setDateDraft] = useState(new Date());
+  const [dateRange, setDateRange] = useState<DateRangeSelection>(() =>
+    createDateRangeSelection("All")
+  );
   const [viewMode, setViewMode] = useState<"list" | "grid">("list");
   const [currentPage, setCurrentPage] = useState(1);
   const [exporting, setExporting] = useState<"pdf" | "csv" | null>(null);
@@ -376,8 +281,8 @@ export default function Reports() {
     [allRecords],
   );
   const activeDateRange = useMemo(
-    () => getDateRange(datePreset, dateFrom, dateTo),
-    [datePreset, dateFrom, dateTo],
+    () => getDateRange(dateRange.filter, dateRange.from, dateRange.to),
+    [dateRange]
   );
 
   const visible = useMemo(() => {
@@ -397,13 +302,7 @@ export default function Reports() {
       const timestamp = record._date
         ? new Date(record._date).getTime()
         : Number.NaN;
-      const matchesFrom =
-        !activeDateRange.from ||
-        (!Number.isNaN(timestamp) &&
-          timestamp >= activeDateRange.from.getTime());
-      const matchesTo =
-        !activeDateRange.to ||
-        (!Number.isNaN(timestamp) && timestamp <= activeDateRange.to.getTime());
+      const matchesDate = isDateInRange(record._date, dateRange);
       return (
         matchesSearch &&
         matchesCategory &&
@@ -511,9 +410,7 @@ export default function Reports() {
     setSearch("");
     setCategoryFilter("All");
     setPaymentFilter("All");
-    setDatePreset("All");
-    setDateFrom("");
-    setDateTo("");
+    setDateRange(createDateRangeSelection("All"));
     setCurrentPage(1);
   };
 
@@ -525,17 +422,15 @@ export default function Reports() {
   };
 
   const openDatePicker = (field: DatePickerField) => {
-    const currentValue = field === "from" ? dateFrom : dateTo;
-    setDateDraft(
-      currentValue ? new Date(`${currentValue}T12:00:00`) : new Date(),
-    );
+    const currentValue = field === "from" ? dateRange.from : dateRange.to;
+    setDateDraft(currentValue ? new Date(`${currentValue}T12:00:00`) : new Date());
     setDatePickerField(field);
   };
 
   const applyDate = (field: DatePickerField, date: Date) => {
-    if (field === "from") setDateFrom(dateKey(date));
-    else setDateTo(dateKey(date));
-    setDatePreset("Custom Range");
+    if (field === "from") setDateRange((prev) => ({ ...prev, from: dateKey(date) }));
+    else setDateRange((prev) => ({ ...prev, to: dateKey(date) }));
+    setDateRange((prev) => ({ ...prev, filter: "Custom Range" }));
     setCurrentPage(1);
   };
 
@@ -546,11 +441,10 @@ export default function Reports() {
     category: record.category || "",
     amount: getRecordAmount(record),
     payment: record.payment_method || record.paymentMethod || "",
-    date: formatDate(record._date),
-    notes: record.notes || "",
-    recurring: record._type === "expense" ? record.recurring || "No" : "-",
-    remaining:
-      record._type === "transfer" ? Number(record.remaining_amount || 0) : "",
+      date: formatDate(record._date),
+      notes: record.notes || "",
+      recurring: record._type === "expense" ? record.recurring || "No" : "-",
+      remaining: record._type === "transfer" ? Number(record.remaining_amount || 0) : "",
   }));
 
   const exportCsv = async () => {
@@ -651,6 +545,7 @@ export default function Reports() {
       </style></head><body>
       <h1>Life Ledger Report</h1>
       <p>Generated ${escapeHtml(formatDate(new Date().toISOString()))} · ${stats.totalRecords} records · ${escapeHtml(datePreset)}</p>
+        <p>Generated ${escapeHtml(formatDate(new Date().toISOString()))} · ${stats.totalRecords} records · ${escapeHtml(dateRange.filter)}</p>
       <div class="summary">
         <div class="metric"><div class="label">Expenses</div><div class="value">₹${stats.totalExpense.toFixed(2)}</div></div>
         <div class="metric"><div class="label">Transfers</div><div class="value">₹${stats.totalTransfer.toFixed(2)}</div></div>
@@ -1023,9 +918,10 @@ export default function Reports() {
           </ScrollView>
 
           {datePreset === "Custom Range" && (
+          {dateRange.filter === "Custom Range" && (
             <View className="mb-2 flex-row gap-2">
               {(["from", "to"] as const).map((field) => {
-                const value = field === "from" ? dateFrom : dateTo;
+                const value = field === "from" ? dateRange.from : dateRange.to;
                 return (
                   <Pressable
                     key={field}
@@ -1039,7 +935,7 @@ export default function Reports() {
                       color="#68776D"
                     />
                     <Text className="ml-2 text-xs font-semibold text-[#526058]">
-                      {field === "from" ? "From" : "To"}:{" "}
+                      {field === "from" ? "From" : "To"}: {" "}
                       {value || "Select date"}
                     </Text>
                   </Pressable>

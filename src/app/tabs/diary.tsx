@@ -29,6 +29,12 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import api, { getApiErrorMessage, logoutUser } from "../../api";
 import { AddButton } from "../../components/AddButton";
+import {
+  createDateRangeSelection,
+  DateRangeFilter,
+  isDateInRange,
+  type DateRangeSelection,
+} from "../../components/DateRangeFilter";
 import { FormInput, FormOption } from "../../components/FormControls";
 import { GradientSafeAreaView as SafeAreaView } from "../../components/GradientSafeAreaView";
 import { SearchBar } from "../../components/SearchBar";
@@ -96,24 +102,13 @@ const moods = [
   { name: "Confident", emoji: "😎" },
   { name: "Loved", emoji: "❤️" },
 ];
-const entryFilters = [
-  "all",
-  "recent",
-  "favorites",
-  "drafts",
-  "month",
-  "year",
-  "range",
-] as const;
+const entryFilters = ["all", "recent", "favorites", "drafts"] as const;
 type EntryFilter = (typeof entryFilters)[number];
 const entryFilterLabels: Record<EntryFilter, string> = {
   all: "All entries",
   recent: "Recent",
   favorites: "Favorites",
   drafts: "Drafts",
-  month: "This month",
-  year: "This year",
-  range: "Custom range",
 };
 
 function todayKey() {
@@ -267,17 +262,14 @@ export default function Diary() {
   const [categories, setCategories] = useState<DiaryCategory[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [dateRange, setDateRange] = useState<DateRangeSelection>(() =>
+    createDateRangeSelection("All"),
+  );
   const [selectedFilter, setSelectedFilter] = useState<EntryFilter>("all");
   const [filterMenuVisible, setFilterMenuVisible] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [selectedMood, setSelectedMood] = useState("all");
   const [moodMenuVisible, setMoodMenuVisible] = useState(false);
-  const [dateFrom, setDateFrom] = useState("");
-  const [dateTo, setDateTo] = useState("");
-  const [datePickerField, setDatePickerField] = useState<"from" | "to" | null>(
-    null,
-  );
-  const [dateDraft, setDateDraft] = useState(new Date());
   const [entryPickerField, setEntryPickerField] = useState<
     "date" | "time" | null
   >(null);
@@ -361,32 +353,21 @@ export default function Diary() {
 
   const filteredEntries = useMemo(() => {
     const term = search.trim().toLowerCase();
-    const now = new Date();
     return entries
       .filter((entry) => {
-        const date = new Date(entry.entry_date || "");
         const statusMatches =
           selectedFilter === "favorites"
             ? asBoolean(entry.is_favorite)
             : selectedFilter === "drafts"
               ? entry.status === "draft"
-              : selectedFilter === "month"
-                ? date.getMonth() === now.getMonth() &&
-                  date.getFullYear() === now.getFullYear()
-                : selectedFilter === "year"
-                  ? date.getFullYear() === now.getFullYear()
-                  : true;
+              : true;
         const categoryMatches =
           selectedCategory === "all" ||
           String(entry.category_id) === selectedCategory ||
           entry.category_name === selectedCategory;
         const moodMatches =
           selectedMood === "all" || entry.mood === selectedMood;
-        const entryDate = String(entry.entry_date || "").slice(0, 10);
-        const dateMatches =
-          selectedFilter !== "range" ||
-          ((!dateFrom || entryDate >= dateFrom) &&
-            (!dateTo || entryDate <= dateTo));
+        const dateMatches = isDateInRange(entry.entry_date, dateRange);
         const searchMatches =
           !term ||
           [
@@ -417,10 +398,9 @@ export default function Diary() {
     entries,
     search,
     selectedFilter,
+    dateRange,
     selectedCategory,
     selectedMood,
-    dateFrom,
-    dateTo,
   ]);
 
   const openNewEntry = () => {
@@ -741,18 +721,6 @@ export default function Diary() {
     setForm((current) => ({ ...current, [key]: value }));
   };
 
-  const openDatePicker = (field: "from" | "to") => {
-    const currentValue = field === "from" ? dateFrom : dateTo;
-    setDateDraft(parseDateKey(currentValue) || new Date());
-    setDatePickerField(field);
-  };
-
-  const applyRangeDate = (field: "from" | "to", date: Date) => {
-    const value = dateKey(date);
-    if (field === "from") setDateFrom(value);
-    else setDateTo(value);
-  };
-
   const openEntryPicker = (field: "date" | "time") => {
     const nextDate =
       field === "date"
@@ -812,7 +780,9 @@ export default function Diary() {
           onChangeText={setSearch}
           placeholder="Search title, mood, tags..."
           onFilterPress={() => setFilterMenuVisible(true)}
-          filterActive={selectedFilter !== "all"}
+          filterActive={
+            selectedFilter !== "all" || dateRange.filter !== "All"
+          }
           filterIcon="options-outline"
           style={{ marginBottom: 12 }}
         />
@@ -842,43 +812,11 @@ export default function Diary() {
           <Ionicons name="chevron-down" size={18} color={Colors.sage} />
         </Pressable>
 
-        {selectedFilter === "range" ? (
-          <View style={{ marginBottom: 10 }}>
-            <View style={{ flexDirection: "row", gap: 9 }}>
-              <DateRangeButton
-                label="From"
-                value={dateFrom}
-                onPress={() => openDatePicker("from")}
-              />
-              <DateRangeButton
-                label="To"
-                value={dateTo}
-                onPress={() => openDatePicker("to")}
-              />
-            </View>
-            {dateFrom || dateTo ? (
-              <Pressable
-                onPress={() => {
-                  setDateFrom("");
-                  setDateTo("");
-                }}
-                accessibilityRole="button"
-                accessibilityLabel="Clear custom date range"
-                style={{ alignSelf: "flex-end", paddingVertical: 7 }}
-              >
-                <Text
-                  style={{
-                    color: Colors.sage,
-                    fontSize: 12,
-                    fontWeight: "600",
-                  }}
-                >
-                  Clear dates
-                </Text>
-              </Pressable>
-            ) : null}
-          </View>
-        ) : null}
+        <DateRangeFilter
+          value={dateRange}
+          onChange={setDateRange}
+          style={{ marginBottom: 12 }}
+        />
 
         <ScrollView
           horizontal
@@ -1148,26 +1086,6 @@ export default function Diary() {
         )}
       </ScrollView>
 
-      {Platform.OS === "android" && datePickerField ? (
-        <DateTimePicker
-          value={dateDraft}
-          mode="date"
-          display="default"
-          minimumDate={
-            datePickerField === "to" ? parseDateKey(dateFrom) : undefined
-          }
-          maximumDate={
-            datePickerField === "from" ? parseDateKey(dateTo) : undefined
-          }
-          onChange={(event, date) => {
-            if (event.type === "set" && date && datePickerField) {
-              applyRangeDate(datePickerField, date);
-            }
-            setDatePickerField(null);
-          }}
-        />
-      ) : null}
-
       {Platform.OS === "android" && entryPickerField ? (
         <DateTimePicker
           value={entryPickerDraft}
@@ -1181,87 +1099,6 @@ export default function Diary() {
           }}
         />
       ) : null}
-
-      <Modal
-        visible={Platform.OS === "ios" && datePickerField !== null}
-        transparent
-        animationType="slide"
-        onRequestClose={() => setDatePickerField(null)}
-      >
-        <View
-          style={{
-            flex: 1,
-            justifyContent: "flex-end",
-            backgroundColor: "rgba(14,31,26,0.48)",
-          }}
-        >
-          <View
-            style={{
-              paddingHorizontal: 18,
-              paddingTop: 16,
-              paddingBottom: insets.bottom + 12,
-              borderTopLeftRadius: 22,
-              borderTopRightRadius: 22,
-              backgroundColor: Colors.white,
-            }}
-          >
-            <View
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-                justifyContent: "space-between",
-              }}
-            >
-              <Pressable onPress={() => setDatePickerField(null)}>
-                <Text style={{ color: Colors.sage, fontSize: 15 }}>Cancel</Text>
-              </Pressable>
-              <Text
-                style={{
-                  color: Colors.forest,
-                  fontSize: 16,
-                  fontWeight: "700",
-                }}
-              >
-                Select {datePickerField === "from" ? "start" : "end"} date
-              </Text>
-              <Pressable
-                onPress={() => {
-                  if (datePickerField) {
-                    applyRangeDate(datePickerField, dateDraft);
-                  }
-                  setDatePickerField(null);
-                }}
-              >
-                <Text
-                  style={{
-                    color: Colors.forest,
-                    fontSize: 15,
-                    fontWeight: "700",
-                  }}
-                >
-                  Done
-                </Text>
-              </Pressable>
-            </View>
-            {datePickerField ? (
-              <DateTimePicker
-                value={dateDraft}
-                mode="date"
-                display="spinner"
-                minimumDate={
-                  datePickerField === "to" ? parseDateKey(dateFrom) : undefined
-                }
-                maximumDate={
-                  datePickerField === "from" ? parseDateKey(dateTo) : undefined
-                }
-                onChange={(_, date) => {
-                  if (date) setDateDraft(date);
-                }}
-              />
-            ) : null}
-          </View>
-        </View>
-      </Modal>
 
       <Modal
         visible={Platform.OS === "ios" && entryPickerField !== null}
