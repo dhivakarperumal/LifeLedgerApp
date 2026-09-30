@@ -4,25 +4,27 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useMemo, useState } from "react";
 import {
-    ActivityIndicator,
-    Alert,
-    Linking,
-    Modal,
-    Pressable,
-    RefreshControl,
-    ScrollView,
-    Text,
-    TextInput,
-    View,
+  ActivityIndicator,
+  Alert,
+  Linking,
+  Modal,
+  Pressable,
+  RefreshControl,
+  ScrollView,
+  Text,
+  TextInput,
+  useWindowDimensions,
+  View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import Svg, { Path } from "react-native-svg";
 import api, { API_BASE_URL, getApiErrorMessage, logoutUser } from "../api";
 import { AddButton } from "../components/AddButton";
 import {
-    createDateRangeSelection,
-    DateRangeFilter,
-    isDateInRange,
-    type DateRangeSelection,
+  createDateRangeSelection,
+  DateRangeFilter,
+  isDateInRange,
+  type DateRangeSelection,
 } from "../components/DateRangeFilter";
 import { FormInput, FormOption } from "../components/FormControls";
 import { GradientSafeAreaView as SafeAreaView } from "../components/GradientSafeAreaView";
@@ -108,53 +110,261 @@ function formatAmount(value: number | string | undefined) {
   })}`;
 }
 
+function formatCompactAmount(value: number) {
+  const amount = Number.isFinite(value) ? value : 0;
+  const absoluteAmount = Math.abs(amount);
+  const sign = amount < 0 ? "-" : "";
+  if (absoluteAmount >= 100_000) {
+    return `${sign}₹${(absoluteAmount / 100_000).toLocaleString("en-IN", { maximumFractionDigits: 2 })}L`;
+  }
+  if (absoluteAmount >= 1_000) {
+    return `${sign}₹${(absoluteAmount / 1_000).toLocaleString("en-IN", { maximumFractionDigits: 1 })}K`;
+  }
+  return `${sign}₹${absoluteAmount.toLocaleString("en-IN", { maximumFractionDigits: 0 })}`;
+}
+
 function getAttachmentUrl(attachment: string) {
   if (/^https?:\/\//i.test(attachment)) return attachment;
   return `${API_BASE_URL.replace(/\/api\/?$/, "")}${attachment.startsWith("/") ? "" : "/"}${attachment}`;
 }
+
+type MetricTone = "total" | "monthly" | "remaining" | "recurring";
+
+const metricPalettes = {
+  total: {
+    background: "#FCFFF9",
+    border: "#E7F0E2",
+    icon: ["#A6DD78", "#58A243"],
+    value: "#0D421A",
+    caption: "#858F91",
+    waveBack: "#E9F7DD",
+    waveFront: "#D0F0B6",
+    accent: "#6DB14D",
+    badge: "#EEF8E7",
+  },
+  monthly: {
+    background: "#FCFFF9",
+    border: "#E7F0E2",
+    icon: ["#A5DE73", "#4C9839"],
+    value: "#0C451A",
+    caption: "#858F91",
+    waveBack: "#E9F7DD",
+    waveFront: "#D0F0B6",
+    accent: "#63A94A",
+    badge: "#EEF8E7",
+  },
+  remaining: {
+    background: "#FBFCFF",
+    border: "#E4EAF4",
+    icon: ["#85B4FF", "#2869D7"],
+    value: "#1046AE",
+    caption: "#828D99",
+    waveBack: "#E8F0FF",
+    waveFront: "#D6E4FF",
+    accent: "#216CE0",
+    badge: "#E8F0FF",
+  },
+  recurring: {
+    background: "#FFFCFA",
+    border: "#F3E6E1",
+    icon: ["#FFC1B2", "#F36C4C"],
+    value: "#D9351E",
+    caption: "#8A8F95",
+    waveBack: "#FCEAE5",
+    waveFront: "#FBD9D0",
+    accent: "#F15B31",
+    badge: "#FCE9E4",
+  },
+} as const;
 
 function Metric({
   label,
   value,
   caption,
   tone,
+  icon,
+  topIcon,
+  footerLabel,
+  cardWidth,
+  badgeText,
 }: {
   label: string;
   value: string;
   caption: string;
-  tone: "green" | "mint" | "amber" | "blue" | "rose";
+  tone: MetricTone;
+  icon: keyof typeof Ionicons.glyphMap;
+  topIcon: keyof typeof Ionicons.glyphMap;
+  footerLabel?: string;
+  cardWidth: number;
+  badgeText?: string;
 }) {
-  const tones = {
-    green: "border-[#DCE8DE] bg-[#315640]",
-    mint: "border-[#DDECE4] bg-[#F1F8F3]",
-    amber: "border-[#EEE5D5] bg-[#FFF8EC]",
-    blue: "border-[#DEE7EF] bg-[#F2F7FA]",
-    rose: "border-[#F0DFDE] bg-[#FCF3F2]",
-  };
-  const textTone = tone === "green" ? "text-white" : "text-[#293930]";
-  const mutedTone = tone === "green" ? "text-white/70" : "text-[#7C8880]";
+  const palette = metricPalettes[tone];
+  const iconSize = Math.min(40, Math.max(36, cardWidth * 0.14));
+  const secondaryIconSize = Math.min(34, Math.max(28, cardWidth * 0.08));
+  const cardHeight = 140;
 
   return (
     <View
-      className={`mb-3 min-h-[105px] flex-1 rounded-2xl border p-3.5 ${tones[tone]}`}
+      style={{
+        width: cardWidth,
+        height: cardHeight,
+        paddingHorizontal: Math.min(18, Math.max(12, cardWidth * 0.04)),
+        paddingVertical: 8,
+        overflow: "hidden",
+        borderWidth: 1,
+        borderColor: palette.border,
+        borderRadius: 27,
+        backgroundColor: palette.background,
+        shadowColor: "#26352A",
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.09,
+        shadowRadius: 18,
+        elevation: 5,
+      }}
     >
+      <Svg
+        width="100%"
+        height={cardHeight * 0.2}
+        viewBox="0 0 320 100"
+        preserveAspectRatio="none"
+        pointerEvents="none"
+        style={{ position: "absolute", left: 0, bottom: 0 }}
+      >
+        <Path
+          d="M0 48 C48 34 70 76 122 60 C175 44 195 30 238 43 C271 53 294 59 320 47 L320 100 L0 100 Z"
+          fill={palette.waveBack}
+        />
+        <Path
+          d="M0 73 C55 58 86 91 137 77 C190 63 213 49 254 63 C282 72 301 80 320 70 L320 100 L0 100 Z"
+          fill={palette.waveFront}
+        />
+      </Svg>
+      <View
+        style={{
+          flexDirection: "row",
+          alignItems: "flex-start",
+          justifyContent: "space-between",
+        }}
+      >
+        <LinearGradient
+          colors={palette.icon}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={{
+            width: iconSize,
+            height: iconSize,
+            alignItems: "center",
+            justifyContent: "center",
+            borderRadius: iconSize * 0.31,
+          }}
+        >
+          <Ionicons name={icon} size={iconSize * 0.45} color="#FFFFFF" />
+          {badgeText ? (
+            <View
+              style={{
+                position: "absolute",
+                right: -5,
+                bottom: -3,
+                width: 31,
+                height: 31,
+                alignItems: "center",
+                justifyContent: "center",
+                borderWidth: 2,
+                borderColor: palette.icon[1],
+                borderRadius: 16,
+                backgroundColor: "#FFFFFF",
+              }}
+            >
+              <Text
+                style={{
+                  color: palette.value,
+                  fontSize: 16,
+                  fontWeight: "900",
+                }}
+              >
+                {badgeText}
+              </Text>
+            </View>
+          ) : null}
+        </LinearGradient>
+        <View
+          style={{
+            width: secondaryIconSize,
+            height: secondaryIconSize,
+            alignItems: "center",
+            justifyContent: "center",
+            borderRadius: secondaryIconSize / 2,
+            backgroundColor: palette.badge,
+          }}
+        >
+          <Ionicons
+            name={topIcon}
+            size={secondaryIconSize * 0.55}
+            color={palette.accent}
+          />
+        </View>
+      </View>
+
       <Text
-        className={`text-xs font-bold uppercase tracking-[0.8px] ${mutedTone}`}
+        numberOfLines={2}
+        style={{
+          marginTop: 2,
+          color: "#17221A",
+          fontSize: Math.min(14, Math.max(12, cardWidth * 0.04)),
+          lineHeight: Math.min(16, Math.max(14, cardWidth * 0.045)),
+          fontWeight: "700",
+        }}
       >
         {label}
       </Text>
       <Text
-        className={`mt-2 text-xl font-extrabold ${textTone}`}
+        adjustsFontSizeToFit
         numberOfLines={1}
+        style={{
+          marginTop: 2,
+          color: palette.value,
+          fontSize: Math.min(30, Math.max(23, cardWidth * 0.075)),
+          lineHeight: Math.min(32, Math.max(26, cardWidth * 0.082)),
+          fontWeight: "900",
+        }}
       >
         {value}
       </Text>
       <Text
-        className={`mt-1 text-xs font-medium ${mutedTone}`}
         numberOfLines={1}
+        style={{
+          marginTop: 1,
+          color: palette.caption,
+          fontSize: Math.min(11, Math.max(10, cardWidth * 0.027)),
+          fontWeight: "500",
+        }}
       >
         {caption}
       </Text>
+
+      {footerLabel ? (
+        <View
+          style={{
+            alignSelf: "flex-start",
+            marginTop: 2,
+            paddingHorizontal: 9,
+            paddingVertical: 3,
+            borderRadius: 20,
+            backgroundColor: "rgba(255,255,255,0.78)",
+          }}
+        >
+          <Text
+            numberOfLines={1}
+            style={{
+              color: palette.value,
+              fontSize: 10,
+              fontWeight: "700",
+            }}
+          >
+            {footerLabel}
+          </Text>
+        </View>
+      ) : null}
     </View>
   );
 }
@@ -162,6 +372,7 @@ function Metric({
 export default function Income() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { width: screenWidth } = useWindowDimensions();
   const [incomes, setIncomes] = useState<IncomeRecord[]>([]);
   const [incomeCategories, setIncomeCategories] = useState<string[]>([]);
   const [monthlyBudget, setMonthlyBudget] = useState(0);
@@ -308,7 +519,7 @@ export default function Income() {
   const recurringIncome = incomes
     .filter((income) => income.recurring === "Yes")
     .reduce((total, income) => total + Number(income.amount || 0), 0);
-
+  const metricCardWidth = Math.min(500, (screenWidth - 36 - 14) / 2);
   const updateForm = <K extends keyof IncomeForm>(
     key: K,
     value: IncomeForm[K],
@@ -542,32 +753,55 @@ export default function Income() {
           paddingBottom: insets.bottom + 140,
         }}
       >
-        <View className="flex-row mt-6 gap-3">
+        <View
+          style={{
+            flexDirection: "row",
+            flexWrap: "wrap",
+            justifyContent: "space-between",
+            gap: 14,
+            paddingTop: 24,
+            paddingBottom: 16,
+          }}
+        >
           <Metric
-            label="Total income"
-            value={formatAmount(totalIncome)}
-            caption="All recorded income"
-            tone="green"
+            label="Income Total"
+            value={formatCompactAmount(totalIncome)}
+            caption="Total income received"
+            tone="total"
+            icon="wallet-outline"
+            topIcon="trending-up-outline"
+            footerLabel="All records"
+            badgeText="₹"
+            cardWidth={metricCardWidth}
           />
           <Metric
-            label="This month"
-            value={formatAmount(monthlyIncome)}
-            caption="Income this month"
-            tone="mint"
+            label="Income This Month"
+            value={formatCompactAmount(monthlyIncome)}
+            caption="Income received this month"
+            tone="monthly"
+            icon="cash-outline"
+            topIcon="trending-up-outline"
+            footerLabel="Current month"
+            badgeText="₹"
+            cardWidth={metricCardWidth}
           />
-        </View>
-        <View className="flex-row  gap-3">
           <Metric
-            label="Remaining"
-            value={formatAmount(remainingIncome)}
+            label="Remaining Amount"
+            value={formatCompactAmount(remainingIncome)}
             caption="Available income"
-            tone="blue"
+            tone="remaining"
+            icon="wallet-outline"
+            topIcon="pie-chart-outline"
+            cardWidth={metricCardWidth}
           />
           <Metric
-            label="Recurring"
-            value={formatAmount(recurringIncome)}
-            caption="Recurring records"
-            tone="rose"
+            label="Recurring Income"
+            value={formatCompactAmount(recurringIncome)}
+            caption="Recurring income received"
+            tone="recurring"
+            icon="repeat-outline"
+            topIcon="flag-outline"
+            cardWidth={metricCardWidth}
           />
         </View>
         <View className="mb-5 flex-row items-center justify-between rounded-2xl border border-[#E5E8E2] bg-white px-4 py-3.5">
