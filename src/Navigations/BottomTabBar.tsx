@@ -101,12 +101,12 @@ export function BottomTabBar({
         </View>
       </LinearGradient>
 
-      {/*
-        Pure black spacer that fills the system navigation bar / gesture zone.
-        The container is transparent so the green gradient corners look correct.
-        Only this spacer (below the gradient) is black.
-      */}
-      <View style={[styles.safeAreaSpacer, { height: insets.bottom }]} />
+      <LinearGradient
+        colors={Colors.greenGradient}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={{ height: insets.bottom }}
+      />
     </View>
   );
 }
@@ -117,8 +117,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    // transparent — so the green gradient rounded corners are not
-    // contaminated by a black background bleeding through the corners
+    // Keep the container transparent so the rounded gradient corners stay clean.
     backgroundColor: "transparent",
   },
   gradient: {
@@ -159,9 +158,5 @@ const styles = StyleSheet.create({
   },
   tabLabel: {
     fontSize: 10,
-  },
-  // Only the area BELOW the green bar is black (fills gesture/nav bar zone)
-  safeAreaSpacer: {
-    backgroundColor: "#000000",
   },
 });

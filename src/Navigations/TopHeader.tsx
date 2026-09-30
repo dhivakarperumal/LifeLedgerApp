@@ -13,8 +13,8 @@ import {
     View,
     useWindowDimensions,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
 import { getStoredUser, logoutUser } from "../api";
+import { GradientSafeAreaView as SafeAreaView } from "../components/GradientSafeAreaView";
 import { Colors } from "../constants/colors";
 
 type UserProfile = {

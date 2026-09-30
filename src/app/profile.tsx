@@ -8,14 +8,12 @@ import {
   Pressable,
   ScrollView,
   Text,
-  TextInput,
   View,
 } from "react-native";
-import {
-  SafeAreaView,
-  useSafeAreaInsets,
-} from "react-native-safe-area-context";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import api, { getApiErrorMessage, getStoredUser, logoutUser } from "../api";
+import { FormInput } from "../components/FormControls";
+import { GradientSafeAreaView as SafeAreaView } from "../components/GradientSafeAreaView";
 import { Colors } from "../constants/colors";
 
 type UserProfile = {
@@ -244,7 +242,7 @@ export default function Profile() {
   return (
     <SafeAreaView className="flex-1 bg-[#F5F6F2]" edges={["bottom"]}>
       <LinearGradient
-        colors={[Colors.headerStart, Colors.headerEnd]}
+        colors={Colors.greenGradient}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={{
@@ -370,8 +368,9 @@ export default function Profile() {
               <Text className="mb-1.5 text-xs font-bold text-[#526058]">
                 {field.label}
               </Text>
-              <View className="flex-row items-center rounded-xl border border-[#E1E6E0] bg-[#F9FAF8] px-3">
-                <TextInput
+              <View className="flex-row items-center rounded-xl border border-[#E5EAE7] bg-[#F9FAF8] px-3">
+                <FormInput
+                  bordered={false}
                   accessibilityLabel={field.label}
                   autoComplete={field.autoComplete}
                   className="h-12 flex-1 text-sm text-[#293930]"
@@ -383,7 +382,6 @@ export default function Profile() {
                     setPasswordStatus({ type: "", message: "" });
                   }}
                   placeholder={field.label}
-                  placeholderTextColor="#9AA39D"
                   secureTextEntry={!visibleFields[field.key]}
                   value={passwords[field.key]}
                 />

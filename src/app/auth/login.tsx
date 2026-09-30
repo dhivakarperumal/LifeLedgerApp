@@ -1,21 +1,21 @@
-import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
+import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useState } from "react";
 import {
-  Alert,
-  Image,
-  ImageBackground,
-  KeyboardAvoidingView,
-  Platform,
-  Pressable,
-  ScrollView,
-  Text,
-  TextInput,
-  View,
+    Alert,
+    Image,
+    ImageBackground,
+    KeyboardAvoidingView,
+    Platform,
+    Pressable,
+    ScrollView,
+    Text,
+    View,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
 import { getApiErrorMessage, loginWithIdentifier } from "../../api";
+import { FormInput } from "../../components/FormControls";
+import { GradientSafeAreaView as SafeAreaView } from "../../components/GradientSafeAreaView";
 import { Colors } from "../../constants/colors";
 
 // ─── Feature icon pill ───────────────────────────────────────────────────────
@@ -215,12 +215,12 @@ export default function LoginScreen() {
                   size={20}
                   color={Colors.textMuted}
                 />
-                <TextInput
+                <FormInput
+                  bordered={false}
                   value={identifier}
                   onChangeText={setIdentifier}
                   accessibilityLabel="Email or mobile number"
                   placeholder="Email or mobile number"
-                  placeholderTextColor={Colors.textMuted}
                   autoCapitalize="none"
                   autoCorrect={false}
                   autoComplete="username"
@@ -243,12 +243,12 @@ export default function LoginScreen() {
                   size={20}
                   color={Colors.textMuted}
                 />
-                <TextInput
+                <FormInput
+                  bordered={false}
                   value={password}
                   onChangeText={setPassword}
                   accessibilityLabel="Password"
                   placeholder="Password"
-                  placeholderTextColor={Colors.textMuted}
                   secureTextEntry={!showPassword}
                   autoComplete="current-password"
                   returnKeyType="done"
@@ -360,8 +360,6 @@ export default function LoginScreen() {
               </Text>
               <View className="h-px flex-1 bg-[#E5EAE7]" />
             </View>
-
-            
 
             {/* Sign up link */}
             <View className="flex-row items-center justify-center gap-1">

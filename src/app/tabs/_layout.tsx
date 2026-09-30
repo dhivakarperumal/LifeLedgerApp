@@ -41,7 +41,7 @@ export default function TabsLayout() {
     <>
       <StatusBar
         barStyle="light-content"
-        backgroundColor={Colors.headerStart}
+        backgroundColor={Colors.greenGradient[0]}
       />
       {/* Set Android system navigation bar buttons to light (white) for black background */}
       {Platform.OS === "android" && <NavigationBar style="dark" />}
@@ -68,7 +68,7 @@ export default function TabsLayout() {
           headerShadowVisible: false,
           headerBackground: () => (
             <LinearGradient
-              colors={[Colors.headerStart, Colors.headerEnd]}
+              colors={Colors.greenGradient}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
               style={{ flex: 1 }}

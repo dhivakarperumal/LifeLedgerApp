@@ -2,22 +2,14 @@ import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useMemo, useState } from "react";
-import {
-    Alert,
-    Modal,
-    Pressable,
-    ScrollView,
-    Text,
-    View
-} from "react-native";
-import {
-    SafeAreaView,
-    useSafeAreaInsets,
-} from "react-native-safe-area-context";
+import { Alert, Modal, Pressable, ScrollView, Text, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import api, { getApiErrorMessage, logoutUser } from "../../api";
 import { AddButton } from "../../components/AddButton";
 import { FormInput, FormOption } from "../../components/FormControls";
+import { GradientSafeAreaView as SafeAreaView } from "../../components/GradientSafeAreaView";
 import { SearchBar } from "../../components/SearchBar";
+import { Colors } from "../../constants/colors";
 
 type ExpenseItem = {
   id: number | string;
@@ -365,7 +357,7 @@ export default function Expenses() {
       <View style={{ flex: 1, backgroundColor: "#F0F4F8" }}>
         {/* ── Hero Header ── */}
         <LinearGradient
-          colors={["#1B4332", "#2D6A4F", "#40916C"]}
+          colors={Colors.greenGradient}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={{

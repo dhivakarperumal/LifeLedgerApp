@@ -3,18 +3,18 @@ import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useState } from "react";
 import {
-  Alert,
-  Image,
-  KeyboardAvoidingView,
-  Platform,
-  Pressable,
-  ScrollView,
-  Text,
-  TextInput,
-  View,
+    Alert,
+    Image,
+    KeyboardAvoidingView,
+    Platform,
+    Pressable,
+    ScrollView,
+    Text,
+    View,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
 import { getApiErrorMessage, registerUser } from "../../api";
+import { FormInput } from "../../components/FormControls";
+import { GradientSafeAreaView as SafeAreaView } from "../../components/GradientSafeAreaView";
 import { Colors } from "../../constants/colors";
 
 type FormState = {
@@ -50,18 +50,16 @@ function FormField({
 }) {
   return (
     <View className="mb-[14px]">
-      <Text className="mb-2 text-sm font-semibold text-[#263238]">
-        {label}
-      </Text>
+      <Text className="mb-2 text-sm font-semibold text-[#263238]">{label}</Text>
       <View className="min-h-[52px] flex-row items-center rounded-[14px] border border-[#E5EAE7] bg-[#F9FAFC] px-[14px]">
         <Ionicons name={icon} size={20} color={Colors.textMuted} />
-        <TextInput
+        <FormInput
+          bordered={false}
           {...props}
           value={value}
           onChangeText={onChangeText}
           accessibilityLabel={label}
           placeholder={placeholder}
-          placeholderTextColor={Colors.textMuted}
           selectionColor={Colors.primary}
           className="ml-2.5 flex-1 py-[14px] text-base text-[#263238]"
         />
@@ -87,21 +85,19 @@ function PasswordField({
 }) {
   return (
     <View className="mb-[14px]">
-      <Text className="mb-2 text-sm font-semibold text-[#263238]">
-        {label}
-      </Text>
+      <Text className="mb-2 text-sm font-semibold text-[#263238]">{label}</Text>
       <View className="min-h-[52px] flex-row items-center rounded-[14px] border border-[#E5EAE7] bg-[#F9FAFC] px-[14px]">
         <Ionicons
           name="lock-closed-outline"
           size={20}
           color={Colors.textMuted}
         />
-        <TextInput
+        <FormInput
+          bordered={false}
           value={value}
           onChangeText={onChangeText}
           accessibilityLabel={label}
           placeholder={placeholder}
-          placeholderTextColor={Colors.textMuted}
           secureTextEntry={!visible}
           autoComplete="password"
           selectionColor={Colors.primary}

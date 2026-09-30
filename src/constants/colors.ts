@@ -1,4 +1,5 @@
 export const Colors = {
+  greenGradient: ["#1a361d", "#2f5d34", "#418249"],
   primary: "#366039",
   primaryDark: "#264B2A",
   primaryLight: "#ADBEA3",

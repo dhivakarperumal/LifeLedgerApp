@@ -14,13 +14,11 @@ import {
     TextInput,
     View,
 } from "react-native";
-import {
-    SafeAreaView,
-    useSafeAreaInsets,
-} from "react-native-safe-area-context";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import api, { API_BASE_URL, getApiErrorMessage, logoutUser } from "../api";
 import { AddButton } from "../components/AddButton";
 import { FormInput, FormOption } from "../components/FormControls";
+import { GradientSafeAreaView as SafeAreaView } from "../components/GradientSafeAreaView";
 import { Colors } from "../constants/colors";
 
 type IncomeRecord = {
@@ -487,7 +485,7 @@ export default function Income() {
   return (
     <SafeAreaView className="flex-1 bg-[#F5F6F2]" edges={["bottom"]}>
       <LinearGradient
-        colors={[Colors.headerStart, Colors.headerEnd]}
+        colors={Colors.greenGradient}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={{
@@ -1081,11 +1079,10 @@ export default function Income() {
             <Text className="mb-4 mt-1 text-xs text-[#818B84]">
               Set your income budget for the month
             </Text>
-            <TextInput
-              className="mb-5 rounded-xl border border-[#E1E6E0] bg-white px-4 py-3 text-base text-[#25332C]"
+            <FormInput
+              className="mb-5 rounded-xl bg-white px-4 py-3 text-base text-[#25332C]"
               keyboardType="decimal-pad"
               placeholder="0.00"
-              placeholderTextColor="#9AA39D"
               value={budgetDraft}
               onChangeText={setBudgetDraft}
             />

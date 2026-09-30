@@ -10,12 +10,10 @@ import {
     Text,
     View,
 } from "react-native";
-import {
-    SafeAreaView,
-    useSafeAreaInsets,
-} from "react-native-safe-area-context";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { TopHeader } from "../../Navigations/TopHeader";
 import api, { getStoredUser } from "../../api";
+import { GradientSafeAreaView as SafeAreaView } from "../../components/GradientSafeAreaView";
 import { Colors } from "../../constants/colors";
 import { HOME_QUOTES, HOME_QUOTE_INDEX_KEY } from "../../constants/homeQuotes";
 
@@ -352,9 +350,33 @@ export default function Index() {
 
           setTopCategories(sortedCats);
 
-          setRecentTransactions(expensesData.slice(0, 3));
-          setRecentMemories(memoriesData.slice(0, 3));
-          setRecentDiary(diaryData.slice(0, 3));
+          const currentDateKey = dateKey(now);
+          setRecentTransactions(
+            expensesData
+              .filter(
+                (expense) =>
+                  eventDateKey(expense.expense_date) === currentDateKey,
+              )
+              .slice(0, 3),
+          );
+          setRecentMemories(
+            memoriesData
+              .filter(
+                (memory: any) =>
+                  eventDateKey(memory.memory_date || memory.created_at) ===
+                  currentDateKey,
+              )
+              .slice(0, 3),
+          );
+          setRecentDiary(
+            diaryData
+              .filter(
+                (diary: any) =>
+                  eventDateKey(diary.entry_date || diary.created_at) ===
+                  currentDateKey,
+              )
+              .slice(0, 3),
+          );
           setCalendarEvents(eventsData);
         } catch (error) {
           console.error("Failed to fetch home data:", error);
@@ -399,7 +421,7 @@ export default function Index() {
           contentContainerStyle={{ paddingBottom: 104 + insets.bottom }}
         >
           <LinearGradient
-            colors={[Colors.headerStart, Colors.headerEnd]}
+            colors={Colors.greenGradient}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={{
@@ -674,8 +696,8 @@ export default function Index() {
                   )}
                 </View>
 
-                {/* --- Recent Transactions --- */}
-                <SectionHeader title="Recent Transactions" />
+                {/* --- Today's Expenses --- */}
+                <SectionHeader title="Today's Expenses" />
                 {recentTransactions.length > 0 ? (
                   recentTransactions.map((tx) => {
                     const iconName =
@@ -723,11 +745,11 @@ export default function Index() {
                     );
                   })
                 ) : (
-                  <EmptyStateCard message="No recent transactions found." />
+                  <EmptyStateCard message="No expenses recorded today." />
                 )}
 
-                {/* --- Recent Memories --- */}
-                <SectionHeader title="Recent Memories" />
+                {/* --- Today's Memories --- */}
+                <SectionHeader title="Today's Memories" />
                 {recentMemories.length > 0 ? (
                   recentMemories.map((memory) => {
                     return (
@@ -768,11 +790,11 @@ export default function Index() {
                     );
                   })
                 ) : (
-                  <EmptyStateCard message="No recent memories found." />
+                  <EmptyStateCard message="No memories recorded today." />
                 )}
 
-                {/* --- Recent Diary Entries --- */}
-                <SectionHeader title="Recent Diary Entries" />
+                {/* --- Today's Diary Entries --- */}
+                <SectionHeader title="Today's Diary Entries" />
                 {recentDiary.length > 0 ? (
                   recentDiary.map((diary) => {
                     return (
@@ -811,7 +833,7 @@ export default function Index() {
                     );
                   })
                 ) : (
-                  <EmptyStateCard message="No recent diary entries found." />
+                  <EmptyStateCard message="No diary entries recorded today." />
                 )}
 
                 {/* --- Recent Events --- */}
