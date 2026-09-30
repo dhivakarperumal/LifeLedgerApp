@@ -12,7 +12,7 @@ export default function WelcomeScreen() {
       <StatusBar style="light" />
       <View className="flex-1">
         <ImageBackground
-          source={require("../../../assets/images/bgbanner.png")}
+          source={require("../../../assets/images/loading_bg.png")}
           resizeMode="cover"
           className="flex-1 w-full justify-end"
         >

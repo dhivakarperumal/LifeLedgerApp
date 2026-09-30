@@ -10,9 +10,9 @@ import {
     ScrollView,
     Text,
     View,
-    useWindowDimensions
+    useWindowDimensions,
 } from "react-native";
-import { getStoredUser, logoutUser } from "../api";
+import api, { getStoredUser, logoutUser } from "../api";
 import { GradientSafeAreaView as SafeAreaView } from "../components/GradientSafeAreaView";
 import { Colors } from "../constants/colors";
 
@@ -20,6 +20,31 @@ type UserProfile = {
   name?: string;
   email?: string;
 };
+
+type NotificationItem = {
+  id: number | string;
+  name: string;
+  type: string;
+  date: string;
+  time: string;
+};
+
+function notificationDateKey(value?: string) {
+  if (!value) return "";
+  if (/^\d{4}-\d{2}-\d{2}/.test(value)) return value.slice(0, 10);
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime()) ? "" : `${parsed.getFullYear()}-${String(parsed.getMonth() + 1).padStart(2, "0")}-${String(parsed.getDate()).padStart(2, "0")}`;
+}
+
+function formatNotificationDate(value?: string) {
+  if (!value) return "";
+  const normalized = /^\d{4}-\d{2}-\d{2}$/.test(value)
+    ? `${value}T12:00:00`
+    : value;
+  const parsed = new Date(normalized);
+  if (Number.isNaN(parsed.getTime())) return value;
+  return parsed.toLocaleDateString("en-CA");
+}
 
 export function TopHeader() {
   const router = useRouter();
@@ -29,6 +54,7 @@ export function TopHeader() {
   const [sideMenuMounted, setSideMenuMounted] = useState(false);
   const [menuVisible, setMenuVisible] = useState(false);
   const [notificationsVisible, setNotificationsVisible] = useState(false);
+  const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [drawerPosition] = useState(() => new Animated.Value(-width));
 
@@ -48,29 +74,83 @@ export function TopHeader() {
 
   const displayName = user?.name?.trim() || user?.email?.trim() || "User";
   const userInitial = displayName.charAt(0).toUpperCase();
-  const notifications = [
-    {
-      id: 1,
-      name: "Dharni M",
-      type: "BIRTHDAY",
-      date: "2026-09-07",
-      time: "08:01",
-    },
-    {
-      id: 2,
-      name: "Deva Birthday",
-      type: "BIRTHDAY",
-      date: "2026-09-08",
-      time: "09:10",
-    },
-    {
-      id: 3,
-      name: "Madhu Birthday",
-      type: "BIRTHDAY",
-      date: "2026-09-11",
-      time: "09:11",
-    },
-  ];
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadNotifications = async () => {
+      try {
+        const [eventsResponse, remindersResponse] = await Promise.all([
+          api.get("/calendar/events").catch(() => ({ data: [] })),
+          api.get("/calendar/reminders").catch(() => ({ data: [] })),
+        ]);
+
+        if (cancelled) return;
+
+        const normalizeItem = (item: any): NotificationItem | null => {
+          const date =
+            item?.startDate ||
+            item?.start_date ||
+            item?.event_date ||
+            item?.date ||
+            item?.reminderDate ||
+            item?.reminder_date ||
+            "";
+          const time =
+            item?.startTime ||
+            item?.start_time ||
+            item?.reminderTime ||
+            item?.reminder_time ||
+            "";
+
+          if (!item?.title && !item?.name) return null;
+
+          return {
+            id: item?.id ?? `${item?.title ?? item?.name ?? "event"}-${date}-${time}`,
+            name: item?.title || item?.name || "Upcoming Event",
+            type: (item?.category || item?.type || "EVENT").toUpperCase(),
+            date: date ? formatNotificationDate(date) : "",
+            time: time || "All day",
+          };
+        };
+
+        const events = Array.isArray(eventsResponse?.data)
+          ? eventsResponse.data
+          : Array.isArray(eventsResponse?.data?.data)
+            ? eventsResponse.data.data
+            : [];
+        const reminders = Array.isArray(remindersResponse?.data)
+          ? remindersResponse.data
+          : Array.isArray(remindersResponse?.data?.data)
+            ? remindersResponse.data.data
+            : [];
+
+        const upcoming = [...events, ...reminders]
+          .map(normalizeItem)
+          .filter((item): item is NotificationItem => !!item)
+          .filter((item) => item.date || item.time)
+          .sort((a, b) => {
+            const dateDiff = (notificationDateKey(a.date) || "9999-99-99").localeCompare(
+              notificationDateKey(b.date) || "9999-99-99",
+            );
+            if (dateDiff !== 0) return dateDiff;
+            return (a.time || "99:99").localeCompare(b.time || "99:99");
+          })
+          .slice(0, 3);
+
+        setNotifications(upcoming);
+      } catch {
+        if (!cancelled) setNotifications([]);
+      }
+    };
+
+    void loadNotifications();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   const openSideMenu = () => {
     setSideMenuMounted(true);
     setSideMenuVisible(true);
@@ -187,48 +267,56 @@ export function TopHeader() {
         onRequestClose={() => setNotificationsVisible(false)}
       >
         <Pressable
-          className="flex-1 items-center justify-center bg-[rgba(5,20,11,0.35)] px-4"
+          className="flex-1 items-center justify-center bg-[rgba(16,28,18,0.48)] px-5"
           onPress={() => setNotificationsVisible(false)}
         >
           <Pressable
             className="w-full overflow-hidden rounded-[30px] bg-[#F4F5F3] p-5 shadow-2xl"
             onPress={(event) => event.stopPropagation()}
-            style={{ maxWidth: 420 }}
+            style={{ maxWidth: 430, marginVertical: 24 }}
           >
-            <View className="mb-4 flex-row items-center justify-between">
-              <Text className="text-[28px] font-black text-[#1D2B1D]">
+            <View className="mb-4 flex-row items-center justify-between gap-3">
+              <Text className="text-[18px] font-black text-[#1D2B1D]">
                 Notifications
               </Text>
               <View className="rounded-full border border-[#E74C4C] bg-[#FDE7E7] px-3 py-1.5">
-                <Text className="text-[11px] font-bold text-[#E74C4C]">
-                  3 UPCOMING
+                <Text className="text-[9px] font-bold text-[#E74C4C]">
+                  {notifications.length || 0} UPCOMING
                 </Text>
               </View>
             </View>
 
             <View className="mt-1 gap-3">
-              {notifications.map((item) => (
-                <View key={item.id} className="border-b border-[#D7DDD8] pb-3">
-                  <View className="flex-row items-end justify-between">
-                    <Text className="text-[24px] font-black text-[#1D2B1D]">
-                      {item.name}
-                    </Text>
-                    <Text className="text-[15px] font-semibold text-[#5D6A5D]">
-                      {item.date} • {item.time}
+              {notifications.length > 0 ? (
+                notifications.map((item) => (
+                  <View key={item.id} className="border-b border-[#D7DDD8] pb-3">
+                    <View className="flex-row items-end justify-between gap-3">
+                      <Text className="flex-1 text-[15px] font-black text-[#1D2B1D]">
+                        {item.name}
+                      </Text>
+                      <Text className="text-[11px] font-medium text-[#5D6A5D]">
+                        {item.date}{item.time ? ` • ${item.time}` : ""}
+                      </Text>
+                    </View>
+                    <Text className="mt-1 text-[9px] font-bold tracking-[1.2px] text-[#5D6A5D]">
+                      {item.type}
                     </Text>
                   </View>
-                  <Text className="mt-1 text-[12px] font-bold tracking-[2px] text-[#5D6A5D]">
-                    {item.type}
+                ))
+              ) : (
+                <View className="items-center justify-center py-4">
+                  <Text className="text-[14px] font-medium text-[#5D6A5D]">
+                    No upcoming events found.
                   </Text>
                 </View>
-              ))}
+              )}
             </View>
 
             <Pressable
               className="mt-6 items-center justify-center rounded-[22px] bg-[#366039] px-4 py-4"
               onPress={() => setNotificationsVisible(false)}
             >
-              <Text className="text-[17px] font-bold uppercase tracking-[1px] text-white">
+              <Text className="text-[13px] font-bold uppercase tracking-[1px] text-white">
                 Manage Reminders
               </Text>
             </Pressable>
