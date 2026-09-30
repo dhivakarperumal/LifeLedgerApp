@@ -12,6 +12,7 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import Svg, { Circle } from "react-native-svg";
 import { TopHeader } from "../../Navigations/TopHeader";
 import api, { getStoredUser } from "../../api";
 import { GradientSafeAreaView as SafeAreaView } from "../../components/GradientSafeAreaView";
@@ -26,13 +27,40 @@ type StoredUser = {
 type ExpenseItem = {
   id: number | string;
   title: string;
-  category?: string;
+  category?:
+    | string
+    | {
+        name?: string;
+        category_name?: string;
+        categoryName?: string;
+      };
+  category_name?: string;
+  categoryName?: string;
   expense_amount?: number | string;
   amount?: number | string;
   expense_date?: string;
   payment_method?: string;
   notes?: string;
   recurring?: string;
+};
+
+type IncomeItem = {
+  amount?: number | string;
+  income_date?: string;
+};
+
+type MonthlyOverviewItem = {
+  key: string;
+  label: string;
+  income: number;
+  expense: number;
+};
+
+type BudgetCategoryItem = {
+  label: string;
+  amount: number;
+  share: number;
+  color: string;
 };
 
 type CalendarEvent = {
@@ -72,6 +100,11 @@ function formatAmount(value: number | string | undefined) {
   })}`;
 }
 
+function formatAxisAmount(value: number) {
+  if (value >= 1000) return `${Math.round(value / 1000)}K`;
+  return String(Math.round(value));
+}
+
 function formatDate(dateString?: string) {
   if (!dateString) return "—";
   const date = new Date(dateString);
@@ -92,6 +125,35 @@ function eventDateKey(value?: string) {
   if (/^\d{4}-\d{2}-\d{2}/.test(value)) return value.slice(0, 10);
   const date = new Date(value);
   return Number.isNaN(date.getTime()) ? "" : dateKey(date);
+}
+
+function monthDateKey(value?: string) {
+  if (!value) return "";
+  if (/^\d{4}-\d{2}/.test(value)) return value.slice(0, 7);
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+}
+
+function getIncomeRecords(data: any): IncomeItem[] {
+  if (Array.isArray(data)) return data;
+  if (Array.isArray(data?.incomes)) return data.incomes;
+  if (Array.isArray(data?.data)) return data.data;
+  if (Array.isArray(data?.data?.incomes)) return data.data.incomes;
+  return [];
+}
+
+function getExpenseCategoryName(expense: ExpenseItem) {
+  const category = expense.category;
+  if (typeof category === "string" && category.trim()) return category.trim();
+  if (category && typeof category === "object") {
+    const nestedName =
+      category.name || category.category_name || category.categoryName;
+    if (nestedName?.trim()) return nestedName.trim();
+  }
+  return (
+    expense.category_name?.trim() || expense.categoryName?.trim() || "Other"
+  );
 }
 
 function getCalendarEvents(data: any): CalendarEvent[] {
@@ -167,6 +229,13 @@ export default function Index() {
   const [recentMemories, setRecentMemories] = useState<any[]>([]);
   const [recentDiary, setRecentDiary] = useState<any[]>([]);
   const [calendarEvents, setCalendarEvents] = useState<CalendarEvent[]>([]);
+  const [monthlyOverview, setMonthlyOverview] = useState<MonthlyOverviewItem[]>(
+    [],
+  );
+  const [monthlyBudget, setMonthlyBudget] = useState(0);
+  const [budgetCategories, setBudgetCategories] = useState<
+    BudgetCategoryItem[]
+  >([]);
 
   const [overview, setOverview] = useState({
     totalSpent: 0,
@@ -240,13 +309,21 @@ export default function Index() {
       const fetchData = async () => {
         try {
           setIsLoading(true);
-          const [expensesRes, memoriesRes, diaryRes, eventsRes] =
-            await Promise.allSettled([
-              api.get("/expenses"),
-              api.get("/memories"),
-              api.get("/diary"),
-              api.get("/calendar/events"),
-            ]);
+          const [
+            expensesRes,
+            memoriesRes,
+            diaryRes,
+            eventsRes,
+            incomesRes,
+            budgetRes,
+          ] = await Promise.allSettled([
+            api.get("/expenses"),
+            api.get("/memories"),
+            api.get("/diary"),
+            api.get("/calendar/events"),
+            api.get("/incomes"),
+            api.get("/incomes/monthly-budget"),
+          ]);
 
           if (!isActive) return;
 
@@ -291,6 +368,18 @@ export default function Index() {
             eventsRes.status === "fulfilled"
               ? getCalendarEvents(eventsRes.value.data)
               : [];
+          const incomeData =
+            incomesRes.status === "fulfilled"
+              ? getIncomeRecords(incomesRes.value.data)
+              : [];
+          if (budgetRes.status === "fulfilled") {
+            const value = Number(
+              budgetRes.value.data?.monthly_budget ??
+                budgetRes.value.data?.data?.monthly_budget ??
+                0,
+            );
+            setMonthlyBudget(Number.isFinite(value) ? Math.max(value, 0) : 0);
+          }
 
           // Process expenses stats
           const now = new Date();
@@ -305,6 +394,25 @@ export default function Index() {
           let todaySpent = 0;
           let thisMonthSpent = 0;
           let thisWeekSpent = 0;
+          const monthlyCategoryTotals: Record<string, number> = {};
+          const currentMonthKey = `${currentYear}-${String(currentMonth + 1).padStart(2, "0")}`;
+
+          const monthlyData = Array.from({ length: 6 }, (_, index) => {
+            const monthDate = new Date(
+              currentYear,
+              currentMonth - 5 + index,
+              1,
+            );
+            return {
+              key: `${monthDate.getFullYear()}-${String(monthDate.getMonth() + 1).padStart(2, "0")}`,
+              label: monthDate.toLocaleDateString("en-US", { month: "short" }),
+              income: 0,
+              expense: 0,
+            };
+          });
+          const monthlyDataByKey = new Map(
+            monthlyData.map((month) => [month.key, month]),
+          );
 
           const categoryTotals: Record<string, number> = {};
 
@@ -334,9 +442,42 @@ export default function Index() {
               }
             }
 
-            const cat = exp.category || "Other";
+            const cat = getExpenseCategoryName(exp);
             categoryTotals[cat] = (categoryTotals[cat] || 0) + amount;
+            if (monthDateKey(exp.expense_date) === currentMonthKey) {
+              monthlyCategoryTotals[cat] =
+                (monthlyCategoryTotals[cat] || 0) + amount;
+            }
+
+            const month = monthlyDataByKey.get(monthDateKey(exp.expense_date));
+            if (month) month.expense += amount;
           });
+
+          incomeData.forEach((income) => {
+            const amount = Number(income.amount ?? 0);
+            if (!Number.isFinite(amount)) return;
+            const month = monthlyDataByKey.get(
+              monthDateKey(income.income_date),
+            );
+            if (month) month.income += amount;
+          });
+
+          setMonthlyOverview(monthlyData);
+          const budgetColors = ["#78965F", "#4D8762", "#EAB45B", "#67A6C2"];
+          setBudgetCategories(
+            Object.entries(monthlyCategoryTotals)
+              .sort((a, b) => b[1] - a[1])
+              .slice(0, 4)
+              .map(([label, amount], index) => ({
+                label,
+                amount,
+                share:
+                  thisMonthSpent > 0
+                    ? Math.round((amount / thisMonthSpent) * 100)
+                    : 0,
+                color: budgetColors[index] || Colors.primary,
+              })),
+          );
 
           setOverview({
             totalSpent,
@@ -418,6 +559,26 @@ export default function Index() {
       .map(eventDateKey)
       .includes(todayKey),
   );
+  const largestMonthlyAmount = Math.max(
+    0,
+    ...monthlyOverview.flatMap(({ income, expense }) => [income, expense]),
+  );
+  const chartMagnitude = largestMonthlyAmount
+    ? 10 ** Math.floor(Math.log10(largestMonthlyAmount))
+    : 1000;
+  const chartMaximum = largestMonthlyAmount
+    ? Math.ceil(largestMonthlyAmount / chartMagnitude) * chartMagnitude
+    : 1000;
+  const chartTicks = [
+    chartMaximum,
+    (chartMaximum * 2) / 3,
+    chartMaximum / 3,
+    0,
+  ];
+  const budgetUsage =
+    monthlyBudget > 0 ? (overview.thisMonth / monthlyBudget) * 100 : 0;
+  const budgetRingProgress = Math.min(budgetUsage, 100);
+  const budgetRingCircumference = 2 * Math.PI * 31;
 
   return (
     <SafeAreaView
@@ -451,7 +612,7 @@ export default function Index() {
             }}
           >
             <View className="h-11">
-              <TopHeader showLogo={false} />
+              <TopHeader />
             </View>
 
             <Text
@@ -725,12 +886,236 @@ export default function Index() {
                   )}
                 </View>
 
+                <View
+                  className="mt-4 rounded-[24px] bg-white px-4 py-4"
+                  style={{ backgroundColor: Colors.white }}
+                >
+                  <View className="flex-row items-center justify-between">
+                    <Text
+                      className="text-[13px] font-bold"
+                      style={{ color: Colors.textPrimary }}
+                    >
+                      Monthly Overview
+                    </Text>
+                    <View className="flex-row items-center rounded-full bg-[#F2F4F3] px-3 py-1.5">
+                      <Text
+                        className="mr-1 text-[10px] font-semibold"
+                        style={{ color: Colors.textSecondary }}
+                      >
+                        This Month
+                      </Text>
+                      <Ionicons
+                        name="chevron-down"
+                        size={12}
+                        color={Colors.textSecondary}
+                      />
+                    </View>
+                  </View>
+
+                  <View className="mt-4 flex-row">
+                    <View
+                      className="mr-2 justify-between"
+                      style={{ height: 92, width: 26 }}
+                    >
+                      {chartTicks.map((tick, index) => (
+                        <Text
+                          key={index}
+                          className="text-[8px]"
+                          style={{ color: Colors.textSecondary }}
+                        >
+                          {formatAxisAmount(tick)}
+                        </Text>
+                      ))}
+                    </View>
+
+                    <View className="flex-1">
+                      <View style={{ height: 92 }}>
+                        {[0, 1, 2, 3].map((line) => (
+                          <View
+                            key={line}
+                            style={{
+                              position: "absolute",
+                              top: (92 / 3) * line,
+                              left: 0,
+                              right: 0,
+                              borderTopWidth: 1,
+                              borderColor: "#EEF0EF",
+                            }}
+                          />
+                        ))}
+                        <View
+                          className="absolute bottom-0 left-0 right-0 flex-row items-end justify-around"
+                          style={{ height: 86 }}
+                        >
+                          {monthlyOverview.map((month) => (
+                            <View
+                              key={month.key}
+                              className="flex-1 flex-row items-end justify-center gap-[3px]"
+                              style={{ height: 86 }}
+                            >
+                              <View
+                                className="w-[8px] rounded-t-full"
+                                style={{
+                                  height:
+                                    month.income > 0
+                                      ? Math.max(
+                                          (month.income / chartMaximum) * 86,
+                                          3,
+                                        )
+                                      : 0,
+                                  backgroundColor: "#78965F",
+                                }}
+                              />
+                              <View
+                                className="w-[8px] rounded-t-full"
+                                style={{
+                                  height:
+                                    month.expense > 0
+                                      ? Math.max(
+                                          (month.expense / chartMaximum) * 86,
+                                          3,
+                                        )
+                                      : 0,
+                                  backgroundColor: "#FF756B",
+                                }}
+                              />
+                            </View>
+                          ))}
+                        </View>
+                      </View>
+
+                      <View className="mt-1 flex-row justify-around">
+                        {monthlyOverview.map((month) => (
+                          <Text
+                            key={month.key}
+                            className="flex-1 text-center text-[9px]"
+                            style={{ color: Colors.textSecondary }}
+                          >
+                            {month.label}
+                          </Text>
+                        ))}
+                      </View>
+                    </View>
+                  </View>
+
+                  <View className="mt-3 flex-row items-center justify-center gap-4">
+                    <View className="flex-row items-center">
+                      <View
+                        className="mr-1.5 h-2 w-2 rounded-full"
+                        style={{ backgroundColor: "#78965F" }}
+                      />
+                      <Text
+                        className="text-[10px]"
+                        style={{ color: Colors.textPrimary }}
+                      >
+                        Income
+                      </Text>
+                    </View>
+                    <View className="flex-row items-center">
+                      <View
+                        className="mr-1.5 h-2 w-2 rounded-full"
+                        style={{ backgroundColor: "#FF756B" }}
+                      />
+                      <Text
+                        className="text-[10px]"
+                        style={{ color: Colors.textPrimary }}
+                      >
+                        Expense
+                      </Text>
+                    </View>
+                  </View>
+                </View>
+
+                <View
+                  className="mt-4 rounded-[24px] bg-white px-4 py-4"
+                  style={{ backgroundColor: Colors.white }}
+                >
+                  <View className="flex-row items-center justify-between">
+                    <Text
+                      className="text-[14px] font-bold"
+                      style={{ color: Colors.textPrimary }}
+                    >
+                      Monthly Budget
+                    </Text>
+                    <Pressable
+                      accessibilityRole="button"
+                      onPress={() => router.push("/income")}
+                      className="flex-row items-center rounded-full bg-[#78965F] px-3 py-2"
+                    >
+                      <Ionicons
+                        name={monthlyBudget > 0 ? "create-outline" : "add"}
+                        size={14}
+                        color={Colors.white}
+                      />
+                      <Text className="ml-1 text-[10px] font-bold text-white">
+                        {monthlyBudget > 0 ? "Edit Budget" : "Add Budget"}
+                      </Text>
+                    </Pressable>
+                  </View>
+
+                  <View className="mt-3 flex-row items-center">
+                    <View className="mr-3 items-center justify-center">
+                      <Svg width={76} height={76} viewBox="0 0 76 76">
+                        <Circle
+                          cx={38}
+                          cy={38}
+                          r={31}
+                          fill="none"
+                          stroke="#E1E7DF"
+                          strokeWidth={7}
+                        />
+                        <Circle
+                          cx={38}
+                          cy={38}
+                          r={31}
+                          fill="none"
+                          stroke="#78965F"
+                          strokeWidth={7}
+                          strokeLinecap="round"
+                          strokeDasharray={`${budgetRingCircumference} ${budgetRingCircumference}`}
+                          strokeDashoffset={
+                            budgetRingCircumference *
+                            (1 - budgetRingProgress / 100)
+                          }
+                          rotation={-90}
+                          origin="38, 38"
+                        />
+                      </Svg>
+                      <Text
+                        className="absolute text-[13px] font-bold"
+                        style={{ color: Colors.textPrimary }}
+                      >
+                        {monthlyBudget > 0
+                          ? `${Math.round(budgetUsage)}%`
+                          : "--"}
+                      </Text>
+                    </View>
+
+                    <View className="flex-1">
+                      <Text
+                        className="text-[17px] font-extrabold"
+                        style={{ color: Colors.textPrimary }}
+                      >
+                        {formatAmount(overview.thisMonth)}
+                      </Text>
+                      <Text
+                        className="mt-0.5 text-[10px]"
+                        style={{ color: Colors.textSecondary }}
+                      >
+                        of {formatAmount(monthlyBudget)} used
+                      </Text>
+                    </View>
+                  </View>
+
+                 
+                </View>
+
                 {/* --- Today's Expenses --- */}
                 <SectionHeader title="Today's Expenses" />
                 {recentTransactions.length > 0 ? (
                   recentTransactions.map((tx) => {
                     const iconName =
-                      categoryIcons[tx.category || "Other"] ||
+                      categoryIcons[getExpenseCategoryName(tx)] ||
                       "pricetag-outline";
                     return (
                       <View
@@ -760,7 +1145,7 @@ export default function Index() {
                             className="mt-1 text-sm"
                             style={{ color: Colors.textSecondary }}
                           >
-                            {tx.category || "Other"} ·{" "}
+                            {getExpenseCategoryName(tx)} ·{" "}
                             {formatDate(tx.expense_date)}
                           </Text>
                         </View>
