@@ -331,7 +331,10 @@ export function TopHeader() {
 
             <Pressable
               className="mt-6 items-center justify-center rounded-[22px] bg-[#366039] px-4 py-4"
-              onPress={() => setNotificationsVisible(false)}
+              onPress={() => {
+                setNotificationsVisible(false);
+                router.push("/calendar");
+              }}
             >
               <Text className="text-[13px] font-bold uppercase tracking-[1px] text-white">
                 Manage Reminders
