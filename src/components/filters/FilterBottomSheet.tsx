@@ -65,6 +65,8 @@ export type FilterBottomSheetProps = {
   currentFilters: FilterState;
   /** Called when the user presses Apply Filters */
   onApply: (filters: FilterState) => void;
+  /** Called when Reset is pressed, without closing the sheet. */
+  onReset?: () => void;
   /** Category list to populate the CategoryFilter */
   categories?: CategoryOption[];
   /** Allow multiple categories when the parent supports a comma-separated value. */
@@ -83,6 +85,7 @@ export function FilterBottomSheet({
   onClose,
   currentFilters,
   onApply,
+  onReset,
   categories = [],
   multiSelectCategories = false,
   sections = ["date", "category", "status", "amount", "sort"],
@@ -130,6 +133,7 @@ export function FilterBottomSheet({
 
   const handleReset = () => {
     setDraft(DEFAULT_FILTER_STATE);
+    onReset?.();
   };
 
   const toggleSection = (key: SectionKey) => {

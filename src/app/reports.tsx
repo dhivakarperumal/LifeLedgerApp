@@ -1008,6 +1008,10 @@ export default function Reports() {
             filterSheet={{
               currentFilters: filterValues,
               onApply: applyReportFilters,
+              onReset: () => {
+                setReportType("all");
+                setPaymentFilter("All");
+              },
               categories: categories.filter((category) => category !== "All"),
               sections: ["date", "category", "amount", "sort"],
             }}

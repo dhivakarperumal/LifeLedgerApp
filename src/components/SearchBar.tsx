@@ -14,7 +14,10 @@ import {
   type FilterBottomSheetProps,
 } from "./filters/FilterBottomSheet";
 import { FilterButton } from "./filters/FilterButton";
-import { countActiveFilters } from "./filters/filterTypes";
+import {
+  countActiveFilters,
+  DEFAULT_FILTER_STATE,
+} from "./filters/filterTypes";
 
 type SearchBarFilterSheet = Omit<FilterBottomSheetProps, "visible" | "onClose">;
 
@@ -73,7 +76,6 @@ export function SearchBar({
         {
           flexDirection: "row",
           alignItems: "center",
-          gap: 10,
         },
         style,
       ]}
@@ -84,11 +86,11 @@ export function SearchBar({
           flex: 1,
           flexDirection: "row",
           alignItems: "center",
-          minHeight: 50,
+          minHeight: 52,
           backgroundColor: Colors.white,
           borderRadius: 50,
-          paddingHorizontal: 16,
-          paddingVertical: 8,
+          paddingHorizontal: 10,
+          paddingVertical: 5,
           shadowColor: "#000",
           shadowOffset: { width: 0, height: 2 },
           shadowOpacity: 0.06,
@@ -117,7 +119,6 @@ export function SearchBar({
             padding: 0,
           }}
           returnKeyType="search"
-          clearButtonMode="while-editing"
         />
         {value.length > 0 && (
           <Pressable onPress={() => onChangeText("")} hitSlop={8}>
@@ -128,28 +129,31 @@ export function SearchBar({
             />
           </Pressable>
         )}
+        {(onFilterPress || filterSheet) && (
+          <FilterButton
+            onPress={
+              filterSheet
+                ? () => {
+                    setFilterSheetKey((key) => key + 1);
+                    setFilterSheetVisible(true);
+                  }
+                : onFilterPress || (() => undefined)
+            }
+            activeCount={filterCount}
+          />
+        )}
       </View>
 
-      {/* Inline filter button */}
-      {(onFilterPress || filterSheet) && (
-        <FilterButton
-          onPress={
-            filterSheet
-              ? () => {
-                  setFilterSheetKey((key) => key + 1);
-                  setFilterSheetVisible(true);
-                }
-              : onFilterPress || (() => undefined)
-          }
-          activeCount={filterCount}
-        />
-      )}
       {filterSheet && (
         <FilterBottomSheet
           key={filterSheetKey}
           {...filterSheet}
           visible={filterSheetVisible}
           onClose={() => setFilterSheetVisible(false)}
+          onReset={() => {
+            filterSheet.onApply(DEFAULT_FILTER_STATE);
+            filterSheet.onReset?.();
+          }}
         />
       )}
     </View>

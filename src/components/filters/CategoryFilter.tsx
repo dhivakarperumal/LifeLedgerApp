@@ -187,7 +187,10 @@ export function CategoryFilter({
                       : category,
                   ),
                 ].map((category) => {
-                  const isSelected = values.includes(category.value);
+                  const isSelected =
+                    category.value === ""
+                      ? values.length === 0
+                      : values.includes(category.value);
                   return (
                     <Pressable
                       key={category.value || "all-categories"}

@@ -879,6 +879,10 @@ export default function Diary() {
           filterSheet={{
             currentFilters: filterValues,
             onApply: applyDiaryFilters,
+            onReset: () => {
+              setSelectedFilter("all");
+              setSelectedMood("all");
+            },
             categories: filterCategories,
             sections: ["date", "category"],
           }}

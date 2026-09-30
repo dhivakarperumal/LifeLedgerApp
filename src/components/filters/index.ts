@@ -1,4 +1,9 @@
 // Filter system — import everything from here
+export {
+    createDateRangeSelection, DATE_RANGE_PRESETS,
+    DateRangeFilter, isDateInRange
+} from "../DateRangeFilter";
+export type { DateRangePreset, DateRangeSelection } from "../DateRangeFilter";
 export { AmountRangeFilter } from "./AmountRangeFilter";
 export { CategoryFilter } from "./CategoryFilter";
 export type { CategoryOption } from "./CategoryFilter";
@@ -15,4 +20,6 @@ export type { FilterState, SortOption, StatusOption } from "./filterTypes";
 export { SortFilter } from "./SortFilter";
 export { StatusFilter } from "./StatusFilter";
 export { useFilterState } from "./useFilterState";
+export { ViewModeBottomSheet } from "./ViewModeBottomSheet";
+export type { ViewMode, ViewModeBottomSheetProps } from "./ViewModeBottomSheet";
 

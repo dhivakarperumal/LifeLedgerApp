@@ -1,8 +1,8 @@
 import {
-  Poppins_400Regular,
-  Poppins_500Medium,
-  Poppins_600SemiBold,
-  Poppins_700Bold,
+    Poppins_400Regular,
+    Poppins_500Medium,
+    Poppins_600SemiBold,
+    Poppins_700Bold,
 } from "@expo-google-fonts/poppins";
 import { useFonts } from "expo-font";
 import { Text, TextInput, View } from "react-native";
@@ -23,12 +23,19 @@ type Props = {
 };
 
 function formatWithCommas(value: string): string {
-  const digits = value.replace(/[^0-9]/g, "");
-  return digits.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+  const normalized = value.replace(/[^0-9.]/g, "");
+  const [wholePart = "", ...fractionParts] = normalized.split(".");
+  const whole = wholePart ? Number(wholePart).toLocaleString("en-IN") : "";
+  const fraction = fractionParts.join("").slice(0, 2);
+  return `${whole}${fractionParts.length ? `.${fraction}` : ""}`;
 }
 
 function stripCommas(value: string): string {
-  return value.replace(/,/g, "");
+  const normalized = value.replace(/[^0-9.]/g, "");
+  const [whole = "", ...fractionParts] = normalized.split(".");
+  return fractionParts.length
+    ? `${whole}.${fractionParts.join("").slice(0, 2)}`
+    : whole;
 }
 
 /**
@@ -95,7 +102,7 @@ export function AmountRangeFilter({
                 onChangeText={(text) => onChangeFn(stripCommas(text))}
                 placeholder={placeholder}
                 placeholderTextColor={Colors.textSecondary}
-                keyboardType="numeric"
+                keyboardType="decimal-pad"
                 style={{
                   flex: 1,
                   fontSize: 14,

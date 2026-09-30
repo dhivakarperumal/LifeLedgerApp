@@ -13,7 +13,7 @@ import {
   ScrollView,
   Text,
   useWindowDimensions,
-  View
+  View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Svg, { Path } from "react-native-svg";
@@ -929,6 +929,7 @@ export default function Income() {
           filterSheet={{
             currentFilters: filterValues,
             onApply: applyIncomeFilters,
+            onReset: () => setIncomeFilter("All Income"),
             categories: incomeCategories,
             sections: ["date", "category", "amount", "sort"],
           }}

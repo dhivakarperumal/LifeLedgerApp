@@ -731,6 +731,7 @@ export default function Memories() {
           filterSheet={{
             currentFilters: filterValues,
             onApply: applyMemoryFilters,
+            onReset: () => setSelectedMediaType("all"),
             categories: filterCategories,
             sections: ["date", "category"],
           }}
