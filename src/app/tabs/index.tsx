@@ -347,7 +347,7 @@ export default function Index() {
           const catColors = [Colors.primary, Colors.olive, Colors.primaryLight];
           const sortedCats = Object.entries(categoryTotals)
             .sort((a, b) => b[1] - a[1])
-            .slice(0, 3)
+            .slice(0, 4)
             .map(([label, value], idx) => ({
               label,
               value,
@@ -658,82 +658,62 @@ export default function Index() {
                     </Text>
                   </View>
 
-                  <View className="mt-5 flex-row overflow-hidden rounded-full">
-                    <View
-                      className="h-3 rounded-l-full"
-                      style={{ backgroundColor: Colors.primary, flex: 66 }}
-                    />
-                    <View
-                      className="h-3"
-                      style={{ backgroundColor: "#6aa66a", flex: 22 }}
-                    />
-                    <View
-                      className="h-3"
-                      style={{ backgroundColor: "#9ecc9a", flex: 9 }}
-                    />
-                    <View
-                      className="h-3 rounded-r-full"
-                      style={{ backgroundColor: "#cfe7d2", flex: 3 }}
-                    />
-                  </View>
+                  {topCategories.length > 0 ? (
+                    <>
+                      <View className="mt-5 flex-row overflow-hidden rounded-full">
+                        {topCategories.map((category, index) => (
+                          <View
+                            key={category.label}
+                            className="h-3"
+                            style={{
+                              backgroundColor: category.color,
+                              flex: Math.max(category.value, 0.01),
+                              borderTopLeftRadius: index === 0 ? 999 : 0,
+                              borderBottomLeftRadius: index === 0 ? 999 : 0,
+                              borderTopRightRadius:
+                                index === topCategories.length - 1 ? 999 : 0,
+                              borderBottomRightRadius:
+                                index === topCategories.length - 1 ? 999 : 0,
+                            }}
+                          />
+                        ))}
+                      </View>
 
-                  <View className="mt-5 flex-row flex-wrap justify-between gap-y-4">
-                    <View className="w-[48%] flex-row items-center">
-                      <View
-                        className="mr-2 h-4 w-4 rounded-full"
-                        style={{ backgroundColor: Colors.primary }}
-                      />
-                      <Text
-                        className="text-[13px] font-medium"
-                        style={{ color: Colors.textPrimary }}
-                      >
-                        Bills{" "}
-                        <Text style={{ color: Colors.textPrimary }}>66%</Text>
-                      </Text>
-                    </View>
-
-                    <View className="w-[48%] flex-row items-center justify-start">
-                      <View
-                        className="mr-2 h-4 w-4 rounded-full"
-                        style={{ backgroundColor: "#6aa66a" }}
-                      />
-                      <Text
-                        className="text-[13px] font-medium"
-                        style={{ color: Colors.textPrimary }}
-                      >
-                        Travel{" "}
-                        <Text style={{ color: Colors.textPrimary }}>22%</Text>
-                      </Text>
-                    </View>
-
-                    <View className="w-[48%] flex-row items-center">
-                      <View
-                        className="mr-2 h-4 w-4 rounded-full"
-                        style={{ backgroundColor: "#9ecc9a" }}
-                      />
-                      <Text
-                        className="text-[13px] font-medium"
-                        style={{ color: Colors.textPrimary }}
-                      >
-                        Food{" "}
-                        <Text style={{ color: Colors.textPrimary }}>9%</Text>
-                      </Text>
-                    </View>
-
-                    <View className="w-[48%] flex-row items-center justify-start">
-                      <View
-                        className="mr-2 h-4 w-4 rounded-full"
-                        style={{ backgroundColor: "#cfe7d2" }}
-                      />
-                      <Text
-                        className="text-[13px] font-medium"
-                        style={{ color: Colors.textPrimary }}
-                      >
-                        Shopping{" "}
-                        <Text style={{ color: Colors.textPrimary }}>3%</Text>
-                      </Text>
-                    </View>
-                  </View>
+                      <View className="mt-5 flex-row flex-wrap justify-between gap-y-4">
+                        {topCategories.map((category) => (
+                          <View
+                            key={category.label}
+                            className="w-[48%] flex-row items-center"
+                          >
+                            <View
+                              className="mr-2 h-4 w-4 rounded-full"
+                              style={{ backgroundColor: category.color }}
+                            />
+                            <Text
+                              className="text-[13px] font-medium"
+                              style={{ color: Colors.textPrimary }}
+                              numberOfLines={1}
+                            >
+                              {category.label}{" "}
+                              <Text
+                                className="font-bold"
+                                style={{ color: Colors.olive }}
+                              >
+                                {category.percentage}%
+                              </Text>
+                            </Text>
+                          </View>
+                        ))}
+                      </View>
+                    </>
+                  ) : (
+                    <Text
+                      className="mt-4 text-[13px]"
+                      style={{ color: Colors.textSecondary }}
+                    >
+                      No category data available yet.
+                    </Text>
+                  )}
                 </View>
 
                 {/* --- Today's Expenses --- */}
