@@ -21,6 +21,7 @@ import {
     Modal,
     Platform,
     Pressable,
+    RefreshControl,
     ScrollView,
     Text,
     View,
@@ -783,6 +784,14 @@ export default function Diary() {
     >
       <ScrollView
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={loading}
+            onRefresh={() => void fetchData()}
+            colors={[Colors.primary]}
+            tintColor={Colors.primary}
+          />
+        }
         contentContainerStyle={{
           paddingHorizontal: 18,
           paddingTop: 18,

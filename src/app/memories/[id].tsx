@@ -10,6 +10,7 @@ import {
   Image,
   Linking,
   Pressable,
+  RefreshControl,
   ScrollView,
   Text,
   View,
@@ -153,9 +154,11 @@ export default function MemoryDetails() {
   const insets = useSafeAreaInsets();
   const [memory, setMemory] = useState<MemoryRecord | null>(null);
   const [loading, setLoading] = useState(true);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
     let active = true;
+    setLoading(true);
     const fetchMemory = async () => {
       if (!id) {
         setLoading(false);
@@ -192,7 +195,7 @@ export default function MemoryDetails() {
     return () => {
       active = false;
     };
-  }, [id, router]);
+  }, [id, refreshKey, router]);
 
   const gallery = useMemo(() => (memory ? getGallery(memory) : []), [memory]);
 
@@ -354,6 +357,14 @@ export default function MemoryDetails() {
 
       <ScrollView
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={loading}
+            onRefresh={() => setRefreshKey((current) => current + 1)}
+            colors={[Colors.primary]}
+            tintColor={Colors.primary}
+          />
+        }
         contentContainerStyle={{
           paddingHorizontal: 18,
           paddingTop: 16,

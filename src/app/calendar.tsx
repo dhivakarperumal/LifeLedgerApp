@@ -7,6 +7,7 @@ import {
     Alert,
     Modal,
     Pressable,
+    RefreshControl,
     ScrollView,
     Text,
     View,
@@ -308,6 +309,14 @@ export default function CalendarScreen() {
         style={{ backgroundColor: Colors.contentBackground }}
         contentContainerStyle={{ paddingBottom: 190 + insets.bottom }}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={loading}
+            onRefresh={() => void fetchCalendar()}
+            colors={[Colors.primary]}
+            tintColor={Colors.primary}
+          />
+        }
       >
         <LinearGradient
           colors={Colors.greenGradient}

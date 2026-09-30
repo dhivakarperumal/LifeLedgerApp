@@ -9,6 +9,7 @@ import {
   Linking,
   Modal,
   Pressable,
+  RefreshControl,
   ScrollView,
   Text,
   TextInput,
@@ -553,6 +554,14 @@ export default function Transfers() {
 
       <ScrollView
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={loading}
+            onRefresh={() => void loadAll()}
+            colors={[Colors.primary]}
+            tintColor={Colors.primary}
+          />
+        }
         contentContainerStyle={{
           paddingHorizontal: 18,
           paddingBottom: insets.bottom + 140,

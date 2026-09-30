@@ -2,15 +2,15 @@ import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import {
-    Animated,
-    Easing,
-    Image,
-    Modal,
-    Pressable,
-    ScrollView,
-    Text,
-    View,
-    useWindowDimensions,
+  Animated,
+  Easing,
+  Image,
+  Modal,
+  Pressable,
+  ScrollView,
+  Text,
+  View,
+  useWindowDimensions,
 } from "react-native";
 import api, { getStoredUser, logoutUser } from "../api";
 import { GradientSafeAreaView as SafeAreaView } from "../components/GradientSafeAreaView";
@@ -48,7 +48,7 @@ function formatNotificationDate(value?: string) {
   return parsed.toLocaleDateString("en-CA");
 }
 
-export function TopHeader() {
+export function TopHeader({ showLogo = true }: { showLogo?: boolean } = {}) {
   const router = useRouter();
   const { width } = useWindowDimensions();
   const [user, setUser] = useState<UserProfile | null>(null);
@@ -229,12 +229,14 @@ export function TopHeader() {
               <View className="h-1 w-6 rounded-full bg-white" />
             </View>
           </Pressable>
-          <Image
-            source={require("../../assets/images/logo.png")}
-            className="h-8 w-8 rounded-lg"
-            resizeMode="cover"
-            accessibilityLabel="Life Ledger logo"
-          />
+          {showLogo && (
+            <Image
+              source={require("../../assets/images/logo.png")}
+              className="h-8 w-8 rounded-lg"
+              resizeMode="cover"
+              accessibilityLabel="Life Ledger logo"
+            />
+          )}
           <Text className="text-lg font-bold text-white">Life Ledger</Text>
         </View>
         <View className="flex-row items-center gap-2">

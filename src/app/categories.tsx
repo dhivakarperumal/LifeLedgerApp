@@ -7,6 +7,7 @@ import {
     Alert,
     Modal,
     Pressable,
+    RefreshControl,
     ScrollView,
     Text,
     TextInput,
@@ -303,6 +304,14 @@ export default function Categories() {
       <ScrollView
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={loading}
+            onRefresh={() => void fetchCategories()}
+            colors={[Colors.primary]}
+            tintColor={Colors.primary}
+          />
+        }
         contentContainerStyle={{
           paddingHorizontal: 18,
           paddingBottom: insets.bottom + 90,

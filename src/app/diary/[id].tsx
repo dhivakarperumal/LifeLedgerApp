@@ -10,6 +10,7 @@ import {
   Image,
   Linking,
   Pressable,
+  RefreshControl,
   ScrollView,
   Text,
   View,
@@ -178,9 +179,11 @@ export default function DiaryDetails() {
   const insets = useSafeAreaInsets();
   const [entry, setEntry] = useState<DiaryDetailsEntry | null>(null);
   const [loading, setLoading] = useState(true);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
     let active = true;
+    setLoading(true);
 
     const fetchEntry = async () => {
       if (!id) {
@@ -223,7 +226,7 @@ export default function DiaryDetails() {
     return () => {
       active = false;
     };
-  }, [id, router]);
+  }, [id, refreshKey, router]);
 
   const attachments = useMemo(
     () => (entry ? getAttachments(entry) : []),
@@ -381,6 +384,14 @@ export default function DiaryDetails() {
 
       <ScrollView
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={loading}
+            onRefresh={() => setRefreshKey((current) => current + 1)}
+            colors={[Colors.primary]}
+            tintColor={Colors.primary}
+          />
+        }
         contentContainerStyle={{
           paddingHorizontal: 18,
           paddingTop: 18,

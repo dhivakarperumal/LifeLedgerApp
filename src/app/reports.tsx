@@ -12,6 +12,7 @@ import {
     Modal,
     Platform,
     Pressable,
+    RefreshControl,
     ScrollView,
     Share,
     Text,
@@ -727,6 +728,14 @@ export default function Reports() {
       <ScrollView
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={loading}
+            onRefresh={() => void fetchAll()}
+            colors={[Colors.primary]}
+            tintColor={Colors.primary}
+          />
+        }
         contentContainerStyle={{ paddingHorizontal: 18, paddingBottom: 36 }}
       >
         <View className="mb-4 mt-8 flex-row">

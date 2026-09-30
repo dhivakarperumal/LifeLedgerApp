@@ -6,6 +6,7 @@ import {
   ActivityIndicator,
   Alert,
   Pressable,
+  RefreshControl,
   ScrollView,
   Text,
   View,
@@ -110,12 +111,14 @@ export default function Profile() {
     message: string;
   }>({ type: "", message: "" });
   const [loading, setLoading] = useState(true);
+  const [refreshKey, setRefreshKey] = useState(0);
   const [savingPassword, setSavingPassword] = useState(false);
   const [deactivating, setDeactivating] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
       let active = true;
+      setLoading(true);
       void getStoredUser()
         .then((storedUser) => {
           if (active) setUser(storedUser);
@@ -131,7 +134,7 @@ export default function Profile() {
       return () => {
         active = false;
       };
-    }, []),
+    }, [refreshKey]),
   );
 
   const profileName = getDisplayName(user);
@@ -270,6 +273,14 @@ export default function Profile() {
 
       <ScrollView
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={loading}
+            onRefresh={() => setRefreshKey((current) => current + 1)}
+            colors={[Colors.primary]}
+            tintColor={Colors.primary}
+          />
+        }
         contentContainerStyle={{ paddingHorizontal: 18, paddingBottom: 36 }}
       >
         <View className="mb-5 mt-6 overflow-hidden rounded-2xl bg-[#315640] p-5">

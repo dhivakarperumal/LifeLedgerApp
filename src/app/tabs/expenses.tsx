@@ -2,7 +2,15 @@ import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useMemo, useState } from "react";
-import { Alert, Modal, Pressable, ScrollView, Text, View } from "react-native";
+import {
+    Alert,
+    Modal,
+    Pressable,
+    RefreshControl,
+    ScrollView,
+    Text,
+    View,
+} from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import api, { getApiErrorMessage, logoutUser } from "../../api";
 import { AddButton } from "../../components/AddButton";
@@ -385,6 +393,14 @@ export default function Expenses() {
 
         <ScrollView
           showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl
+              refreshing={loading}
+              onRefresh={() => void fetchAll()}
+              colors={[Colors.primary]}
+              tintColor={Colors.primary}
+            />
+          }
           contentContainerStyle={{
             paddingHorizontal: 16,
             paddingTop: 18,

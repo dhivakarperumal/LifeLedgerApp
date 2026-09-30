@@ -6,6 +6,7 @@ import { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Pressable,
+  RefreshControl,
   ScrollView,
   Text,
   View,
@@ -159,6 +160,7 @@ export default function Index() {
 
   // Data states
   const [isLoading, setIsLoading] = useState(true);
+  const [refreshKey, setRefreshKey] = useState(0);
   const [recentTransactions, setRecentTransactions] = useState<ExpenseItem[]>(
     [],
   );
@@ -398,7 +400,7 @@ export default function Index() {
       return () => {
         isActive = false;
       };
-    }, []),
+    }, [refreshKey]),
   );
 
   const dateLabel = currentTime
@@ -426,6 +428,14 @@ export default function Index() {
         <ScrollView
           style={{ flex: 1 }}
           showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl
+              refreshing={isLoading}
+              onRefresh={() => setRefreshKey((current) => current + 1)}
+              colors={[Colors.primary]}
+              tintColor={Colors.primary}
+            />
+          }
           contentContainerStyle={{ paddingBottom: 104 + insets.bottom }}
         >
           <LinearGradient
@@ -441,7 +451,7 @@ export default function Index() {
             }}
           >
             <View className="h-11">
-              <TopHeader />
+              <TopHeader showLogo={false} />
             </View>
 
             <Text
@@ -551,10 +561,9 @@ export default function Index() {
                   <View className="mt-6 flex-row items-start justify-between gap-4">
                     <View className="flex-1">
                       <View
-                        className="items-center justify-center rounded-full border px-5 py-3"
+                        className="items-center justify-center rounded-full border border-gray-200 px-5 py-3 shadow-md"
                         style={{
                           backgroundColor: "#f7e1e4",
-                          borderColor: "#f2ccd1",
                         }}
                       >
                         <Text
@@ -575,7 +584,7 @@ export default function Index() {
 
                     <View className="flex-1 gap-3">
                       <View
-                        className="flex-row items-center rounded-[26px] px-4 py-4"
+                        className="flex-row items-center rounded-[26px] border border-gray-200 px-4 py-4 shadow-md"
                         style={{ backgroundColor: "#edf3ee" }}
                       >
                         <View
@@ -606,7 +615,7 @@ export default function Index() {
                       </View>
 
                       <View
-                        className="flex-row items-center rounded-[26px] px-4 py-4"
+                        className="flex-row items-center rounded-[26px] border border-gray-200 px-4 py-4 shadow-md"
                         style={{ backgroundColor: "#edf3ee" }}
                       >
                         <View
