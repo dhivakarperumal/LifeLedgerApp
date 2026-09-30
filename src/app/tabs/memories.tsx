@@ -34,6 +34,7 @@ import {
     countActiveFilters,
     DEFAULT_FILTER_STATE,
     type FilterState,
+    type ViewModeOption,
 } from "../../components/filters";
 import { Colors } from "../../constants/colors";
 
@@ -231,6 +232,7 @@ export default function Memories() {
   const [search, setSearch] = useState("");
   const [selectedMediaType, setSelectedMediaType] = useState("all");
   const [selectedCategory, setSelectedCategory] = useState("all");
+  const [viewMode, setViewMode] = useState<ViewModeOption>("card");
   const [dateRange, setDateRange] = useState<DateRangeSelection>(() =>
     createDateRangeSelection("All"),
   );
@@ -247,9 +249,10 @@ export default function Memories() {
       ...DEFAULT_FILTER_STATE,
       dateRange,
       category: selectedCategory === "all" ? "" : selectedCategory,
+      viewMode,
       custom: { mediaType: selectedMediaType },
     }),
-    [dateRange, selectedCategory, selectedMediaType],
+    [dateRange, selectedCategory, selectedMediaType, viewMode],
   );
   const filterCategories = useMemo(
     () =>
@@ -262,6 +265,7 @@ export default function Memories() {
   const applyMemoryFilters = (filters: FilterState) => {
     setDateRange(filters.dateRange);
     setSelectedCategory(filters.category || "all");
+    setViewMode(filters.viewMode);
     setSelectedMediaType(filters.custom?.mediaType || "all");
   };
 
@@ -694,7 +698,7 @@ export default function Memories() {
             onApply: applyMemoryFilters,
             onReset: () => setSelectedMediaType("all"),
             categories: filterCategories,
-            sections: ["date", "category"],
+            sections: ["date", "category", "viewMode"],
             additionalFilters: [
               {
                 key: "mediaType",
@@ -795,23 +799,24 @@ export default function Memories() {
                         accessibilityLabel={`View ${memory.title}`}
                         style={{
                           flexDirection: "row",
-                          minHeight: 148,
+                          minHeight: viewMode === "card" ? 148 : 96,
                           overflow: "hidden",
-                          borderRadius: 18,
+                          borderRadius: viewMode === "card" ? 18 : 4,
                           backgroundColor: Colors.white,
-                          borderWidth: 1,
+                          borderWidth: viewMode === "card" ? 1 : 0,
+                          borderBottomWidth: viewMode === "table" ? 1 : 0,
                           borderColor: "#E9EEEB",
                           shadowColor: "#24352B",
                           shadowOffset: { width: 0, height: 3 },
-                          shadowOpacity: 0.06,
+                          shadowOpacity: viewMode === "card" ? 0.06 : 0,
                           shadowRadius: 10,
-                          elevation: 2,
+                          elevation: viewMode === "card" ? 2 : 0,
                         }}
                       >
                         <View
                           style={{
                             width: "31%",
-                            minHeight: 154,
+                            minHeight: viewMode === "card" ? 154 : 96,
                             position: "relative",
                             backgroundColor: "#DDE9E4",
                           }}

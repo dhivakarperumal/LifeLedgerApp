@@ -42,6 +42,7 @@ import {
     countActiveFilters,
     DEFAULT_FILTER_STATE,
     type FilterState,
+    type ViewModeOption,
 } from "../../components/filters";
 import { Colors } from "../../constants/colors";
 
@@ -339,6 +340,7 @@ export default function Diary() {
   const [selectedFilter, setSelectedFilter] = useState<EntryFilter>("all");
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [selectedMood, setSelectedMood] = useState("all");
+  const [viewMode, setViewMode] = useState<ViewModeOption>("card");
   const [entryPickerField, setEntryPickerField] = useState<
     "date" | "time" | null
   >(null);
@@ -365,9 +367,10 @@ export default function Diary() {
       ...DEFAULT_FILTER_STATE,
       dateRange,
       category: selectedCategory === "all" ? "" : selectedCategory,
+      viewMode,
       custom: { entryType: selectedFilter, mood: selectedMood },
     }),
-    [dateRange, selectedCategory, selectedFilter, selectedMood],
+    [dateRange, selectedCategory, selectedFilter, selectedMood, viewMode],
   );
   const filterCategories = useMemo(
     () =>
@@ -382,6 +385,7 @@ export default function Diary() {
     setSelectedCategory(filters.category || "all");
     setSelectedFilter((filters.custom?.entryType as EntryFilter) || "all");
     setSelectedMood(filters.custom?.mood || "all");
+    setViewMode(filters.viewMode);
   };
 
   const handleUnauthorized = useCallback(async () => {
@@ -881,7 +885,7 @@ export default function Diary() {
             currentFilters: filterValues,
             onApply: applyDiaryFilters,
             categories: filterCategories,
-            sections: ["date", "category"],
+            sections: ["date", "category", "viewMode"],
             additionalFilters: [
               {
                 key: "entryType",
@@ -970,19 +974,20 @@ export default function Diary() {
                   flexDirection: "row",
                   alignItems: "center",
                   gap: 10,
-                  minHeight: 152,
-                  marginBottom: 12,
-                  padding: 11,
+                  minHeight: viewMode === "card" ? 152 : 104,
+                  marginBottom: viewMode === "card" ? 12 : 0,
+                  padding: viewMode === "card" ? 11 : 8,
                   paddingRight: 12,
-                  borderRadius: 19,
-                  borderWidth: 1,
+                  borderRadius: viewMode === "card" ? 19 : 0,
+                  borderWidth: viewMode === "card" ? 1 : 0,
+                  borderBottomWidth: viewMode === "table" ? 1 : 0,
                   borderColor: "#E8EEEA",
                   backgroundColor: Colors.white,
                   shadowColor: "#26382E",
                   shadowOffset: { width: 0, height: 3 },
-                  shadowOpacity: 0.05,
+                  shadowOpacity: viewMode === "card" ? 0.05 : 0,
                   shadowRadius: 9,
-                  elevation: 2,
+                  elevation: viewMode === "card" ? 2 : 0,
                 }}
               >
                 <View

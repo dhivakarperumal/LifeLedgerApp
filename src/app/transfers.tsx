@@ -13,7 +13,7 @@ import {
     ScrollView,
     Text,
     useWindowDimensions,
-    View
+    View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Svg, { Path, Rect } from "react-native-svg";

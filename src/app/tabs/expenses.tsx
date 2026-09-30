@@ -25,6 +25,7 @@ import {
   DEFAULT_FILTER_STATE,
   type FilterState,
   type SortOption,
+  type ViewModeOption,
 } from "../../components/filters";
 import { Colors } from "../../constants/colors";
 
@@ -148,6 +149,7 @@ export default function Expenses() {
   const [amountMin, setAmountMin] = useState("");
   const [amountMax, setAmountMax] = useState("");
   const [sort, setSort] = useState<SortOption>(DEFAULT_FILTER_STATE.sort);
+  const [viewMode, setViewMode] = useState<ViewModeOption>("card");
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
   const [isModalVisible, setIsModalVisible] = useState(false);
@@ -171,8 +173,9 @@ export default function Expenses() {
       amountMin,
       amountMax,
       sort,
+      viewMode,
     }),
-    [dateRange, selectedCategory, amountMin, amountMax, sort],
+    [dateRange, selectedCategory, amountMin, amountMax, sort, viewMode],
   );
 
   const applyExpenseFilters = (filters: FilterState) => {
@@ -181,6 +184,7 @@ export default function Expenses() {
     setAmountMin(filters.amountMin);
     setAmountMax(filters.amountMax);
     setSort(filters.sort);
+    setViewMode(filters.viewMode);
   };
 
   const handleUnauthorized = useCallback(async () => {
@@ -484,7 +488,7 @@ export default function Expenses() {
               currentFilters: filterValues,
               onApply: applyExpenseFilters,
               categories: categoryOptions,
-              sections: ["date", "category", "amount", "sort"],
+              sections: ["date", "category", "amount", "sort", "viewMode"],
             }}
             style={{ marginBottom: 12 }}
           />
@@ -642,17 +646,20 @@ export default function Expenses() {
                 <View
                   key={String(expense.id)}
                   style={{
-                    backgroundColor: "#FFFFFF",
-                    borderRadius: 18,
-                    padding: 16,
-                    marginBottom: 10,
+                    backgroundColor:
+                      viewMode === "card" ? "#FFFFFF" : "transparent",
+                    borderRadius: viewMode === "card" ? 18 : 0,
+                    padding: viewMode === "card" ? 16 : 10,
+                    marginBottom: viewMode === "card" ? 10 : 0,
                     flexDirection: "row",
                     alignItems: "center",
+                    borderBottomWidth: viewMode === "table" ? 1 : 0,
+                    borderBottomColor: "#E4E8E3",
                     shadowColor: "#000",
                     shadowOffset: { width: 0, height: 2 },
-                    shadowOpacity: 0.06,
+                    shadowOpacity: viewMode === "card" ? 0.06 : 0,
                     shadowRadius: 8,
-                    elevation: 3,
+                    elevation: viewMode === "card" ? 3 : 0,
                   }}
                 >
                   {/* Icon */}
