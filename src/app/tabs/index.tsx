@@ -540,162 +540,200 @@ export default function Index() {
               </View>
             ) : (
               <>
-                <View className="mt-12 flex-row items-center justify-between">
+                <View className="mt-8">
                   <Text
-                    className="text-xl font-bold"
+                    className="text-[18px] font-black leading-none"
                     style={{ color: Colors.textPrimary }}
                   >
                     Overview
                   </Text>
-                  <Pressable
-                    className="flex-row items-center rounded-full border px-3 py-2"
-                    style={{
-                      borderColor: Colors.border,
-                      backgroundColor: Colors.white,
-                    }}
-                  >
-                    <Text
-                      className="text-sm font-semibold"
-                      style={{ color: Colors.textPrimary }}
-                    >
-                      This Month
-                    </Text>
-                    <Ionicons
-                      name="chevron-down"
-                      size={18}
-                      color={Colors.textPrimary}
-                    />
-                  </Pressable>
-                </View>
 
-                <View
-                  className="mt-4 rounded-3xl p-6"
-                  style={{
-                    backgroundColor: Colors.white,
-                    shadowColor: Colors.primaryDark,
-                    shadowOpacity: 0.06,
-                    shadowRadius: 12,
-                    elevation: 2,
-                  }}
-                >
-                  <View className="flex-row items-center justify-between">
-                    <View>
-                      <Text
-                        className="text-base"
-                        style={{ color: Colors.textSecondary }}
+                  <View className="mt-6 flex-row items-start justify-between gap-4">
+                    <View className="flex-1">
+                      <View
+                        className="items-center justify-center rounded-full border px-5 py-3"
+                        style={{
+                          backgroundColor: "#f7e1e4",
+                          borderColor: "#f2ccd1",
+                        }}
                       >
-                        Total Spent
-                      </Text>
+                        <Text
+                          className="text-[10px] font-bold tracking-[1px]"
+                          style={{ color: "#d35d69" }}
+                        >
+                          TODAY SPENT
+                        </Text>
+                      </View>
+
                       <Text
-                        className="mt-1 text-3xl font-bold"
+                        className="mt-5 text-[30px] font-black leading-none"
                         style={{ color: Colors.textPrimary }}
                       >
-                        {formatAmount(overview.totalSpent)}
+                        ₹{overview.todaySpent || 0}
                       </Text>
                     </View>
-                    <View
-                      className="rounded-xl p-4"
-                      style={{ backgroundColor: Colors.bgCard }}
-                    >
-                      <Text
-                        className="text-sm"
-                        style={{ color: Colors.textSecondary }}
+
+                    <View className="flex-1 gap-3">
+                      <View
+                        className="flex-row items-center rounded-[26px] px-4 py-4"
+                        style={{ backgroundColor: "#edf3ee" }}
                       >
-                        This Week{" "}
-                        <Text
-                          className="font-bold"
-                          style={{ color: Colors.textPrimary }}
+                        <View
+                          className="mr-3 h-11 w-11 items-center justify-center rounded-full"
+                          style={{ backgroundColor: "#dcefe0" }}
                         >
-                          {formatAmount(overview.thisWeek)}
-                        </Text>
-                      </Text>
-                      <Text
-                        className="mt-4 text-sm"
-                        style={{ color: Colors.textSecondary }}
+                          <Ionicons
+                            name="calendar-outline"
+                            size={20}
+                            color={Colors.primary}
+                          />
+                        </View>
+
+                        <View className="flex-1">
+                          <Text
+                            className="text-[9px] font-bold tracking-[1px]"
+                            style={{ color: Colors.primary }}
+                          >
+                            THIS WEEK
+                          </Text>
+                          <Text
+                            className="mt-1 text-[15px] font-black leading-none"
+                            style={{ color: Colors.textPrimary }}
+                          >
+                            ₹{overview.thisWeek || 935}
+                          </Text>
+                        </View>
+                      </View>
+
+                      <View
+                        className="flex-row items-center rounded-[26px] px-4 py-4"
+                        style={{ backgroundColor: "#edf3ee" }}
                       >
-                        This Month{" "}
-                        <Text
-                          className="font-bold"
-                          style={{ color: Colors.textPrimary }}
+                        <View
+                          className="mr-3 h-11 w-11 items-center justify-center rounded-full"
+                          style={{ backgroundColor: "#dcefe0" }}
                         >
-                          {formatAmount(overview.thisMonth)}
-                        </Text>
-                      </Text>
+                          <Ionicons
+                            name="bar-chart-outline"
+                            size={20}
+                            color={Colors.primary}
+                          />
+                        </View>
+
+                        <View className="flex-1">
+                          <Text
+                            className="text-[9px] font-bold tracking-[1px]"
+                            style={{ color: Colors.primary }}
+                          >
+                            THIS MONTH
+                          </Text>
+                          <Text
+                            className="mt-1 text-[15px] font-black leading-none"
+                            style={{ color: Colors.textPrimary }}
+                          >
+                            ₹{overview.thisMonth || 3518}
+                          </Text>
+                        </View>
+                      </View>
                     </View>
                   </View>
                 </View>
 
                 <View
-                  className="mt-4 rounded-3xl p-6"
+                  className="mt-8 rounded-[28px] bg-white px-5 py-5"
                   style={{ backgroundColor: Colors.white }}
                 >
                   <View className="flex-row items-center justify-between">
                     <Text
-                      className="text-lg font-bold"
+                      className="text-[12px] font-bold uppercase"
                       style={{ color: Colors.textPrimary }}
                     >
                       Top Categories
                     </Text>
-                    <Pressable className="flex-row items-center">
-                      <Text
-                        className="text-sm font-semibold"
-                        style={{ color: Colors.primary }}
-                      >
-                        View All
-                      </Text>
-                      <Ionicons
-                        name="chevron-forward"
-                        size={17}
-                        color={Colors.primary}
-                      />
-                    </Pressable>
+                    <Text
+                      className="text-[12px] font-bold uppercase"
+                      style={{ color: Colors.primary }}
+                    >
+                      Analytics
+                    </Text>
                   </View>
 
-                  {topCategories.length > 0 ? (
-                    <>
-                      <View className="mt-4 flex-row gap-1">
-                        {topCategories.map((cat, idx) => (
-                          <View
-                            key={idx}
-                            className="h-3 rounded-full"
-                            style={{
-                              backgroundColor: cat.color,
-                              flex: Math.max(cat.percentage, 5),
-                            }}
-                          />
-                        ))}
-                      </View>
-                      <View className="mt-5 flex-row justify-between flex-wrap gap-y-2">
-                        {topCategories.map((cat, idx) => (
-                          <View
-                            key={idx}
-                            className="flex-row items-center w-[48%] mb-2"
-                          >
-                            <View
-                              className="mr-2 h-6 w-6 rounded-full"
-                              style={{ backgroundColor: cat.color }}
-                            />
-                            <Text
-                              className="text-sm"
-                              style={{ color: Colors.textPrimary }}
-                              numberOfLines={1}
-                            >
-                              {cat.label}{" "}
-                              <Text style={{ color: Colors.olive }}>
-                                {cat.percentage}%
-                              </Text>
-                            </Text>
-                          </View>
-                        ))}
-                      </View>
-                    </>
-                  ) : (
-                    <Text
-                      style={{ marginTop: 12, color: Colors.textSecondary }}
-                    >
-                      No category data available yet.
-                    </Text>
-                  )}
+                  <View className="mt-5 flex-row overflow-hidden rounded-full">
+                    <View
+                      className="h-3 rounded-l-full"
+                      style={{ backgroundColor: Colors.primary, flex: 66 }}
+                    />
+                    <View
+                      className="h-3"
+                      style={{ backgroundColor: "#6aa66a", flex: 22 }}
+                    />
+                    <View
+                      className="h-3"
+                      style={{ backgroundColor: "#9ecc9a", flex: 9 }}
+                    />
+                    <View
+                      className="h-3 rounded-r-full"
+                      style={{ backgroundColor: "#cfe7d2", flex: 3 }}
+                    />
+                  </View>
+
+                  <View className="mt-5 flex-row flex-wrap justify-between gap-y-4">
+                    <View className="w-[48%] flex-row items-center">
+                      <View
+                        className="mr-2 h-4 w-4 rounded-full"
+                        style={{ backgroundColor: Colors.primary }}
+                      />
+                      <Text
+                        className="text-[13px] font-medium"
+                        style={{ color: Colors.textPrimary }}
+                      >
+                        Bills{" "}
+                        <Text style={{ color: Colors.textPrimary }}>66%</Text>
+                      </Text>
+                    </View>
+
+                    <View className="w-[48%] flex-row items-center justify-start">
+                      <View
+                        className="mr-2 h-4 w-4 rounded-full"
+                        style={{ backgroundColor: "#6aa66a" }}
+                      />
+                      <Text
+                        className="text-[13px] font-medium"
+                        style={{ color: Colors.textPrimary }}
+                      >
+                        Travel{" "}
+                        <Text style={{ color: Colors.textPrimary }}>22%</Text>
+                      </Text>
+                    </View>
+
+                    <View className="w-[48%] flex-row items-center">
+                      <View
+                        className="mr-2 h-4 w-4 rounded-full"
+                        style={{ backgroundColor: "#9ecc9a" }}
+                      />
+                      <Text
+                        className="text-[13px] font-medium"
+                        style={{ color: Colors.textPrimary }}
+                      >
+                        Food{" "}
+                        <Text style={{ color: Colors.textPrimary }}>9%</Text>
+                      </Text>
+                    </View>
+
+                    <View className="w-[48%] flex-row items-center justify-start">
+                      <View
+                        className="mr-2 h-4 w-4 rounded-full"
+                        style={{ backgroundColor: "#cfe7d2" }}
+                      />
+                      <Text
+                        className="text-[13px] font-medium"
+                        style={{ color: Colors.textPrimary }}
+                      >
+                        Shopping{" "}
+                        <Text style={{ color: Colors.textPrimary }}>3%</Text>
+                      </Text>
+                    </View>
+                  </View>
                 </View>
 
                 {/* --- Today's Expenses --- */}
