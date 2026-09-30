@@ -34,7 +34,11 @@ export function LoadingScreen() {
         resizeMode="cover"
       >
         <View className="absolute inset-0 items-center justify-center">
-          <ActivityIndicator size="large" color="#366039" style={{ marginTop: 20 }} />
+          <ActivityIndicator
+            size="large"
+            color="#366039"
+            style={{ marginTop: 20 }}
+          />
         </View>
       </ImageBackground>
     </View>

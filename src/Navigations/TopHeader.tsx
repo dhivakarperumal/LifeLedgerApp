@@ -2,7 +2,6 @@ import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import {
-    Alert,
     Animated,
     Easing,
     Image,
@@ -11,7 +10,7 @@ import {
     ScrollView,
     Text,
     View,
-    useWindowDimensions,
+    useWindowDimensions
 } from "react-native";
 import { getStoredUser, logoutUser } from "../api";
 import { GradientSafeAreaView as SafeAreaView } from "../components/GradientSafeAreaView";
@@ -29,6 +28,7 @@ export function TopHeader() {
   const [sideMenuVisible, setSideMenuVisible] = useState(false);
   const [sideMenuMounted, setSideMenuMounted] = useState(false);
   const [menuVisible, setMenuVisible] = useState(false);
+  const [notificationsVisible, setNotificationsVisible] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [drawerPosition] = useState(() => new Animated.Value(-width));
 
@@ -48,6 +48,29 @@ export function TopHeader() {
 
   const displayName = user?.name?.trim() || user?.email?.trim() || "User";
   const userInitial = displayName.charAt(0).toUpperCase();
+  const notifications = [
+    {
+      id: 1,
+      name: "Dharni M",
+      type: "BIRTHDAY",
+      date: "2026-09-07",
+      time: "08:01",
+    },
+    {
+      id: 2,
+      name: "Deva Birthday",
+      type: "BIRTHDAY",
+      date: "2026-09-08",
+      time: "09:10",
+    },
+    {
+      id: 3,
+      name: "Madhu Birthday",
+      type: "BIRTHDAY",
+      date: "2026-09-11",
+      time: "09:11",
+    },
+  ];
   const openSideMenu = () => {
     setSideMenuMounted(true);
     setSideMenuVisible(true);
@@ -134,9 +157,7 @@ export function TopHeader() {
           <Pressable
             accessibilityLabel="Notifications"
             className="h-9 w-9 items-center justify-center rounded-full bg-white/15"
-            onPress={() =>
-              Alert.alert("Notifications", "You are all caught up.")
-            }
+            onPress={() => setNotificationsVisible(true)}
           >
             <Ionicons
               name="notifications-outline"
@@ -158,6 +179,62 @@ export function TopHeader() {
           </Pressable>
         </View>
       </View>
+
+      <Modal
+        animationType="fade"
+        transparent
+        visible={notificationsVisible}
+        onRequestClose={() => setNotificationsVisible(false)}
+      >
+        <Pressable
+          className="flex-1 items-center justify-center bg-[rgba(5,20,11,0.35)] px-4"
+          onPress={() => setNotificationsVisible(false)}
+        >
+          <Pressable
+            className="w-full overflow-hidden rounded-[30px] bg-[#F4F5F3] p-5 shadow-2xl"
+            onPress={(event) => event.stopPropagation()}
+            style={{ maxWidth: 420 }}
+          >
+            <View className="mb-4 flex-row items-center justify-between">
+              <Text className="text-[28px] font-black text-[#1D2B1D]">
+                Notifications
+              </Text>
+              <View className="rounded-full border border-[#E74C4C] bg-[#FDE7E7] px-3 py-1.5">
+                <Text className="text-[11px] font-bold text-[#E74C4C]">
+                  3 UPCOMING
+                </Text>
+              </View>
+            </View>
+
+            <View className="mt-1 gap-3">
+              {notifications.map((item) => (
+                <View key={item.id} className="border-b border-[#D7DDD8] pb-3">
+                  <View className="flex-row items-end justify-between">
+                    <Text className="text-[24px] font-black text-[#1D2B1D]">
+                      {item.name}
+                    </Text>
+                    <Text className="text-[15px] font-semibold text-[#5D6A5D]">
+                      {item.date} • {item.time}
+                    </Text>
+                  </View>
+                  <Text className="mt-1 text-[12px] font-bold tracking-[2px] text-[#5D6A5D]">
+                    {item.type}
+                  </Text>
+                </View>
+              ))}
+            </View>
+
+            <Pressable
+              className="mt-6 items-center justify-center rounded-[22px] bg-[#366039] px-4 py-4"
+              onPress={() => setNotificationsVisible(false)}
+            >
+              <Text className="text-[17px] font-bold uppercase tracking-[1px] text-white">
+                Manage Reminders
+              </Text>
+            </Pressable>
+          </Pressable>
+        </Pressable>
+      </Modal>
 
       <Modal
         animationType="none"

@@ -21,11 +21,11 @@ export default function WelcomeScreen() {
           
           <View className="px-6 pb-12 pt-8 bg-gradient-to-t from-black/80 to-transparent w-full">
             <View className="items-center mb-8">
-              <View className="h-[80px] w-[80px] items-center justify-center rounded-[24px] bg-white/20 mb-4 shadow-lg">
+              <View className="h-[100px] w-[100px] items-center justify-center rounded-[28px] overflow-hidden mb-5 shadow-lg border-2 border-white/20">
                 <Image
                   source={require("../../../assets/images/logo.png")}
-                  className="h-[50px] w-[50px]"
-                  resizeMode="contain"
+                  className="h-full w-full"
+                  resizeMode="cover"
                   accessibilityLabel="Life Ledger logo"
                 />
               </View>

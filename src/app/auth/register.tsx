@@ -5,6 +5,7 @@ import { useState } from "react";
 import {
     Alert,
     Image,
+    ImageBackground,
     KeyboardAvoidingView,
     Platform,
     Pressable,
