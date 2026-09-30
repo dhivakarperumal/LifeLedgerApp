@@ -20,6 +20,7 @@ import {
 } from "react-native-safe-area-context";
 import api, { API_BASE_URL, getApiErrorMessage, logoutUser } from "../api";
 import { AddButton } from "../components/AddButton";
+import { FormInput, FormOption } from "../components/FormControls";
 import { Colors } from "../constants/colors";
 
 type IncomeRecord = {
@@ -872,10 +873,9 @@ export default function Income() {
               <Text className="mb-1.5 text-xs font-bold text-[#46534B]">
                 Income title
               </Text>
-              <TextInput
-                className="mb-4 rounded-xl border border-[#E1E6E0] bg-white px-4 py-3 text-sm text-[#25332C]"
+              <FormInput
+                className="mb-4 rounded-xl bg-white px-4 py-3 text-sm text-[#25332C]"
                 placeholder="e.g. Freelance payment"
-                placeholderTextColor="#9AA39D"
                 value={form.title}
                 onChangeText={(value) => updateForm("title", value)}
               />
@@ -885,11 +885,10 @@ export default function Income() {
                   <Text className="mb-1.5 text-xs font-bold text-[#46534B]">
                     Amount
                   </Text>
-                  <TextInput
-                    className="mb-4 rounded-xl border border-[#E1E6E0] bg-white px-4 py-3 text-sm text-[#25332C]"
+                  <FormInput
+                    className="mb-4 rounded-xl bg-white px-4 py-3 text-sm text-[#25332C]"
                     keyboardType="decimal-pad"
                     placeholder="0.00"
-                    placeholderTextColor="#9AA39D"
                     value={form.amount}
                     onChangeText={(value) => updateForm("amount", value)}
                   />
@@ -898,10 +897,9 @@ export default function Income() {
                   <Text className="mb-1.5 text-xs font-bold text-[#46534B]">
                     Date
                   </Text>
-                  <TextInput
-                    className="mb-4 rounded-xl border border-[#E1E6E0] bg-white px-4 py-3 text-sm text-[#25332C]"
+                  <FormInput
+                    className="mb-4 rounded-xl bg-white px-4 py-3 text-sm text-[#25332C]"
                     placeholder="YYYY-MM-DD"
-                    placeholderTextColor="#9AA39D"
                     value={form.date}
                     onChangeText={(value) => updateForm("date", value)}
                   />
@@ -911,10 +909,9 @@ export default function Income() {
               <Text className="mb-1.5 text-xs font-bold text-[#46534B]">
                 Category
               </Text>
-              <TextInput
-                className="mb-2 rounded-xl border border-[#E1E6E0] bg-white px-4 py-3 text-sm text-[#25332C]"
+              <FormInput
+                className="mb-2 rounded-xl bg-white px-4 py-3 text-sm text-[#25332C]"
                 placeholder="Choose or enter a category"
-                placeholderTextColor="#9AA39D"
                 value={form.category}
                 onChangeText={(value) => updateForm("category", value)}
               />
@@ -925,9 +922,10 @@ export default function Income() {
                   contentContainerStyle={{ gap: 7, paddingBottom: 14 }}
                 >
                   {incomeCategories.map((category) => (
-                    <Pressable
+                    <FormOption
                       key={category}
-                      className={`rounded-full border px-3 py-2 ${form.category === category ? "border-[#315640] bg-[#315640]" : "border-[#E1E6E0] bg-white"}`}
+                      selected={form.category === category}
+                      className={`rounded-full px-3 py-2 ${form.category === category ? "bg-[#315640]" : "bg-white"}`}
                       onPress={() => updateForm("category", category)}
                     >
                       <Text
@@ -935,7 +933,7 @@ export default function Income() {
                       >
                         {category}
                       </Text>
-                    </Pressable>
+                    </FormOption>
                   ))}
                 </ScrollView>
               )}
@@ -945,9 +943,10 @@ export default function Income() {
               </Text>
               <View className="mb-4 flex-row flex-wrap gap-2">
                 {paymentMethods.map((method) => (
-                  <Pressable
+                  <FormOption
                     key={method}
-                    className={`rounded-full border px-3 py-2 ${form.paymentMethod === method ? "border-[#315640] bg-[#315640]" : "border-[#E1E6E0] bg-white"}`}
+                    selected={form.paymentMethod === method}
+                    className={`rounded-full px-3 py-2 ${form.paymentMethod === method ? "bg-[#315640]" : "bg-white"}`}
                     onPress={() => updateForm("paymentMethod", method)}
                   >
                     <Text
@@ -955,7 +954,7 @@ export default function Income() {
                     >
                       {method}
                     </Text>
-                  </Pressable>
+                  </FormOption>
                 ))}
               </View>
 
@@ -964,9 +963,10 @@ export default function Income() {
               </Text>
               <View className="mb-4 flex-row gap-2">
                 {(["Yes", "No"] as const).map((value) => (
-                  <Pressable
+                  <FormOption
                     key={value}
-                    className={`flex-1 items-center rounded-xl border py-3 ${form.recurring === value ? "border-[#315640] bg-[#E7F0E8]" : "border-[#E1E6E0] bg-white"}`}
+                    selected={form.recurring === value}
+                    className={`flex-1 items-center rounded-xl py-3 ${form.recurring === value ? "bg-[#E7F0E8]" : "bg-white"}`}
                     onPress={() => updateForm("recurring", value)}
                   >
                     <Text
@@ -974,18 +974,17 @@ export default function Income() {
                     >
                       {value}
                     </Text>
-                  </Pressable>
+                  </FormOption>
                 ))}
               </View>
 
               <Text className="mb-1.5 text-xs font-bold text-[#46534B]">
                 Notes
               </Text>
-              <TextInput
-                className="mb-4 min-h-[78px] rounded-xl border border-[#E1E6E0] bg-white px-4 py-3 text-sm text-[#25332C]"
+              <FormInput
+                className="mb-4 min-h-[78px] rounded-xl bg-white px-4 py-3 text-sm text-[#25332C]"
                 multiline
                 placeholder="Add any useful details"
-                placeholderTextColor="#9AA39D"
                 textAlignVertical="top"
                 value={form.notes}
                 onChangeText={(value) => updateForm("notes", value)}

@@ -9,8 +9,7 @@ import {
     Pressable,
     ScrollView,
     Text,
-    TextInput,
-    View,
+    View
 } from "react-native";
 import {
     SafeAreaView,
@@ -18,6 +17,7 @@ import {
 } from "react-native-safe-area-context";
 import api, { getApiErrorMessage } from "../api";
 import { AddButton } from "../components/AddButton";
+import { FormInput, FormOption } from "../components/FormControls";
 import { Colors } from "../constants/colors";
 
 type CalendarEntry = {
@@ -625,7 +625,7 @@ export default function CalendarScreen() {
                   <Text className="mb-1.5 text-xs font-bold uppercase tracking-[0.8px] text-[#7B8589]">
                     {label}
                   </Text>
-                  <TextInput
+                  <FormInput
                     value={form[key]}
                     onChangeText={(value) =>
                       setForm((current) => ({ ...current, [key]: value }))
@@ -637,7 +637,7 @@ export default function CalendarScreen() {
                         : "default"
                     }
                     multiline={key === "details"}
-                    className="rounded-xl border border-[#E5EAE7] bg-white px-3.5 py-3 text-base text-[#263238]"
+                    className="rounded-xl bg-white px-3.5 py-3 text-base text-[#263238]"
                   />
                 </View>
               ))}
@@ -646,17 +646,18 @@ export default function CalendarScreen() {
               </Text>
               <View className="mb-5 flex-row">
                 {["Low", "Medium", "High"].map((priority) => (
-                  <Pressable
+                  <FormOption
                     key={priority}
+                    selected={form.priority === priority}
                     onPress={() =>
                       setForm((current) => ({ ...current, priority }))
                     }
-                    className={`mr-2 flex-1 items-center rounded-xl border py-2.5 ${form.priority === priority ? "border-[#366039] bg-[#ECF2EE]" : "border-[#E5EAE7] bg-white"}`}
+                    className={`mr-2 flex-1 items-center rounded-xl py-2.5 ${form.priority === priority ? "bg-[#ECF2EE]" : "bg-white"}`}
                   >
                     <Text className="text-sm font-bold text-[#263238]">
                       {priority}
                     </Text>
-                  </Pressable>
+                  </FormOption>
                 ))}
               </View>
               <Pressable

@@ -16,8 +16,7 @@ import {
     Pressable,
     ScrollView,
     Text,
-    TextInput,
-    View,
+    View
 } from "react-native";
 import {
     SafeAreaView,
@@ -25,6 +24,7 @@ import {
 } from "react-native-safe-area-context";
 import api, { API_BASE_URL, getApiErrorMessage, logoutUser } from "../../api";
 import { AddButton } from "../../components/AddButton";
+import { FormInput, FormOption } from "../../components/FormControls";
 import { SearchBar } from "../../components/SearchBar";
 import { Colors } from "../../constants/colors";
 
@@ -913,8 +913,9 @@ export default function Memories() {
                 {categories.map((category) => {
                   const selected = form.category_id === String(category.id);
                   return (
-                    <Pressable
+                    <FormOption
                       key={String(category.id)}
+                      selected={selected}
                       onPress={() =>
                         updateForm("category_id", String(category.id))
                       }
@@ -923,14 +924,12 @@ export default function Memories() {
                         paddingVertical: 8,
                         borderRadius: 14,
                         backgroundColor: selected ? "#E5F1E9" : "#F4F6F4",
-                        borderWidth: 1,
-                        borderColor: selected ? Colors.sage : "#E3E9E5",
                       }}
                     >
                       <Text style={{ color: Colors.forest, fontWeight: "600" }}>
                         {category.name}
                       </Text>
-                    </Pressable>
+                    </FormOption>
                   );
                 })}
               </ScrollView>
@@ -1134,11 +1133,10 @@ function FormField({
   return (
     <View style={{ marginBottom: 13 }}>
       <Text style={fieldLabel}>{label}</Text>
-      <TextInput
+      <FormInput
         value={value}
         onChangeText={onChangeText}
         placeholder={placeholder}
-        placeholderTextColor="#899791"
         multiline={multiline}
         numberOfLines={multiline ? 4 : 1}
         textAlignVertical={multiline ? "top" : "center"}
@@ -1147,8 +1145,6 @@ function FormField({
           paddingHorizontal: 12,
           paddingVertical: 10,
           borderRadius: 12,
-          borderWidth: 1,
-          borderColor: "#DFE7E2",
           backgroundColor: "#F8FAF8",
           color: Colors.textPrimary,
           fontSize: 15,

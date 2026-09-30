@@ -23,8 +23,7 @@ import {
     Pressable,
     ScrollView,
     Text,
-    TextInput,
-    View,
+    View
 } from "react-native";
 import {
     SafeAreaView,
@@ -32,6 +31,7 @@ import {
 } from "react-native-safe-area-context";
 import api, { getApiErrorMessage, logoutUser } from "../../api";
 import { AddButton } from "../../components/AddButton";
+import { FormInput, FormOption } from "../../components/FormControls";
 import { SearchBar } from "../../components/SearchBar";
 import { Colors } from "../../constants/colors";
 
@@ -1608,8 +1608,9 @@ export default function Diary() {
                 {moods.map((mood) => {
                   const active = form.mood === mood.name;
                   return (
-                    <Pressable
+                    <FormOption
                       key={mood.name}
+                      selected={active}
                       onPress={() => updateForm("mood", mood.name)}
                       style={{
                         alignItems: "center",
@@ -1617,8 +1618,6 @@ export default function Diary() {
                         paddingVertical: 8,
                         borderRadius: 13,
                         backgroundColor: active ? "#FFF2D9" : "#F5F7F5",
-                        borderWidth: 1,
-                        borderColor: active ? "#E9CA91" : "#E6ECE8",
                       }}
                     >
                       <Text style={{ fontSize: 18 }}>{mood.emoji}</Text>
@@ -1631,7 +1630,7 @@ export default function Diary() {
                       >
                         {mood.name}
                       </Text>
-                    </Pressable>
+                    </FormOption>
                   );
                 })}
               </ScrollView>
@@ -1645,8 +1644,9 @@ export default function Diary() {
                 {categories.map((category) => {
                   const active = form.category_id === String(category.id);
                   return (
-                    <Pressable
+                    <FormOption
                       key={String(category.id)}
+                      selected={active}
                       onPress={() =>
                         updateForm("category_id", String(category.id))
                       }
@@ -1655,8 +1655,6 @@ export default function Diary() {
                         paddingVertical: 8,
                         borderRadius: 13,
                         backgroundColor: active ? "#E6F1E9" : "#F5F7F5",
-                        borderWidth: 1,
-                        borderColor: active ? "#BCD5C4" : "#E6ECE8",
                       }}
                     >
                       <Text
@@ -1668,7 +1666,7 @@ export default function Diary() {
                       >
                         {category.name}
                       </Text>
-                    </Pressable>
+                    </FormOption>
                   );
                 })}
               </ScrollView>
@@ -2001,11 +1999,10 @@ function FormField({
   return (
     <View style={{ marginBottom: 13 }}>
       <Text style={labelStyle}>{label}</Text>
-      <TextInput
+      <FormInput
         value={value}
         onChangeText={onChangeText}
         placeholder={placeholder}
-        placeholderTextColor="#899791"
         multiline={multiline}
         numberOfLines={multiline ? 6 : 1}
         textAlignVertical={multiline ? "top" : "center"}

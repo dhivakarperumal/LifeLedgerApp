@@ -18,6 +18,7 @@ import {
 } from "react-native-safe-area-context";
 import api, { getApiErrorMessage, getStoredUser, logoutUser } from "../api";
 import { AddButton } from "../components/AddButton";
+import { FormInput, FormOption } from "../components/FormControls";
 import { Colors } from "../constants/colors";
 
 type CategoryType =
@@ -541,10 +542,9 @@ export default function Categories() {
               <Text className="mb-2 text-xs font-bold text-[#46534B]">
                 Category name
               </Text>
-              <TextInput
-                className="mb-4 rounded-xl border border-[#E1E6E0] bg-white px-4 py-3 text-sm text-[#25332C]"
+              <FormInput
+                className="mb-4 rounded-xl bg-white px-4 py-3 text-sm text-[#25332C]"
                 placeholder="e.g. Groceries"
-                placeholderTextColor="#9AA39D"
                 value={form.name}
                 onChangeText={(value) => setFormValue("name", value)}
               />
@@ -556,9 +556,10 @@ export default function Categories() {
                 {categoryTypes.map((type) => {
                   const selected = form.catType === type;
                   return (
-                    <Pressable
+                    <FormOption
                       key={type}
-                      className={`rounded-full border px-3 py-2 ${selected ? "border-[#315640] bg-[#315640]" : "border-[#E1E6E0] bg-white"}`}
+                      selected={selected}
+                      className={`rounded-full px-3 py-2 ${selected ? "bg-[#315640]" : "bg-white"}`}
                       onPress={() => setFormValue("catType", type)}
                     >
                       <Text
@@ -566,7 +567,7 @@ export default function Categories() {
                       >
                         {type}
                       </Text>
-                    </Pressable>
+                    </FormOption>
                   );
                 })}
               </View>
@@ -574,11 +575,10 @@ export default function Categories() {
               <Text className="mb-2 text-xs font-bold text-[#46534B]">
                 Description
               </Text>
-              <TextInput
-                className="mb-4 min-h-[88px] rounded-xl border border-[#E1E6E0] bg-white px-4 py-3 text-sm text-[#25332C]"
+              <FormInput
+                className="mb-4 min-h-[88px] rounded-xl bg-white px-4 py-3 text-sm text-[#25332C]"
                 multiline
                 placeholder="Add a short description"
-                placeholderTextColor="#9AA39D"
                 textAlignVertical="top"
                 value={form.description}
                 onChangeText={(value) => setFormValue("description", value)}
@@ -587,11 +587,10 @@ export default function Categories() {
               <Text className="mb-2 text-xs font-bold text-[#46534B]">
                 Subcategories
               </Text>
-              <TextInput
-                className="mb-4 min-h-[76px] rounded-xl border border-[#E1E6E0] bg-white px-4 py-3 text-sm text-[#25332C]"
+              <FormInput
+                className="mb-4 min-h-[76px] rounded-xl bg-white px-4 py-3 text-sm text-[#25332C]"
                 multiline
                 placeholder="One per line"
-                placeholderTextColor="#9AA39D"
                 textAlignVertical="top"
                 value={form.subcategory}
                 onChangeText={(value) => setFormValue("subcategory", value)}
@@ -604,9 +603,10 @@ export default function Categories() {
                 {(["Active", "Inactive"] as const).map((status) => {
                   const selected = form.status === status;
                   return (
-                    <Pressable
+                    <FormOption
                       key={status}
-                      className={`flex-1 items-center rounded-xl border py-3 ${selected ? "border-[#315640] bg-[#E7F0E8]" : "border-[#E1E6E0] bg-white"}`}
+                      selected={selected}
+                      className={`flex-1 items-center rounded-xl py-3 ${selected ? "bg-[#E7F0E8]" : "bg-white"}`}
                       onPress={() => setFormValue("status", status)}
                     >
                       <Text
@@ -614,7 +614,7 @@ export default function Categories() {
                       >
                         {status}
                       </Text>
-                    </Pressable>
+                    </FormOption>
                   );
                 })}
               </View>

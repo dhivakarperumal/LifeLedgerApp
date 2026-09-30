@@ -20,6 +20,7 @@ import {
 } from "react-native-safe-area-context";
 import api, { API_BASE_URL, getApiErrorMessage, logoutUser } from "../api";
 import { AddButton } from "../components/AddButton";
+import { FormInput, FormOption } from "../components/FormControls";
 import { Colors } from "../constants/colors";
 
 type TransferRecord = {
@@ -906,8 +907,9 @@ export default function Transfers() {
                 showsHorizontalScrollIndicator={false}
                 contentContainerStyle={{ gap: 8, paddingBottom: 14 }}
               >
-                <Pressable
-                  className={`w-[150px] rounded-xl border p-3 ${!selectedIncomeId ? "border-[#315640] bg-[#E7F0E8]" : "border-[#E1E6E0] bg-white"}`}
+                <FormOption
+                  selected={!selectedIncomeId}
+                  className={`w-[150px] rounded-xl p-3 ${!selectedIncomeId ? "bg-[#E7F0E8]" : "bg-white"}`}
                   onPress={() => {
                     setSelectedIncomeId("");
                     setForm((current) => ({ ...current, amount: "" }));
@@ -919,14 +921,15 @@ export default function Transfers() {
                   <Text className="mt-1 text-xs text-[#818D84]">
                     Unlinked transfer
                   </Text>
-                </Pressable>
+                </FormOption>
                 {incomes.map((income) => {
                   const selected =
                     String(income.id) === String(selectedIncomeId);
                   return (
-                    <Pressable
+                    <FormOption
                       key={income.id}
-                      className={`w-[180px] rounded-xl border p-3 ${selected ? "border-[#315640] bg-[#E7F0E8]" : "border-[#E1E6E0] bg-white"}`}
+                      selected={selected}
+                      className={`w-[180px] rounded-xl p-3 ${selected ? "bg-[#E7F0E8]" : "bg-white"}`}
                       onPress={() => {
                         setSelectedIncomeId(String(income.id));
                         setForm((current) => ({ ...current, amount: "" }));
@@ -942,7 +945,7 @@ export default function Transfers() {
                         {formatAmount(income.remaining_amount ?? income.amount)}{" "}
                         available
                       </Text>
-                    </Pressable>
+                    </FormOption>
                   );
                 })}
               </ScrollView>
@@ -979,10 +982,9 @@ export default function Transfers() {
               <Text className="mb-1.5 text-xs font-bold text-[#46534B]">
                 Transfer title
               </Text>
-              <TextInput
-                className="mb-4 rounded-xl border border-[#E1E6E0] bg-white px-4 py-3 text-sm text-[#25332C]"
+              <FormInput
+                className="mb-4 rounded-xl bg-white px-4 py-3 text-sm text-[#25332C]"
                 placeholder="e.g. Monthly savings"
-                placeholderTextColor="#9AA39D"
                 value={form.title}
                 onChangeText={(value) => updateForm("title", value)}
               />
@@ -992,11 +994,10 @@ export default function Transfers() {
                   <Text className="mb-1.5 text-xs font-bold text-[#46534B]">
                     Amount
                   </Text>
-                  <TextInput
-                    className="mb-4 rounded-xl border border-[#E1E6E0] bg-white px-4 py-3 text-sm text-[#25332C]"
+                  <FormInput
+                    className="mb-4 rounded-xl bg-white px-4 py-3 text-sm text-[#25332C]"
                     keyboardType="decimal-pad"
                     placeholder="0.00"
-                    placeholderTextColor="#9AA39D"
                     value={form.amount}
                     onChangeText={(value) => updateForm("amount", value)}
                   />
@@ -1005,10 +1006,9 @@ export default function Transfers() {
                   <Text className="mb-1.5 text-xs font-bold text-[#46534B]">
                     Date
                   </Text>
-                  <TextInput
-                    className="mb-4 rounded-xl border border-[#E1E6E0] bg-white px-4 py-3 text-sm text-[#25332C]"
+                  <FormInput
+                    className="mb-4 rounded-xl bg-white px-4 py-3 text-sm text-[#25332C]"
                     placeholder="YYYY-MM-DD"
-                    placeholderTextColor="#9AA39D"
                     value={form.date}
                     onChangeText={(value) => updateForm("date", value)}
                   />
@@ -1018,10 +1018,9 @@ export default function Transfers() {
               <Text className="mb-1.5 text-xs font-bold text-[#46534B]">
                 Category
               </Text>
-              <TextInput
-                className="mb-2 rounded-xl border border-[#E1E6E0] bg-white px-4 py-3 text-sm text-[#25332C]"
+              <FormInput
+                className="mb-2 rounded-xl bg-white px-4 py-3 text-sm text-[#25332C]"
                 placeholder="Choose or enter a category"
-                placeholderTextColor="#9AA39D"
                 value={form.category}
                 onChangeText={(value) => updateForm("category", value)}
               />
@@ -1032,9 +1031,10 @@ export default function Transfers() {
                   contentContainerStyle={{ gap: 7, paddingBottom: 14 }}
                 >
                   {categoryOptions.map((category) => (
-                    <Pressable
+                    <FormOption
                       key={category}
-                      className={`rounded-full border px-3 py-2 ${form.category === category ? "border-[#315640] bg-[#315640]" : "border-[#E1E6E0] bg-white"}`}
+                      selected={form.category === category}
+                      className={`rounded-full px-3 py-2 ${form.category === category ? "bg-[#315640]" : "bg-white"}`}
                       onPress={() => updateForm("category", category)}
                     >
                       <Text
@@ -1042,7 +1042,7 @@ export default function Transfers() {
                       >
                         {category}
                       </Text>
-                    </Pressable>
+                    </FormOption>
                   ))}
                 </ScrollView>
               )}
@@ -1052,9 +1052,10 @@ export default function Transfers() {
               </Text>
               <View className="mb-4 flex-row flex-wrap gap-2">
                 {paymentMethods.map((method) => (
-                  <Pressable
+                  <FormOption
                     key={method}
-                    className={`rounded-full border px-3 py-2 ${form.paymentMethod === method ? "border-[#315640] bg-[#315640]" : "border-[#E1E6E0] bg-white"}`}
+                    selected={form.paymentMethod === method}
+                    className={`rounded-full px-3 py-2 ${form.paymentMethod === method ? "bg-[#315640]" : "bg-white"}`}
                     onPress={() => updateForm("paymentMethod", method)}
                   >
                     <Text
@@ -1062,18 +1063,17 @@ export default function Transfers() {
                     >
                       {method}
                     </Text>
-                  </Pressable>
+                  </FormOption>
                 ))}
               </View>
 
               <Text className="mb-1.5 text-xs font-bold text-[#46534B]">
                 Notes
               </Text>
-              <TextInput
-                className="mb-4 min-h-[78px] rounded-xl border border-[#E1E6E0] bg-white px-4 py-3 text-sm text-[#25332C]"
+              <FormInput
+                className="mb-4 min-h-[78px] rounded-xl bg-white px-4 py-3 text-sm text-[#25332C]"
                 multiline
                 placeholder="Add any useful details"
-                placeholderTextColor="#9AA39D"
                 textAlignVertical="top"
                 value={form.notes}
                 onChangeText={(value) => updateForm("notes", value)}

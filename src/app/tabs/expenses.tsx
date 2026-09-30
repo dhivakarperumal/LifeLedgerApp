@@ -8,8 +8,7 @@ import {
     Pressable,
     ScrollView,
     Text,
-    TextInput,
-    View,
+    View
 } from "react-native";
 import {
     SafeAreaView,
@@ -17,6 +16,7 @@ import {
 } from "react-native-safe-area-context";
 import api, { getApiErrorMessage, logoutUser } from "../../api";
 import { AddButton } from "../../components/AddButton";
+import { FormInput, FormOption } from "../../components/FormControls";
 import { SearchBar } from "../../components/SearchBar";
 
 type ExpenseItem = {
@@ -925,8 +925,9 @@ export default function Expenses() {
                     };
                     const icon = categoryIcons[item] || "pricetag-outline";
                     return (
-                      <Pressable
+                      <FormOption
                         key={item}
+                        selected={selected}
                         onPress={() =>
                           setForm((current) => ({ ...current, category: item }))
                         }
@@ -935,8 +936,6 @@ export default function Expenses() {
                           paddingVertical: 8,
                           borderRadius: 12,
                           backgroundColor: selected ? "#1B4332" : "#F8FAFC",
-                          borderWidth: 1.5,
-                          borderColor: selected ? "#1B4332" : "#E2E8F0",
                           flexDirection: "row",
                           alignItems: "center",
                           gap: 6,
@@ -956,7 +955,7 @@ export default function Expenses() {
                         >
                           {item}
                         </Text>
-                      </Pressable>
+                      </FormOption>
                     );
                   })}
                 </ScrollView>
@@ -973,13 +972,13 @@ export default function Expenses() {
                       color="#94A3B8"
                       style={{ marginRight: 8 }}
                     />
-                    <TextInput
+                    <FormInput
+                      bordered={false}
                       value={form.date}
                       onChangeText={(text) =>
                         setForm((current) => ({ ...current, date: text }))
                       }
                       placeholder="YYYY-MM-DD"
-                      placeholderTextColor="#CBD5E1"
                       style={inlineInputStyle}
                     />
                   </View>
@@ -993,13 +992,13 @@ export default function Expenses() {
                       color="#94A3B8"
                       style={{ marginRight: 8 }}
                     />
-                    <TextInput
+                    <FormInput
+                      bordered={false}
                       value={form.time}
                       onChangeText={(text) =>
                         setForm((current) => ({ ...current, time: text }))
                       }
                       placeholder="HH:MM"
-                      placeholderTextColor="#CBD5E1"
                       style={inlineInputStyle}
                     />
                   </View>
@@ -1016,8 +1015,9 @@ export default function Expenses() {
                     const selected = form.payment_method === method;
                     const icon = paymentIcons[method] || "card-outline";
                     return (
-                      <Pressable
+                      <FormOption
                         key={method}
+                        selected={selected}
                         onPress={() =>
                           setForm((current) => ({
                             ...current,
@@ -1029,8 +1029,6 @@ export default function Expenses() {
                           paddingVertical: 8,
                           borderRadius: 12,
                           backgroundColor: selected ? "#F0FDF4" : "#F8FAFC",
-                          borderWidth: 1.5,
-                          borderColor: selected ? "#2D6A4F" : "#E2E8F0",
                           flexDirection: "row",
                           alignItems: "center",
                           gap: 5,
@@ -1050,7 +1048,7 @@ export default function Expenses() {
                         >
                           {method}
                         </Text>
-                      </Pressable>
+                      </FormOption>
                     );
                   })}
                 </View>
@@ -1354,11 +1352,11 @@ function TextField({
             style={{ marginRight: 8, marginTop: multiline ? 2 : 0 }}
           />
         )}
-        <TextInput
+        <FormInput
+          bordered={false}
           value={value}
           onChangeText={onChangeText}
           placeholder={placeholder}
-          placeholderTextColor="#CBD5E1"
           keyboardType={keyboardType}
           multiline={multiline}
           numberOfLines={multiline ? 4 : 1}
@@ -1376,8 +1374,8 @@ function TextField({
 
 const inputWrapperStyle = {
   backgroundColor: "#F8FAFC",
-  borderWidth: 1.5,
-  borderColor: "#E2E8F0",
+  borderWidth: 1,
+  borderColor: Colors.border,
   borderRadius: 14,
   paddingHorizontal: 14,
   paddingVertical: 10,
