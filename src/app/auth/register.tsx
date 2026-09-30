@@ -178,33 +178,38 @@ export default function RegisterScreen() {
           className="flex-1"
         >
           <View className="grow pb-6">
-            <View className="overflow-hidden rounded-b-[36px] bg-[#1E5128] px-6 pt-5 pb-[30px]">
-              <View className="absolute -right-[45px] -top-[35px] h-[170px] w-[170px] rounded-full bg-[rgba(215,216,59,0.12)]" />
-              <View className="flex-row items-center gap-[10px]">
-                <View className="h-11 w-11 items-center justify-center rounded-[14px] bg-[#ADBEA3]">
-                  <Image
-                    source={require("../../../assets/images/logo.png")}
-                    className="h-[30px] w-[30px]"
-                    resizeMode="contain"
-                    accessibilityLabel="Life Ledger logo"
-                  />
+            <ImageBackground
+              source={require("../../../assets/images/bgbanner.png")}
+              resizeMode="cover"
+              className="overflow-hidden rounded-b-[36px] w-full h-[220px]"
+            >
+              <View className="flex-1 bg-[rgba(18,53,26,0.55)] px-6 pt-5 pb-[30px] justify-center">
+                <View className="flex-row items-center gap-[10px]">
+                  <View className="h-11 w-11 items-center justify-center rounded-[14px] bg-white/25">
+                    <Image
+                      source={require("../../../assets/images/logo.png")}
+                      className="h-[30px] w-[30px]"
+                      resizeMode="contain"
+                      accessibilityLabel="Life Ledger logo"
+                    />
+                  </View>
+                  <View>
+                    <Text className="text-xl font-bold text-white">
+                      Life <Text className="text-[#D7D83B]">Ledger</Text>
+                    </Text>
+                    <Text className="mt-px text-xs text-white/75">
+                      Track Today · Build a Better Tomorrow
+                    </Text>
+                  </View>
                 </View>
-                <View>
-                  <Text className="text-xl font-bold text-white">
-                    Life <Text className="text-[#D7D83B]">Ledger</Text>
-                  </Text>
-                  <Text className="mt-px text-xs text-[#ADBEA3]">
-                    Track Today · Build a Better Tomorrow
-                  </Text>
-                </View>
+                <Text className="mt-7 text-2xl font-bold text-white">
+                  Create your account
+                </Text>
+                <Text className="mt-[5px] text-sm text-white/90">
+                  Start tracking your life with clarity and confidence.
+                </Text>
               </View>
-              <Text className="mt-7 text-2xl font-bold text-white">
-                Create your account
-              </Text>
-              <Text className="mt-[5px] text-sm text-[#ADBEA3]">
-                Start tracking your life with clarity and confidence.
-              </Text>
-            </View>
+            </ImageBackground>
 
             <View className="mx-4 -mt-px rounded-[28px] bg-white p-6 shadow-md shadow-black/10">
               <FormField

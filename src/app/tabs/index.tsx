@@ -459,16 +459,7 @@ export default function Index() {
               className="mt-5 flex-row items-center rounded-3xl px-5 py-4"
               style={{ backgroundColor: "rgba(255,255,255,0.12)" }}
             >
-              <View
-                className="mr-3 h-10 w-10 items-center justify-center rounded-full"
-                style={{ backgroundColor: Colors.olive }}
-              >
-                <Ionicons name="leaf" size={20} color={Colors.accent} />
-              </View>
-              <Text
-                className="flex-1 text-base italic"
-                style={{ color: Colors.white }}
-              >
+              <Text className="flex-1 text-base italic" style={{ color: Colors.white }}>
                 “{homeQuote}”
               </Text>
               <Ionicons name="chevron-forward" size={20} color={Colors.white} />

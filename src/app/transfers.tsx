@@ -41,6 +41,14 @@ type IncomeRecord = {
   remaining_amount?: number | string;
 };
 
+type ExpenseRecord = {
+  id: number | string;
+  title?: string;
+  category?: string;
+  expense_amount?: number | string;
+  amount?: number | string;
+};
+
 type TransferForm = {
   title: string;
   amount: string;
@@ -153,8 +161,11 @@ export default function Transfers() {
   const insets = useSafeAreaInsets();
   const [transfers, setTransfers] = useState<TransferRecord[]>([]);
   const [incomes, setIncomes] = useState<IncomeRecord[]>([]);
+  const [expenses, setExpenses] = useState<ExpenseRecord[]>([]);
   const [categoryOptions, setCategoryOptions] = useState<string[]>([]);
   const [selectedIncomeId, setSelectedIncomeId] = useState("");
+  const [selectedExpenseId, setSelectedExpenseId] = useState("");
+  const [expensePickerVisible, setExpensePickerVisible] = useState(false);
   const [selectedTransfer, setSelectedTransfer] =
     useState<TransferRecord | null>(null);
   const [editingTransferId, setEditingTransferId] = useState<
@@ -183,11 +194,13 @@ export default function Transfers() {
       const transferResponse = await api.get("/transfers");
       setTransfers(getRows(transferResponse.data, "transfers"));
 
-      const [incomeResult, categoryResult] = await Promise.allSettled([
-        api.get("/incomes"),
-        api.get("/categories"),
-      ]);
-      for (const result of [incomeResult, categoryResult]) {
+      const [incomeResult, categoryResult, expensesResult] =
+        await Promise.allSettled([
+          api.get("/incomes"),
+          api.get("/categories"),
+          api.get("/expenses"),
+        ]);
+      for (const result of [incomeResult, categoryResult, expensesResult]) {
         if (
           result.status === "rejected" &&
           (result.reason as { status?: number })?.status === 401
@@ -201,6 +214,12 @@ export default function Transfers() {
         setIncomes(getRows(incomeResult.value.data, "incomes"));
       } else {
         setIncomes([]);
+      }
+
+      if (expensesResult.status === "fulfilled") {
+        setExpenses(getRows(expensesResult.value.data, "expenses"));
+      } else {
+        setExpenses([]);
       }
 
       if (categoryResult.status === "fulfilled") {
@@ -318,6 +337,8 @@ export default function Transfers() {
   const closeModal = () => {
     setModalVisible(false);
     setSelectedIncomeId("");
+    setSelectedExpenseId("");
+    setExpensePickerVisible(false);
     setEditingTransferId(null);
     setExistingReceipt(null);
     setReceipt(null);
@@ -326,6 +347,8 @@ export default function Transfers() {
 
   const openAddTransfer = () => {
     setSelectedIncomeId("");
+    setSelectedExpenseId("");
+    setExpensePickerVisible(false);
     setEditingTransferId(null);
     setExistingReceipt(null);
     setReceipt(null);
@@ -335,6 +358,8 @@ export default function Transfers() {
 
   const openEditTransfer = (transfer: TransferRecord) => {
     setSelectedTransfer(null);
+    setSelectedExpenseId("");
+    setExpensePickerVisible(false);
     setEditingTransferId(transfer.id);
     setExistingReceipt(transfer.receipt || null);
     setSelectedIncomeId(
@@ -897,6 +922,99 @@ export default function Transfers() {
               keyboardShouldPersistTaps="handled"
               showsVerticalScrollIndicator={false}
             >
+              <View className="mb-4">
+                <View className="mb-2 flex-row items-center justify-between">
+                  <Text className="text-xs font-bold uppercase tracking-[0.8px] text-[#7B8589]">
+                    Transfer amount ₹
+                  </Text>
+                  <Pressable
+                    accessibilityRole="button"
+                    onPress={() => {
+                      setSelectedExpenseId("");
+                      setExpensePickerVisible(false);
+                    }}
+                  >
+                    <Text className="text-xs font-bold text-[#315640]">
+                      Enter manually →
+                    </Text>
+                  </Pressable>
+                </View>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Choose an expense to fill the transfer amount"
+                  accessibilityState={{ expanded: expensePickerVisible }}
+                  className="h-12 flex-row items-center justify-between rounded-xl border border-[#E5EAE7] bg-white px-4"
+                  onPress={() => setExpensePickerVisible((visible) => !visible)}
+                >
+                  <Text
+                    className="mr-3 flex-1 text-sm font-semibold text-[#293930]"
+                    numberOfLines={1}
+                  >
+                    {selectedExpenseId
+                      ? (() => {
+                          const selectedExpense = expenses.find(
+                            (expense) =>
+                              String(expense.id) === selectedExpenseId,
+                          );
+                          return selectedExpense
+                            ? `${selectedExpense.title || selectedExpense.category || `Expense ${selectedExpense.id}`} — ${formatAmount(selectedExpense.expense_amount ?? selectedExpense.amount)}`
+                            : "— No transfer / select record —";
+                        })()
+                      : "— No transfer / select record —"}
+                  </Text>
+                  <Ionicons
+                    name={expensePickerVisible ? "chevron-up" : "chevron-down"}
+                    size={18}
+                    color="#526058"
+                  />
+                </Pressable>
+                {expensePickerVisible && (
+                  <View className="mt-1 max-h-56 rounded-xl border border-[#E5EAE7] bg-white p-1">
+                    <ScrollView nestedScrollEnabled>
+                      {expenses.length > 0 ? (
+                        expenses.map((expense) => {
+                          const selected =
+                            String(expense.id) === selectedExpenseId;
+                          return (
+                            <FormOption
+                              key={expense.id}
+                              selected={selected}
+                              className={`min-h-10 flex-row items-center rounded-lg px-3 py-2 ${selected ? "bg-[#E7F0E8]" : "bg-white"}`}
+                              onPress={() => {
+                                const amount = Number(
+                                  expense.expense_amount ?? expense.amount ?? 0,
+                                );
+                                setSelectedExpenseId(String(expense.id));
+                                updateForm("amount", String(amount));
+                                setExpensePickerVisible(false);
+                              }}
+                            >
+                              <Text
+                                className="mr-3 flex-1 text-sm text-[#293930]"
+                                numberOfLines={1}
+                              >
+                                {expense.title ||
+                                  expense.category ||
+                                  `Expense ${expense.id}`}
+                              </Text>
+                              <Text className="text-sm font-semibold text-[#526058]">
+                                {formatAmount(
+                                  expense.expense_amount ?? expense.amount,
+                                )}
+                              </Text>
+                            </FormOption>
+                          );
+                        })
+                      ) : (
+                        <Text className="px-3 py-4 text-sm text-[#7B8589]">
+                          No expenses available.
+                        </Text>
+                      )}
+                    </ScrollView>
+                  </View>
+                )}
+              </View>
+
               <Text className="mb-2 text-xs font-bold text-[#46534B]">
                 Source income (optional)
               </Text>
