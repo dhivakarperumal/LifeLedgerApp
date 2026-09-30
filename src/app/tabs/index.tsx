@@ -4,11 +4,11 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
 import {
-    ActivityIndicator,
-    Pressable,
-    ScrollView,
-    Text,
-    View,
+  ActivityIndicator,
+  Pressable,
+  ScrollView,
+  Text,
+  View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { TopHeader } from "../../Navigations/TopHeader";
@@ -168,6 +168,7 @@ export default function Index() {
 
   const [overview, setOverview] = useState({
     totalSpent: 0,
+    todaySpent: 0,
     thisMonth: 0,
     thisWeek: 0,
   });
@@ -299,6 +300,7 @@ export default function Index() {
           startOfWeek.setHours(0, 0, 0, 0);
 
           let totalSpent = 0;
+          let todaySpent = 0;
           let thisMonthSpent = 0;
           let thisWeekSpent = 0;
 
@@ -309,6 +311,11 @@ export default function Index() {
             if (isNaN(amount)) return;
 
             totalSpent += amount;
+
+            const expenseDateValue = eventDateKey(exp.expense_date);
+            if (expenseDateValue === dateKey(now)) {
+              todaySpent += amount;
+            }
 
             if (exp.expense_date) {
               const expDate = new Date(exp.expense_date);
@@ -331,6 +338,7 @@ export default function Index() {
 
           setOverview({
             totalSpent,
+            todaySpent,
             thisMonth: thisMonthSpent,
             thisWeek: thisWeekSpent,
           });
