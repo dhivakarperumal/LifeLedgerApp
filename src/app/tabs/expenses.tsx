@@ -3,19 +3,20 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useMemo, useState } from "react";
 import {
-  Alert,
-  Modal,
-  Pressable,
-  ScrollView,
-  Text,
-  TextInput,
-  View,
+    Alert,
+    Modal,
+    Pressable,
+    ScrollView,
+    Text,
+    TextInput,
+    View,
 } from "react-native";
 import {
-  SafeAreaView,
-  useSafeAreaInsets,
+    SafeAreaView,
+    useSafeAreaInsets,
 } from "react-native-safe-area-context";
 import api, { getApiErrorMessage, logoutUser } from "../../api";
+import { AddButton } from "../../components/AddButton";
 import { SearchBar } from "../../components/SearchBar";
 
 type ExpenseItem = {
@@ -671,31 +672,11 @@ export default function Expenses() {
         </ScrollView>
       </View>
 
-      {/* ── FAB ── */}
-      <Pressable
+      <AddButton
         onPress={() => setIsModalVisible(true)}
-        accessibilityRole="button"
         accessibilityLabel="Add expense"
         accessibilityHint="Opens the new expense form"
-        style={{
-          position: "absolute",
-          right: 20,
-          bottom: insets.bottom + 90,
-          width: 60,
-          height: 60,
-          borderRadius: 30,
-          backgroundColor: "#1B4332",
-          alignItems: "center",
-          justifyContent: "center",
-          shadowColor: "#1B4332",
-          shadowOffset: { width: 0, height: 6 },
-          shadowOpacity: 0.4,
-          shadowRadius: 12,
-          elevation: 10,
-        }}
-      >
-        <Ionicons name="add" size={30} color="#FFFFFF" />
-      </Pressable>
+      />
 
       {/* ── Category Filter Modal ── */}
       <Modal

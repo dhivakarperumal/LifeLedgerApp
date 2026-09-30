@@ -4,21 +4,22 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useMemo, useState } from "react";
 import {
-  ActivityIndicator,
-  Alert,
-  Linking,
-  Modal,
-  Pressable,
-  ScrollView,
-  Text,
-  TextInput,
-  View,
+    ActivityIndicator,
+    Alert,
+    Linking,
+    Modal,
+    Pressable,
+    ScrollView,
+    Text,
+    TextInput,
+    View,
 } from "react-native";
 import {
-  SafeAreaView,
-  useSafeAreaInsets,
+    SafeAreaView,
+    useSafeAreaInsets,
 } from "react-native-safe-area-context";
 import api, { API_BASE_URL, getApiErrorMessage, logoutUser } from "../api";
+import { AddButton } from "../components/AddButton";
 import { Colors } from "../constants/colors";
 
 type IncomeRecord = {
@@ -832,16 +833,11 @@ export default function Income() {
         )}
       </ScrollView>
 
-      <Pressable
+      <AddButton
         onPress={openAddIncome}
-        accessibilityRole="button"
         accessibilityLabel="Add income"
         accessibilityHint="Opens the new income form"
-        className="absolute right-5 h-14 w-14 items-center justify-center rounded-full bg-[#315640] shadow-lg"
-        style={{ bottom: 140, elevation: 8 }}
-      >
-        <Ionicons name="add" size={28} color={Colors.white} />
-      </Pressable>
+      />
 
       <Modal
         animationType="slide"

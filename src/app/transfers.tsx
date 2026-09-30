@@ -19,6 +19,7 @@ import {
   useSafeAreaInsets,
 } from "react-native-safe-area-context";
 import api, { API_BASE_URL, getApiErrorMessage, logoutUser } from "../api";
+import { AddButton } from "../components/AddButton";
 import { Colors } from "../constants/colors";
 
 type TransferRecord = {
@@ -858,16 +859,11 @@ export default function Transfers() {
         )}
       </ScrollView>
 
-      <Pressable
+      <AddButton
         onPress={openAddTransfer}
-        accessibilityRole="button"
         accessibilityLabel="Add transfer"
         accessibilityHint="Opens the new transfer form"
-        className="absolute right-5 h-14 w-14 items-center justify-center rounded-full bg-[#315640] shadow-lg"
-        style={{ bottom: 140, elevation: 8 }}
-      >
-        <Ionicons name="add" size={28} color={Colors.white} />
-      </Pressable>
+      />
 
       <Modal
         animationType="slide"

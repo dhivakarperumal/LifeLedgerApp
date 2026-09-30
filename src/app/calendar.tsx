@@ -3,20 +3,21 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useState } from "react";
 import {
-  ActivityIndicator,
-  Alert,
-  Modal,
-  Pressable,
-  ScrollView,
-  Text,
-  TextInput,
-  View,
+    ActivityIndicator,
+    Alert,
+    Modal,
+    Pressable,
+    ScrollView,
+    Text,
+    TextInput,
+    View,
 } from "react-native";
 import {
-  SafeAreaView,
-  useSafeAreaInsets,
+    SafeAreaView,
+    useSafeAreaInsets,
 } from "react-native-safe-area-context";
 import api, { getApiErrorMessage } from "../api";
+import { AddButton } from "../components/AddButton";
 import { Colors } from "../constants/colors";
 
 type CalendarEntry = {
@@ -579,17 +580,17 @@ export default function CalendarScreen() {
         </Pressable>
       </ScrollView>
 
-      <Pressable
+      <AddButton
         onPress={() => openForm(activeType)}
-        accessibilityRole="button"
         accessibilityLabel={
-          activeType === "event" ? "New event" : "New reminder"
+          activeType === "event" ? "Add event" : "Add reminder"
         }
-        className="absolute right-5 h-14 w-14 items-center justify-center rounded-full bg-[#366039] shadow-lg"
-        style={{ bottom: 140, elevation: 8 }}
-      >
-        <Ionicons name="add" size={28} color={Colors.white} />
-      </Pressable>
+        accessibilityHint={
+          activeType === "event"
+            ? "Opens the new event form"
+            : "Opens the new reminder form"
+        }
+      />
 
       <Modal
         visible={modalType !== null}

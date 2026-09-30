@@ -3,20 +3,21 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useMemo, useState } from "react";
 import {
-  ActivityIndicator,
-  Alert,
-  Modal,
-  Pressable,
-  ScrollView,
-  Text,
-  TextInput,
-  View,
+    ActivityIndicator,
+    Alert,
+    Modal,
+    Pressable,
+    ScrollView,
+    Text,
+    TextInput,
+    View,
 } from "react-native";
 import {
-  SafeAreaView,
-  useSafeAreaInsets,
+    SafeAreaView,
+    useSafeAreaInsets,
 } from "react-native-safe-area-context";
 import api, { getApiErrorMessage, getStoredUser, logoutUser } from "../api";
+import { AddButton } from "../components/AddButton";
 import { Colors } from "../constants/colors";
 
 type CategoryType =
@@ -303,7 +304,10 @@ export default function Categories() {
       <ScrollView
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingHorizontal: 18, paddingBottom: 100 }}
+        contentContainerStyle={{
+          paddingHorizontal: 18,
+          paddingBottom: insets.bottom + 90,
+        }}
       >
         <View className="mb-4 mt-6 flex-row gap-3">
           <View className="flex-1 rounded-2xl bg-[#315640] p-4">
@@ -495,16 +499,11 @@ export default function Categories() {
         )}
       </ScrollView>
 
-      <Pressable
+      <AddButton
         onPress={openAddModal}
-        accessibilityRole="button"
         accessibilityLabel="Add category"
         accessibilityHint="Opens the new category form"
-        className="absolute right-5 h-14 w-14 items-center justify-center rounded-full bg-[#315640] shadow-lg"
-        style={{ bottom: 140, elevation: 8 }}
-      >
-        <Ionicons name="add" size={28} color={Colors.white} />
-      </Pressable>
+      />
 
       <Modal
         animationType="slide"

@@ -1,38 +1,39 @@
 import { Ionicons } from "@expo/vector-icons";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import {
-  AudioModule,
-  RecordingPresets,
-  setAudioModeAsync,
-  useAudioRecorder,
+    AudioModule,
+    RecordingPresets,
+    setAudioModeAsync,
+    useAudioRecorder,
 } from "expo-audio";
 import * as DocumentPicker from "expo-document-picker";
 import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import {
-  useCallback,
-  useEffect,
-  useEffectEvent,
-  useMemo,
-  useState,
+    useCallback,
+    useEffect,
+    useEffectEvent,
+    useMemo,
+    useState,
 } from "react";
 import {
-  ActivityIndicator,
-  Alert,
-  Modal,
-  Platform,
-  Pressable,
-  ScrollView,
-  Text,
-  TextInput,
-  View,
+    ActivityIndicator,
+    Alert,
+    Modal,
+    Platform,
+    Pressable,
+    ScrollView,
+    Text,
+    TextInput,
+    View,
 } from "react-native";
 import {
-  SafeAreaView,
-  useSafeAreaInsets,
+    SafeAreaView,
+    useSafeAreaInsets,
 } from "react-native-safe-area-context";
 import api, { getApiErrorMessage, logoutUser } from "../../api";
-import { Colors } from "../../constants/colors";
+import { AddButton } from "../../components/AddButton";
 import { SearchBar } from "../../components/SearchBar";
+import { Colors } from "../../constants/colors";
 
 type DiaryEntry = {
   id: number | string;
@@ -809,7 +810,6 @@ export default function Diary() {
           style={{ marginBottom: 12 }}
         />
 
-
         <Pressable
           onPress={() => setFilterMenuVisible(true)}
           accessibilityRole="button"
@@ -834,7 +834,6 @@ export default function Diary() {
           </Text>
           <Ionicons name="chevron-down" size={18} color={Colors.sage} />
         </Pressable>
-
 
         {selectedFilter === "range" ? (
           <View style={{ marginBottom: 10 }}>
@@ -1517,32 +1516,11 @@ export default function Diary() {
         </View>
       </Modal>
 
-      <Pressable
+      <AddButton
         onPress={openNewEntry}
-        accessibilityRole="button"
         accessibilityLabel="Write diary entry"
         accessibilityHint="Opens a new diary entry"
-        style={{
-          position: "absolute",
-          right: 20,
-          bottom: 140,
-          width: 58,
-          height: 58,
-          borderRadius: 29,
-          borderWidth: 2,
-          borderColor: "#B8C0BC",
-          backgroundColor: Colors.forest,
-          alignItems: "center",
-          justifyContent: "center",
-          shadowColor: "#000",
-          shadowOffset: { width: 0, height: 4 },
-          shadowOpacity: 0.2,
-          shadowRadius: 7,
-          elevation: 8,
-        }}
-      >
-        <Ionicons name="add" size={30} color={Colors.white} />
-      </Pressable>
+      />
 
       <Modal
         visible={editorVisible}

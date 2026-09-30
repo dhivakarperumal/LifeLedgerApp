@@ -24,6 +24,7 @@ import {
     useSafeAreaInsets,
 } from "react-native-safe-area-context";
 import api, { API_BASE_URL, getApiErrorMessage, logoutUser } from "../../api";
+import { AddButton } from "../../components/AddButton";
 import { SearchBar } from "../../components/SearchBar";
 import { Colors } from "../../constants/colors";
 
@@ -829,32 +830,11 @@ export default function Memories() {
         )}
       </ScrollView>
 
-      <Pressable
+      <AddButton
         onPress={openNewMemory}
-        accessibilityRole="button"
         accessibilityLabel="Add memory"
         accessibilityHint="Opens the new memory form"
-        style={{
-          position: "absolute",
-          right: 20,
-          bottom: 140,
-          width: 58,
-          height: 58,
-          borderRadius: 29,
-          borderWidth: 2,
-          borderColor: "#B8C0BC",
-          backgroundColor: Colors.forest,
-          alignItems: "center",
-          justifyContent: "center",
-          shadowColor: "#000",
-          shadowOffset: { width: 0, height: 4 },
-          shadowOpacity: 0.2,
-          shadowRadius: 7,
-          elevation: 8,
-        }}
-      >
-        <Ionicons name="add" size={30} color={Colors.white} />
-      </Pressable>
+      />
 
       <Modal
         visible={editorVisible}
