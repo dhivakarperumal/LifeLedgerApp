@@ -24,6 +24,8 @@ import {
     isDateInRange,
     type DateRangeSelection,
 } from "../components/DateRangeFilter";
+import { DateTimePickerComponent } from "../components/DateTimePickerComponent";
+import { formatLocalDate, parseLocalDate } from "../components/dateTimeUtils";
 import {
     countActiveFilters,
     DEFAULT_FILTER_STATE,
@@ -1211,15 +1213,17 @@ export default function Transfers() {
                   />
                 </View>
                 <View className="flex-1">
-                  <Text className="mb-1.5 text-xs font-bold text-[#46534B]">
-                    Date
-                  </Text>
-                  <FormInput
-                    className="mb-4 rounded-xl bg-white px-4 py-3 text-sm text-[#25332C]"
-                    placeholder="YYYY-MM-DD"
-                    value={form.date}
-                    onChangeText={(value) => updateForm("date", value)}
-                  />
+                  <View className="mb-4">
+                    <DateTimePickerComponent
+                      mode="date"
+                      value={parseLocalDate(form.date)}
+                      onChange={(date) => {
+                        if (date) updateForm("date", formatLocalDate(date));
+                      }}
+                      label="Date"
+                      placeholder="Select date"
+                    />
+                  </View>
                 </View>
               </View>
 

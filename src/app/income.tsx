@@ -4,31 +4,33 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useMemo, useState } from "react";
 import {
-  ActivityIndicator,
-  Alert,
-  Linking,
-  Modal,
-  Pressable,
-  RefreshControl,
-  ScrollView,
-  Text,
-  useWindowDimensions,
-  View,
+    ActivityIndicator,
+    Alert,
+    Linking,
+    Modal,
+    Pressable,
+    RefreshControl,
+    ScrollView,
+    Text,
+    useWindowDimensions,
+    View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Svg, { Path } from "react-native-svg";
 import api, { API_BASE_URL, getApiErrorMessage, logoutUser } from "../api";
 import { AddButton } from "../components/AddButton";
 import {
-  createDateRangeSelection,
-  isDateInRange,
-  type DateRangeSelection,
+    createDateRangeSelection,
+    isDateInRange,
+    type DateRangeSelection,
 } from "../components/DateRangeFilter";
+import { DateTimePickerComponent } from "../components/DateTimePickerComponent";
+import { formatLocalDate, parseLocalDate } from "../components/dateTimeUtils";
 import {
-  countActiveFilters,
-  DEFAULT_FILTER_STATE,
-  type FilterState,
-  type SortOption,
+    countActiveFilters,
+    DEFAULT_FILTER_STATE,
+    type FilterState,
+    type SortOption,
 } from "../components/filters";
 import { FormInput, FormOption } from "../components/FormControls";
 import { GradientSafeAreaView as SafeAreaView } from "../components/GradientSafeAreaView";
@@ -1206,15 +1208,17 @@ export default function Income() {
                   />
                 </View>
                 <View className="flex-1">
-                  <Text className="mb-1.5 text-xs font-bold text-[#46534B]">
-                    Date
-                  </Text>
-                  <FormInput
-                    className="mb-4 rounded-xl bg-white px-4 py-3 text-sm text-[#25332C]"
-                    placeholder="YYYY-MM-DD"
-                    value={form.date}
-                    onChangeText={(value) => updateForm("date", value)}
-                  />
+                  <View className="mb-4">
+                    <DateTimePickerComponent
+                      mode="date"
+                      value={parseLocalDate(form.date)}
+                      onChange={(date) => {
+                        if (date) updateForm("date", formatLocalDate(date));
+                      }}
+                      label="Date"
+                      placeholder="Select date"
+                    />
+                  </View>
                 </View>
               </View>
 

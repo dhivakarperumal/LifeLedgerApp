@@ -27,15 +27,20 @@ import {
     isDateInRange,
     type DateRangeSelection,
 } from "../../components/DateRangeFilter";
-import { FormInput, FormOption } from "../../components/FormControls";
-import { GradientSafeAreaView as SafeAreaView } from "../../components/GradientSafeAreaView";
-import { SearchBar } from "../../components/SearchBar";
+import { DateTimePickerComponent } from "../../components/DateTimePickerComponent";
+import {
+    formatLocalDateTime,
+    parseLocalDateTimeValue,
+} from "../../components/dateTimeUtils";
 import {
     countActiveFilters,
     DEFAULT_FILTER_STATE,
     type FilterState,
     type ViewModeOption,
 } from "../../components/filters";
+import { FormInput, FormOption } from "../../components/FormControls";
+import { GradientSafeAreaView as SafeAreaView } from "../../components/GradientSafeAreaView";
+import { SearchBar } from "../../components/SearchBar";
 import { Colors } from "../../constants/colors";
 
 type Memory = {
@@ -91,7 +96,7 @@ const initialForm: MemoryForm = {
   title: "",
   description: "",
   category_id: "",
-  memory_date: new Date().toISOString().slice(0, 10),
+  memory_date: formatLocalDateTime(new Date()),
   location: "",
   mood: "Happy",
   tags: "",
@@ -417,7 +422,9 @@ export default function Memories() {
       description: memory.description || "",
       category_id: memory.category_id ? String(memory.category_id) : "",
       memory_date: memory.memory_date
-        ? new Date(memory.memory_date).toISOString().slice(0, 10)
+        ? formatLocalDateTime(
+            parseLocalDateTimeValue(memory.memory_date) ?? new Date(),
+          )
         : initialForm.memory_date,
       location: memory.location || "",
       mood: memory.mood || "Happy",
@@ -1196,11 +1203,16 @@ export default function Memories() {
                   );
                 })}
               </ScrollView>
-              <FormField
-                label="Date"
-                value={form.memory_date}
-                onChangeText={(value) => updateForm("memory_date", value)}
-                placeholder="YYYY-MM-DD"
+              <DateTimePickerComponent
+                mode="datetime"
+                value={parseLocalDateTimeValue(form.memory_date)}
+                onChange={(date) => {
+                  if (date) {
+                    updateForm("memory_date", formatLocalDateTime(date));
+                  }
+                }}
+                label="Date & time"
+                placeholder="Select date and time"
               />
               <FormField
                 label="Location"
@@ -1219,13 +1231,6 @@ export default function Memories() {
                 value={form.tags}
                 onChangeText={(value) => updateForm("tags", value)}
                 placeholder="family, travel, celebration"
-              />
-              <FormField
-                label="Voice note"
-                value={form.voice_note}
-                onChangeText={(value) => updateForm("voice_note", value)}
-                placeholder="Add a note or voice summary"
-                multiline
               />
               <Pressable
                 onPress={() => void toggleVoiceRecording()}

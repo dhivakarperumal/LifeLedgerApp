@@ -18,15 +18,21 @@ import {
   isDateInRange,
   type DateRangeSelection,
 } from "../../components/DateRangeFilter";
-import { FormInput, FormOption } from "../../components/FormControls";
-import { GradientSafeAreaView as SafeAreaView } from "../../components/GradientSafeAreaView";
-import { SearchBar } from "../../components/SearchBar";
+import { DateTimePickerComponent } from "../../components/DateTimePickerComponent";
+import {
+  formatLocalDate,
+  formatLocalTime,
+  parseLocalDateTime,
+} from "../../components/dateTimeUtils";
 import {
   DEFAULT_FILTER_STATE,
   type FilterState,
   type SortOption,
   type ViewModeOption,
 } from "../../components/filters";
+import { FormInput, FormOption } from "../../components/FormControls";
+import { GradientSafeAreaView as SafeAreaView } from "../../components/GradientSafeAreaView";
+import { SearchBar } from "../../components/SearchBar";
 import { Colors } from "../../constants/colors";
 
 type ExpenseItem = {
@@ -1079,48 +1085,21 @@ export default function Expenses() {
                 </ScrollView>
               </View>
 
-              {/* Date & Time */}
-              <View style={{ flexDirection: "row", gap: 12, marginBottom: 16 }}>
-                <View style={{ flex: 1 }}>
-                  <ModalSectionLabel label="DATE" />
-                  <View style={inputWrapperStyle}>
-                    <Ionicons
-                      name="calendar-outline"
-                      size={16}
-                      color="#94A3B8"
-                      style={{ marginRight: 8 }}
-                    />
-                    <FormInput
-                      bordered={false}
-                      value={form.date}
-                      onChangeText={(text) =>
-                        setForm((current) => ({ ...current, date: text }))
-                      }
-                      placeholder="YYYY-MM-DD"
-                      style={inlineInputStyle}
-                    />
-                  </View>
-                </View>
-                <View style={{ flex: 1 }}>
-                  <ModalSectionLabel label="TIME" />
-                  <View style={inputWrapperStyle}>
-                    <Ionicons
-                      name="time-outline"
-                      size={16}
-                      color="#94A3B8"
-                      style={{ marginRight: 8 }}
-                    />
-                    <FormInput
-                      bordered={false}
-                      value={form.time}
-                      onChangeText={(text) =>
-                        setForm((current) => ({ ...current, time: text }))
-                      }
-                      placeholder="HH:MM"
-                      style={inlineInputStyle}
-                    />
-                  </View>
-                </View>
+              <View style={{ marginBottom: 16 }}>
+                <DateTimePickerComponent
+                  mode="datetime"
+                  value={parseLocalDateTime(form.date, form.time)}
+                  onChange={(date) => {
+                    if (!date) return;
+                    setForm((current) => ({
+                      ...current,
+                      date: formatLocalDate(date),
+                      time: formatLocalTime(date),
+                    }));
+                  }}
+                  label="Date & time"
+                  placeholder="Select date and time"
+                />
               </View>
 
               {/* Payment method */}
@@ -1590,10 +1569,4 @@ const inputWrapperStyle = {
   paddingVertical: 10,
   flexDirection: "row" as const,
   alignItems: "center" as const,
-};
-
-const inlineInputStyle = {
-  flex: 1,
-  fontSize: 14,
-  color: "#1E293B",
 };
