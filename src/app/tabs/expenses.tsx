@@ -1,4 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
+import * as DocumentPicker from "expo-document-picker";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useMemo, useState } from "react";
 import {
@@ -47,10 +48,29 @@ type ExpenseItem = {
   recurring?: string;
 };
 
+type TransferItem = {
+  id: number | string;
+  title: string;
+  amount?: number | string;
+  total_expense?: number | string;
+  remaining_amount?: number | string;
+};
+
+type PickedAttachment = {
+  uri: string;
+  name: string;
+  mimeType: string;
+  size?: number;
+};
+
 type ExpenseForm = {
   title: string;
   expense_amount: string;
+  transfer_id: string;
+  transfer_amount: string;
   category: string;
+  from_location: string;
+  to_location: string;
   payment_method: string;
   date: string;
   time: string;
@@ -136,10 +156,32 @@ function formatDate(dateString?: string) {
   });
 }
 
+function isTravelCategory(category: string) {
+  return category.trim().toLowerCase() === "travel";
+}
+
+function getTransferRows(data: any): TransferItem[] {
+  if (Array.isArray(data)) return data;
+  if (Array.isArray(data?.transfers)) return data.transfers;
+  if (Array.isArray(data?.data)) return data.data;
+  if (Array.isArray(data?.data?.transfers)) return data.data.transfers;
+  return [];
+}
+
+function getTransferBalance(transfer: TransferItem) {
+  const remaining = Number(transfer.remaining_amount);
+  if (Number.isFinite(remaining)) return remaining;
+  return Math.max(
+    0,
+    Number(transfer.amount || 0) - Number(transfer.total_expense || 0),
+  );
+}
+
 export default function Expenses() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const [expenses, setExpenses] = useState<ExpenseItem[]>([]);
+  const [transfers, setTransfers] = useState<TransferItem[]>([]);
   const [stats, setStats] = useState({
     total: 0,
     totalAmount: 0,
@@ -161,10 +203,16 @@ export default function Expenses() {
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [isFilterSheetVisible, setIsFilterSheetVisible] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [manualTransfer, setManualTransfer] = useState(false);
+  const [attachment, setAttachment] = useState<PickedAttachment | null>(null);
   const [form, setForm] = useState<ExpenseForm>({
     title: "",
     expense_amount: "",
+    transfer_id: "",
+    transfer_amount: "",
     category: fallbackCategories[0],
+    from_location: "",
+    to_location: "",
     payment_method: "Cash",
     date: getCurrentDate(),
     time: getCurrentTime(),
@@ -201,11 +249,13 @@ export default function Expenses() {
   const fetchAll = useCallback(async () => {
     try {
       setLoading(true);
-      const [expensesRes, statsRes, categoriesRes] = await Promise.all([
-        api.get("/expenses"),
-        api.get("/expenses/stats"),
-        api.get("/categories"),
-      ]);
+      const [expensesRes, statsRes, categoriesRes, transfersRes] =
+        await Promise.all([
+          api.get("/expenses"),
+          api.get("/expenses/stats"),
+          api.get("/categories"),
+          api.get("/transfers").catch(() => null),
+        ]);
 
       const categoryRows = Array.isArray(categoriesRes?.data)
         ? categoriesRes.data
@@ -236,6 +286,7 @@ export default function Expenses() {
         : fallbackCategories;
 
       setExpenses(Array.isArray(expensesRes?.data) ? expensesRes.data : []);
+      setTransfers(getTransferRows(transfersRes?.data));
       setStats(
         statsRes?.data || {
           total: 0,
@@ -341,12 +392,42 @@ export default function Expenses() {
     setForm({
       title: "",
       expense_amount: "",
+      transfer_id: "",
+      transfer_amount: "",
       category: categoryOptions[0] || fallbackCategories[0],
+      from_location: "",
+      to_location: "",
       payment_method: "Cash",
       date: getCurrentDate(),
       time: getCurrentTime(),
       notes: "",
     });
+    setManualTransfer(false);
+    setAttachment(null);
+  };
+
+  const pickAttachment = async () => {
+    try {
+      const result = await DocumentPicker.getDocumentAsync({
+        type: ["image/*", "application/pdf"],
+        multiple: false,
+        copyToCacheDirectory: true,
+      });
+      if (result.canceled) return;
+      const file = result.assets[0];
+      if ((file.size || 0) > 10 * 1024 * 1024) {
+        Alert.alert("Receipt too large", "Choose a file smaller than 10 MB.");
+        return;
+      }
+      setAttachment({
+        uri: file.uri,
+        name: file.name,
+        mimeType: file.mimeType || "application/octet-stream",
+        size: file.size,
+      });
+    } catch (error) {
+      Alert.alert("Unable to select receipt", getApiErrorMessage(error));
+    }
   };
 
   const handleCreateExpense = async () => {
@@ -361,6 +442,16 @@ export default function Expenses() {
       );
       return;
     }
+    if (
+      isTravelCategory(form.category) &&
+      (!form.from_location.trim() || !form.to_location.trim())
+    ) {
+      Alert.alert(
+        "Travel details required",
+        "Enter both a starting point and destination.",
+      );
+      return;
+    }
 
     try {
       setSaving(true);
@@ -372,6 +463,19 @@ export default function Expenses() {
       payload.append("expense_date", form.date);
       payload.append("expense_time", form.time);
       payload.append("notes", form.notes || "");
+      payload.append("transfer_id", form.transfer_id);
+      payload.append("transfer_amount", form.transfer_amount || "0");
+      if (attachment) {
+        payload.append("attachment", {
+          uri: attachment.uri,
+          name: attachment.name,
+          type: attachment.mimeType,
+        } as any);
+      }
+      if (isTravelCategory(form.category)) {
+        payload.append("from_location", form.from_location.trim());
+        payload.append("to_location", form.to_location.trim());
+      }
 
       const response = await api.post("/expenses", payload, {
         headers: { "Content-Type": "multipart/form-data" },
@@ -1013,7 +1117,7 @@ export default function Expenses() {
 
             <ScrollView showsVerticalScrollIndicator={false}>
               <FormField
-                label="Title"
+                label="Expense title *"
                 borderColor="#CBD5E1"
                 value={form.title}
                 onChangeText={(text) =>
@@ -1023,7 +1127,7 @@ export default function Expenses() {
               />
 
               <FormField
-                label="Amount (₹)"
+                label="Expense amount (₹) *"
                 borderColor="#CBD5E1"
                 value={form.expense_amount}
                 onChangeText={(text) =>
@@ -1032,6 +1136,244 @@ export default function Expenses() {
                 placeholder="0.00"
                 keyboardType="decimal-pad"
               />
+
+              <View style={{ marginBottom: 16 }}>
+                <View
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    marginBottom: 8,
+                  }}
+                >
+                  <ModalSectionLabel label="TRANSFER AMOUNT (₹)" />
+                  <Pressable
+                    onPress={() => {
+                      setManualTransfer((current) => !current);
+                      setForm((current) => ({
+                        ...current,
+                        transfer_id: "",
+                        transfer_amount: "",
+                      }));
+                    }}
+                    hitSlop={8}
+                  >
+                    <Text
+                      style={{
+                        color: Colors.primary,
+                        fontSize: 12,
+                        fontWeight: "700",
+                      }}
+                    >
+                      {manualTransfer ? "Select from list" : "Enter manually"}
+                    </Text>
+                  </Pressable>
+                </View>
+
+                {manualTransfer ? (
+                  <FormField
+                    label="Manual transfer amount (₹)"
+                    value={form.transfer_amount}
+                    onChangeText={(text) =>
+                      setForm((current) => ({
+                        ...current,
+                        transfer_amount: text,
+                        transfer_id: "",
+                      }))
+                    }
+                    placeholder="0.00"
+                    keyboardType="decimal-pad"
+                    borderColor="#CBD5E1"
+                  />
+                ) : (
+                  <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={{ gap: 8, paddingBottom: 2 }}
+                  >
+                    <FormOption
+                      selected={!form.transfer_id}
+                      onPress={() =>
+                        setForm((current) => ({
+                          ...current,
+                          transfer_id: "",
+                          transfer_amount: "",
+                        }))
+                      }
+                      style={{
+                        minHeight: 48,
+                        paddingHorizontal: 12,
+                        borderRadius: 12,
+                        backgroundColor: !form.transfer_id
+                          ? "#F0FDF4"
+                          : "#F8FAFC",
+                        justifyContent: "center",
+                      }}
+                    >
+                      <Text style={{ color: "#334155", fontWeight: "600" }}>
+                        No transfer
+                      </Text>
+                    </FormOption>
+                    {transfers.map((transfer) => {
+                      const balance = getTransferBalance(transfer);
+                      const selected =
+                        String(form.transfer_id) === String(transfer.id);
+                      return (
+                        <FormOption
+                          key={String(transfer.id)}
+                          selected={selected}
+                          disabled={balance <= 0}
+                          onPress={() =>
+                            setForm((current) => ({
+                              ...current,
+                              transfer_id: String(transfer.id),
+                              transfer_amount: String(balance),
+                            }))
+                          }
+                          style={{
+                            minHeight: 48,
+                            paddingHorizontal: 12,
+                            borderRadius: 12,
+                            backgroundColor: selected ? "#F0FDF4" : "#F8FAFC",
+                            justifyContent: "center",
+                            opacity: balance <= 0 ? 0.45 : 1,
+                          }}
+                        >
+                          <Text
+                            numberOfLines={1}
+                            style={{
+                              maxWidth: 150,
+                              color: "#334155",
+                              fontSize: 12,
+                              fontWeight: "700",
+                            }}
+                          >
+                            {transfer.title || "Transfer"}
+                          </Text>
+                          <Text style={{ color: "#64748B", fontSize: 11 }}>
+                            {formatAmount(balance)} left
+                          </Text>
+                        </FormOption>
+                      );
+                    })}
+                  </ScrollView>
+                )}
+              </View>
+
+              {Number(form.transfer_amount) > 0 ? (
+                <View
+                  style={{
+                    marginBottom: 16,
+                    padding: 14,
+                    borderRadius: 16,
+                    borderWidth: 1,
+                    borderColor: "#E2E8F0",
+                    backgroundColor: "#F8FAFC",
+                  }}
+                >
+                  <View
+                    style={{
+                      flexDirection: "row",
+                      alignItems: "center",
+                      marginBottom: 8,
+                      gap: 6,
+                    }}
+                  >
+                    <Ionicons
+                      name="information-circle-outline"
+                      size={15}
+                      color="#64748B"
+                    />
+                    <Text
+                      style={{
+                        color: "#64748B",
+                        fontSize: 11,
+                        fontWeight: "800",
+                        textTransform: "uppercase",
+                      }}
+                    >
+                      Live calculation
+                    </Text>
+                  </View>
+                  <View
+                    style={{
+                      flexDirection: "row",
+                      justifyContent: "space-between",
+                      paddingVertical: 8,
+                      borderBottomWidth: 1,
+                      borderBottomColor: "#E2E8F0",
+                    }}
+                  >
+                    <Text style={{ color: "#64748B", fontSize: 13 }}>
+                      Available remaining
+                    </Text>
+                    <Text style={{ color: "#D97706", fontWeight: "800" }}>
+                      {formatAmount(Number(form.transfer_amount))}
+                    </Text>
+                  </View>
+                  <View
+                    style={{
+                      flexDirection: "row",
+                      justifyContent: "space-between",
+                      paddingVertical: 8,
+                      borderBottomWidth: 1,
+                      borderBottomColor: "#E2E8F0",
+                    }}
+                  >
+                    <Text style={{ color: "#64748B", fontSize: 13 }}>
+                      Expense amount
+                    </Text>
+                    <Text style={{ color: "#E11D48", fontWeight: "800" }}>
+                      {Number(form.expense_amount) > 0
+                        ? `− ${formatAmount(Number(form.expense_amount))}`
+                        : "Enter expense above"}
+                    </Text>
+                  </View>
+                  <View
+                    style={{
+                      flexDirection: "row",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      marginTop: 4,
+                      paddingHorizontal: 10,
+                      paddingVertical: 9,
+                      borderRadius: 10,
+                      backgroundColor:
+                        Number(form.expense_amount) > 0 &&
+                        Number(form.expense_amount) <=
+                          Number(form.transfer_amount)
+                          ? "#DCFCE7"
+                          : Number(form.expense_amount) >
+                              Number(form.transfer_amount)
+                            ? "#FEE2E2"
+                            : "#F1F5F9",
+                    }}
+                  >
+                    <Text style={{ color: "#334155", fontWeight: "800" }}>
+                      {Number(form.expense_amount) >
+                      Number(form.transfer_amount)
+                        ? "Over budget"
+                        : "Remaining balance"}
+                    </Text>
+                    <Text
+                      style={{
+                        color:
+                          Number(form.expense_amount) >
+                          Number(form.transfer_amount)
+                            ? "#DC2626"
+                            : "#16A34A",
+                        fontSize: 17,
+                        fontWeight: "900",
+                      }}
+                    >
+                      {formatAmount(
+                        Number(form.transfer_amount) -
+                          (Number(form.expense_amount) || 0),
+                      )}
+                    </Text>
+                  </View>
+                </View>
+              ) : null}
 
               {/* Category picker */}
               <View style={{ marginBottom: 16 }}>
@@ -1053,7 +1395,16 @@ export default function Expenses() {
                         key={item}
                         selected={selected}
                         onPress={() =>
-                          setForm((current) => ({ ...current, category: item }))
+                          setForm((current) => ({
+                            ...current,
+                            category: item,
+                            from_location: isTravelCategory(item)
+                              ? current.from_location
+                              : "",
+                            to_location: isTravelCategory(item)
+                              ? current.to_location
+                              : "",
+                          }))
                         }
                         style={{
                           paddingHorizontal: 14,
@@ -1084,6 +1435,35 @@ export default function Expenses() {
                   })}
                 </ScrollView>
               </View>
+
+              {isTravelCategory(form.category) ? (
+                <View>
+                  <FormField
+                    label="From"
+                    value={form.from_location}
+                    onChangeText={(text) =>
+                      setForm((current) => ({
+                        ...current,
+                        from_location: text,
+                      }))
+                    }
+                    placeholder="Starting point"
+                    borderColor="#CBD5E1"
+                  />
+                  <FormField
+                    label="To"
+                    value={form.to_location}
+                    onChangeText={(text) =>
+                      setForm((current) => ({
+                        ...current,
+                        to_location: text,
+                      }))
+                    }
+                    placeholder="Destination"
+                    borderColor="#CBD5E1"
+                  />
+                </View>
+              ) : null}
 
               <View style={{ marginBottom: 13 }}>
                 <DateTimePickerComponent
@@ -1163,45 +1543,112 @@ export default function Expenses() {
                 multiline
               />
 
-              <Pressable
-                onPress={handleCreateExpense}
-                disabled={saving}
-                style={{
-                  marginTop: 8,
-                  borderRadius: 18,
-                  height: 54,
-                  justifyContent: "center",
-                  alignItems: "center",
-                  opacity: saving ? 0.7 : 1,
-                  overflow: "hidden",
-                  backgroundColor: "#1B4332",
-                  shadowColor: "#1B4332",
-                  shadowOffset: { width: 0, height: 6 },
-                  shadowOpacity: 0.35,
-                  shadowRadius: 12,
-                  elevation: 8,
-                  flexDirection: "row",
-                  gap: 8,
-                }}
-              >
-                <Ionicons
-                  name={
-                    saving ? "hourglass-outline" : "checkmark-circle-outline"
-                  }
-                  size={20}
-                  color="#FFFFFF"
-                />
-                <Text
+              <View style={{ marginBottom: 12 }}>
+                <ModalSectionLabel label="ATTACHMENT / RECEIPT (OPTIONAL)" />
+                <Pressable
+                  onPress={() => void pickAttachment()}
                   style={{
-                    color: "#FFFFFF",
-                    fontWeight: "800",
-                    fontSize: 16,
-                    letterSpacing: 0.3,
+                    minHeight: 48,
+                    paddingHorizontal: 12,
+                    borderWidth: 1,
+                    borderColor: "#CBD5E1",
+                    borderRadius: 12,
+                    backgroundColor: "#F8FAFC",
+                    flexDirection: "row",
+                    alignItems: "center",
+                    gap: 9,
                   }}
                 >
-                  {saving ? "Saving…" : "Save Expense"}
-                </Text>
-              </Pressable>
+                  <Ionicons
+                    name="attach-outline"
+                    size={18}
+                    color={Colors.primary}
+                  />
+                  <Text
+                    numberOfLines={1}
+                    style={{ flex: 1, color: "#475569", fontSize: 13 }}
+                  >
+                    {attachment?.name || "Choose an image or PDF receipt"}
+                  </Text>
+                  {attachment ? (
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel="Remove receipt attachment"
+                      hitSlop={8}
+                      onPress={(event) => {
+                        event.stopPropagation();
+                        setAttachment(null);
+                      }}
+                    >
+                      <Ionicons name="close-circle" size={19} color="#64748B" />
+                    </Pressable>
+                  ) : null}
+                </Pressable>
+              </View>
+
+              <View style={{ flexDirection: "row", gap: 10, marginTop: 8 }}>
+                <Pressable
+                  onPress={() => {
+                    setIsModalVisible(false);
+                    resetForm();
+                  }}
+                  disabled={saving}
+                  style={{
+                    flex: 1,
+                    height: 54,
+                    borderRadius: 14,
+                    borderWidth: 1,
+                    borderColor: "#CBD5E1",
+                    justifyContent: "center",
+                    alignItems: "center",
+                    backgroundColor: "#FFFFFF",
+                    opacity: saving ? 0.6 : 1,
+                  }}
+                >
+                  <Text style={{ color: "#475569", fontWeight: "700" }}>
+                    Cancel
+                  </Text>
+                </Pressable>
+                <Pressable
+                  onPress={handleCreateExpense}
+                  disabled={saving}
+                  style={{
+                    flex: 1.5,
+                    borderRadius: 14,
+                    height: 54,
+                    justifyContent: "center",
+                    alignItems: "center",
+                    opacity: saving ? 0.7 : 1,
+                    overflow: "hidden",
+                    backgroundColor: "#1B4332",
+                    shadowColor: "#1B4332",
+                    shadowOffset: { width: 0, height: 6 },
+                    shadowOpacity: 0.35,
+                    shadowRadius: 12,
+                    elevation: 8,
+                    flexDirection: "row",
+                    gap: 8,
+                  }}
+                >
+                  <Ionicons
+                    name={
+                      saving ? "hourglass-outline" : "checkmark-circle-outline"
+                    }
+                    size={20}
+                    color="#FFFFFF"
+                  />
+                  <Text
+                    style={{
+                      color: "#FFFFFF",
+                      fontWeight: "800",
+                      fontSize: 16,
+                      letterSpacing: 0.3,
+                    }}
+                  >
+                    {saving ? "Saving…" : "Save Expense"}
+                  </Text>
+                </Pressable>
+              </View>
             </ScrollView>
           </View>
         </View>

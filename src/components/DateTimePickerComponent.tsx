@@ -297,18 +297,19 @@ export function DateTimePickerComponent({
             accessibilityState={{ disabled }}
             disabled={disabled}
             onPress={() => openPicker("date")}
-            style={({ pressed }) => [
-              styles.field,
-              mode === "datetime" && styles.fieldHalf,
-              compact && styles.compactField,
-              disabled && styles.disabledField,
-              pressed && styles.pressedField,
-            ]}
+            style={({ pressed }) => {
+              const combinedStyles: any[] = [styles.field];
+              if (mode === "datetime") combinedStyles.push(styles.fieldHalf);
+              if (compact) combinedStyles.push(styles.compactField);
+              if (disabled) combinedStyles.push(styles.disabledField);
+              if (pressed) combinedStyles.push(styles.pressedField);
+              return combinedStyles;
+            }}
           >
             <View
               style={[
                 styles.fieldHeading,
-                compact && styles.compactFieldHeading,
+                compact ? styles.compactFieldHeading : null,
               ]}
             >
               <Ionicons
@@ -332,8 +333,8 @@ export function DateTimePickerComponent({
               minimumFontScale={compact ? 0.75 : undefined}
               style={[
                 styles.fieldValue,
-                compact && styles.compactFieldValue,
-                !value && styles.placeholder,
+                compact ? styles.compactFieldValue : null,
+                !value ? styles.placeholder : null,
               ]}
             >
               {value
@@ -353,18 +354,19 @@ export function DateTimePickerComponent({
             accessibilityState={{ disabled }}
             disabled={disabled}
             onPress={() => openPicker("time")}
-            style={({ pressed }) => [
-              styles.field,
-              mode === "datetime" && styles.fieldHalf,
-              compact && styles.compactField,
-              disabled && styles.disabledField,
-              pressed && styles.pressedField,
-            ]}
+            style={({ pressed }) => {
+              const combinedStyles: any[] = [styles.field];
+              if (mode === "datetime") combinedStyles.push(styles.fieldHalf);
+              if (compact) combinedStyles.push(styles.compactField);
+              if (disabled) combinedStyles.push(styles.disabledField);
+              if (pressed) combinedStyles.push(styles.pressedField);
+              return combinedStyles;
+            }}
           >
             <View
               style={[
                 styles.fieldHeading,
-                compact && styles.compactFieldHeading,
+                compact ? styles.compactFieldHeading : null,
               ]}
             >
               <Ionicons
@@ -388,8 +390,8 @@ export function DateTimePickerComponent({
               minimumFontScale={compact ? 0.75 : undefined}
               style={[
                 styles.fieldValue,
-                compact && styles.compactFieldValue,
-                !value && styles.placeholder,
+                compact ? styles.compactFieldValue : null,
+                !value ? styles.placeholder : null,
               ]}
             >
               {value
@@ -861,17 +863,17 @@ const styles = StyleSheet.create({
     minWidth: 0,
   },
   compactField: {
-    minHeight: 106,
+    minHeight: 56,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "flex-start",
-    gap: 12,
+    gap: 10,
     paddingHorizontal: 16,
-    paddingVertical: 18,
-    borderWidth: 2,
+    paddingVertical: 12,
+    borderWidth: 1,
     borderColor: "#CBD5E1",
-    borderRadius: 32,
-    backgroundColor: "#F8F9FB",
+    borderRadius: 16,
+    backgroundColor: "#FFFFFF",
   },
   compactFieldHeading: {
     gap: 0,
@@ -880,7 +882,7 @@ const styles = StyleSheet.create({
     flex: 1,
     minWidth: 0,
     color: "#374151",
-    fontSize: 20,
+    fontSize: 15,
     fontWeight: "700",
     includeFontPadding: false,
   },
