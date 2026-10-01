@@ -2,7 +2,9 @@ import type { ReactNode } from "react";
 import {
     Pressable,
     StyleSheet,
+    Text,
     TextInput,
+    View,
     type PressableProps,
     type StyleProp,
     type TextInputProps,
@@ -13,12 +15,14 @@ import { Colors } from "../constants/colors";
 
 type FormInputProps = Omit<TextInputProps, "placeholderTextColor" | "style"> & {
   bordered?: boolean;
+  borderColor?: TextStyle["borderColor"];
   className?: string;
   style?: StyleProp<TextStyle>;
 };
 
 export function FormInput({
   bordered = true,
+  borderColor,
   className,
   style,
   ...props
@@ -28,10 +32,73 @@ export function FormInput({
       {...props}
       placeholderTextColor={Colors.textSecondary}
       className={className}
-      style={[style, bordered && styles.inputBorder]}
+      style={[
+        style,
+        bordered && styles.inputBorder,
+        bordered && borderColor && { borderColor },
+      ]}
     />
   );
 }
+
+type FormFieldProps = {
+  label: string;
+  value: string;
+  onChangeText: (value: string) => void;
+  placeholder?: string;
+  multiline?: boolean;
+  keyboardType?: TextInputProps["keyboardType"];
+  borderColor?: TextStyle["borderColor"];
+};
+
+export function FormField({
+  label,
+  value,
+  onChangeText,
+  placeholder,
+  multiline = false,
+  keyboardType,
+  borderColor,
+}: FormFieldProps) {
+  return (
+    <View style={styles.formFieldContainer}>
+      <Text style={formFieldStyles.label}>{label}</Text>
+      <FormInput
+        value={value}
+        onChangeText={onChangeText}
+        placeholder={placeholder}
+        keyboardType={keyboardType}
+        borderColor={borderColor}
+        multiline={multiline}
+        numberOfLines={multiline ? 4 : 1}
+        textAlignVertical={multiline ? "top" : "center"}
+        style={[
+          formFieldStyles.input,
+          multiline && styles.multilineFormFieldInput,
+        ]}
+      />
+    </View>
+  );
+}
+
+export const formFieldStyles = StyleSheet.create({
+  label: {
+    marginBottom: 7,
+    color: Colors.sage,
+    fontSize: 12,
+    fontWeight: "700",
+    textTransform: "uppercase",
+  },
+  input: {
+    minHeight: 46,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 12,
+    backgroundColor: "#F8FAF8",
+    color: Colors.textPrimary,
+    fontSize: 15,
+  },
+});
 
 type FormOptionProps = Omit<PressableProps, "style"> & {
   children: ReactNode;
@@ -65,6 +132,12 @@ export function FormOption({
 }
 
 const styles = StyleSheet.create({
+  formFieldContainer: {
+    marginBottom: 13,
+  },
+  multilineFormFieldInput: {
+    minHeight: 88,
+  },
   inputBorder: {
     borderWidth: 1,
     borderColor: Colors.border,

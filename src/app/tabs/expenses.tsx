@@ -30,7 +30,7 @@ import {
   type SortOption,
   type ViewModeOption,
 } from "../../components/filters";
-import { FormInput, FormOption } from "../../components/FormControls";
+import { FormField, FormOption } from "../../components/FormControls";
 import { GradientSafeAreaView as SafeAreaView } from "../../components/GradientSafeAreaView";
 import { SearchBar } from "../../components/SearchBar";
 import { Colors } from "../../constants/colors";
@@ -1012,25 +1012,25 @@ export default function Expenses() {
             </View>
 
             <ScrollView showsVerticalScrollIndicator={false}>
-              <TextField
+              <FormField
                 label="Title"
+                borderColor="#CBD5E1"
                 value={form.title}
                 onChangeText={(text) =>
                   setForm((current) => ({ ...current, title: text }))
                 }
                 placeholder="e.g. Grocery, Petrol…"
-                icon="create-outline"
               />
 
-              <TextField
+              <FormField
                 label="Amount (₹)"
+                borderColor="#CBD5E1"
                 value={form.expense_amount}
                 onChangeText={(text) =>
                   setForm((current) => ({ ...current, expense_amount: text }))
                 }
                 placeholder="0.00"
                 keyboardType="decimal-pad"
-                icon="cash-outline"
               />
 
               {/* Category picker */}
@@ -1085,9 +1085,10 @@ export default function Expenses() {
                 </ScrollView>
               </View>
 
-              <View style={{ marginBottom: 16 }}>
+              <View style={{ marginBottom: 13 }}>
                 <DateTimePickerComponent
                   mode="datetime"
+                  compact
                   value={parseLocalDateTime(form.date, form.time)}
                   onChange={(date) => {
                     if (!date) return;
@@ -1097,7 +1098,7 @@ export default function Expenses() {
                       time: formatLocalTime(date),
                     }));
                   }}
-                  label="Date & time"
+                  label="Transaction time"
                   placeholder="Select date and time"
                 />
               </View>
@@ -1151,15 +1152,15 @@ export default function Expenses() {
                 </View>
               </View>
 
-              <TextField
+              <FormField
                 label="Notes"
+                borderColor="#CBD5E1"
                 value={form.notes}
                 onChangeText={(text) =>
                   setForm((current) => ({ ...current, notes: text }))
                 }
                 placeholder="Optional details…"
                 multiline
-                icon="chatbubble-ellipses-outline"
               />
 
               <Pressable
@@ -1503,70 +1504,3 @@ function ModalSectionLabel({ label }: { label: string }) {
     </Text>
   );
 }
-
-function TextField({
-  label,
-  value,
-  onChangeText,
-  placeholder,
-  keyboardType,
-  multiline,
-  icon,
-}: {
-  label: string;
-  value: string;
-  onChangeText: (text: string) => void;
-  placeholder?: string;
-  keyboardType?: "default" | "number-pad" | "decimal-pad" | "numeric";
-  multiline?: boolean;
-  icon?: keyof typeof Ionicons.glyphMap;
-}) {
-  return (
-    <View style={{ marginBottom: 16 }}>
-      <ModalSectionLabel label={label.toUpperCase()} />
-      <View
-        style={{
-          ...inputWrapperStyle,
-          minHeight: multiline ? 90 : 48,
-          alignItems: multiline ? "flex-start" : "center",
-          paddingTop: multiline ? 12 : 0,
-        }}
-      >
-        {icon && (
-          <Ionicons
-            name={icon}
-            size={17}
-            color="#94A3B8"
-            style={{ marginRight: 8, marginTop: multiline ? 2 : 0 }}
-          />
-        )}
-        <FormInput
-          bordered={false}
-          value={value}
-          onChangeText={onChangeText}
-          placeholder={placeholder}
-          keyboardType={keyboardType}
-          multiline={multiline}
-          numberOfLines={multiline ? 4 : 1}
-          style={{
-            flex: 1,
-            fontSize: 15,
-            color: "#1E293B",
-            textAlignVertical: multiline ? "top" : "center",
-          }}
-        />
-      </View>
-    </View>
-  );
-}
-
-const inputWrapperStyle = {
-  backgroundColor: "#F8FAFC",
-  borderWidth: 1,
-  borderColor: Colors.border,
-  borderRadius: 14,
-  paddingHorizontal: 14,
-  paddingVertical: 10,
-  flexDirection: "row" as const,
-  alignItems: "center" as const,
-};

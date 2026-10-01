@@ -10,6 +10,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Colors } from "../constants/colors";
+import { formFieldStyles } from "./FormControls";
 
 type PickerMode = "date" | "time" | "datetime";
 type PickerSection = "date" | "time";
@@ -24,6 +25,7 @@ export type DateTimePickerComponentProps = {
   placeholder?: string;
   label?: string;
   disabled?: boolean;
+  compact?: boolean;
 };
 
 const WEEKDAYS = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
@@ -100,6 +102,7 @@ export function DateTimePickerComponent({
   placeholder = "Select date and time",
   label,
   disabled = false,
+  compact = false,
 }: DateTimePickerComponentProps) {
   const [visible, setVisible] = useState(false);
   const [section, setSection] = useState<PickerSection>(
@@ -279,7 +282,11 @@ export function DateTimePickerComponent({
 
   return (
     <View>
-      {label ? <Text style={styles.label}>{label}</Text> : null}
+      {label ? (
+        <Text style={compact ? styles.compactLabel : formFieldStyles.label}>
+          {label}
+        </Text>
+      ) : null}
       <View style={[styles.fields, mode !== "datetime" && styles.singleField]}>
         {mode !== "time" ? (
           <Pressable
@@ -293,33 +300,48 @@ export function DateTimePickerComponent({
             style={({ pressed }) => [
               styles.field,
               mode === "datetime" && styles.fieldHalf,
+              compact && styles.compactField,
               disabled && styles.disabledField,
               pressed && styles.pressedField,
             ]}
           >
-            <Ionicons
-              name="calendar-outline"
-              size={20}
-              color={Colors.primary}
-            />
-            <View style={styles.fieldText}>
-              <Text style={styles.fieldLabel}>Date</Text>
-              <Text
-                numberOfLines={1}
-                style={[styles.fieldValue, !value && styles.placeholder]}
-              >
-                {value
-                  ? formatDate(value)
-                  : mode === "date"
-                    ? placeholder
-                    : "Select date"}
-              </Text>
+            <View
+              style={[
+                styles.fieldHeading,
+                compact && styles.compactFieldHeading,
+              ]}
+            >
+              <Ionicons
+                name="calendar-outline"
+                size={compact ? 25 : 18}
+                color={Colors.primary}
+              />
+              {!compact ? <Text style={styles.fieldLabel}>Date</Text> : null}
+              {!compact ? (
+                <Ionicons
+                  name="chevron-down"
+                  size={16}
+                  color={Colors.textSecondary}
+                  style={styles.fieldChevron}
+                />
+              ) : null}
             </View>
-            <Ionicons
-              name="chevron-down"
-              size={17}
-              color={Colors.textSecondary}
-            />
+            <Text
+              numberOfLines={1}
+              adjustsFontSizeToFit={compact}
+              minimumFontScale={compact ? 0.75 : undefined}
+              style={[
+                styles.fieldValue,
+                compact && styles.compactFieldValue,
+                !value && styles.placeholder,
+              ]}
+            >
+              {value
+                ? formatDate(value)
+                : mode === "date"
+                  ? placeholder
+                  : "Select date"}
+            </Text>
           </Pressable>
         ) : null}
         {mode !== "date" ? (
@@ -334,29 +356,48 @@ export function DateTimePickerComponent({
             style={({ pressed }) => [
               styles.field,
               mode === "datetime" && styles.fieldHalf,
+              compact && styles.compactField,
               disabled && styles.disabledField,
               pressed && styles.pressedField,
             ]}
           >
-            <Ionicons name="time-outline" size={20} color={Colors.primary} />
-            <View style={styles.fieldText}>
-              <Text style={styles.fieldLabel}>Time</Text>
-              <Text
-                numberOfLines={1}
-                style={[styles.fieldValue, !value && styles.placeholder]}
-              >
-                {value
-                  ? formatTime(value)
-                  : mode === "time"
-                    ? placeholder
-                    : "Select time"}
-              </Text>
+            <View
+              style={[
+                styles.fieldHeading,
+                compact && styles.compactFieldHeading,
+              ]}
+            >
+              <Ionicons
+                name="time-outline"
+                size={compact ? 25 : 18}
+                color={Colors.primary}
+              />
+              {!compact ? <Text style={styles.fieldLabel}>Time</Text> : null}
+              {!compact ? (
+                <Ionicons
+                  name="chevron-down"
+                  size={16}
+                  color={Colors.textSecondary}
+                  style={styles.fieldChevron}
+                />
+              ) : null}
             </View>
-            <Ionicons
-              name="chevron-down"
-              size={17}
-              color={Colors.textSecondary}
-            />
+            <Text
+              numberOfLines={1}
+              adjustsFontSizeToFit={compact}
+              minimumFontScale={compact ? 0.75 : undefined}
+              style={[
+                styles.fieldValue,
+                compact && styles.compactFieldValue,
+                !value && styles.placeholder,
+              ]}
+            >
+              {value
+                ? formatTime(value)
+                : mode === "time"
+                  ? placeholder
+                  : "Select time"}
+            </Text>
           </Pressable>
         ) : null}
       </View>
@@ -805,12 +846,12 @@ const styles = StyleSheet.create({
     flexDirection: "column",
   },
   field: {
-    minHeight: 64,
+    minHeight: 72,
     flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-    paddingHorizontal: 14,
+    justifyContent: "center",
+    gap: 7,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
     borderWidth: 1,
     borderColor: Colors.border,
     borderRadius: 14,
@@ -819,21 +860,56 @@ const styles = StyleSheet.create({
   fieldHalf: {
     minWidth: 0,
   },
+  compactField: {
+    minHeight: 106,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "flex-start",
+    gap: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 18,
+    borderWidth: 2,
+    borderColor: "#CBD5E1",
+    borderRadius: 32,
+    backgroundColor: "#F8F9FB",
+  },
+  compactFieldHeading: {
+    gap: 0,
+  },
+  compactFieldValue: {
+    flex: 1,
+    minWidth: 0,
+    color: "#374151",
+    fontSize: 20,
+    fontWeight: "700",
+    includeFontPadding: false,
+  },
+  compactLabel: {
+    marginBottom: 14,
+    color: "#A0A6B0",
+    fontSize: 16,
+    fontWeight: "700",
+    letterSpacing: 2,
+    textTransform: "uppercase",
+  },
   disabledField: {
     opacity: 0.5,
   },
   pressedField: {
     borderColor: Colors.primary,
   },
-  fieldText: {
-    flex: 1,
-    minWidth: 0,
+  fieldHeading: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  fieldChevron: {
+    marginLeft: "auto",
   },
   fieldLabel: {
-    marginBottom: 2,
     color: Colors.textSecondary,
     fontSize: 11,
-    fontWeight: "500",
+    fontWeight: "600",
   },
   fieldValue: {
     color: Colors.textPrimary,

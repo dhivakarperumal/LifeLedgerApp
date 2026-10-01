@@ -38,7 +38,11 @@ import {
     type FilterState,
     type ViewModeOption,
 } from "../../components/filters";
-import { FormInput, FormOption } from "../../components/FormControls";
+import {
+    FormField,
+    formFieldStyles,
+    FormOption
+} from "../../components/FormControls";
 import { GradientSafeAreaView as SafeAreaView } from "../../components/GradientSafeAreaView";
 import { SearchBar } from "../../components/SearchBar";
 import { Colors } from "../../constants/colors";
@@ -1174,7 +1178,7 @@ export default function Memories() {
                 placeholder="What do you want to remember?"
                 multiline
               />
-              <Text style={fieldLabel}>Category</Text>
+              <Text style={formFieldStyles.label}>Category</Text>
               <ScrollView
                 horizontal
                 showsHorizontalScrollIndicator={false}
@@ -1255,7 +1259,7 @@ export default function Memories() {
                 </Text>
               </Pressable>
 
-              <Text style={fieldLabel}>Attachments</Text>
+              <Text style={formFieldStyles.label}>Attachments</Text>
               <Pressable
                 onPress={() => void pickMedia()}
                 style={{
@@ -1384,48 +1388,3 @@ export default function Memories() {
     </SafeAreaView>
   );
 }
-
-function FormField({
-  label,
-  value,
-  onChangeText,
-  placeholder,
-  multiline,
-}: {
-  label: string;
-  value: string;
-  onChangeText: (value: string) => void;
-  placeholder?: string;
-  multiline?: boolean;
-}) {
-  return (
-    <View style={{ marginBottom: 13 }}>
-      <Text style={fieldLabel}>{label}</Text>
-      <FormInput
-        value={value}
-        onChangeText={onChangeText}
-        placeholder={placeholder}
-        multiline={multiline}
-        numberOfLines={multiline ? 4 : 1}
-        textAlignVertical={multiline ? "top" : "center"}
-        style={{
-          minHeight: multiline ? 88 : 46,
-          paddingHorizontal: 12,
-          paddingVertical: 10,
-          borderRadius: 12,
-          backgroundColor: "#F8FAF8",
-          color: Colors.textPrimary,
-          fontSize: 15,
-        }}
-      />
-    </View>
-  );
-}
-
-const fieldLabel = {
-  marginBottom: 7,
-  color: Colors.sage,
-  fontSize: 12,
-  fontWeight: "700" as const,
-  textTransform: "uppercase" as const,
-};
