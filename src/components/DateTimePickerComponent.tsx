@@ -1,12 +1,15 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useEffect, useRef, useState } from "react";
 import {
-    Modal,
-    Pressable,
-    ScrollView,
-    StyleSheet,
-    Text,
-    View,
+  Modal,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  useWindowDimensions,
+  View,
+  type StyleProp,
+  type TextStyle,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Colors } from "../constants/colors";
@@ -26,6 +29,7 @@ export type DateTimePickerComponentProps = {
   label?: string;
   disabled?: boolean;
   compact?: boolean;
+  labelStyle?: StyleProp<TextStyle>;
 };
 
 const WEEKDAYS = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
@@ -103,7 +107,9 @@ export function DateTimePickerComponent({
   label,
   disabled = false,
   compact = false,
+  labelStyle,
 }: DateTimePickerComponentProps) {
+  const isCompactNarrow = useWindowDimensions().width < 390;
   const [visible, setVisible] = useState(false);
   const [section, setSection] = useState<PickerSection>(
     mode === "time" ? "time" : "date",
@@ -283,9 +289,14 @@ export function DateTimePickerComponent({
   return (
     <View>
       {label ? (
-        <Text style={compact ? styles.compactLabel : formFieldStyles.label}>
-          {label}
-        </Text>
+        compact ? (
+          <View style={styles.compactLabelRow}>
+            <View style={styles.compactLabelAccent} />
+            <Text style={[styles.compactLabel, labelStyle]}>{label}</Text>
+          </View>
+        ) : (
+          <Text style={[formFieldStyles.label, labelStyle]}>{label}</Text>
+        )
       ) : null}
       <View style={[styles.fields, mode !== "datetime" && styles.singleField]}>
         {mode !== "time" ? (
@@ -301,48 +312,81 @@ export function DateTimePickerComponent({
               const combinedStyles: any[] = [styles.field];
               if (mode === "datetime") combinedStyles.push(styles.fieldHalf);
               if (compact) combinedStyles.push(styles.compactField);
+              if (compact && isCompactNarrow) {
+                combinedStyles.push(styles.compactFieldNarrow);
+              }
               if (disabled) combinedStyles.push(styles.disabledField);
               if (pressed) combinedStyles.push(styles.pressedField);
               return combinedStyles;
             }}
           >
-            <View
-              style={[
-                styles.fieldHeading,
-                compact ? styles.compactFieldHeading : null,
-              ]}
-            >
-              <Ionicons
-                name="calendar-outline"
-                size={compact ? 25 : 18}
-                color={Colors.primary}
-              />
-              {!compact ? <Text style={styles.fieldLabel}>Date</Text> : null}
-              {!compact ? (
+            {compact ? (
+              <View
+                style={[
+                  styles.compactIconTile,
+                  isCompactNarrow && styles.compactIconTileNarrow,
+                ]}
+              >
+                <Ionicons
+                  name="calendar-outline"
+                  size={isCompactNarrow ? 24 : 31}
+                  color={Colors.primary}
+                />
+              </View>
+            ) : (
+              <View style={styles.fieldHeading}>
+                <Ionicons
+                  name="calendar-outline"
+                  size={18}
+                  color={Colors.primary}
+                />
+                <Text style={styles.fieldLabel}>Date</Text>
                 <Ionicons
                   name="chevron-down"
                   size={16}
                   color={Colors.textSecondary}
                   style={styles.fieldChevron}
                 />
-              ) : null}
-            </View>
-            <Text
-              numberOfLines={1}
-              adjustsFontSizeToFit={compact}
-              minimumFontScale={compact ? 0.75 : undefined}
-              style={[
-                styles.fieldValue,
-                compact ? styles.compactFieldValue : null,
-                !value ? styles.placeholder : null,
-              ]}
-            >
-              {value
-                ? formatDate(value)
-                : mode === "date"
-                  ? placeholder
-                  : "Select date"}
-            </Text>
+              </View>
+            )}
+            {compact ? (
+              <View style={styles.compactFieldCopy}>
+                <Text style={styles.compactFieldLabel}>Date</Text>
+                <Text
+                  numberOfLines={1}
+                  adjustsFontSizeToFit
+                  minimumFontScale={isCompactNarrow ? 0.7 : 0.85}
+                  style={[
+                    styles.compactFieldValue,
+                    !value ? styles.placeholder : null,
+                    isCompactNarrow && styles.compactFieldValueNarrow,
+                  ]}
+                >
+                  {value
+                    ? formatDate(value)
+                    : mode === "date"
+                      ? placeholder
+                      : "Select date"}
+                </Text>
+              </View>
+            ) : (
+              <Text
+                style={[styles.fieldValue, !value ? styles.placeholder : null]}
+              >
+                {value
+                  ? formatDate(value)
+                  : mode === "date"
+                    ? placeholder
+                    : "Select date"}
+              </Text>
+            )}
+            {compact ? (
+              <Ionicons
+                name="chevron-down"
+                size={isCompactNarrow ? 17 : 20}
+                color={Colors.textPrimary}
+              />
+            ) : null}
           </Pressable>
         ) : null}
         {mode !== "date" ? (
@@ -358,48 +402,81 @@ export function DateTimePickerComponent({
               const combinedStyles: any[] = [styles.field];
               if (mode === "datetime") combinedStyles.push(styles.fieldHalf);
               if (compact) combinedStyles.push(styles.compactField);
+              if (compact && isCompactNarrow) {
+                combinedStyles.push(styles.compactFieldNarrow);
+              }
               if (disabled) combinedStyles.push(styles.disabledField);
               if (pressed) combinedStyles.push(styles.pressedField);
               return combinedStyles;
             }}
           >
-            <View
-              style={[
-                styles.fieldHeading,
-                compact ? styles.compactFieldHeading : null,
-              ]}
-            >
-              <Ionicons
-                name="time-outline"
-                size={compact ? 25 : 18}
-                color={Colors.primary}
-              />
-              {!compact ? <Text style={styles.fieldLabel}>Time</Text> : null}
-              {!compact ? (
+            {compact ? (
+              <View
+                style={[
+                  styles.compactIconTile,
+                  isCompactNarrow && styles.compactIconTileNarrow,
+                ]}
+              >
+                <Ionicons
+                  name="time-outline"
+                  size={isCompactNarrow ? 24 : 31}
+                  color={Colors.primary}
+                />
+              </View>
+            ) : (
+              <View style={styles.fieldHeading}>
+                <Ionicons
+                  name="time-outline"
+                  size={18}
+                  color={Colors.primary}
+                />
+                <Text style={styles.fieldLabel}>Time</Text>
                 <Ionicons
                   name="chevron-down"
                   size={16}
                   color={Colors.textSecondary}
                   style={styles.fieldChevron}
                 />
-              ) : null}
-            </View>
-            <Text
-              numberOfLines={1}
-              adjustsFontSizeToFit={compact}
-              minimumFontScale={compact ? 0.75 : undefined}
-              style={[
-                styles.fieldValue,
-                compact ? styles.compactFieldValue : null,
-                !value ? styles.placeholder : null,
-              ]}
-            >
-              {value
-                ? formatTime(value)
-                : mode === "time"
-                  ? placeholder
-                  : "Select time"}
-            </Text>
+              </View>
+            )}
+            {compact ? (
+              <View style={styles.compactFieldCopy}>
+                <Text style={styles.compactFieldLabel}>Time</Text>
+                <Text
+                  numberOfLines={1}
+                  adjustsFontSizeToFit
+                  minimumFontScale={isCompactNarrow ? 0.7 : 0.85}
+                  style={[
+                    styles.compactFieldValue,
+                    !value ? styles.placeholder : null,
+                    isCompactNarrow && styles.compactFieldValueNarrow,
+                  ]}
+                >
+                  {value
+                    ? formatTime(value)
+                    : mode === "time"
+                      ? placeholder
+                      : "Select time"}
+                </Text>
+              </View>
+            ) : (
+              <Text
+                style={[styles.fieldValue, !value ? styles.placeholder : null]}
+              >
+                {value
+                  ? formatTime(value)
+                  : mode === "time"
+                    ? placeholder
+                    : "Select time"}
+              </Text>
+            )}
+            {compact ? (
+              <Ionicons
+                name="chevron-down"
+                size={isCompactNarrow ? 17 : 20}
+                color={Colors.textPrimary}
+              />
+            ) : null}
           </Pressable>
         ) : null}
       </View>
@@ -423,10 +500,14 @@ export function DateTimePickerComponent({
             <View style={styles.sheetHeader}>
               <View style={styles.headerCopy}>
                 <Text style={styles.sheetTitle}>
-                  {section === "date" ? "Choose date" : "Choose time"}
+                  {section === "date" ? "Choose Date" : "Set Time"}
                 </Text>
                 <Text style={styles.sheetSubtitle}>
-                  {section === "date" ? formatDate(draft) : formatTime(draft)}
+                  {section === "date"
+                    ? formatDate(draft)
+                    : mode === "datetime"
+                      ? `${formatDate(draft)}  ·  ${formatTime(draft)}`
+                      : formatTime(draft)}
                 </Text>
               </View>
               <Pressable
@@ -744,17 +825,26 @@ export function DateTimePickerComponent({
               >
                 <Text style={styles.cancelText}>Cancel</Text>
               </Pressable>
+
               <Pressable
                 accessibilityRole="button"
                 disabled={!isValidSelection(draft)}
                 onPress={confirmSelection}
                 style={({ pressed }) => [
                   styles.confirmButton,
+                  styles.applyButton,
                   !isValidSelection(draft) && styles.confirmDisabled,
                   pressed && isValidSelection(draft) && styles.confirmPressed,
                 ]}
               >
-                <Text style={styles.confirmText}>Confirm</Text>
+                <View style={styles.confirmButtonInner}>
+                  <Ionicons
+                    name="checkmark-circle-outline"
+                    size={18}
+                    color="#FFFFFF"
+                  />
+                  <Text style={styles.confirmText}>Apply</Text>
+                </View>
               </Pressable>
             </View>
           </SafeAreaView>
@@ -863,36 +953,77 @@ const styles = StyleSheet.create({
     minWidth: 0,
   },
   compactField: {
-    minHeight: 56,
+    minHeight: 84,
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "flex-start",
-    gap: 10,
-    paddingHorizontal: 16,
+    gap: 8,
+    paddingHorizontal: 10,
     paddingVertical: 12,
     borderWidth: 1,
-    borderColor: "#CBD5E1",
-    borderRadius: 16,
+    borderColor: "#D6E1D4",
+    borderRadius: 14,
     backgroundColor: "#FFFFFF",
   },
-  compactFieldHeading: {
-    gap: 0,
+  compactFieldNarrow: {
+    minHeight: 68,
+    paddingVertical: 10,
+    paddingHorizontal: 8,
+    gap: 6,
   },
-  compactFieldValue: {
+  compactIconTile: {
+    width: 56,
+    height: 56,
+    flexShrink: 0,
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 15,
+    backgroundColor: "#F1F5EF",
+  },
+  compactIconTileNarrow: {
+    width: 42,
+    height: 42,
+    borderRadius: 12,
+  },
+  compactFieldCopy: {
     flex: 1,
     minWidth: 0,
-    color: "#374151",
+    gap: 2,
+  },
+  compactFieldLabel: {
+    color: "#68757F",
     fontSize: 15,
-    fontWeight: "700",
+    fontWeight: "400",
+  },
+  compactFieldValue: {
+    minWidth: 0,
+    color: "#17212B",
+    fontSize: 22,
+    lineHeight: 27,
+    fontWeight: "600",
     includeFontPadding: false,
   },
+  compactFieldValueNarrow: {
+    fontSize: 17,
+    lineHeight: 21,
+  },
+  compactLabelRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    marginBottom: 12,
+  },
+  compactLabelAccent: {
+    width: 8,
+    height: 28,
+    borderRadius: 4,
+    backgroundColor: Colors.primary,
+  },
   compactLabel: {
-    marginBottom: 14,
-    color: "#A0A6B0",
-    fontSize: 16,
+    marginBottom: 0,
+    color: "#263238",
+    fontSize: 22,
     fontWeight: "700",
-    letterSpacing: 2,
-    textTransform: "uppercase",
+    letterSpacing: 0,
   },
   disabledField: {
     opacity: 0.5,
@@ -1196,6 +1327,14 @@ const styles = StyleSheet.create({
   },
   confirmPressed: {
     opacity: 0.85,
+  },
+  confirmButtonInner: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  applyButton: {
+    backgroundColor: "#2D6A4F",
   },
   confirmText: {
     color: Colors.white,

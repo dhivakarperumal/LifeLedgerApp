@@ -46,7 +46,6 @@ export function BottomTabBar({
                 ? options.tabBarLabel
                 : (options.title ?? route.name);
 
-            // Colors for the new design
             const iconColor = focused ? Colors.accent : "#FFFFFF";
             const textColor = focused ? Colors.accent : "#FFFFFF";
 

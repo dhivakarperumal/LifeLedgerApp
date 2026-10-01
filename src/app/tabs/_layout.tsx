@@ -56,7 +56,18 @@ export default function TabsLayout() {
                 resizeMode="cover"
                 accessibilityLabel="Life Ledger logo"
               />
-              <Text className="text-lg font-bold text-white">{children}</Text>
+              <Text
+                className="text-lg font-bold"
+                style={{
+                  color:
+                    typeof children === "string" &&
+                    ["Expenses", "Memories", "Diary"].includes(children)
+                      ? Colors.accent
+                      : Colors.white,
+                }}
+              >
+                {children}
+              </Text>
             </View>
           ),
           headerTitleAlign: "left",

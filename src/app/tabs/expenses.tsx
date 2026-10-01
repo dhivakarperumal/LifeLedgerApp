@@ -31,7 +31,11 @@ import {
   type SortOption,
   type ViewModeOption,
 } from "../../components/filters";
-import { FormField, FormOption } from "../../components/FormControls";
+import {
+  FormField,
+  FormOption,
+  formFieldStyles,
+} from "../../components/FormControls";
 import { GradientSafeAreaView as SafeAreaView } from "../../components/GradientSafeAreaView";
 import { SearchBar } from "../../components/SearchBar";
 import { Colors } from "../../constants/colors";
@@ -69,8 +73,8 @@ type ExpenseForm = {
   transfer_id: string;
   transfer_amount: string;
   category: string;
-  from_location: string;
-  to_location: string;
+  from: string;
+  to: string;
   payment_method: string;
   date: string;
   time: string;
@@ -87,17 +91,7 @@ const fallbackCategories = [
   "Other",
 ];
 
-const categoryIcons: Record<string, keyof typeof Ionicons.glyphMap> = {
-  Food: "restaurant-outline",
-  Travel: "car-outline",
-  Bills: "document-text-outline",
-  Shopping: "bag-handle-outline",
-  Health: "medkit-outline",
-  Education: "school-outline",
-  Other: "ellipsis-horizontal-outline",
-};
-
-/** Category accent colours — icon bg + icon tint */
+/** Category accent colours used by expense badges */
 const categoryAccents: Record<string, { bg: string; color: string }> = {
   Food: { bg: "#FFF0E6", color: "#F97316" },
   Travel: { bg: "#E6F0FF", color: "#3B82F6" },
@@ -127,7 +121,9 @@ const paymentIcons: Record<string, keyof typeof Ionicons.glyphMap> = {
 };
 
 function getCurrentDate() {
-  return new Date().toISOString().split("T")[0];
+  const now = new Date();
+  // Use local date instead of UTC to avoid timezone-related date mismatches
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
 }
 
 function getCurrentTime() {
@@ -211,8 +207,8 @@ export default function Expenses() {
     transfer_id: "",
     transfer_amount: "",
     category: fallbackCategories[0],
-    from_location: "",
-    to_location: "",
+    from: "",
+    to: "",
     payment_method: "Cash",
     date: getCurrentDate(),
     time: getCurrentTime(),
@@ -395,8 +391,8 @@ export default function Expenses() {
       transfer_id: "",
       transfer_amount: "",
       category: categoryOptions[0] || fallbackCategories[0],
-      from_location: "",
-      to_location: "",
+      from: "",
+      to: "",
       payment_method: "Cash",
       date: getCurrentDate(),
       time: getCurrentTime(),
@@ -431,21 +427,16 @@ export default function Expenses() {
   };
 
   const handleCreateExpense = async () => {
-    if (
-      !form.title.trim() ||
-      !form.expense_amount ||
-      Number(form.expense_amount) <= 0
-    ) {
+    if (!form.title.trim() || !form.expense_amount || !form.category.trim() || !form.date.trim()) {
       Alert.alert(
-        "Validation",
-        "Please enter a valid title and expense amount.",
+        "Error",
+        "Title, expense amount, category, and date are required.",
       );
       return;
     }
-    if (
-      isTravelCategory(form.category) &&
-      (!form.from_location.trim() || !form.to_location.trim())
-    ) {
+
+    const isTravel = isTravelCategory(form.category);
+    if (isTravel && (!form.from.trim() || !form.to.trim())) {
       Alert.alert(
         "Travel details required",
         "Enter both a starting point and destination.",
@@ -455,26 +446,43 @@ export default function Expenses() {
 
     try {
       setSaving(true);
+
       const payload = new FormData();
-      payload.append("title", form.title.trim());
-      payload.append("expense_amount", String(Number(form.expense_amount)));
-      payload.append("category", form.category);
-      payload.append("payment_method", form.payment_method);
-      payload.append("expense_date", form.date);
-      payload.append("expense_time", form.time);
-      payload.append("notes", form.notes || "");
-      payload.append("transfer_id", form.transfer_id);
-      payload.append("transfer_amount", form.transfer_amount || "0");
+      
+      // Mirror Web logic for appending fields
+      const formEntries = {
+        title: form.title.trim(),
+        expense_amount: form.expense_amount,
+        category: form.category.trim(),
+        payment_method: form.payment_method,
+        date: form.date.trim(), // Use "date", NOT "expense_date"
+        time: form.time, // Use "time", NOT "expense_time"
+        notes: form.notes || "",
+        transfer_id: form.transfer_id || "",
+        transfer_amount: form.transfer_amount || "",
+      };
+
+      Object.entries(formEntries).forEach(([k, v]) => {
+        if (v !== null && v !== undefined && v !== "") {
+          payload.append(k, String(v));
+        }
+      });
+
+      // Handle from/to based on travel category like Web
+      if (isTravel) {
+        if (form.from.trim()) payload.append("from", form.from.trim());
+        if (form.to.trim()) payload.append("to", form.to.trim());
+      } else {
+        payload.append("from", "");
+        payload.append("to", "");
+      }
+
       if (attachment) {
         payload.append("attachment", {
           uri: attachment.uri,
           name: attachment.name,
           type: attachment.mimeType,
         } as any);
-      }
-      if (isTravelCategory(form.category)) {
-        payload.append("from_location", form.from_location.trim());
-        payload.append("to_location", form.to_location.trim());
       }
 
       const response = await api.post("/expenses", payload, {
@@ -625,11 +633,6 @@ export default function Expenses() {
                   gap: 6,
                 }}
               >
-                <Ionicons
-                  name={categoryIcons[selectedCategory] || "pricetag-outline"}
-                  size={13}
-                  color="#1B4332"
-                />
                 <Text
                   style={{
                     fontSize: 12,
@@ -755,9 +758,6 @@ export default function Expenses() {
               }
             >
               {visibleExpenses.map((expense, index) => {
-                const icon =
-                  categoryIcons[String(expense.category || "Other")] ||
-                  "pricetag-outline";
                 const accent = categoryAccents[expense.category || "Other"] || {
                   bg: "#F3F4F6",
                   color: "#6B7280",
@@ -783,29 +783,11 @@ export default function Expenses() {
                       elevation: 3,
                     }}
                   >
-                    {/* Icon */}
-                    <View
-                      style={{
-                        width: 48,
-                        height: 48,
-                        alignSelf:
-                          viewMode === "card" ? "flex-start" : undefined,
-                        borderRadius: 15,
-                        backgroundColor: accent.bg,
-                        justifyContent: "center",
-                        alignItems: "center",
-                      }}
-                    >
-                      <Ionicons name={icon} size={22} color={accent.color} />
-                    </View>
-
                     {/* Info */}
                     <View
                       style={{
                         flex: viewMode === "card" ? undefined : 1,
                         width: viewMode === "card" ? "100%" : undefined,
-                        marginLeft: viewMode === "card" ? 0 : 12,
-                        marginTop: viewMode === "card" ? 10 : 0,
                       }}
                     >
                       <Text
@@ -973,17 +955,6 @@ export default function Expenses() {
             <ScrollView showsVerticalScrollIndicator={false}>
               {["All", ...categoryOptions].map((item) => {
                 const active = selectedCategory === item;
-                const icon =
-                  item === "All"
-                    ? "funnel-outline"
-                    : categoryIcons[item] || "pricetag-outline";
-                const accent =
-                  item === "All"
-                    ? { bg: "#E8F5E9", color: "#1B4332" }
-                    : categoryAccents[item] || {
-                        bg: "#F3F4F6",
-                        color: "#6B7280",
-                      };
                 return (
                   <Pressable
                     key={item}
@@ -1004,35 +975,15 @@ export default function Expenses() {
                       marginBottom: 10,
                     }}
                   >
-                    <View
+                    <Text
                       style={{
-                        flexDirection: "row",
-                        alignItems: "center",
-                        gap: 10,
+                        fontSize: 15,
+                        fontWeight: active ? "800" : "600",
+                        color: "#1E293B",
                       }}
                     >
-                      <View
-                        style={{
-                          width: 34,
-                          height: 34,
-                          borderRadius: 10,
-                          backgroundColor: accent.bg,
-                          alignItems: "center",
-                          justifyContent: "center",
-                        }}
-                      >
-                        <Ionicons name={icon} size={16} color={accent.color} />
-                      </View>
-                      <Text
-                        style={{
-                          fontSize: 15,
-                          fontWeight: active ? "800" : "600",
-                          color: "#1E293B",
-                        }}
-                      >
-                        {item}
-                      </Text>
-                    </View>
+                      {item}
+                    </Text>
                     {active && (
                       <Ionicons name="checkmark" size={18} color="#1B4332" />
                     )}
@@ -1118,7 +1069,6 @@ export default function Expenses() {
             <ScrollView showsVerticalScrollIndicator={false}>
               <FormField
                 label="Expense title *"
-                borderColor="#CBD5E1"
                 value={form.title}
                 onChangeText={(text) =>
                   setForm((current) => ({ ...current, title: text }))
@@ -1128,7 +1078,6 @@ export default function Expenses() {
 
               <FormField
                 label="Expense amount (₹) *"
-                borderColor="#CBD5E1"
                 value={form.expense_amount}
                 onChangeText={(text) =>
                   setForm((current) => ({ ...current, expense_amount: text }))
@@ -1183,7 +1132,6 @@ export default function Expenses() {
                     }
                     placeholder="0.00"
                     keyboardType="decimal-pad"
-                    borderColor="#CBD5E1"
                   />
                 ) : (
                   <ScrollView
@@ -1385,11 +1333,6 @@ export default function Expenses() {
                 >
                   {categoryOptions.map((item) => {
                     const selected = form.category === item;
-                    const accent = categoryAccents[item] || {
-                      bg: "#F3F4F6",
-                      color: "#6B7280",
-                    };
-                    const icon = categoryIcons[item] || "pricetag-outline";
                     return (
                       <FormOption
                         key={item}
@@ -1398,11 +1341,11 @@ export default function Expenses() {
                           setForm((current) => ({
                             ...current,
                             category: item,
-                            from_location: isTravelCategory(item)
-                              ? current.from_location
+                            from: isTravelCategory(item)
+                              ? current.from
                               : "",
-                            to_location: isTravelCategory(item)
-                              ? current.to_location
+                            to: isTravelCategory(item)
+                              ? current.to
                               : "",
                           }))
                         }
@@ -1411,16 +1354,8 @@ export default function Expenses() {
                           paddingVertical: 8,
                           borderRadius: 12,
                           backgroundColor: selected ? "#1B4332" : "#F8FAFC",
-                          flexDirection: "row",
-                          alignItems: "center",
-                          gap: 6,
                         }}
                       >
-                        <Ionicons
-                          name={icon}
-                          size={14}
-                          color={selected ? "#FFFFFF" : accent.color}
-                        />
                         <Text
                           style={{
                             color: selected ? "#FFFFFF" : "#374151",
@@ -1440,27 +1375,25 @@ export default function Expenses() {
                 <View>
                   <FormField
                     label="From"
-                    value={form.from_location}
+                    value={form.from}
                     onChangeText={(text) =>
                       setForm((current) => ({
                         ...current,
-                        from_location: text,
+                        from: text,
                       }))
                     }
                     placeholder="Starting point"
-                    borderColor="#CBD5E1"
                   />
                   <FormField
                     label="To"
-                    value={form.to_location}
+                    value={form.to}
                     onChangeText={(text) =>
                       setForm((current) => ({
                         ...current,
-                        to_location: text,
+                        to: text,
                       }))
                     }
                     placeholder="Destination"
-                    borderColor="#CBD5E1"
                   />
                 </View>
               ) : null}
@@ -1478,7 +1411,7 @@ export default function Expenses() {
                       time: formatLocalTime(date),
                     }));
                   }}
-                  label="Transaction time"
+                  label="Date & Time"
                   placeholder="Select date and time"
                 />
               </View>
@@ -1534,7 +1467,6 @@ export default function Expenses() {
 
               <FormField
                 label="Notes"
-                borderColor="#CBD5E1"
                 value={form.notes}
                 onChangeText={(text) =>
                   setForm((current) => ({ ...current, notes: text }))
@@ -1548,25 +1480,32 @@ export default function Expenses() {
                 <Pressable
                   onPress={() => void pickAttachment()}
                   style={{
-                    minHeight: 48,
+                    minHeight: 46,
                     paddingHorizontal: 12,
                     borderWidth: 1,
-                    borderColor: "#CBD5E1",
+                    borderStyle: "dashed",
+                    borderColor: Colors.sage,
                     borderRadius: 12,
-                    backgroundColor: "#F8FAFC",
+                    backgroundColor: "#F4F8F5",
                     flexDirection: "row",
                     alignItems: "center",
-                    gap: 9,
+                    justifyContent: "center",
+                    gap: 8,
                   }}
                 >
                   <Ionicons
                     name="attach-outline"
-                    size={18}
-                    color={Colors.primary}
+                    size={19}
+                    color={Colors.forest}
                   />
                   <Text
                     numberOfLines={1}
-                    style={{ flex: 1, color: "#475569", fontSize: 13 }}
+                    style={{
+                      flex: 1,
+                      color: Colors.forest,
+                      fontWeight: "700",
+                      textAlign: "center",
+                    }}
                   >
                     {attachment?.name || "Choose an image or PDF receipt"}
                   </Text>
@@ -1730,14 +1669,6 @@ export default function Expenses() {
               >
                 {["All", ...categoryOptions].map((category) => {
                   const isSelected = selectedCategory === category;
-                  const icon =
-                    category === "All"
-                      ? "grid-outline"
-                      : categoryIcons[category] || "pricetag-outline";
-                  const accent = categoryAccents[category] || {
-                    bg: "#F3F4F6",
-                    color: "#6B7280",
-                  };
 
                   return (
                     <Pressable
@@ -1753,16 +1684,8 @@ export default function Expenses() {
                         borderRadius: 16,
                         borderWidth: 1.5,
                         borderColor: isSelected ? "#1B4332" : "#E2E8F0",
-                        flexDirection: "row",
-                        alignItems: "center",
-                        gap: 8,
                       }}
                     >
-                      <Ionicons
-                        name={icon}
-                        size={16}
-                        color={isSelected ? "#FFFFFF" : accent.color}
-                      />
                       <Text
                         style={{
                           color: isSelected ? "#FFFFFF" : "#374151",
@@ -1937,17 +1860,5 @@ function HeroStatCard({
 }
 
 function ModalSectionLabel({ label }: { label: string }) {
-  return (
-    <Text
-      style={{
-        fontSize: 12,
-        color: "#94A3B8",
-        fontWeight: "700",
-        letterSpacing: 1.3,
-        marginBottom: 8,
-      }}
-    >
-      {label}
-    </Text>
-  );
+  return <Text style={formFieldStyles.label}>{label}</Text>;
 }
