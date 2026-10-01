@@ -633,128 +633,159 @@ export default function Expenses() {
               </Text>
             </View>
           ) : (
-            visibleExpenses.map((expense, index) => {
-              const icon =
-                categoryIcons[String(expense.category || "Other")] ||
-                "pricetag-outline";
-              const accent = categoryAccents[expense.category || "Other"] || {
-                bg: "#F3F4F6",
-                color: "#6B7280",
-              };
+            <View
+              style={
+                viewMode === "card"
+                  ? {
+                      flexDirection: "row",
+                      flexWrap: "wrap",
+                      justifyContent: "space-between",
+                    }
+                  : undefined
+              }
+            >
+              {visibleExpenses.map((expense, index) => {
+                const icon =
+                  categoryIcons[String(expense.category || "Other")] ||
+                  "pricetag-outline";
+                const accent = categoryAccents[expense.category || "Other"] || {
+                  bg: "#F3F4F6",
+                  color: "#6B7280",
+                };
 
-              return (
-                <View
-                  key={String(expense.id)}
-                  style={{
-                    backgroundColor:
-                      viewMode === "card" ? "#FFFFFF" : "transparent",
-                    borderRadius: viewMode === "card" ? 18 : 0,
-                    padding: viewMode === "card" ? 16 : 10,
-                    marginBottom: viewMode === "card" ? 10 : 0,
-                    flexDirection: "row",
-                    alignItems: "center",
-                    borderBottomWidth: viewMode === "table" ? 1 : 0,
-                    borderBottomColor: "#E4E8E3",
-                    shadowColor: "#000",
-                    shadowOffset: { width: 0, height: 2 },
-                    shadowOpacity: viewMode === "card" ? 0.06 : 0,
-                    shadowRadius: 8,
-                    elevation: viewMode === "card" ? 3 : 0,
-                  }}
-                >
-                  {/* Icon */}
+                return (
                   <View
+                    key={String(expense.id)}
                     style={{
-                      width: 48,
-                      height: 48,
-                      borderRadius: 15,
-                      backgroundColor: accent.bg,
-                      justifyContent: "center",
+                      width: viewMode === "card" ? "48%" : "100%",
+                      backgroundColor: "#FFFFFF",
+                      borderRadius: 18,
+                      padding: viewMode === "card" ? 12 : 16,
+                      marginBottom: 10,
+                      flexDirection: viewMode === "card" ? "column" : "row",
                       alignItems: "center",
+                      borderWidth: 1,
+                      borderColor: "#E4E8E3",
+                      shadowColor: "#000",
+                      shadowOffset: { width: 0, height: 2 },
+                      shadowOpacity: 0.06,
+                      shadowRadius: 8,
+                      elevation: 3,
                     }}
                   >
-                    <Ionicons name={icon} size={22} color={accent.color} />
-                  </View>
-
-                  {/* Info */}
-                  <View style={{ flex: 1, marginLeft: 12 }}>
-                    <Text
-                      style={{
-                        fontSize: 15,
-                        fontWeight: "700",
-                        color: "#1E293B",
-                      }}
-                      numberOfLines={1}
-                    >
-                      {expense.title || "Expense"}
-                    </Text>
+                    {/* Icon */}
                     <View
                       style={{
-                        flexDirection: "row",
-                        alignItems: "center",
-                        marginTop: 4,
-                        gap: 6,
-                      }}
-                    >
-                      <View
-                        style={{
-                          backgroundColor: accent.bg,
-                          borderRadius: 6,
-                          paddingHorizontal: 7,
-                          paddingVertical: 2,
-                        }}
-                      >
-                        <Text
-                          style={{
-                            fontSize: 12,
-                            fontWeight: "700",
-                            color: accent.color,
-                          }}
-                        >
-                          {expense.category || "Other"}
-                        </Text>
-                      </View>
-                      <Text style={{ fontSize: 12, color: "#94A3B8" }}>
-                        {formatDate(expense.expense_date)}
-                      </Text>
-                    </View>
-                  </View>
-
-                  {/* Amount + delete */}
-                  <View style={{ alignItems: "flex-end", gap: 6 }}>
-                    <Text
-                      style={{
-                        fontSize: 15,
-                        fontWeight: "800",
-                        color: "#EF4444",
-                      }}
-                    >
-                      {formatAmount(
-                        expense.expense_amount ?? expense.amount ?? 0,
-                      )}
-                    </Text>
-                    <Pressable
-                      onPress={() => handleDeleteExpense(expense)}
-                      hitSlop={10}
-                      style={{
-                        width: 28,
-                        height: 28,
-                        borderRadius: 8,
-                        backgroundColor: "#FEF2F2",
+                        width: 48,
+                        height: 48,
+                        alignSelf:
+                          viewMode === "card" ? "flex-start" : undefined,
+                        borderRadius: 15,
+                        backgroundColor: accent.bg,
                         justifyContent: "center",
                         alignItems: "center",
                       }}
                     >
-                      <Ionicons
-                        name="trash-outline"
-                        size={14}
-                        color="#EF4444"
-                      />
-                    </Pressable>
+                      <Ionicons name={icon} size={22} color={accent.color} />
+                    </View>
+
+                    {/* Info */}
+                    <View
+                      style={{
+                        flex: viewMode === "card" ? undefined : 1,
+                        width: viewMode === "card" ? "100%" : undefined,
+                        marginLeft: viewMode === "card" ? 0 : 12,
+                        marginTop: viewMode === "card" ? 10 : 0,
+                      }}
+                    >
+                      <Text
+                        style={{
+                          fontSize: 15,
+                          fontWeight: "700",
+                          color: "#1E293B",
+                        }}
+                        numberOfLines={1}
+                      >
+                        {expense.title || "Expense"}
+                      </Text>
+                      <View
+                        style={{
+                          flexDirection: "row",
+                          alignItems: "center",
+                          marginTop: 4,
+                          gap: 6,
+                        }}
+                      >
+                        <View
+                          style={{
+                            backgroundColor: accent.bg,
+                            borderRadius: 6,
+                            paddingHorizontal: 7,
+                            paddingVertical: 2,
+                          }}
+                        >
+                          <Text
+                            style={{
+                              fontSize: 12,
+                              fontWeight: "700",
+                              color: accent.color,
+                            }}
+                          >
+                            {expense.category || "Other"}
+                          </Text>
+                        </View>
+                        <Text style={{ fontSize: 12, color: "#94A3B8" }}>
+                          {formatDate(expense.expense_date)}
+                        </Text>
+                      </View>
+                    </View>
+
+                    {/* Amount + delete */}
+                    <View
+                      style={{
+                        flexDirection: viewMode === "card" ? "row" : "column",
+                        alignItems: viewMode === "card" ? "center" : "flex-end",
+                        justifyContent:
+                          viewMode === "card" ? "space-between" : undefined,
+                        width: viewMode === "card" ? "100%" : undefined,
+                        marginTop: viewMode === "card" ? 10 : 0,
+                        gap: 6,
+                      }}
+                    >
+                      <Text
+                        style={{
+                          fontSize: 15,
+                          fontWeight: "800",
+                          color: "#EF4444",
+                        }}
+                      >
+                        {formatAmount(
+                          expense.expense_amount ?? expense.amount ?? 0,
+                        )}
+                      </Text>
+                      <Pressable
+                        onPress={() => handleDeleteExpense(expense)}
+                        hitSlop={10}
+                        style={{
+                          width: 28,
+                          height: 28,
+                          borderRadius: 8,
+                          backgroundColor: "#FEF2F2",
+                          justifyContent: "center",
+                          alignItems: "center",
+                        }}
+                      >
+                        <Ionicons
+                          name="trash-outline"
+                          size={14}
+                          color="#EF4444"
+                        />
+                      </Pressable>
+                    </View>
                   </View>
-                </View>
-              );
-            })
+                );
+              })}
+            </View>
           )}
         </ScrollView>
       </View>

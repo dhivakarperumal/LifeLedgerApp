@@ -947,340 +947,354 @@ export default function Diary() {
             </Text>
           </View>
         ) : (
-          filteredEntries.map((entry, index) => {
-            const date = diaryDateParts(entry.entry_date);
-            const tags = parseTags(entry.tags);
-            const photoUrl = diaryImageUrl(entry);
-            const mood = moods.find((item) => item.name === entry.mood);
-            const moodTone = diaryTagColors[index % diaryTagColors.length];
-            const attachmentCount =
-              entry.attachment_count ||
-              (entry.attachments?.length || 0) +
-                (entry.media_files?.length || 0);
+          <View
+            style={{
+              flexDirection: viewMode === "card" ? "row" : "column",
+              flexWrap: viewMode === "card" ? "wrap" : "nowrap",
+              justifyContent: viewMode === "card" ? "space-between" : undefined,
+              gap: 10,
+            }}
+          >
+            {filteredEntries.map((entry, index) => {
+              const date = diaryDateParts(entry.entry_date);
+              const tags = parseTags(entry.tags);
+              const photoUrl = diaryImageUrl(entry);
+              const mood = moods.find((item) => item.name === entry.mood);
+              const moodTone = diaryTagColors[index % diaryTagColors.length];
+              const attachmentCount =
+                entry.attachment_count ||
+                (entry.attachments?.length || 0) +
+                  (entry.media_files?.length || 0);
 
-            return (
-              <Pressable
-                key={String(entry.id)}
-                onPress={() =>
-                  router.push({
-                    pathname: "/diary/[id]",
-                    params: { id: String(entry.id) },
-                  })
-                }
-                accessibilityRole="button"
-                accessibilityLabel={`View diary entry: ${entry.title}`}
-                style={{
-                  position: "relative",
-                  flexDirection: "row",
-                  alignItems: "center",
-                  gap: 10,
-                  minHeight: viewMode === "card" ? 152 : 104,
-                  marginBottom: viewMode === "card" ? 12 : 0,
-                  padding: viewMode === "card" ? 11 : 8,
-                  paddingRight: 12,
-                  borderRadius: viewMode === "card" ? 19 : 0,
-                  borderWidth: viewMode === "card" ? 1 : 0,
-                  borderBottomWidth: viewMode === "table" ? 1 : 0,
-                  borderColor: "#E8EEEA",
-                  backgroundColor: Colors.white,
-                  shadowColor: "#26382E",
-                  shadowOffset: { width: 0, height: 3 },
-                  shadowOpacity: viewMode === "card" ? 0.05 : 0,
-                  shadowRadius: 9,
-                  elevation: viewMode === "card" ? 2 : 0,
-                }}
-              >
-                <View
+              return (
+                <Pressable
+                  key={String(entry.id)}
+                  onPress={() =>
+                    router.push({
+                      pathname: "/diary/[id]",
+                      params: { id: String(entry.id) },
+                    })
+                  }
+                  accessibilityRole="button"
+                  accessibilityLabel={`View diary entry: ${entry.title}`}
                   style={{
-                    width: 68,
-                    minHeight: 110,
-                    alignItems: "center",
-                    justifyContent: "center",
-                    paddingHorizontal: 4,
-                    borderRadius: 16,
-                    backgroundColor:
-                      diaryDateTileColors[index % diaryDateTileColors.length],
+                    position: "relative",
+                    width: viewMode === "card" ? "48%" : "100%",
+                    flexDirection: viewMode === "card" ? "column" : "row",
+                    alignItems: viewMode === "card" ? "stretch" : "center",
+                    gap: viewMode === "card" ? 7 : 10,
+                    minHeight: viewMode === "card" ? 280 : 152,
+                    padding: 11,
+                    paddingRight: 12,
+                    borderRadius: 19,
+                    borderWidth: 1,
+                    borderColor: "#E8EEEA",
+                    backgroundColor: Colors.white,
+                    shadowColor: "#26382E",
+                    shadowOffset: { width: 0, height: 3 },
+                    shadowOpacity: 0.05,
+                    shadowRadius: 9,
+                    elevation: 2,
                   }}
                 >
-                  <Text style={{ color: Colors.textPrimary, fontSize: 12 }}>
-                    {date.month}
-                  </Text>
-                  <Text
-                    style={{
-                      color: "#111D20",
-                      fontSize: 26,
-                      fontWeight: "800",
-                      lineHeight: 31,
-                    }}
-                  >
-                    {date.day}
-                  </Text>
-                  <Text style={{ color: Colors.textSecondary, fontSize: 12 }}>
-                    {date.weekday}
-                  </Text>
-                </View>
-
-                <View
-                  style={{
-                    flex: 1,
-                    minWidth: 0,
-                    justifyContent: "center",
-                    paddingVertical: 7,
-                  }}
-                >
-                  <Text
-                    numberOfLines={1}
-                    style={{
-                      paddingRight: 20,
-                      color: Colors.textPrimary,
-                      fontSize: 16,
-                      fontWeight: "800",
-                    }}
-                  >
-                    {entry.title}
-                  </Text>
                   <View
                     style={{
-                      flexDirection: "row",
+                      width: viewMode === "card" ? "100%" : 68,
+                      minHeight: viewMode === "card" ? 42 : 110,
+                      flexDirection: viewMode === "card" ? "row" : "column",
                       alignItems: "center",
-                      gap: 5,
-                      marginTop: 4,
+                      justifyContent: "center",
+                      gap: viewMode === "card" ? 8 : 0,
+                      paddingHorizontal: viewMode === "card" ? 10 : 4,
+                      borderRadius: viewMode === "card" ? 12 : 16,
+                      backgroundColor:
+                        diaryDateTileColors[index % diaryDateTileColors.length],
                     }}
                   >
-                    <Ionicons
-                      name="time-outline"
-                      size={14}
-                      color={Colors.textSecondary}
-                    />
-                    <Text
-                      numberOfLines={1}
-                      style={{ color: Colors.textSecondary, fontSize: 12 }}
-                    >
-                      {formatEntryTime(entry.entry_time) ||
-                        formatDate(entry.entry_date)}
+                    <Text style={{ color: Colors.textPrimary, fontSize: 12 }}>
+                      {date.month}
                     </Text>
-                    {asBoolean(entry.is_private) ||
-                    asBoolean(entry.is_locked) ? (
-                      <Ionicons
-                        name="lock-closed-outline"
-                        size={13}
-                        color={Colors.olive}
-                      />
-                    ) : null}
-                  </View>
-                  {plainContent(entry.content) ? (
                     <Text
-                      numberOfLines={2}
                       style={{
-                        color: "#596367",
-                        fontSize: 13,
-                        lineHeight: 18,
-                        marginTop: 5,
+                        color: "#111D20",
+                        fontSize: 26,
+                        fontWeight: "800",
+                        lineHeight: 31,
                       }}
                     >
-                      {plainContent(entry.content)}
+                      {date.day}
                     </Text>
-                  ) : null}
+                    <Text style={{ color: Colors.textSecondary, fontSize: 12 }}>
+                      {date.weekday}
+                    </Text>
+                  </View>
+
                   <View
                     style={{
-                      flexDirection: "row",
-                      flexWrap: "wrap",
-                      alignItems: "center",
-                      gap: 6,
-                      marginTop: 8,
+                      flex: viewMode === "card" ? undefined : 1,
+                      width: viewMode === "card" ? "100%" : undefined,
+                      minWidth: 0,
+                      justifyContent: "center",
+                      paddingVertical: viewMode === "card" ? 2 : 7,
                     }}
                   >
-                    {[
-                      entry.category_name || "General",
-                      ...tags.slice(0, 2),
-                    ].map((label, tagIndex) => {
-                      const tone =
-                        diaryTagColors[tagIndex % diaryTagColors.length];
-                      return (
+                    <Text
+                      numberOfLines={1}
+                      style={{
+                        paddingRight: 20,
+                        color: Colors.textPrimary,
+                        fontSize: 16,
+                        fontWeight: "800",
+                      }}
+                    >
+                      {entry.title}
+                    </Text>
+                    <View
+                      style={{
+                        flexDirection: "row",
+                        alignItems: "center",
+                        gap: 5,
+                        marginTop: 4,
+                      }}
+                    >
+                      <Ionicons
+                        name="time-outline"
+                        size={14}
+                        color={Colors.textSecondary}
+                      />
+                      <Text
+                        numberOfLines={1}
+                        style={{ color: Colors.textSecondary, fontSize: 12 }}
+                      >
+                        {formatEntryTime(entry.entry_time) ||
+                          formatDate(entry.entry_date)}
+                      </Text>
+                      {asBoolean(entry.is_private) ||
+                      asBoolean(entry.is_locked) ? (
+                        <Ionicons
+                          name="lock-closed-outline"
+                          size={13}
+                          color={Colors.olive}
+                        />
+                      ) : null}
+                    </View>
+                    {plainContent(entry.content) ? (
+                      <Text
+                        numberOfLines={2}
+                        style={{
+                          color: "#596367",
+                          fontSize: 13,
+                          lineHeight: 18,
+                          marginTop: 5,
+                        }}
+                      >
+                        {plainContent(entry.content)}
+                      </Text>
+                    ) : null}
+                    <View
+                      style={{
+                        flexDirection: "row",
+                        flexWrap: "wrap",
+                        alignItems: "center",
+                        gap: 6,
+                        marginTop: 8,
+                      }}
+                    >
+                      {[
+                        entry.category_name || "General",
+                        ...tags.slice(0, 2),
+                      ].map((label, tagIndex) => {
+                        const tone =
+                          diaryTagColors[tagIndex % diaryTagColors.length];
+                        return (
+                          <Text
+                            key={`${entry.id}-${label}`}
+                            numberOfLines={1}
+                            style={{
+                              maxWidth: 100,
+                              overflow: "hidden",
+                              paddingHorizontal: 9,
+                              paddingVertical: 5,
+                              borderRadius: 14,
+                              backgroundColor: tone.background,
+                              color: tone.color,
+                              fontSize: 11,
+                              fontWeight: "600",
+                            }}
+                          >
+                            {label}
+                          </Text>
+                        );
+                      })}
+                      {tags.length > 2 ? (
                         <Text
-                          key={`${entry.id}-${label}`}
-                          numberOfLines={1}
                           style={{
-                            maxWidth: 100,
-                            overflow: "hidden",
-                            paddingHorizontal: 9,
+                            paddingHorizontal: 8,
                             paddingVertical: 5,
                             borderRadius: 14,
-                            backgroundColor: tone.background,
-                            color: tone.color,
+                            backgroundColor: "#F0F3F2",
+                            color: Colors.textSecondary,
+                            fontSize: 11,
+                          }}
+                        >
+                          +{tags.length - 2}
+                        </Text>
+                      ) : null}
+                      {attachmentCount > 0 ? (
+                        <View
+                          style={{
+                            flexDirection: "row",
+                            alignItems: "center",
+                            gap: 3,
+                            paddingHorizontal: 7,
+                            paddingVertical: 5,
+                            borderRadius: 14,
+                            backgroundColor: "#F0F3F2",
+                          }}
+                        >
+                          <Ionicons
+                            name="attach-outline"
+                            size={12}
+                            color={Colors.textSecondary}
+                          />
+                          <Text
+                            style={{
+                              color: Colors.textSecondary,
+                              fontSize: 11,
+                            }}
+                          >
+                            {attachmentCount}
+                          </Text>
+                        </View>
+                      ) : null}
+                      {entry.status === "draft" ? (
+                        <Text
+                          style={{
+                            paddingHorizontal: 8,
+                            paddingVertical: 5,
+                            borderRadius: 14,
+                            backgroundColor: "#FFF3D4",
+                            color: "#8B5C12",
                             fontSize: 11,
                             fontWeight: "600",
                           }}
                         >
-                          {label}
+                          Draft
                         </Text>
-                      );
-                    })}
-                    {tags.length > 2 ? (
+                      ) : null}
+                    </View>
+                  </View>
+
+                  <View
+                    style={{
+                      width: viewMode === "card" ? "100%" : "28%",
+                      minWidth: viewMode === "card" ? undefined : 88,
+                      maxWidth: viewMode === "card" ? undefined : 176,
+                      gap: 7,
+                      alignItems: "stretch",
+                    }}
+                  >
+                    <View
+                      style={{
+                        alignSelf: "flex-end",
+                        maxWidth: "100%",
+                        marginRight: 18,
+                        paddingHorizontal: 9,
+                        paddingVertical: 5,
+                        borderRadius: 16,
+                        backgroundColor: moodTone.background,
+                      }}
+                    >
                       <Text
+                        numberOfLines={1}
                         style={{
-                          paddingHorizontal: 8,
-                          paddingVertical: 5,
-                          borderRadius: 14,
-                          backgroundColor: "#F0F3F2",
-                          color: Colors.textSecondary,
-                          fontSize: 11,
-                        }}
-                      >
-                        +{tags.length - 2}
-                      </Text>
-                    ) : null}
-                    {attachmentCount > 0 ? (
-                      <View
-                        style={{
-                          flexDirection: "row",
-                          alignItems: "center",
-                          gap: 3,
-                          paddingHorizontal: 7,
-                          paddingVertical: 5,
-                          borderRadius: 14,
-                          backgroundColor: "#F0F3F2",
-                        }}
-                      >
-                        <Ionicons
-                          name="attach-outline"
-                          size={12}
-                          color={Colors.textSecondary}
-                        />
-                        <Text
-                          style={{ color: Colors.textSecondary, fontSize: 11 }}
-                        >
-                          {attachmentCount}
-                        </Text>
-                      </View>
-                    ) : null}
-                    {entry.status === "draft" ? (
-                      <Text
-                        style={{
-                          paddingHorizontal: 8,
-                          paddingVertical: 5,
-                          borderRadius: 14,
-                          backgroundColor: "#FFF3D4",
-                          color: "#8B5C12",
+                          color: moodTone.color,
                           fontSize: 11,
                           fontWeight: "600",
                         }}
                       >
-                        Draft
+                        {mood?.emoji || "😊"} {entry.mood || "Happy"}
                       </Text>
-                    ) : null}
-                  </View>
-                </View>
-
-                <View
-                  style={{
-                    width: "28%",
-                    minWidth: 88,
-                    maxWidth: 176,
-                    gap: 7,
-                    alignItems: "stretch",
-                  }}
-                >
-                  <View
-                    style={{
-                      alignSelf: "flex-end",
-                      maxWidth: "100%",
-                      marginRight: 18,
-                      paddingHorizontal: 9,
-                      paddingVertical: 5,
-                      borderRadius: 16,
-                      backgroundColor: moodTone.background,
-                    }}
-                  >
-                    <Text
-                      numberOfLines={1}
+                    </View>
+                    <View
                       style={{
-                        color: moodTone.color,
-                        fontSize: 11,
-                        fontWeight: "600",
+                        height: viewMode === "card" ? 88 : 96,
+                        overflow: "hidden",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        borderRadius: 15,
+                        backgroundColor: "#E7EEE9",
                       }}
                     >
-                      {mood?.emoji || "😊"} {entry.mood || "Happy"}
-                    </Text>
+                      {photoUrl ? (
+                        <Image
+                          source={{ uri: photoUrl }}
+                          resizeMode="cover"
+                          style={{
+                            position: "absolute",
+                            top: 0,
+                            right: 0,
+                            bottom: 0,
+                            left: 0,
+                          }}
+                        />
+                      ) : (
+                        <Ionicons
+                          name="image-outline"
+                          size={26}
+                          color={Colors.sage}
+                        />
+                      )}
+                    </View>
                   </View>
-                  <View
+
+                  <Pressable
+                    onPress={(event) => {
+                      event.stopPropagation();
+                      Alert.alert(entry.title, "Entry options", [
+                        {
+                          text: "View",
+                          onPress: () =>
+                            router.push({
+                              pathname: "/diary/[id]",
+                              params: { id: String(entry.id) },
+                            }),
+                        },
+                        { text: "Edit", onPress: () => openEditEntry(entry) },
+                        {
+                          text: asBoolean(entry.is_favorite)
+                            ? "Remove favorite"
+                            : "Add favorite",
+                          onPress: () => void toggleFavorite(entry),
+                        },
+                        {
+                          text: "Delete",
+                          style: "destructive",
+                          onPress: () => deleteEntry(entry),
+                        },
+                        { text: "Cancel", style: "cancel" },
+                      ]);
+                    }}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Options for ${entry.title}`}
+                    hitSlop={7}
                     style={{
-                      height: 96,
-                      overflow: "hidden",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      borderRadius: 15,
-                      backgroundColor: "#E7EEE9",
+                      position: "absolute",
+                      top: 8,
+                      right: 5,
+                      padding: 4,
                     }}
                   >
-                    {photoUrl ? (
-                      <Image
-                        source={{ uri: photoUrl }}
-                        resizeMode="cover"
-                        style={{
-                          position: "absolute",
-                          top: 0,
-                          right: 0,
-                          bottom: 0,
-                          left: 0,
-                        }}
-                      />
-                    ) : (
-                      <Ionicons
-                        name="image-outline"
-                        size={26}
-                        color={Colors.sage}
-                      />
-                    )}
-                  </View>
-                </View>
-
-                <Pressable
-                  onPress={(event) => {
-                    event.stopPropagation();
-                    Alert.alert(entry.title, "Entry options", [
-                      {
-                        text: "View",
-                        onPress: () =>
-                          router.push({
-                            pathname: "/diary/[id]",
-                            params: { id: String(entry.id) },
-                          }),
-                      },
-                      { text: "Edit", onPress: () => openEditEntry(entry) },
-                      {
-                        text: asBoolean(entry.is_favorite)
-                          ? "Remove favorite"
-                          : "Add favorite",
-                        onPress: () => void toggleFavorite(entry),
-                      },
-                      {
-                        text: "Delete",
-                        style: "destructive",
-                        onPress: () => deleteEntry(entry),
-                      },
-                      { text: "Cancel", style: "cancel" },
-                    ]);
-                  }}
-                  accessibilityRole="button"
-                  accessibilityLabel={`Options for ${entry.title}`}
-                  hitSlop={7}
-                  style={{
-                    position: "absolute",
-                    top: 8,
-                    right: 5,
-                    padding: 4,
-                  }}
-                >
-                  <Ionicons
-                    name="ellipsis-vertical"
-                    size={18}
-                    color={Colors.textPrimary}
-                  />
+                    <Ionicons
+                      name="ellipsis-vertical"
+                      size={18}
+                      color={Colors.textPrimary}
+                    />
+                  </Pressable>
                 </Pressable>
-              </Pressable>
-            );
-          })
+              );
+            })}
+          </View>
         )}
       </ScrollView>
 

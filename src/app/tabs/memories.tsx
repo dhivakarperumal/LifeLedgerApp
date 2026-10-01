@@ -109,11 +109,15 @@ const memoryMediaFilterOptions = [
 ];
 
 function getList<T>(data: any, keys: string[] = []): T[] {
-  if (Array.isArray(data)) return data;
-  for (const key of keys) {
-    if (Array.isArray(data?.[key])) return data[key];
+  let current = data;
+  for (let depth = 0; depth < 3 && current; depth += 1) {
+    if (Array.isArray(current)) return current;
+    for (const key of keys) {
+      if (Array.isArray(current?.[key])) return current[key];
+    }
+    if (Array.isArray(current?.data)) return current.data;
+    current = current?.data;
   }
-  if (Array.isArray(data?.data)) return data.data;
   return [];
 }
 
@@ -779,6 +783,10 @@ export default function Memories() {
                 </View>
                 <View
                   style={{
+                    flexDirection: viewMode === "card" ? "row" : "column",
+                    flexWrap: viewMode === "card" ? "wrap" : "nowrap",
+                    justifyContent:
+                      viewMode === "card" ? "space-between" : undefined,
                     gap: 10,
                   }}
                 >
@@ -798,25 +806,26 @@ export default function Memories() {
                         accessibilityRole="button"
                         accessibilityLabel={`View ${memory.title}`}
                         style={{
-                          flexDirection: "row",
-                          minHeight: viewMode === "card" ? 148 : 96,
+                          width: viewMode === "card" ? "48%" : "100%",
+                          flexDirection: viewMode === "card" ? "column" : "row",
+                          minHeight: viewMode === "card" ? 220 : 148,
                           overflow: "hidden",
-                          borderRadius: viewMode === "card" ? 18 : 4,
+                          borderRadius: 18,
                           backgroundColor: Colors.white,
-                          borderWidth: viewMode === "card" ? 1 : 0,
-                          borderBottomWidth: viewMode === "table" ? 1 : 0,
+                          borderWidth: 1,
                           borderColor: "#E9EEEB",
                           shadowColor: "#24352B",
                           shadowOffset: { width: 0, height: 3 },
-                          shadowOpacity: viewMode === "card" ? 0.06 : 0,
+                          shadowOpacity: 0.06,
                           shadowRadius: 10,
-                          elevation: viewMode === "card" ? 2 : 0,
+                          elevation: 2,
                         }}
                       >
                         <View
                           style={{
-                            width: "31%",
-                            minHeight: viewMode === "card" ? 154 : 96,
+                            width: viewMode === "card" ? "100%" : "31%",
+                            height: viewMode === "card" ? 132 : undefined,
+                            minHeight: viewMode === "card" ? 132 : 154,
                             position: "relative",
                             backgroundColor: "#DDE9E4",
                           }}
@@ -890,10 +899,11 @@ export default function Memories() {
                         </View>
                         <View
                           style={{
-                            flex: 1,
+                            flex: viewMode === "card" ? undefined : 1,
+                            width: viewMode === "card" ? "100%" : undefined,
                             justifyContent: "center",
-                            paddingVertical: 12,
-                            paddingLeft: 12,
+                            paddingVertical: viewMode === "card" ? 10 : 12,
+                            paddingLeft: viewMode === "card" ? 10 : 12,
                             paddingRight: 8,
                           }}
                         >
