@@ -277,7 +277,10 @@ export default function Expenses() {
           )
             .trim()
             .toLowerCase();
-          if (categoryType !== "expensive" && categoryType !== "expense") {
+          if (
+            !categoryType.includes("expense") &&
+            !categoryType.includes("expensive")
+          ) {
             return "";
           }
           const nestedCategory = category.category;
@@ -1515,6 +1518,7 @@ export default function Expenses() {
                 <View>
                   <FormField
                     label="From"
+                    labelColor="#000000"
                     value={form.from}
                     onChangeText={(text) =>
                       setForm((current) => ({
@@ -1526,6 +1530,7 @@ export default function Expenses() {
                   />
                   <FormField
                     label="To"
+                    labelColor="#000000"
                     value={form.to}
                     onChangeText={(text) =>
                       setForm((current) => ({

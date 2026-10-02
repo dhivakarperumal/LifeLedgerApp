@@ -336,7 +336,7 @@ export function DateTimePickerComponent({
               >
                 <Ionicons
                   name="calendar-outline"
-                  size={isCompactNarrow ? 24 : 31}
+                  size={isCompactNarrow ? 14 : 18}
                   color={Colors.primary}
                 />
               </View>
@@ -390,7 +390,7 @@ export function DateTimePickerComponent({
             {compact ? (
               <Ionicons
                 name="chevron-down"
-                size={isCompactNarrow ? 17 : 20}
+                size={isCompactNarrow ? 14 : 16}
                 color={Colors.textPrimary}
               />
             ) : null}
@@ -426,7 +426,7 @@ export function DateTimePickerComponent({
               >
                 <Ionicons
                   name="time-outline"
-                  size={isCompactNarrow ? 24 : 31}
+                  size={isCompactNarrow ? 14 : 18}
                   color={Colors.primary}
                 />
               </View>
@@ -480,7 +480,168 @@ export function DateTimePickerComponent({
             {compact ? (
               <Ionicons
                 name="chevron-down"
-                size={isCompactNarrow ? 17 : 20}
+                size={isCompactNarrow ? 14 : 16}
+                color={Colors.textPrimary}
+              />
+            ) : null}
+          </Pressable>
+        ) : null}
+      </View>
+
+      <View style={[styles.fields, mode !== "datetime" && styles.singleField]}>
+        {mode !== "time" ? (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={value ? `Date, ${formatDate(value)}` : placeholder}
+            accessibilityState={{ disabled }}
+            disabled={disabled}
+            onPress={() => openPicker("date")}
+            style={({ pressed }) => [
+              styles.field,
+              mode === "datetime" && styles.fieldHalf,
+              compact && styles.compactField,
+              compact && isCompactNarrow && styles.compactFieldNarrow,
+              disabled && styles.disabledField,
+              pressed && styles.pressedField,
+            ]}
+          >
+            {compact ? (
+              <View
+                style={[
+                  styles.compactIconTile,
+                  isCompactNarrow && styles.compactIconTileNarrow,
+                ]}
+              >
+                <Ionicons
+                  name="calendar-outline"
+                  size={isCompactNarrow ? 14 : 18}
+                  color={Colors.primary}
+                />
+              </View>
+            ) : (
+              <View style={styles.fieldHeading}>
+                <Ionicons name="calendar-outline" size={18} color={Colors.primary} />
+                <Text style={styles.fieldLabel}>Date</Text>
+                <Ionicons
+                  name="chevron-down"
+                  size={16}
+                  color={Colors.textSecondary}
+                  style={styles.fieldChevron}
+                />
+              </View>
+            )}
+            {compact ? (
+              <View style={styles.compactFieldCopy}>
+                <Text style={styles.compactFieldLabel}>Date</Text>
+                <Text
+                  numberOfLines={1}
+                  adjustsFontSizeToFit
+                  minimumFontScale={isCompactNarrow ? 0.7 : 0.85}
+                  style={[
+                    styles.compactFieldValue,
+                    !value && styles.placeholder,
+                    isCompactNarrow && styles.compactFieldValueNarrow,
+                  ]}
+                >
+                  {value
+                    ? formatDate(value)
+                    : mode === "date"
+                      ? placeholder
+                      : "Select date"}
+                </Text>
+              </View>
+            ) : (
+              <Text style={[styles.fieldValue, !value && styles.placeholder]}>
+                {value
+                  ? formatDate(value)
+                  : mode === "date"
+                    ? placeholder
+                    : "Select date"}
+              </Text>
+            )}
+            {compact ? (
+              <Ionicons
+                name="chevron-down"
+                size={isCompactNarrow ? 14 : 16}
+                color={Colors.textPrimary}
+              />
+            ) : null}
+          </Pressable>
+        ) : null}
+        {mode !== "date" ? (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={value ? `Time, ${formatTime(value)}` : placeholder}
+            accessibilityState={{ disabled }}
+            disabled={disabled}
+            onPress={() => openPicker("time")}
+            style={({ pressed }) => [
+              styles.field,
+              mode === "datetime" && styles.fieldHalf,
+              compact && styles.compactField,
+              compact && isCompactNarrow && styles.compactFieldNarrow,
+              disabled && styles.disabledField,
+              pressed && styles.pressedField,
+            ]}
+          >
+            {compact ? (
+              <View
+                style={[
+                  styles.compactIconTile,
+                  isCompactNarrow && styles.compactIconTileNarrow,
+                ]}
+              >
+                <Ionicons
+                  name="time-outline"
+                  size={isCompactNarrow ? 14 : 18}
+                  color={Colors.primary}
+                />
+              </View>
+            ) : (
+              <View style={styles.fieldHeading}>
+                <Ionicons name="time-outline" size={18} color={Colors.primary} />
+                <Text style={styles.fieldLabel}>Time</Text>
+                <Ionicons
+                  name="chevron-down"
+                  size={16}
+                  color={Colors.textSecondary}
+                  style={styles.fieldChevron}
+                />
+              </View>
+            )}
+            {compact ? (
+              <View style={styles.compactFieldCopy}>
+                <Text style={styles.compactFieldLabel}>Time</Text>
+                <Text
+                  numberOfLines={1}
+                  adjustsFontSizeToFit
+                  minimumFontScale={isCompactNarrow ? 0.7 : 0.85}
+                  style={[
+                    styles.compactFieldValue,
+                    !value && styles.placeholder,
+                    isCompactNarrow && styles.compactFieldValueNarrow,
+                  ]}
+                >
+                  {value
+                    ? formatTime(value)
+                    : mode === "time"
+                      ? placeholder
+                      : "Select time"}
+                </Text>
+              </View>
+            ) : (
+              <Text style={[styles.fieldValue, !value && styles.placeholder]}>
+                {value
+                  ? formatTime(value)
+                  : mode === "time"
+                    ? placeholder
+                    : "Select time"}
+              </Text>
+            )}
+            {compact ? (
+              <Ionicons
+                name="chevron-down"
+                size={isCompactNarrow ? 14 : 16}
                 color={Colors.textPrimary}
               />
             ) : null}
@@ -939,6 +1100,7 @@ const styles = StyleSheet.create({
   },
   fields: {
     flexDirection: "row",
+    alignItems: "stretch",
     gap: 10,
   },
   singleField: {
@@ -957,39 +1119,40 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.white,
   },
   fieldHalf: {
+    flex: 1,
     minWidth: 0,
   },
   compactField: {
-    minHeight: 84,
+    minHeight: 68,
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
-    paddingHorizontal: 10,
-    paddingVertical: 12,
+    gap: 6,
+    paddingHorizontal: 9,
+    paddingVertical: 9,
     borderWidth: 1,
-    borderColor: "#D6E1D4",
-    borderRadius: 14,
+    borderColor: Colors.border,
+    borderRadius: 12,
     backgroundColor: "#FFFFFF",
   },
   compactFieldNarrow: {
-    minHeight: 68,
-    paddingVertical: 10,
-    paddingHorizontal: 8,
-    gap: 6,
+    minHeight: 60,
+    paddingVertical: 8,
+    paddingHorizontal: 7,
+    gap: 5,
   },
   compactIconTile: {
-    width: 56,
-    height: 56,
+    width: 30,
+    height: 30,
     flexShrink: 0,
     alignItems: "center",
     justifyContent: "center",
-    borderRadius: 15,
+    borderRadius: 9,
     backgroundColor: "#F1F5EF",
   },
   compactIconTileNarrow: {
-    width: 42,
-    height: 42,
-    borderRadius: 12,
+    width: 24,
+    height: 24,
+    borderRadius: 7,
   },
   compactFieldCopy: {
     flex: 1,
@@ -997,21 +1160,21 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   compactFieldLabel: {
-    color: "#68757F",
-    fontSize: 15,
-    fontWeight: "400",
+    color: Colors.textSecondary,
+    fontSize: 11,
+    fontWeight: "600",
   },
   compactFieldValue: {
     minWidth: 0,
-    color: "#17212B",
-    fontSize: 22,
-    lineHeight: 27,
+    color: Colors.textPrimary,
+    fontSize: 14,
+    lineHeight: 18,
     fontWeight: "600",
     includeFontPadding: false,
   },
   compactFieldValueNarrow: {
-    fontSize: 17,
-    lineHeight: 21,
+    fontSize: 12,
+    lineHeight: 16,
   },
   compactLabelRow: {
     flexDirection: "row",

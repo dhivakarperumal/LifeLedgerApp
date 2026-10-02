@@ -49,6 +49,7 @@ type FormFieldProps = {
   multiline?: boolean;
   keyboardType?: TextInputProps["keyboardType"];
   borderColor?: TextStyle["borderColor"];
+  labelColor?: TextStyle["color"];
 };
 
 export function FormField({
@@ -59,10 +60,18 @@ export function FormField({
   multiline = false,
   keyboardType,
   borderColor,
+  labelColor,
 }: FormFieldProps) {
   return (
     <View style={styles.formFieldContainer}>
-      <Text style={formFieldStyles.label}>{label}</Text>
+      <Text
+        style={[
+          formFieldStyles.label,
+          labelColor ? { color: labelColor } : undefined,
+        ]}
+      >
+        {label}
+      </Text>
       <FormInput
         value={value}
         onChangeText={onChangeText}
@@ -84,7 +93,7 @@ export function FormField({
 export const formFieldStyles = StyleSheet.create({
   label: {
     marginBottom: 7,
-    color: Colors.sage,
+    color: "#4B5563",
     fontSize: 12,
     fontWeight: "700",
     textTransform: "uppercase",
