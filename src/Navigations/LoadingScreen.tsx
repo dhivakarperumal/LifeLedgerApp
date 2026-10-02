@@ -208,7 +208,7 @@ const styles = {
   loadingText: {
     marginTop: 10,
     color: Colors.primaryDark,
-    fontSize: 18,
+    fontSize: 15,
     fontWeight: "600" as const,
   },
 };

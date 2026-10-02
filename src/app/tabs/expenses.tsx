@@ -49,6 +49,7 @@ type ExpenseItem = {
   expense_date?: string;
   payment_method?: string;
   notes?: string;
+  location?: string;
   recurring?: string;
 };
 
@@ -79,6 +80,7 @@ type ExpenseForm = {
   date: string;
   time: string;
   notes: string;
+  location: string;
 };
 
 const fallbackCategories = [
@@ -153,7 +155,7 @@ function formatDate(dateString?: string) {
 }
 
 function isTravelCategory(category: string) {
-  return category.trim().toLowerCase() === "travel";
+  return category.trim().toLowerCase().includes("travel");
 }
 
 function getTransferRows(data: any): TransferItem[] {
@@ -213,6 +215,7 @@ export default function Expenses() {
     date: getCurrentDate(),
     time: getCurrentTime(),
     notes: "",
+    location: "",
   });
 
   const filterValues = useMemo<FilterState>(
@@ -265,6 +268,17 @@ export default function Expenses() {
           if (typeof item === "string") return item.trim();
           if (!item || typeof item !== "object") return "";
           const category = item as Record<string, unknown>;
+          const categoryType = String(
+            category.catType ??
+              category.category_type ??
+              category.type ??
+              "Expensive",
+          )
+            .trim()
+            .toLowerCase();
+          if (categoryType !== "expensive" && categoryType !== "expense") {
+            return "";
+          }
           const nestedCategory = category.category;
           const name =
             category.name ??
@@ -397,6 +411,7 @@ export default function Expenses() {
       date: getCurrentDate(),
       time: getCurrentTime(),
       notes: "",
+      location: "",
     });
     setManualTransfer(false);
     setAttachment(null);
@@ -458,6 +473,7 @@ export default function Expenses() {
         date: form.date.trim(), // Use "date", NOT "expense_date"
         time: form.time, // Use "time", NOT "expense_time"
         notes: form.notes || "",
+        location: form.location.trim(),
         transfer_id: form.transfer_id || "",
         transfer_amount: form.transfer_amount || "",
       };
@@ -830,6 +846,25 @@ export default function Expenses() {
                           {formatDate(expense.expense_date)}
                         </Text>
                       </View>
+                      {expense.location ? (
+                        <View
+                          style={{
+                            flexDirection: "row",
+                            alignItems: "center",
+                            marginTop: 6,
+                            gap: 5,
+                          }}
+                        >
+                          <Ionicons
+                            name="location-outline"
+                            size={12}
+                            color="#64748B"
+                          />
+                          <Text style={{ fontSize: 11, color: "#64748B" }}>
+                            {expense.location}
+                          </Text>
+                        </View>
+                      ) : null}
                     </View>
 
                     {/* Amount + delete */}
@@ -1397,6 +1432,18 @@ export default function Expenses() {
                   />
                 </View>
               ) : null}
+
+              <FormField
+                label="Location"
+                value={form.location}
+                onChangeText={(text) =>
+                  setForm((current) => ({
+                    ...current,
+                    location: text,
+                  }))
+                }
+                placeholder="Where was this expense?"
+              />
 
               <View style={{ marginBottom: 13 }}>
                 <DateTimePickerComponent

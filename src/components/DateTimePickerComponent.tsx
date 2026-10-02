@@ -156,7 +156,14 @@ export function DateTimePickerComponent({
     setVisible(true);
   };
 
-  const closePicker = () => setVisible(false);
+  const resetDraftToCurrentValue = () => {
+    setDraft(value ? new Date(value) : new Date());
+  };
+
+  const closePicker = () => {
+    resetDraftToCurrentValue();
+    setVisible(false);
+  };
 
   const isSelectableDay = (date: Date) => {
     const day = startOfDay(date);
