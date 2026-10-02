@@ -202,6 +202,7 @@ export default function Expenses() {
   const [isFilterSheetVisible, setIsFilterSheetVisible] = useState(false);
   const [saving, setSaving] = useState(false);
   const [manualTransfer, setManualTransfer] = useState(false);
+  const [customTransferAmount, setCustomTransferAmount] = useState(false);
   const [attachment, setAttachment] = useState<PickedAttachment | null>(null);
   const [form, setForm] = useState<ExpenseForm>({
     title: "",
@@ -414,6 +415,7 @@ export default function Expenses() {
       location: "",
     });
     setManualTransfer(false);
+    setCustomTransferAmount(false);
     setAttachment(null);
   };
 
@@ -457,6 +459,27 @@ export default function Expenses() {
         "Enter both a starting point and destination.",
       );
       return;
+    }
+
+    if (customTransferAmount && form.transfer_id) {
+      const selectedTransfer = transfers.find(
+        (transfer) => String(transfer.id) === form.transfer_id,
+      );
+      const transferBalance = selectedTransfer
+        ? getTransferBalance(selectedTransfer)
+        : 0;
+      const selectedAmount = Number(form.transfer_amount);
+      if (!selectedTransfer || !Number.isFinite(selectedAmount) || selectedAmount <= 0) {
+        Alert.alert("Transfer amount required", "Enter a valid amount to use from the selected transfer.");
+        return;
+      }
+      if (selectedAmount > transferBalance) {
+        Alert.alert(
+          "Transfer amount too high",
+          `Enter an amount up to ${formatAmount(transferBalance)}.`,
+        );
+        return;
+      }
     }
 
     try {
@@ -1134,6 +1157,7 @@ export default function Expenses() {
                   <Pressable
                     onPress={() => {
                       setManualTransfer((current) => !current);
+                      setCustomTransferAmount(false);
                       setForm((current) => ({
                         ...current,
                         transfer_id: "",
@@ -1177,11 +1201,14 @@ export default function Expenses() {
                     <FormOption
                       selected={!form.transfer_id}
                       onPress={() =>
-                        setForm((current) => ({
-                          ...current,
-                          transfer_id: "",
-                          transfer_amount: "",
-                        }))
+                        {
+                          setCustomTransferAmount(false);
+                          setForm((current) => ({
+                            ...current,
+                            transfer_id: "",
+                            transfer_amount: "",
+                          }));
+                        }
                       }
                       style={{
                         minHeight: 48,
@@ -1206,13 +1233,14 @@ export default function Expenses() {
                           key={String(transfer.id)}
                           selected={selected}
                           disabled={balance <= 0}
-                          onPress={() =>
+                          onPress={() => {
+                            setCustomTransferAmount(false);
                             setForm((current) => ({
                               ...current,
                               transfer_id: String(transfer.id),
                               transfer_amount: String(balance),
-                            }))
-                          }
+                            }));
+                          }}
                           style={{
                             minHeight: 48,
                             paddingHorizontal: 12,
@@ -1241,6 +1269,83 @@ export default function Expenses() {
                     })}
                   </ScrollView>
                 )}
+                {!manualTransfer && form.transfer_id ? (
+                  <View style={{ marginTop: 10 }}>
+                    <ModalSectionLabel label="AMOUNT TO USE" />
+                    <View style={{ flexDirection: "row", gap: 8 }}>
+                      <FormOption
+                        selected={!customTransferAmount}
+                        onPress={() => {
+                          setCustomTransferAmount(false);
+                          const selectedTransfer = transfers.find(
+                            (transfer) =>
+                              String(transfer.id) === form.transfer_id,
+                          );
+                          if (selectedTransfer) {
+                            setForm((current) => ({
+                              ...current,
+                              transfer_amount: String(
+                                getTransferBalance(selectedTransfer),
+                              ),
+                            }));
+                          }
+                        }}
+                        style={{
+                          flex: 1,
+                          minHeight: 44,
+                          justifyContent: "center",
+                          alignItems: "center",
+                          borderRadius: 12,
+                          backgroundColor: !customTransferAmount
+                            ? "#F0FDF4"
+                            : "#F8FAFC",
+                        }}
+                      >
+                        <Text style={{ color: "#334155", fontWeight: "700" }}>
+                          Full balance
+                        </Text>
+                      </FormOption>
+                      <FormOption
+                        selected={customTransferAmount}
+                        onPress={() => {
+                          setCustomTransferAmount(true);
+                          setForm((current) => ({
+                            ...current,
+                            transfer_amount: "",
+                          }));
+                        }}
+                        style={{
+                          flex: 1,
+                          minHeight: 44,
+                          justifyContent: "center",
+                          alignItems: "center",
+                          borderRadius: 12,
+                          backgroundColor: customTransferAmount
+                            ? "#F0FDF4"
+                            : "#F8FAFC",
+                        }}
+                      >
+                        <Text style={{ color: "#334155", fontWeight: "700" }}>
+                          Custom amount
+                        </Text>
+                      </FormOption>
+                    </View>
+                    {customTransferAmount ? (
+                      <FormField
+                        label="Custom amount from transfer (₹)"
+                        value={form.transfer_amount}
+                        onChangeText={(text) =>
+                          setForm((current) => ({
+                            ...current,
+                            transfer_amount: text,
+                          }))
+                        }
+                        placeholder="0.00"
+                        keyboardType="decimal-pad"
+                      />
+                    ) : null}
+                  </View>
+                ) : null}
               </View>
 
               {Number(form.transfer_amount) > 0 ? (
@@ -1288,7 +1393,7 @@ export default function Expenses() {
                     }}
                   >
                     <Text style={{ color: "#64748B", fontSize: 13 }}>
-                      Available remaining
+                      Selected transfer amount
                     </Text>
                     <Text style={{ color: "#D97706", fontWeight: "800" }}>
                       {formatAmount(Number(form.transfer_amount))}
