@@ -1,23 +1,30 @@
 import { Ionicons } from "@expo/vector-icons";
+import * as ImagePicker from "expo-image-picker";
 import { LinearGradient } from "expo-linear-gradient";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useMemo, useState } from "react";
 import {
-  ActivityIndicator,
-  Alert,
-  Modal,
-  Pressable,
-  RefreshControl,
-  ScrollView,
-  Text,
-  TextInput,
-  View,
-  useWindowDimensions,
-  type ViewStyle,
+    ActivityIndicator,
+    Alert,
+    Image,
+    Modal,
+    Pressable,
+    RefreshControl,
+    ScrollView,
+    Text,
+    TextInput,
+    View,
+    useWindowDimensions,
+    type ViewStyle,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Svg, { Path, Rect } from "react-native-svg";
-import api, { getApiErrorMessage, getStoredUser, logoutUser } from "../api";
+import api, {
+    API_BASE_URL,
+    getApiErrorMessage,
+    getStoredUser,
+    logoutUser,
+} from "../api";
 import { AddButton } from "../components/AddButton";
 import { FormInput, FormOption } from "../components/FormControls";
 import { GradientSafeAreaView as SafeAreaView } from "../components/GradientSafeAreaView";
@@ -47,6 +54,12 @@ type CategoryForm = {
   subcategory: string;
 };
 
+type CategoryImage = {
+  uri: string;
+  name: string;
+  mimeType: string;
+};
+
 const categoryTypes: CategoryType[] = [
   "Expensive",
   "Income",
@@ -74,12 +87,35 @@ function getCategoryRows(data: unknown): Category[] {
   let rows: unknown = data;
   if (rows && typeof rows === "object" && !Array.isArray(rows)) {
     const response = rows as Record<string, unknown>;
-    rows = response.categories ?? response.data;
+    rows = response.categories ?? response.category ?? response.data;
   }
   if (!Array.isArray(rows)) return [];
   return rows.filter(
     (row): row is Category => !!row && typeof row === "object" && "name" in row,
   );
+}
+
+function getCategoryImage(category: Category): string | null {
+  const images = category.images;
+  if (Array.isArray(images)) return images.find((image) => !!image) || null;
+  if (typeof images !== "string" || !images.trim()) return null;
+
+  try {
+    const parsed: unknown = JSON.parse(images);
+    if (Array.isArray(parsed)) {
+      return parsed.find((image): image is string => typeof image === "string") || null;
+    }
+  } catch {
+    return images;
+  }
+
+  return images;
+}
+
+function getCategoryImageUri(uri: string): string {
+  if (/^(https?:|file:|content:|data:)/i.test(uri)) return uri;
+  const apiOrigin = API_BASE_URL.replace(/\/api\/?$/i, "");
+  return `${apiOrigin}/${uri.replace(/^\/+/, "")}`;
 }
 
 function getNextCategoryId(categories: Category[]) {
@@ -114,6 +150,9 @@ export default function Categories() {
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState<CategoryForm>(initialForm);
+  const [selectedImage, setSelectedImage] = useState<CategoryImage | null>(null);
+  const [existingImage, setExistingImage] = useState<string | null>(null);
+  const [imageRemoved, setImageRemoved] = useState(false);
 
   const fetchCategories = useCallback(async () => {
     setLoading(true);
@@ -179,6 +218,9 @@ export default function Categories() {
   const openAddModal = () => {
     setEditingCategory(null);
     setForm(initialForm);
+    setSelectedImage(null);
+    setExistingImage(null);
+    setImageRemoved(false);
     setModalVisible(true);
   };
 
@@ -193,7 +235,48 @@ export default function Categories() {
         ? category.subcategory.join("\n")
         : "",
     });
+    setSelectedImage(null);
+    setExistingImage(getCategoryImage(category));
+    setImageRemoved(false);
     setModalVisible(true);
+  };
+
+  const pickCategoryImage = async () => {
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ["images"],
+        allowsEditing: false,
+        quality: 0.9,
+      });
+      if (result.canceled) return;
+
+      const asset = result.assets[0];
+      const name = asset.fileName || asset.uri.split("/").pop() || "category-image";
+      const supportedExtension = /\.(jpe?g|png)$/i.test(name) || /\.(jpe?g|png)(?:\?|$)/i.test(asset.uri);
+      const supportedMimeType = ["image/jpeg", "image/jpg", "image/png"].includes(
+        (asset.mimeType || "").toLowerCase(),
+      );
+      if (!supportedExtension && !supportedMimeType) {
+        Alert.alert("Unsupported image", "Choose a JPG, JPEG, or PNG image.");
+        return;
+      }
+
+      const extension = name.match(/\.(jpe?g|png)$/i)?.[1]?.toLowerCase();
+      const mimeType =
+        asset.mimeType ||
+        (extension === "png" ? "image/png" : "image/jpeg");
+      setSelectedImage({ uri: asset.uri, name, mimeType });
+      setExistingImage(null);
+      setImageRemoved(false);
+    } catch (error) {
+      Alert.alert("Unable to select image", getApiErrorMessage(error));
+    }
+  };
+
+  const removeCategoryImage = () => {
+    setSelectedImage(null);
+    setExistingImage(null);
+    setImageRemoved(true);
   };
 
   const saveCategory = async () => {
@@ -209,7 +292,7 @@ export default function Categories() {
       name,
       catId,
       user_id: userId || editingCategory?.user_id || null,
-      images: editingCategory?.images ?? [],
+      images: imageRemoved ? [] : editingCategory?.images ?? [],
       subcategory: form.subcategory
         .split("\n")
         .map((value) => value.trim())
@@ -218,17 +301,47 @@ export default function Categories() {
 
     setSaving(true);
     try {
+      let requestData: typeof categoryData | FormData = categoryData;
+      let requestConfig = undefined;
+      if (selectedImage) {
+        const payload = new FormData();
+        payload.append("name", categoryData.name);
+        payload.append("description", categoryData.description);
+        payload.append("status", categoryData.status);
+        payload.append("catType", categoryData.catType);
+        payload.append("catId", categoryData.catId);
+        if (categoryData.user_id != null) {
+          payload.append("user_id", String(categoryData.user_id));
+        }
+        categoryData.subcategory.forEach((subcategory) =>
+          payload.append("subcategory[]", subcategory),
+        );
+        payload.append("images[]", {
+          uri: selectedImage.uri,
+          name: selectedImage.name,
+          type: selectedImage.mimeType,
+        } as any);
+        requestData = payload;
+        requestConfig = { headers: { "Content-Type": "multipart/form-data" } };
+      }
+
       if (editingCategory) {
-        const response = await api.put(`/categories/${catId}`, categoryData);
-        const saved = getCategoryRows(response.data)[0] || categoryData;
+        const response = await api.put(`/categories/${catId}`, requestData, requestConfig);
+        const saved = getCategoryRows(response.data)[0] || {
+          ...categoryData,
+          ...(selectedImage ? { images: [selectedImage.uri] } : {}),
+        };
         setCategories((current) =>
           current.map((category) =>
             category.catId === catId ? { ...category, ...saved } : category,
           ),
         );
       } else {
-        const response = await api.post("/categories", categoryData);
-        const saved = getCategoryRows(response.data)[0] || response.data || {};
+        const response = await api.post("/categories", requestData, requestConfig);
+        const saved = getCategoryRows(response.data)[0] || {
+          ...categoryData,
+          ...(selectedImage ? { images: [selectedImage.uri] } : {}),
+        };
         setCategories((current) => [
           { ...categoryData, ...saved, catId: saved.catId || catId },
           ...current,
@@ -448,19 +561,32 @@ export default function Categories() {
               const type = getCategoryType(category);
               const [typeBackground, typeColor] = getTypeColors(type);
               const active = (category.status || "Active") === "Active";
+              const categoryImage = getCategoryImage(category);
               return (
                 <View
                   key={category.catId || category.id}
                   className="rounded-2xl border border-[#E4E8E3] bg-white p-4"
                 >
                   <View className="flex-row items-start justify-between">
-                    <View className="mr-3 flex-1">
-                      <Text className="text-base font-bold text-[#25332C]">
-                        {category.name}
-                      </Text>
-                      <Text className="mt-1 text-xs font-semibold text-[#8A948D]">
-                        {category.catId || "No ID"}
-                      </Text>
+                    <View className="mr-3 flex-1 flex-row items-center">
+                      {categoryImage ? (
+                        <Image
+                          source={{ uri: getCategoryImageUri(categoryImage) }}
+                          className="h-12 w-12 rounded-xl bg-[#F1F4EF]"
+                        />
+                      ) : (
+                        <View className="h-12 w-12 items-center justify-center rounded-xl bg-[#F1F4EF]">
+                          <Ionicons name="image-outline" size={20} color="#87918A" />
+                        </View>
+                      )}
+                      <View className="ml-3 flex-1">
+                        <Text className="text-base font-bold text-[#25332C]">
+                          {category.name}
+                        </Text>
+                        <Text className="mt-1 text-xs font-semibold text-[#8A948D]">
+                          {category.catId || "No ID"}
+                        </Text>
+                      </View>
                     </View>
                     <View
                       className="rounded-full px-2.5 py-1"
@@ -573,6 +699,50 @@ export default function Categories() {
                 value={form.name}
                 onChangeText={(value) => setFormValue("name", value)}
               />
+
+              <Text className="mb-2 text-xs font-bold text-[#46534B]">
+                Category image
+              </Text>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={selectedImage || existingImage ? "Change category image" : "Upload category image"}
+                className="mb-3 min-h-[50px] flex-row items-center rounded-xl border border-[#E4E8E3] bg-white px-4 py-3"
+                onPress={() => void pickCategoryImage()}
+              >
+                <Ionicons name="cloud-upload-outline" size={19} color="#315640" />
+                <Text className="ml-3 text-sm font-semibold text-[#315640]">
+                  {selectedImage || existingImage ? "Change image" : "Upload image"}
+                </Text>
+              </Pressable>
+              {!!(selectedImage?.uri || existingImage) && (
+                <View className="mb-4 flex-row items-center rounded-xl border border-[#E4E8E3] bg-white p-3">
+                  <Image
+                    source={{
+                      uri: getCategoryImageUri(selectedImage?.uri || existingImage!),
+                    }}
+                    className="h-16 w-16 rounded-lg bg-[#F1F4EF]"
+                  />
+                  <View className="ml-3 flex-1">
+                    <Text className="text-xs font-bold text-[#46534B]">
+                      Image preview
+                    </Text>
+                    <Text className="mt-1 text-xs text-[#7B8580]" numberOfLines={1}>
+                      {selectedImage?.name || "Current category image"}
+                    </Text>
+                  </View>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel="Remove category image"
+                    className="items-center px-2 py-1"
+                    onPress={removeCategoryImage}
+                  >
+                    <Ionicons name="trash-outline" size={18} color="#B64C45" />
+                    <Text className="mt-1 text-[10px] font-semibold text-[#B64C45]">
+                      Remove
+                    </Text>
+                  </Pressable>
+                </View>
+              )}
 
               <Text className="mb-2 text-xs font-bold text-[#46534B]">
                 Category type
