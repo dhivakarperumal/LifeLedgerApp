@@ -49,9 +49,15 @@ type ExpenseItem = {
   expense_amount?: number | string;
   amount?: number | string;
   expense_date?: string;
+  expense_time?: string;
+  time?: string;
   payment_method?: string;
   notes?: string;
   location?: string;
+  from?: string;
+  to?: string;
+  transfer_id?: number | string;
+  transfer_amount?: number | string;
   recurring?: string;
 };
 
@@ -195,6 +201,7 @@ export default function Expenses() {
   const hasLoadedOnce = useRef(false);
   const [showSummaryCards, setShowSummaryCards] = useState(false);
   const [isModalVisible, setIsModalVisible] = useState(false);
+  const [editingExpenseId, setEditingExpenseId] = useState<number | string | null>(null);
   const [isFilterSheetVisible, setIsFilterSheetVisible] = useState(false);
   const [categoryFilterSearch, setCategoryFilterSearch] = useState("");
   const [formErrors, setFormErrors] = useState({
@@ -292,6 +299,17 @@ export default function Expenses() {
     setAmountMax(filters.amountMax);
     setSort(filters.sort);
     setViewMode(filters.viewMode);
+  };
+
+  const showAllExpenses = () => {
+    setSearch("");
+    applyExpenseFilters(DEFAULT_FILTER_STATE);
+  };
+
+  const openAddExpense = () => {
+    resetForm();
+    setFormErrors({ category: "", payment_method: "", transfer_amount: "" });
+    setIsModalVisible(true);
   };
 
   const handleUnauthorized = useCallback(async () => {
@@ -462,6 +480,7 @@ export default function Expenses() {
   );
 
   const resetForm = () => {
+    setEditingExpenseId(null);
     setForm({
       title: "",
       expense_amount: "",
@@ -588,6 +607,7 @@ export default function Expenses() {
 
     try {
       setSaving(true);
+      const isEditing = editingExpenseId !== null;
 
       const payload = new FormData();
       
@@ -628,18 +648,34 @@ export default function Expenses() {
         } as any);
       }
 
-      const response = await api.post("/expenses", payload, {
+      const requestConfig = {
         headers: { "Content-Type": "multipart/form-data" },
-      });
+      };
+      const response = isEditing
+        ? await api.put(`/expenses/${editingExpenseId}`, payload, requestConfig)
+        : await api.post("/expenses", payload, requestConfig);
 
       const savedExpense = response?.data?.expense || response?.data || null;
-      setExpenses((current) =>
-        savedExpense ? [savedExpense, ...current] : current,
-      );
+      if (isEditing) {
+        setExpenses((current) =>
+          current.map((item) =>
+            String(item.id) === String(editingExpenseId) && savedExpense
+              ? { ...item, ...savedExpense }
+              : item,
+          ),
+        );
+      } else {
+        setExpenses((current) =>
+          savedExpense ? [savedExpense, ...current] : current,
+        );
+      }
       setIsModalVisible(false);
       resetForm();
-      fetchAll();
-      Alert.alert("Success", "Expense saved successfully.");
+      void fetchAll();
+      Alert.alert(
+        "Success",
+        isEditing ? "Expense updated successfully." : "Expense saved successfully.",
+      );
     } catch (error) {
       const status = (error as any)?.status || (error as any)?.response?.status;
       if (status === 401) {
@@ -653,6 +689,36 @@ export default function Expenses() {
     } finally {
       setSaving(false);
     }
+  };
+
+  const handleEditExpense = (expense: ExpenseItem) => {
+    const rawDate = expense.expense_date || "";
+    const dateMatch = rawDate.match(/^(\d{4}-\d{2}-\d{2})/);
+    const date = dateMatch?.[1] ||
+      (rawDate && !Number.isNaN(new Date(rawDate).getTime())
+        ? formatLocalDate(new Date(rawDate))
+        : getCurrentDate());
+    const rawTime = expense.expense_time || expense.time || "";
+    const dateTimeMatch = rawDate.match(/T(\d{2}:\d{2})/);
+
+    setForm({
+      title: expense.title || "",
+      expense_amount: String(expense.expense_amount ?? expense.amount ?? ""),
+      transfer_id: String(expense.transfer_id ?? ""),
+      transfer_amount: String(expense.transfer_amount ?? ""),
+      category: expense.category || categoryOptions[0] || fallbackCategories[0],
+      from: expense.from || "",
+      to: expense.to || "",
+      payment_method: expense.payment_method || "Cash",
+      date,
+      time: rawTime.slice(0, 5) || dateTimeMatch?.[1] || getCurrentTime(),
+      notes: expense.notes || "",
+      location: expense.location || "",
+    });
+    setFormErrors({ category: "", payment_method: "", transfer_amount: "" });
+    setEditingExpenseId(expense.id);
+    setAttachment(null);
+    setIsModalVisible(true);
   };
 
   const handleDeleteExpense = (expense: ExpenseItem) => {
@@ -821,10 +887,24 @@ export default function Expenses() {
                 ? "All Expenses"
                 : `${selectedCategory} Expenses`}
             </Text>
-            <Text style={{ fontSize: 12, color: "#94A3B8" }}>
-              {visibleExpenses.length} item
-              {visibleExpenses.length !== 1 ? "s" : ""}
-            </Text>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
+              <Text style={{ fontSize: 12, color: "#94A3B8" }}>
+                {visibleExpenses.length} item
+                {visibleExpenses.length !== 1 ? "s" : ""}
+              </Text>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="View all expenses"
+                onPress={showAllExpenses}
+                hitSlop={8}
+                style={{ flexDirection: "row", alignItems: "center", gap: 4 }}
+              >
+                <Text style={{ fontSize: 13, fontWeight: "700", color: Colors.primary }}>
+                  View All
+                </Text>
+                <Ionicons name="arrow-forward" size={14} color={Colors.primary} />
+              </Pressable>
+            </View>
           </View>
 
           {loading ? (
@@ -897,17 +977,7 @@ export default function Expenses() {
               </Text>
             </View>
           ) : (
-            <View
-              style={
-                viewMode === "card"
-                  ? {
-                      flexDirection: "row",
-                      flexWrap: "wrap",
-                      justifyContent: "space-between",
-                    }
-                  : undefined
-              }
-            >
+            <View>
               {visibleExpenses.map((expense, index) => {
                 const accent = categoryAccents[expense.category || "Other"] || {
                   bg: "#F3F4F6",
@@ -918,44 +988,68 @@ export default function Expenses() {
                   <View
                     key={String(expense.id)}
                     style={{
-                      width: viewMode === "card" ? "48%" : "100%",
+                      width: "100%",
                       backgroundColor: "#FFFFFF",
-                      borderRadius: 18,
+                      borderRadius: 14,
                       padding: viewMode === "card" ? 12 : 16,
                       marginBottom: 10,
-                      flexDirection: viewMode === "card" ? "column" : "row",
+                      flexDirection: "row",
                       alignItems: "center",
                       borderWidth: 1,
                       borderColor: "#E4E8E3",
+                      borderLeftWidth: viewMode === "card" ? 4 : 1,
+                      borderLeftColor:
+                        viewMode === "card" ? accent.color : "#E4E8E3",
                       shadowColor: "#000",
                       shadowOffset: { width: 0, height: 2 },
-                      shadowOpacity: 0.06,
-                      shadowRadius: 8,
-                      elevation: 3,
+                      shadowOpacity: 0.04,
+                      shadowRadius: 6,
+                      elevation: 2,
                     }}
                   >
+                    {viewMode === "card" && (
+                      <View
+                        style={{
+                          width: 44,
+                          height: 44,
+                          borderRadius: 13,
+                          backgroundColor: accent.bg,
+                          alignItems: "center",
+                          justifyContent: "center",
+                        }}
+                      >
+                        <Ionicons
+                          name="receipt-outline"
+                          size={21}
+                          color={accent.color}
+                        />
+                      </View>
+                    )}
+
                     {/* Info */}
                     <View
                       style={{
-                        flex: viewMode === "card" ? undefined : 1,
-                        width: viewMode === "card" ? "100%" : undefined,
+                        flex: 1,
+                        minWidth: 0,
+                        marginLeft: viewMode === "card" ? 12 : 0,
                       }}
                     >
                       <Text
                         style={{
-                          fontSize: 15,
-                          fontWeight: "700",
+                          fontSize: viewMode === "card" ? 16 : 15,
+                          fontWeight: "800",
                           color: "#1E293B",
                         }}
-                        numberOfLines={1}
+                        numberOfLines={viewMode === "card" ? 2 : 1}
                       >
                         {expense.title || "Expense"}
                       </Text>
                       <View
                         style={{
                           flexDirection: "row",
+                          flexWrap: "wrap",
                           alignItems: "center",
-                          marginTop: 4,
+                          marginTop: 6,
                           gap: 6,
                         }}
                       >
@@ -973,11 +1067,15 @@ export default function Expenses() {
                               fontWeight: "700",
                               color: accent.color,
                             }}
+                            numberOfLines={1}
                           >
                             {expense.category || "Other"}
                           </Text>
                         </View>
-                        <Text style={{ fontSize: 12, color: "#94A3B8" }}>
+                        <Text
+                          style={{ fontSize: 11, color: "#94A3B8" }}
+                          numberOfLines={1}
+                        >
                           {formatDate(expense.expense_date)}
                         </Text>
                       </View>
@@ -986,7 +1084,7 @@ export default function Expenses() {
                           style={{
                             flexDirection: "row",
                             alignItems: "center",
-                            marginTop: 6,
+                            marginTop: 8,
                             gap: 5,
                           }}
                         >
@@ -995,54 +1093,71 @@ export default function Expenses() {
                             size={12}
                             color="#64748B"
                           />
-                          <Text style={{ fontSize: 11, color: "#64748B" }}>
+                          <Text
+                            style={{ fontSize: 11, color: "#64748B", flex: 1 }}
+                            numberOfLines={1}
+                          >
                             {expense.location}
                           </Text>
                         </View>
                       ) : null}
                     </View>
 
-                    {/* Amount + delete */}
+                    {/* Amount and expense actions */}
                     <View
                       style={{
-                        flexDirection: viewMode === "card" ? "row" : "column",
-                        alignItems: viewMode === "card" ? "center" : "flex-end",
-                        justifyContent:
-                          viewMode === "card" ? "space-between" : undefined,
-                        width: viewMode === "card" ? "100%" : undefined,
-                        marginTop: viewMode === "card" ? 10 : 0,
-                        gap: 6,
+                        alignItems: "flex-end",
+                        marginLeft: 10,
+                        gap: 8,
                       }}
                     >
                       <Text
                         style={{
-                          fontSize: 15,
+                          fontSize: viewMode === "card" ? 17 : 15,
                           fontWeight: "800",
                           color: "#EF4444",
                         }}
+                        numberOfLines={1}
+                        adjustsFontSizeToFit
                       >
                         {formatAmount(
                           expense.expense_amount ?? expense.amount ?? 0,
                         )}
                       </Text>
+                      <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                        <Pressable
+                          accessibilityRole="button"
+                          accessibilityLabel={`Edit ${expense.title || "expense"}`}
+                          onPress={() => handleEditExpense(expense)}
+                          hitSlop={8}
+                          style={{
+                            width: 32,
+                            height: 32,
+                            borderRadius: 10,
+                            backgroundColor: "#EEF5F0",
+                            justifyContent: "center",
+                            alignItems: "center",
+                          }}
+                        >
+                          <Ionicons name="create-outline" size={16} color={Colors.primary} />
+                        </Pressable>
                       <Pressable
+                        accessibilityRole="button"
+                        accessibilityLabel={`Delete ${expense.title || "expense"}`}
                         onPress={() => handleDeleteExpense(expense)}
                         hitSlop={10}
                         style={{
-                          width: 28,
-                          height: 28,
-                          borderRadius: 8,
-                          backgroundColor: "#FEF2F2",
+                          width: 32,
+                          height: 32,
+                          borderRadius: 10,
+                          backgroundColor: "#FFF4F2",
                           justifyContent: "center",
                           alignItems: "center",
                         }}
                       >
-                        <Ionicons
-                          name="trash-outline"
-                          size={14}
-                          color="#EF4444"
-                        />
+                        <Ionicons name="trash-outline" size={15} color="#EF4444" />
                       </Pressable>
+                      </View>
                     </View>
                   </View>
                 );
@@ -1053,7 +1168,7 @@ export default function Expenses() {
       </View>
 
       <AddButton
-        onPress={() => setIsModalVisible(true)}
+        onPress={openAddExpense}
         accessibilityLabel="Add expense"
         accessibilityHint="Opens the new expense form"
       />
@@ -1253,7 +1368,7 @@ export default function Expenses() {
                 <Text
                   style={{ fontSize: 22, fontWeight: "900", color: "#1E293B" }}
                 >
-                  Add Expense
+                  {editingExpenseId === null ? "Add Expense" : "Edit Expense"}
                 </Text>
                 <Text style={{ fontSize: 12, color: "#94A3B8", marginTop: 2 }}>
                   Fill in the details below
@@ -1638,7 +1753,13 @@ export default function Expenses() {
                       letterSpacing: 0.3,
                     }}
                   >
-                    {saving ? "Saving…" : "Save Expense"}
+                    {saving
+                      ? editingExpenseId === null
+                        ? "Saving…"
+                        : "Updating…"
+                      : editingExpenseId === null
+                        ? "Save Expense"
+                        : "Update Expense"}
                   </Text>
                 </Pressable>
               </View>

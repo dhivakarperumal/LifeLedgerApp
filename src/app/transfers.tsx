@@ -4,33 +4,34 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useMemo, useState } from "react";
 import {
-    ActivityIndicator,
-    Alert,
-    Linking,
-    Modal,
-    Pressable,
-    RefreshControl,
-    ScrollView,
-    Text,
-    useWindowDimensions,
-    View,
+  ActivityIndicator,
+  Alert,
+  Linking,
+  Modal,
+  Pressable,
+  RefreshControl,
+  ScrollView,
+  Text,
+  useWindowDimensions,
+  View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Svg, { Path, Rect } from "react-native-svg";
 import api, { API_BASE_URL, getApiErrorMessage, logoutUser } from "../api";
 import { AddButton } from "../components/AddButton";
 import {
-    createDateRangeSelection,
-    isDateInRange,
-    type DateRangeSelection,
+  createDateRangeSelection,
+  isDateInRange,
+  type DateRangeSelection,
 } from "../components/DateRangeFilter";
 import { DateTimePickerComponent } from "../components/DateTimePickerComponent";
 import { formatLocalDate, parseLocalDate } from "../components/dateTimeUtils";
 import {
-    countActiveFilters,
-    DEFAULT_FILTER_STATE,
-    type FilterState,
-    type SortOption,
+  countActiveFilters,
+  DEFAULT_FILTER_STATE,
+  type FilterState,
+  type SortOption,
+  type ViewModeOption,
 } from "../components/filters";
 import { FormInput, FormOption } from "../components/FormControls";
 import { GradientSafeAreaView as SafeAreaView } from "../components/GradientSafeAreaView";
@@ -386,7 +387,9 @@ export default function Transfers() {
   const [amountMin, setAmountMin] = useState("");
   const [amountMax, setAmountMax] = useState("");
   const [sort, setSort] = useState<SortOption>(DEFAULT_FILTER_STATE.sort);
-  const [viewMode, setViewMode] = useState<"list" | "grid">("grid");
+  const [viewMode, setViewMode] = useState<ViewModeOption>(
+    DEFAULT_FILTER_STATE.viewMode,
+  );
   const [currentPage, setCurrentPage] = useState(1);
   const [deletingId, setDeletingId] = useState<number | string | null>(null);
 
@@ -526,7 +529,7 @@ export default function Transfers() {
       amountMin,
       amountMax,
       sort,
-      viewMode: viewMode === "grid" ? "card" : "table",
+      viewMode,
     }),
     [dateRange, categoryFilter, amountMin, amountMax, sort, viewMode],
   );
@@ -537,7 +540,7 @@ export default function Transfers() {
     setAmountMin(filters.amountMin);
     setAmountMax(filters.amountMax);
     setSort(filters.sort);
-    setViewMode(filters.viewMode === "card" ? "grid" : "list");
+    setViewMode(filters.viewMode);
     setCurrentPage(1);
   };
 
@@ -869,26 +872,7 @@ export default function Transfers() {
           />
         </View>
 
-        <View className="mb-3 flex-row items-center justify-between">
-          <View>
-            <Text className="text-lg font-bold text-[#293930]">
-              Transfer records
-            </Text>
-            <Text className="mt-0.5 text-xs text-[#859087]">
-              {transfers.length} {transfers.length === 1 ? "record" : "records"}
-            </Text>
-          </View>
-          <Pressable
-            accessibilityRole="button"
-            onPress={openAddTransfer}
-            className="flex-row items-center rounded-xl bg-[#315640] px-3.5 py-2.5"
-          >
-            <Ionicons name="add" size={17} color="#FFFFFF" />
-            <Text className="ml-1 text-xs font-bold text-white">
-              Add transfer
-            </Text>
-          </Pressable>
-        </View>
+       
 
         <SearchBar
           value={search}
@@ -907,34 +891,142 @@ export default function Transfers() {
           style={{ marginBottom: 12 }}
         />
 
-        <View className="mb-4 flex-row justify-end">
-          <View className="flex-row rounded-xl border border-[#E1E6E0] bg-white p-1">
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="List view"
-              className={`h-8 w-8 items-center justify-center rounded-lg ${viewMode === "list" ? "bg-[#E8F0E9]" : ""}`}
-              onPress={() => setViewMode("list")}
-            >
-              <Ionicons
-                name="list-outline"
-                size={17}
-                color={viewMode === "list" ? "#315640" : "#87918A"}
-              />
-            </Pressable>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Grid view"
-              className={`h-8 w-8 items-center justify-center rounded-lg ${viewMode === "grid" ? "bg-[#E8F0E9]" : ""}`}
-              onPress={() => setViewMode("grid")}
-            >
-              <Ionicons
-                name="grid-outline"
-                size={16}
-                color={viewMode === "grid" ? "#315640" : "#87918A"}
-              />
-            </Pressable>
+        {loading ? (
+          <View className="items-center rounded-2xl border border-[#E4E8E3] bg-white px-5 py-10">
+            <Ionicons name="hourglass-outline" size={30} color="#87918A" />
+            <Text className="mt-3 text-sm font-semibold text-[#6F7B73]">
+              Loading transfers…
+            </Text>
           </View>
-        </View>
+        ) : visibleTransfers.length === 0 ? (
+          <View className="items-center rounded-2xl border border-[#E4E8E3] bg-white px-5 py-10">
+            <View className="mb-3 h-14 w-14 items-center justify-center rounded-full bg-[#EEF5F0]">
+              <Ionicons name="swap-horizontal-outline" size={26} color="#315640" />
+            </View>
+            <Text className="text-base font-bold text-[#293930]">
+              No transfers found
+            </Text>
+            <Text className="mt-1 text-center text-xs text-[#859087]">
+              Try changing your search or filters.
+            </Text>
+          </View>
+        ) : (
+          <View
+            style={
+              viewMode === "card"
+                ? {
+                    flexDirection: "row",
+                    flexWrap: "wrap",
+                    justifyContent: "space-between",
+                    rowGap: 12,
+                  }
+                : { gap: 8 }
+            }
+          >
+            {pageTransfers.map((transfer) => (
+              <View
+                key={String(transfer.id)}
+                style={{
+                  width:
+                    viewMode === "card" && screenWidth >= 700
+                      ? "48.5%"
+                      : "100%",
+                  borderRadius: viewMode === "card" ? 16 : 10,
+                  borderWidth: 1,
+                  borderColor: "#E4E8E3",
+                  backgroundColor: "#FFFFFF",
+                  padding: viewMode === "card" ? 14 : 10,
+                }}
+              >
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={`View details for ${transfer.title || "transfer"}`}
+                  onPress={() => setSelectedTransfer(transfer)}
+                >
+                  <View className="flex-row items-center">
+                    <View className="h-11 w-11 items-center justify-center rounded-xl bg-[#EEF5F0]">
+                      <Ionicons
+                        name="swap-horizontal-outline"
+                        size={21}
+                        color="#315640"
+                      />
+                    </View>
+                    <View className="ml-3 min-w-0 flex-1">
+                      <Text
+                        className="text-sm font-bold text-[#293930]"
+                        numberOfLines={1}
+                      >
+                        {transfer.title || "Untitled transfer"}
+                      </Text>
+                      <Text
+                        className="mt-1 text-xs text-[#859087]"
+                        numberOfLines={1}
+                      >
+                        {transfer.category || "Uncategorized"}
+                      </Text>
+                    </View>
+                    <Text
+                      className="ml-2 text-base font-extrabold text-[#315640]"
+                      numberOfLines={1}
+                      adjustsFontSizeToFit
+                    >
+                      {formatAmount(transfer.amount)}
+                    </Text>
+                  </View>
+                  <View className="mt-3 flex-row items-center justify-between border-t border-[#EEF1EE] pt-3">
+                    <View className="flex-row items-center">
+                      <Ionicons
+                        name="calendar-outline"
+                        size={14}
+                        color="#87918A"
+                      />
+                      <Text className="ml-1.5 text-xs text-[#6F7B73]">
+                        {formatDate(transfer.transfer_date)}
+                      </Text>
+                    </View>
+                    <Text className="text-xs font-medium text-[#6F7B73]">
+                      {transfer.payment_method || "-"}
+                    </Text>
+                    <View className="flex-row items-center">
+                      <Text className="text-xs font-bold text-[#315640]">
+                        View details
+                      </Text>
+                      <Ionicons
+                        name="chevron-forward"
+                        size={14}
+                        color="#315640"
+                        style={{ marginLeft: 3 }}
+                      />
+                    </View>
+                  </View>
+                </Pressable>
+                <View className="mt-3 flex-row justify-end gap-2">
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={`Edit ${transfer.title || "transfer"}`}
+                    onPress={() => openEditTransfer(transfer)}
+                    className="h-9 w-9 items-center justify-center rounded-lg bg-[#EEF5F0]"
+                  >
+                    <Ionicons name="create-outline" size={17} color="#315640" />
+                  </Pressable>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={`Delete ${transfer.title || "transfer"}`}
+                    disabled={deletingId === transfer.id}
+                    onPress={() => deleteTransfer(transfer)}
+                    className="h-9 w-9 items-center justify-center rounded-lg bg-[#FFF1EF]"
+                  >
+                    <Ionicons
+                      name={deletingId === transfer.id ? "hourglass-outline" : "trash-outline"}
+                      size={16}
+                      color="#D94A43"
+                    />
+                  </Pressable>
+                </View>
+              </View>
+            ))}
+          </View>
+        )}
 
         {!loading && visibleTransfers.length > 0 && (
           <View className="mt-1 flex-row items-center justify-between rounded-xl border border-[#E4E8E3] bg-white px-3 py-2.5">
