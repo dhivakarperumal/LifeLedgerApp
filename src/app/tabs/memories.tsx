@@ -1126,6 +1126,7 @@ export default function Memories() {
         onPress={openNewMemory}
         accessibilityLabel="Add memory"
         accessibilityHint="Opens the new memory form"
+        bottomOffset={84}
       />
 
       <Modal

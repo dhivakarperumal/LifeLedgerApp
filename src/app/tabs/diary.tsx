@@ -1399,6 +1399,7 @@ export default function Diary() {
         onPress={openNewEntry}
         accessibilityLabel="Write diary entry"
         accessibilityHint="Opens a new diary entry"
+        bottomOffset={84}
       />
 
       <Modal
