@@ -1025,7 +1025,7 @@ export default function Reports() {
                 {
                   key: "paymentMethod",
                   label: "Payment method",
-                  presentation: "chips",
+                  presentation: "select",
                   options: paymentMethods.map((payment) => ({
                     value: payment,
                     label: payment === "All" ? "All methods" : payment,
