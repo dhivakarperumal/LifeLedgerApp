@@ -101,8 +101,6 @@ const fallbackCategories = [
   "Other",
 ];
 
-let hasLoadedExpensesOnce = false;
-
 const paymentTypeOptions = [
   "Cash",
   "UPI",
@@ -197,7 +195,6 @@ export default function Expenses() {
   const [sort, setSort] = useState<SortOption>(DEFAULT_FILTER_STATE.sort);
   const [viewMode, setViewMode] = useState<ViewModeOption>("card");
   const [search, setSearch] = useState("");
-  const [loading, setLoading] = useState(!hasLoadedExpensesOnce);
   const [refreshing, setRefreshing] = useState(false);
   const [showSummaryCards, setShowSummaryCards] = useState(false);
   const [isModalVisible, setIsModalVisible] = useState(false);
@@ -319,11 +316,7 @@ export default function Expenses() {
 
   const fetchAll = useCallback(async (showRefreshIndicator = false) => {
     try {
-      if (!hasLoadedExpensesOnce) {
-        setLoading(true);
-      } else if (showRefreshIndicator) {
-        setRefreshing(true);
-      }
+      if (showRefreshIndicator) setRefreshing(true);
       const [expensesRes, statsRes, categoriesRes, transfersRes] =
         await Promise.all([
           api.get("/expenses"),
@@ -399,8 +392,6 @@ export default function Expenses() {
       setExpenses([]);
       setCategoryOptions(fallbackCategories);
     } finally {
-      hasLoadedExpensesOnce = true;
-      setLoading(false);
       setRefreshing(false);
     }
   }, [handleUnauthorized]);
@@ -906,33 +897,7 @@ export default function Expenses() {
             </View>
           </View>
 
-          {loading ? (
-            <View
-              style={{
-                backgroundColor: "#FFFFFF",
-                borderRadius: 20,
-                padding: 40,
-                alignItems: "center",
-                shadowColor: "#000",
-                shadowOffset: { width: 0, height: 2 },
-                shadowOpacity: 0.05,
-                shadowRadius: 8,
-                elevation: 2,
-              }}
-            >
-              <Ionicons name="hourglass-outline" size={36} color="#94A3B8" />
-              <Text
-                style={{
-                  marginTop: 12,
-                  fontSize: 15,
-                  color: "#64748B",
-                  fontWeight: "600",
-                }}
-              >
-                Loading expenses…
-              </Text>
-            </View>
-          ) : visibleExpenses.length === 0 ? (
+          {visibleExpenses.length === 0 ? (
             <View
               style={{
                 backgroundColor: "#FFFFFF",

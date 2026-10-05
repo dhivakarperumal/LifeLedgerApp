@@ -20,8 +20,8 @@ import { Colors } from "../constants/colors";
 export function LoadingScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { width, height } = useWindowDimensions();
-  const logoSize = Math.min(width * 0.34, 156);
+  const { width } = useWindowDimensions();
+  const logoSize = Math.min(width * 0.28, 128);
   const [fontsLoaded] = useFonts({ Poppins_600SemiBold, Poppins_700Bold });
   const [rotation] = useState(() => new Animated.Value(0));
 
@@ -45,7 +45,7 @@ export function LoadingScreen() {
       const loggedIn = await isLoggedIn().catch(() => false);
 
       if (!cancelled) {
-        router.replace(loggedIn ? "/tabs" : "/auth/welcome");
+        router.replace(loggedIn ? "/tabs" : "/auth/login");
       }
     };
 
@@ -73,7 +73,7 @@ export function LoadingScreen() {
             styles.content,
             {
               paddingTop: insets.top + 12,
-              paddingBottom: insets.bottom + Math.min(height * 0.12, 120),
+              paddingBottom: insets.bottom + 12,
             },
           ]}
         >
@@ -163,8 +163,8 @@ const styles = {
   },
   wordmark: {
     marginTop: 4,
-    fontSize: 48,
-    lineHeight: 58,
+    fontSize: 34,
+    lineHeight: 42,
     fontWeight: "700" as const,
   },
   wordmarkLife: {
@@ -183,8 +183,8 @@ const styles = {
   },
   taglineText: {
     color: Colors.textPrimary,
-    fontSize: 16,
-    letterSpacing: 2,
+    fontSize: 14,
+    letterSpacing: 1.5,
   },
   taglineDot: {
     width: 6,
@@ -194,21 +194,21 @@ const styles = {
   },
   loading: {
     alignItems: "center" as const,
-    marginTop: 44,
+    marginTop: 32,
   },
   spinner: {
-    width: 92,
-    height: 92,
-    borderWidth: 10,
+    width: 64,
+    height: 64,
+    borderWidth: 7,
     borderColor: "#DDE7D8",
     borderTopColor: "#578F42",
     borderRightColor: "#578F42",
-    borderRadius: 46,
+    borderRadius: 32,
   },
   loadingText: {
-    marginTop: 10,
+    marginTop: 8,
     color: Colors.primaryDark,
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: "600" as const,
   },
 };
