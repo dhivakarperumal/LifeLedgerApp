@@ -247,7 +247,7 @@ export default function Expenses() {
           }}
         >
           <Ionicons
-            name={showSummaryCards ? "options" : "options-outline"}
+            name={showSummaryCards ? "funnel" : "funnel-outline"}
             size={22}
             color={showSummaryCards ? Colors.accent : Colors.white}
           />
