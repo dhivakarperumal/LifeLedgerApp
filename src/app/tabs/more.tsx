@@ -1,6 +1,8 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { Pressable, ScrollView, Text, View } from "react-native";
+import { useState } from "react";
+import { Alert, Pressable, ScrollView, Text, View } from "react-native";
+import { getApiErrorMessage, logoutUser } from "../../api";
 import { Colors } from "../../constants/colors";
 
 type MoreRowItem = {
@@ -121,6 +123,22 @@ function MoreMenuRow({
 
 export default function More() {
   const router = useRouter();
+  const [isSigningOut, setIsSigningOut] = useState(false);
+
+  const handleSignOut = async () => {
+    setIsSigningOut(true);
+    try {
+      await logoutUser();
+      router.replace("/auth/login");
+    } catch (error) {
+      Alert.alert(
+        "Sign out failed",
+        getApiErrorMessage(error, "Please try again."),
+      );
+    } finally {
+      setIsSigningOut(false);
+    }
+  };
 
   return (
     <ScrollView
@@ -211,16 +229,19 @@ export default function More() {
       ))}
 
       <Pressable
+        onPress={handleSignOut}
+        disabled={isSigningOut}
         className="mt-8 mb-4 flex-row items-center justify-center rounded-2xl border border-[#F0B7B7] bg-[#FBEAEA] px-5 py-4"
         accessibilityRole="button"
         accessibilityLabel="Sign out"
+        accessibilityState={{ disabled: isSigningOut }}
       >
         <Ionicons name="log-out-outline" size={20} color="#DD4B4B" />
         <Text
           className="ml-3 text-base font-bold text-[#D94A4A]"
           style={{ fontFamily: "Roboto Condensed, sans-serif" }}
         >
-          SIGN OUT ACCOUNT
+          {isSigningOut ? "SIGNING OUT..." : "SIGN OUT ACCOUNT"}
         </Text>
       </Pressable>
     </ScrollView>

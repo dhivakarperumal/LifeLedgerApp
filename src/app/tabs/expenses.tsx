@@ -1179,6 +1179,7 @@ export default function Expenses() {
         onPress={openAddExpense}
         accessibilityLabel="Add expense"
         accessibilityHint="Opens the new expense form"
+        bottomOffset={84}
       />
 
       {/* ── Category Filter Modal ── */}

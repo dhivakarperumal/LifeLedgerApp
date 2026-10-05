@@ -170,10 +170,12 @@ export default function RegisterScreen() {
     <SafeAreaView edges={["top", "bottom"]} className="flex-1 bg-[#E8F5E9]">
       <StatusBar style="light" />
       <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
         className="flex-1"
       >
         <ScrollView
+          contentContainerStyle={{ flexGrow: 1 }}
+          keyboardDismissMode="none"
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
           className="flex-1"
