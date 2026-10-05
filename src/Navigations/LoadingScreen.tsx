@@ -163,8 +163,8 @@ const styles = {
   },
   wordmark: {
     marginTop: 4,
-    fontSize: 34,
-    lineHeight: 42,
+    fontSize: 28,
+    lineHeight: 36,
     fontWeight: "700" as const,
   },
   wordmarkLife: {
@@ -197,13 +197,13 @@ const styles = {
     marginTop: 32,
   },
   spinner: {
-    width: 64,
-    height: 64,
-    borderWidth: 7,
+    width: 48,
+    height: 48,
+    borderWidth: 5,
     borderColor: "#DDE7D8",
     borderTopColor: "#578F42",
     borderRightColor: "#578F42",
-    borderRadius: 32,
+    borderRadius: 24,
   },
   loadingText: {
     marginTop: 8,
