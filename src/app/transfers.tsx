@@ -1109,7 +1109,7 @@ export default function Transfers() {
         onPress={openAddTransfer}
         accessibilityLabel="Add transfer"
         accessibilityHint="Opens the new transfer form"
-        bottomOffset={42}
+        bottomOffset={37}
       />
 
       <Modal

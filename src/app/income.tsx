@@ -1103,7 +1103,7 @@ export default function Income() {
         onPress={openAddIncome}
         accessibilityLabel="Add income"
         accessibilityHint="Opens the new income form"
-        bottomOffset={42}
+        bottomOffset={37}
       />
 
       <Modal
