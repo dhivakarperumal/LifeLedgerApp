@@ -977,7 +977,17 @@ export default function Expenses() {
               </Text>
             </View>
           ) : (
-            <View>
+            <View
+              style={
+                viewMode === "card"
+                  ? {
+                      flexDirection: "row",
+                      flexWrap: "wrap",
+                      justifyContent: "space-between",
+                    }
+                  : undefined
+              }
+            >
               {visibleExpenses.map((expense, index) => {
                 const accent = categoryAccents[expense.category || "Other"] || {
                   bg: "#F3F4F6",
@@ -988,13 +998,13 @@ export default function Expenses() {
                   <View
                     key={String(expense.id)}
                     style={{
-                      width: "100%",
+                      width: viewMode === "card" ? "48.5%" : "100%",
                       backgroundColor: "#FFFFFF",
                       borderRadius: 14,
                       padding: viewMode === "card" ? 12 : 16,
                       marginBottom: 10,
-                      flexDirection: "row",
-                      alignItems: "center",
+                      flexDirection: viewMode === "card" ? "column" : "row",
+                      alignItems: viewMode === "card" ? "stretch" : "center",
                       borderWidth: 1,
                       borderColor: "#E4E8E3",
                       borderLeftWidth: viewMode === "card" ? 4 : 1,
@@ -1016,6 +1026,7 @@ export default function Expenses() {
                           backgroundColor: accent.bg,
                           alignItems: "center",
                           justifyContent: "center",
+                          alignSelf: "flex-start",
                         }}
                       >
                         <Ionicons
@@ -1031,7 +1042,8 @@ export default function Expenses() {
                       style={{
                         flex: 1,
                         minWidth: 0,
-                        marginLeft: viewMode === "card" ? 12 : 0,
+                        marginLeft: 0,
+                        marginTop: viewMode === "card" ? 10 : 0,
                       }}
                     >
                       <Text
@@ -1106,8 +1118,15 @@ export default function Expenses() {
                     {/* Amount and expense actions */}
                     <View
                       style={{
+                        flexDirection: viewMode === "card" ? "row" : "column",
                         alignItems: "flex-end",
-                        marginLeft: 10,
+                        justifyContent:
+                          viewMode === "card" ? "space-between" : undefined,
+                        marginLeft: viewMode === "card" ? 0 : 10,
+                        marginTop: viewMode === "card" ? 10 : 0,
+                        paddingTop: viewMode === "card" ? 10 : 0,
+                        borderTopWidth: viewMode === "card" ? 1 : 0,
+                        borderTopColor: "#EEF1EE",
                         gap: 8,
                       }}
                     >

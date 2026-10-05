@@ -927,10 +927,7 @@ export default function Transfers() {
               <View
                 key={String(transfer.id)}
                 style={{
-                  width:
-                    viewMode === "card" && screenWidth >= 700
-                      ? "48.5%"
-                      : "100%",
+                  width: viewMode === "card" ? "48.5%" : "100%",
                   borderRadius: viewMode === "card" ? 16 : 10,
                   borderWidth: 1,
                   borderColor: "#E4E8E3",
