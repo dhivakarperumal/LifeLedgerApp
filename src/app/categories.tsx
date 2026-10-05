@@ -806,18 +806,6 @@ export default function Categories() {
               />
 
               <Text className="mb-2 text-xs font-bold text-[#46534B]">
-                Subcategories
-              </Text>
-              <FormInput
-                className="mb-4 min-h-[76px] rounded-xl bg-white px-4 py-3 text-sm text-[#25332C]"
-                multiline
-                placeholder="One per line"
-                textAlignVertical="top"
-                value={form.subcategory}
-                onChangeText={(value) => setFormValue("subcategory", value)}
-              />
-
-              <Text className="mb-2 text-xs font-bold text-[#46534B]">
                 Description
               </Text>
               <FormInput
