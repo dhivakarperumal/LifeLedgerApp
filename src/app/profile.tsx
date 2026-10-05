@@ -12,7 +12,12 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import api, { getApiErrorMessage, getStoredUser, logoutUser } from "../api";
+import api, {
+  getApiErrorMessage,
+  getStoredUser,
+  logoutUser,
+  saveUser,
+} from "../api";
 import { FormInput } from "../components/FormControls";
 import { GradientSafeAreaView as SafeAreaView } from "../components/GradientSafeAreaView";
 import { Colors } from "../constants/colors";
@@ -32,6 +37,11 @@ type UserProfile = {
 
 type PasswordKey = "current" | "next" | "confirm";
 type PasswordState = Record<PasswordKey, string>;
+type ProfileFormState = {
+  name: string;
+  email: string;
+  phone: string;
+};
 
 const passwordFields: {
   key: PasswordKey;
@@ -94,6 +104,17 @@ export default function Profile() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const [user, setUser] = useState<UserProfile | null>(null);
+  const [profileForm, setProfileForm] = useState<ProfileFormState>({
+    name: "",
+    email: "",
+    phone: "",
+  });
+  const [editingProfile, setEditingProfile] = useState(false);
+  const [savingProfile, setSavingProfile] = useState(false);
+  const [profileStatus, setProfileStatus] = useState<{
+    type: "success" | "error" | "";
+    message: string;
+  }>({ type: "", message: "" });
   const [passwords, setPasswords] = useState<PasswordState>({
     current: "",
     next: "",
@@ -121,7 +142,14 @@ export default function Profile() {
       setLoading(true);
       void getStoredUser()
         .then((storedUser) => {
-          if (active) setUser(storedUser);
+          if (active) {
+            setUser(storedUser);
+            setProfileForm({
+              name: getDisplayName(storedUser),
+              email: storedUser?.email || "",
+              phone: storedUser?.phone || "",
+            });
+          }
         })
         .catch((error) => {
           if (active) {
@@ -142,6 +170,85 @@ export default function Profile() {
   const profilePhone = user?.phone || "Not provided";
   const profileRole = user?.role || "Admin";
   const userId = user?.id || user?.user_id;
+
+  const handleProfileSave = async () => {
+    setProfileStatus({ type: "", message: "" });
+    const name = profileForm.name.trim();
+    const email = profileForm.email.trim();
+    const phone = profileForm.phone.trim();
+
+    if (!name) {
+      setProfileStatus({ type: "error", message: "Name cannot be empty." });
+      return;
+    }
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      setProfileStatus({
+        type: "error",
+        message: "Enter a valid email address.",
+      });
+      return;
+    }
+    if (!userId) {
+      setProfileStatus({
+        type: "error",
+        message: "Unable to identify your account. Please sign in again.",
+      });
+      return;
+    }
+
+    try {
+      setSavingProfile(true);
+      const response = await api.put(`/auth/profile/${userId}`, {
+        username: name,
+        email,
+        phone,
+      });
+      const responseUser = response.data?.user as
+        | Partial<UserProfile>
+        | undefined;
+      const updatedUser: UserProfile = {
+        ...user,
+        ...responseUser,
+        name: responseUser?.name || name,
+        username: responseUser?.username || name,
+        email: responseUser?.email || email,
+        phone: responseUser?.phone || phone,
+      };
+      await saveUser(updatedUser);
+      setUser(updatedUser);
+      setProfileForm({ name, email, phone });
+      setEditingProfile(false);
+      setProfileStatus({
+        type: "success",
+        message: response.data?.message || "Profile updated successfully.",
+      });
+    } catch (error) {
+      if ((error as { status?: number })?.status === 401) {
+        await logoutUser();
+        router.replace("/auth/login");
+        return;
+      }
+      setProfileStatus({
+        type: "error",
+        message: getApiErrorMessage(
+          error,
+          "Unable to update profile. Please try again.",
+        ),
+      });
+    } finally {
+      setSavingProfile(false);
+    }
+  };
+
+  const cancelProfileEdit = () => {
+    setProfileForm({
+      name: profileName,
+      email: user?.email || "",
+      phone: user?.phone || "",
+    });
+    setProfileStatus({ type: "", message: "" });
+    setEditingProfile(false);
+  };
 
   const handlePasswordChange = async () => {
     setPasswordStatus({ type: "", message: "" });
@@ -324,7 +431,7 @@ export default function Profile() {
 
         <View className="mb-5 rounded-2xl border border-[#E4E8E3] bg-[#F5F6F2]">
           <View className="mb-3 flex-row items-center justify-between">
-            <View>
+            <View className="flex-1">
               <Text className="text-xs font-bold uppercase tracking-[1.2px] text-[#839087]">
                 Personal details
               </Text>
@@ -332,27 +439,147 @@ export default function Profile() {
                 Account information
               </Text>
             </View>
-            {loading && <ActivityIndicator color="#315640" />}
+            <View className="flex-row items-center">
+              {loading && <ActivityIndicator color="#315640" />}
+              {!editingProfile && (
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Edit profile details"
+                  disabled={loading || savingProfile}
+                  onPress={() => {
+                    setProfileStatus({ type: "", message: "" });
+                    setEditingProfile(true);
+                  }}
+                  className="ml-2 h-10 w-10 items-center justify-center rounded-full bg-white"
+                >
+                  <Ionicons name="create-outline" size={19} color="#315640" />
+                </Pressable>
+              )}
+            </View>
           </View>
-          <ProfileDetail
-            icon="person-outline"
-            label="Full name"
-            value={profileName}
-          />
+          {editingProfile ? (
+            <>
+              {[
+                {
+                  key: "name" as const,
+                  label: "Full name",
+                  icon: "person-outline" as const,
+                  keyboardType: "default" as const,
+                  autoCapitalize: "words" as const,
+                },
+                {
+                  key: "email" as const,
+                  label: "Email address",
+                  icon: "mail-outline" as const,
+                  keyboardType: "email-address" as const,
+                  autoCapitalize: "none" as const,
+                },
+                {
+                  key: "phone" as const,
+                  label: "Phone number",
+                  icon: "call-outline" as const,
+                  keyboardType: "phone-pad" as const,
+                  autoCapitalize: "none" as const,
+                },
+              ].map((field) => (
+                <View
+                  key={field.key}
+                  className="mb-3 flex-row items-center rounded-xl border border-[#E4E8E3] bg-white px-3"
+                >
+                  <Ionicons
+                    name={field.icon}
+                    size={19}
+                    color="#315640"
+                    style={{ marginRight: 12 }}
+                  />
+                  <View className="flex-1 py-2">
+                    <Text className="mb-1 text-xs font-bold uppercase tracking-[0.8px] text-[#839087]">
+                      {field.label}
+                    </Text>
+                    <FormInput
+                      bordered={false}
+                      accessibilityLabel={field.label}
+                      autoCapitalize={field.autoCapitalize}
+                      autoCorrect={false}
+                      keyboardType={field.keyboardType}
+                      onChangeText={(value) => {
+                        setProfileForm((current) => ({
+                          ...current,
+                          [field.key]: value,
+                        }));
+                        setProfileStatus({ type: "", message: "" });
+                      }}
+                      value={profileForm[field.key]}
+                      className="min-h-9 p-0 text-sm font-semibold text-[#293930]"
+                    />
+                  </View>
+                </View>
+              ))}
+              {!!profileStatus.message && (
+                <Text
+                  accessibilityLiveRegion="polite"
+                  className={`mb-3 text-xs font-semibold ${profileStatus.type === "error" ? "text-[#B64C45]" : "text-[#25805A]"}`}
+                >
+                  {profileStatus.message}
+                </Text>
+              )}
+              <View className="flex-row gap-3">
+                <Pressable
+                  accessibilityRole="button"
+                  disabled={savingProfile}
+                  onPress={cancelProfileEdit}
+                  className="flex-1 items-center justify-center rounded-xl border border-[#DCE4DC] bg-white py-3"
+                >
+                  <Text className="text-sm font-bold text-[#526058]">
+                    Cancel
+                  </Text>
+                </Pressable>
+                <Pressable
+                  accessibilityRole="button"
+                  disabled={savingProfile}
+                  onPress={() => void handleProfileSave()}
+                  className={`flex-1 flex-row items-center justify-center rounded-xl bg-[#315640] py-3 ${savingProfile ? "opacity-60" : ""}`}
+                >
+                  {savingProfile ? (
+                    <ActivityIndicator color="#FFFFFF" />
+                  ) : (
+                    <>
+                      <Ionicons
+                        name="checkmark-outline"
+                        size={17}
+                        color="#FFFFFF"
+                      />
+                      <Text className="ml-2 text-sm font-bold text-white">
+                        Save changes
+                      </Text>
+                    </>
+                  )}
+                </Pressable>
+              </View>
+            </>
+          ) : (
+            <>
+              <ProfileDetail
+                icon="person-outline"
+                label="Full name"
+                value={profileName}
+              />
+              <ProfileDetail
+                icon="mail-outline"
+                label="Email address"
+                value={profileEmail}
+              />
+              <ProfileDetail
+                icon="call-outline"
+                label="Phone number"
+                value={profilePhone}
+              />
+            </>
+          )}
           <ProfileDetail
             icon="shield-checkmark-outline"
             label="Role"
             value={profileRole}
-          />
-          <ProfileDetail
-            icon="mail-outline"
-            label="Email address"
-            value={profileEmail}
-          />
-          <ProfileDetail
-            icon="call-outline"
-            label="Phone number"
-            value={profilePhone}
           />
         </View>
 

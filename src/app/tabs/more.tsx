@@ -178,14 +178,7 @@ export default function More() {
           </View>
         </View>
 
-        <Pressable
-          onPress={() => router.push("/profile")}
-          accessibilityRole="button"
-          accessibilityLabel="Edit profile"
-          className="h-10 w-10 items-center justify-center rounded-full bg-[#E9EEF0]"
-        >
-          <Ionicons name="create-outline" size={18} color="#3B4450" />
-        </Pressable>
+       
       </View>
 
       <Text
