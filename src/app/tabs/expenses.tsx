@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import * as DocumentPicker from "expo-document-picker";
 import { useFocusEffect, useNavigation, useRouter } from "expo-router";
-import { useCallback, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useLayoutEffect, useMemo, useState } from "react";
 import {
   Alert,
   LayoutAnimation,
@@ -101,6 +101,8 @@ const fallbackCategories = [
   "Other",
 ];
 
+let hasLoadedExpensesOnce = false;
+
 const paymentTypeOptions = [
   "Cash",
   "UPI",
@@ -195,9 +197,8 @@ export default function Expenses() {
   const [sort, setSort] = useState<SortOption>(DEFAULT_FILTER_STATE.sort);
   const [viewMode, setViewMode] = useState<ViewModeOption>("card");
   const [search, setSearch] = useState("");
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!hasLoadedExpensesOnce);
   const [refreshing, setRefreshing] = useState(false);
-  const hasLoadedOnce = useRef(false);
   const [showSummaryCards, setShowSummaryCards] = useState(false);
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [editingExpenseId, setEditingExpenseId] = useState<number | string | null>(null);
@@ -318,7 +319,7 @@ export default function Expenses() {
 
   const fetchAll = useCallback(async (showRefreshIndicator = false) => {
     try {
-      if (!hasLoadedOnce.current) {
+      if (!hasLoadedExpensesOnce) {
         setLoading(true);
       } else if (showRefreshIndicator) {
         setRefreshing(true);
@@ -398,7 +399,7 @@ export default function Expenses() {
       setExpenses([]);
       setCategoryOptions(fallbackCategories);
     } finally {
-      hasLoadedOnce.current = true;
+      hasLoadedExpensesOnce = true;
       setLoading(false);
       setRefreshing(false);
     }
