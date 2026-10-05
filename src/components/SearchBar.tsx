@@ -1,8 +1,8 @@
 import {
-  Poppins_400Regular,
-  Poppins_500Medium,
-  Poppins_600SemiBold,
-  Poppins_700Bold,
+    Poppins_400Regular,
+    Poppins_500Medium,
+    Poppins_600SemiBold,
+    Poppins_700Bold,
 } from "@expo-google-fonts/poppins";
 import { Ionicons } from "@expo/vector-icons";
 import { useFonts } from "expo-font";
@@ -10,13 +10,13 @@ import { useState } from "react";
 import { Pressable, TextInput, View, type ViewStyle } from "react-native";
 import { Colors } from "../constants/colors";
 import {
-  FilterBottomSheet,
-  type FilterBottomSheetProps,
+    FilterBottomSheet,
+    type FilterBottomSheetProps,
 } from "./filters/FilterBottomSheet";
 import { FilterButton } from "./filters/FilterButton";
 import {
-  countActiveFilters,
-  DEFAULT_FILTER_STATE,
+    countActiveFilters,
+    DEFAULT_FILTER_STATE,
 } from "./filters/filterTypes";
 
 type SearchBarFilterSheet = Omit<FilterBottomSheetProps, "visible" | "onClose">;
@@ -42,6 +42,7 @@ type Props = {
   filterSheet?: SearchBarFilterSheet;
   /** Pass a custom right icon name; defaults to the sliders/options icon */
   filterIcon?: keyof typeof Ionicons.glyphMap;
+  className?: string;
   style?: ViewStyle;
 };
 
@@ -57,6 +58,7 @@ export function SearchBar({
   activeFilterCount,
   filterActive = false,
   filterSheet,
+  className = "mt-2",
   style,
 }: Props) {
   const [fontsLoaded] = useFonts(poppinsFontMap);
@@ -72,6 +74,7 @@ export function SearchBar({
 
   return (
     <View
+      className={className}
       style={[
         {
           flexDirection: "row",

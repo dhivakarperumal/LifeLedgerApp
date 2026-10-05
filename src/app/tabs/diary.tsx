@@ -857,20 +857,12 @@ export default function Diary() {
         }
         contentContainerStyle={{
           paddingHorizontal: 18,
-          paddingTop: 18,
+          paddingTop: 0,
           paddingBottom: insets.bottom + 112,
         }}
       >
-        <View
-          style={{
-            flexDirection: "row",
-            alignItems: "center",
-            justifyContent: "space-between",
-            marginBottom: 16,
-          }}
-        ></View>
-
         <SearchBar
+          className="mt-5"
           value={search}
           onChangeText={setSearch}
           placeholder="Search title, mood, tags..."

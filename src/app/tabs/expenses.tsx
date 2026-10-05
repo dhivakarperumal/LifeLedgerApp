@@ -749,6 +749,7 @@ export default function Expenses() {
         >
           {/* ── Search bar + Filter button ── */}
           <SearchBar
+            className="mt-5"
             value={search}
             onChangeText={setSearch}
             placeholder="Search expenses…"
@@ -758,7 +759,7 @@ export default function Expenses() {
               categories: categoryOptions,
               sections: ["date", "category", "amount", "sort", "viewMode"],
             }}
-            style={{ marginTop: 8, marginBottom: 12 }}
+            style={{ marginBottom: 12 }}
           />
 
           {/* Active filter chip */}
