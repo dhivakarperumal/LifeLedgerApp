@@ -110,12 +110,9 @@ export function DateTimePickerComponent({
           )}
         </View>
         <View className="min-w-0 flex-1">
-          <Text className="text-[10px] font-semibold text-[#7B8580]">
-            {fieldLabel}
-          </Text>
           <Text
             numberOfLines={1}
-            className={`mt-0.5 text-xs font-semibold ${isValidValue ? "text-[#25332C]" : "text-[#9AA39D]"}`}
+            className={`text-xs font-semibold ${isValidValue ? "text-[#25332C]" : "text-[#9AA39D]"}`}
           >
             {displayValue}
           </Text>
