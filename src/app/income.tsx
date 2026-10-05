@@ -909,16 +909,7 @@ export default function Income() {
               {incomes.length} {incomes.length === 1 ? "record" : "records"}
             </Text>
           </View>
-          <Pressable
-            accessibilityRole="button"
-            onPress={openAddIncome}
-            className="flex-row items-center rounded-xl bg-[#315640] px-3.5 py-2.5"
-          >
-            <Ionicons name="add" size={17} color="#FFFFFF" />
-            <Text className="ml-1 text-xs font-bold text-white">
-              Add income
-            </Text>
-          </Pressable>
+          
         </View>
 
         <SearchBar
@@ -942,59 +933,7 @@ export default function Income() {
           style={{ marginBottom: 12 }}
         />
 
-        <View className="mb-4 flex-row items-center justify-between">
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={{ gap: 7 }}
-          >
-            {["All Income", "Recurring", "One-time"].map((filter) => {
-              const selected = incomeFilter === filter;
-              return (
-                <Pressable
-                  key={filter}
-                  className={`rounded-full border px-3 py-2 ${selected ? "border-[#315640] bg-[#315640]" : "border-[#E0E5DF] bg-white"}`}
-                  onPress={() => {
-                    setIncomeFilter(filter);
-                    setCurrentPage(1);
-                  }}
-                >
-                  <Text
-                    className={`text-xs font-bold ${selected ? "text-white" : "text-[#637068]"}`}
-                  >
-                    {filter}
-                  </Text>
-                </Pressable>
-              );
-            })}
-          </ScrollView>
-          <View className="ml-2 flex-row rounded-xl border border-[#E1E6E0] bg-white p-1">
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="List view"
-              className={`h-8 w-8 items-center justify-center rounded-lg ${viewMode === "list" ? "bg-[#E8F0E9]" : ""}`}
-              onPress={() => setViewMode("list")}
-            >
-              <Ionicons
-                name="list-outline"
-                size={17}
-                color={viewMode === "list" ? "#315640" : "#87918A"}
-              />
-            </Pressable>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Grid view"
-              className={`h-8 w-8 items-center justify-center rounded-lg ${viewMode === "grid" ? "bg-[#E8F0E9]" : ""}`}
-              onPress={() => setViewMode("grid")}
-            >
-              <Ionicons
-                name="grid-outline"
-                size={16}
-                color={viewMode === "grid" ? "#315640" : "#87918A"}
-              />
-            </Pressable>
-          </View>
-        </View>
+       
 
         {loading ? (
           <View className="items-center py-16">
@@ -1024,9 +963,11 @@ export default function Income() {
             {paginatedIncomes.map((income) => (
               <View
                 key={income.id}
-                className={`mb-3 rounded-2xl border border-[#E4E8E3] bg-white p-4 ${viewMode === "grid" ? "w-[48%]" : "w-full"}`}
+                className={`mb-3 min-w-0 rounded-2xl border border-[#E4E8E3] bg-white ${viewMode === "grid" ? "w-[48%] p-3" : "w-full p-4"}`}
               >
-                <View className="flex-row items-start justify-between gap-2">
+                <View
+                  className={`gap-2 ${viewMode === "grid" ? "flex-col items-start" : "flex-row items-start justify-between"}`}
+                >
                   <View className="min-w-0 flex-1">
                     <Text
                       className="text-sm font-bold text-[#293930]"
@@ -1043,17 +984,27 @@ export default function Income() {
                   </View>
                   <Text
                     className="text-sm font-extrabold text-[#25805A]"
+                    style={{
+                      flexShrink: 1,
+                      marginTop: viewMode === "grid" ? 2 : 0,
+                    }}
                     numberOfLines={1}
+                    adjustsFontSizeToFit
                   >
                     {formatAmount(income.remaining_amount ?? income.amount)}
                   </Text>
                 </View>
-                <Text className="mt-3 text-xs font-medium text-[#7C8880]">
+                <Text
+                  className="mt-2 text-xs font-medium text-[#7C8880]"
+                  numberOfLines={viewMode === "grid" ? 2 : 1}
+                >
                   {formatDate(income.income_date)} ·{" "}
                   {income.payment_method || "-"}
                 </Text>
-                <View className="mt-3 flex-row items-center justify-between border-t border-[#EEF0ED] pt-3">
-                  <View className="flex-row items-center gap-2">
+                <View
+                  className={`mt-3 border-t border-[#EEF0ED] pt-3 ${viewMode === "grid" ? "gap-2" : "flex-row items-center justify-between"}`}
+                >
+                  <View className="flex-row flex-wrap items-center gap-2">
                     <View
                       className={`rounded-full px-2 py-1 ${income.recurring === "Yes" ? "bg-[#E7F4EC]" : "bg-[#F1F3F0]"}`}
                     >
@@ -1078,7 +1029,10 @@ export default function Income() {
                       </Pressable>
                     )}
                   </View>
-                  <View className="flex-row gap-2">
+                  <View
+                    className="flex-row gap-2"
+                    style={{ alignSelf: viewMode === "grid" ? "flex-end" : undefined }}
+                  >
                     <Pressable
                       accessibilityRole="button"
                       accessibilityLabel={`Edit ${income.title}`}
@@ -1154,6 +1108,7 @@ export default function Income() {
         onPress={openAddIncome}
         accessibilityLabel="Add income"
         accessibilityHint="Opens the new income form"
+        bottomOffset={42}
       />
 
       <Modal

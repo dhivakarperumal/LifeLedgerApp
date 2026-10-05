@@ -7,12 +7,14 @@ type AddButtonProps = {
   onPress: () => void;
   accessibilityLabel: string;
   accessibilityHint: string;
+  bottomOffset?: number;
 };
 
 export function AddButton({
   onPress,
   accessibilityLabel,
   accessibilityHint,
+  bottomOffset = 92,
 }: AddButtonProps) {
   const insets = useSafeAreaInsets();
 
@@ -22,7 +24,7 @@ export function AddButton({
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel}
       accessibilityHint={accessibilityHint}
-      style={[styles.button, { bottom: insets.bottom + 92 }]}
+      style={[styles.button, { bottom: insets.bottom + bottomOffset }]}
     >
       <Ionicons name="add" size={30} color={Colors.white} />
     </Pressable>

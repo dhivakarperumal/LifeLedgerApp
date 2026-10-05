@@ -1001,7 +1001,7 @@ export default function Expenses() {
                       width: viewMode === "card" ? "48.5%" : "100%",
                       backgroundColor: "#FFFFFF",
                       borderRadius: 14,
-                      padding: viewMode === "card" ? 12 : 16,
+                      padding: viewMode === "card" ? 10 : 16,
                       marginBottom: 10,
                       flexDirection: viewMode === "card" ? "column" : "row",
                       alignItems: viewMode === "card" ? "stretch" : "center",
@@ -1020,8 +1020,8 @@ export default function Expenses() {
                     {viewMode === "card" && (
                       <View
                         style={{
-                          width: 44,
-                          height: 44,
+                          width: 36,
+                          height: 36,
                           borderRadius: 13,
                           backgroundColor: accent.bg,
                           alignItems: "center",
@@ -1031,7 +1031,7 @@ export default function Expenses() {
                       >
                         <Ionicons
                           name="receipt-outline"
-                          size={21}
+                          size={18}
                           color={accent.color}
                         />
                       </View>
@@ -1043,7 +1043,7 @@ export default function Expenses() {
                         flex: 1,
                         minWidth: 0,
                         marginLeft: 0,
-                        marginTop: viewMode === "card" ? 10 : 0,
+                        marginTop: viewMode === "card" ? 6 : 0,
                       }}
                     >
                       <Text
@@ -1061,8 +1061,8 @@ export default function Expenses() {
                           flexDirection: "row",
                           flexWrap: "wrap",
                           alignItems: "center",
-                          marginTop: 6,
-                          gap: 6,
+                          marginTop: 4,
+                          gap: 4,
                         }}
                       >
                         <View
@@ -1101,7 +1101,7 @@ export default function Expenses() {
                           style={{
                             flexDirection: "row",
                             alignItems: "center",
-                            marginTop: 8,
+                            marginTop: 6,
                             gap: 5,
                           }}
                         >
@@ -1126,11 +1126,11 @@ export default function Expenses() {
                         flexDirection: "column",
                         alignItems: viewMode === "card" ? "stretch" : "flex-end",
                         marginLeft: viewMode === "card" ? 0 : 10,
-                        marginTop: viewMode === "card" ? 10 : 0,
-                        paddingTop: viewMode === "card" ? 10 : 0,
+                        marginTop: viewMode === "card" ? 6 : 0,
+                        paddingTop: viewMode === "card" ? 6 : 0,
                         borderTopWidth: viewMode === "card" ? 1 : 0,
                         borderTopColor: "#EEF1EE",
-                        gap: 8,
+                        gap: 6,
                       }}
                     >
                       <Text
@@ -1151,7 +1151,7 @@ export default function Expenses() {
                           flexDirection: "row",
                           alignItems: "center",
                           justifyContent: "flex-end",
-                          gap: 6,
+                          gap: 4,
                         }}
                       >
                         <Pressable

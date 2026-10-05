@@ -918,7 +918,7 @@ export default function Transfers() {
                     flexDirection: "row",
                     flexWrap: "wrap",
                     justifyContent: "space-between",
-                    rowGap: 12,
+                    rowGap: 8,
                   }
                 : { gap: 8 }
             }
@@ -932,7 +932,7 @@ export default function Transfers() {
                   borderWidth: 1,
                   borderColor: "#E4E8E3",
                   backgroundColor: "#FFFFFF",
-                  padding: viewMode === "card" ? 14 : 10,
+                  padding: 10,
                 }}
               >
                 <Pressable
@@ -947,12 +947,16 @@ export default function Transfers() {
                     }}
                   >
                     <View
-                      className="h-11 w-11 items-center justify-center rounded-xl bg-[#EEF5F0]"
-                      style={{ alignSelf: "flex-start" }}
+                      className="items-center justify-center rounded-xl bg-[#EEF5F0]"
+                      style={{
+                        alignSelf: "flex-start",
+                        width: viewMode === "card" ? 36 : 44,
+                        height: viewMode === "card" ? 36 : 44,
+                      }}
                     >
                       <Ionicons
                         name="swap-horizontal-outline"
-                        size={21}
+                        size={viewMode === "card" ? 18 : 21}
                         color="#315640"
                       />
                     </View>
@@ -961,7 +965,7 @@ export default function Transfers() {
                         minWidth: 0,
                         flex: 1,
                         marginLeft: viewMode === "card" ? 0 : 12,
-                        marginTop: viewMode === "card" ? 10 : 0,
+                        marginTop: viewMode === "card" ? 6 : 0,
                       }}
                     >
                       <Text
@@ -981,7 +985,7 @@ export default function Transfers() {
                       className="text-base font-extrabold text-[#315640]"
                       style={{
                         marginLeft: viewMode === "card" ? 0 : 8,
-                        marginTop: viewMode === "card" ? 8 : 0,
+                        marginTop: viewMode === "card" ? 4 : 0,
                         alignSelf:
                           viewMode === "card" ? "flex-start" : undefined,
                       }}
@@ -993,13 +997,13 @@ export default function Transfers() {
                   </View>
                   <View
                     style={{
-                      marginTop: 12,
-                      paddingTop: 10,
+                      marginTop: viewMode === "card" ? 8 : 12,
+                      paddingTop: 8,
                       borderTopWidth: 1,
                       borderTopColor: "#EEF1EE",
                       flexDirection: viewMode === "card" ? "column" : "row",
                       alignItems: viewMode === "card" ? "stretch" : "center",
-                      gap: 8,
+                      gap: 6,
                     }}
                   >
                     <View className="flex-row items-center">
@@ -1020,7 +1024,10 @@ export default function Transfers() {
                     </Text>
                   </View>
                 </Pressable>
-                <View className="mt-3 flex-row justify-end gap-1">
+                <View
+                  className="flex-row justify-end gap-1"
+                  style={{ marginTop: viewMode === "card" ? 8 : 12 }}
+                >
                   <Pressable
                     accessibilityRole="button"
                     accessibilityLabel={`View details for ${transfer.title || "transfer"}`}
@@ -1102,6 +1109,7 @@ export default function Transfers() {
         onPress={openAddTransfer}
         accessibilityLabel="Add transfer"
         accessibilityHint="Opens the new transfer form"
+        bottomOffset={42}
       />
 
       <Modal

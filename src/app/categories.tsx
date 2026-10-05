@@ -645,6 +645,7 @@ export default function Categories() {
         onPress={openAddModal}
         accessibilityLabel="Add category"
         accessibilityHint="Opens the new category form"
+        bottomOffset={42}
       />
 
       <Modal
