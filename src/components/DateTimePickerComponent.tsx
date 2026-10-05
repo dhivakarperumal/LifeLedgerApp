@@ -136,7 +136,7 @@ export function DateTimePickerComponent({
 
   return (
     <View className="w-full">
-      {label && mode !== "datetime" && (
+      {label && (
         <Text className="mb-2 text-xs font-bold text-[#46534B]">{label}</Text>
       )}
       {fields}
