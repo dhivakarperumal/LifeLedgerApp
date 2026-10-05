@@ -1027,7 +1027,10 @@ export default function Diary() {
                 >
                   {group.entries.map((entry, index) => {
                     const date = diaryDateParts(entry.entry_date);
-                    const tags = parseTags(entry.tags);
+                    const moodLabel = (entry.mood || "").trim().toLowerCase();
+                    const tags = parseTags(entry.tags).filter(
+                      (tag) => tag.trim().toLowerCase() !== moodLabel,
+                    );
                     const photoUrl = diaryImageUrl(entry);
                     const mood = moods.find((item) => item.name === entry.mood);
                     const moodTone =
