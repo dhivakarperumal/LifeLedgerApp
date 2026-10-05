@@ -85,6 +85,8 @@ const categoryIcons: Record<string, keyof typeof Ionicons.glyphMap> = {
   Other: "ellipsis-horizontal-outline",
 };
 
+let hasLoadedHomeOnce = false;
+
 function getTimeGreeting(hour: number) {
   if (hour < 5 || hour >= 21) return "Good night";
   if (hour < 12) return "Good morning";
@@ -221,7 +223,8 @@ export default function Index() {
   const [homeQuote, setHomeQuote] = useState<string>(HOME_QUOTES[0]);
 
   // Data states
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(!hasLoadedHomeOnce);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
   const [recentTransactions, setRecentTransactions] = useState<ExpenseItem[]>(
     [],
@@ -308,7 +311,7 @@ export default function Index() {
 
       const fetchData = async () => {
         try {
-          setIsLoading(true);
+          if (!hasLoadedHomeOnce) setIsLoading(true);
           const [
             expensesRes,
             memoriesRes,
@@ -532,7 +535,11 @@ export default function Index() {
         } catch (error) {
           console.error("Failed to fetch home data:", error);
         } finally {
-          if (isActive) setIsLoading(false);
+          if (isActive) {
+            hasLoadedHomeOnce = true;
+            setIsLoading(false);
+            setIsRefreshing(false);
+          }
         }
       };
 
@@ -591,8 +598,11 @@ export default function Index() {
           showsVerticalScrollIndicator={false}
           refreshControl={
             <RefreshControl
-              refreshing={isLoading}
-              onRefresh={() => setRefreshKey((current) => current + 1)}
+              refreshing={isRefreshing}
+              onRefresh={() => {
+                setIsRefreshing(true);
+                setRefreshKey((current) => current + 1);
+              }}
               colors={[Colors.primary]}
               tintColor={Colors.primary}
             />
