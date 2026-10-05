@@ -1,41 +1,41 @@
 import { Ionicons } from "@expo/vector-icons";
 import * as DocumentPicker from "expo-document-picker";
 import { useFocusEffect, useNavigation, useRouter } from "expo-router";
-import { useCallback, useLayoutEffect, useMemo, useState } from "react";
+import { useCallback, useLayoutEffect, useMemo, useRef, useState } from "react";
 import {
-    Alert,
-    LayoutAnimation,
-    Modal,
-    Pressable,
-    RefreshControl,
-    ScrollView,
-    Text,
-    TextInput,
-    View,
+  Alert,
+  LayoutAnimation,
+  Modal,
+  Pressable,
+  RefreshControl,
+  ScrollView,
+  Text,
+  TextInput,
+  View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import api, { getApiErrorMessage, logoutUser } from "../../api";
 import { AddButton } from "../../components/AddButton";
 import {
-    createDateRangeSelection,
-    isDateInRange,
-    type DateRangeSelection,
+  createDateRangeSelection,
+  isDateInRange,
+  type DateRangeSelection,
 } from "../../components/DateRangeFilter";
 import { DateTimePickerComponent } from "../../components/DateTimePickerComponent";
 import {
-    formatLocalDate,
-    formatLocalTime,
-    parseLocalDateTime,
+  formatLocalDate,
+  formatLocalTime,
+  parseLocalDateTime,
 } from "../../components/dateTimeUtils";
 import {
-    DEFAULT_FILTER_STATE,
-    type FilterState,
-    type SortOption,
-    type ViewModeOption,
+  DEFAULT_FILTER_STATE,
+  type FilterState,
+  type SortOption,
+  type ViewModeOption,
 } from "../../components/filters";
 import {
-    FormField,
-    formFieldStyles
+  FormField,
+  formFieldStyles
 } from "../../components/FormControls";
 import { GradientSafeAreaView as SafeAreaView } from "../../components/GradientSafeAreaView";
 import { PopupSelect } from "../../components/PopupSelect";
@@ -191,6 +191,8 @@ export default function Expenses() {
   const [viewMode, setViewMode] = useState<ViewModeOption>("card");
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const hasLoadedOnce = useRef(false);
   const [showSummaryCards, setShowSummaryCards] = useState(false);
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [isFilterSheetVisible, setIsFilterSheetVisible] = useState(false);
@@ -297,9 +299,13 @@ export default function Expenses() {
     router.replace("/auth/login");
   }, [router]);
 
-  const fetchAll = useCallback(async () => {
+  const fetchAll = useCallback(async (showRefreshIndicator = false) => {
     try {
-      setLoading(true);
+      if (!hasLoadedOnce.current) {
+        setLoading(true);
+      } else if (showRefreshIndicator) {
+        setRefreshing(true);
+      }
       const [expensesRes, statsRes, categoriesRes, transfersRes] =
         await Promise.all([
           api.get("/expenses"),
@@ -376,7 +382,9 @@ export default function Expenses() {
       setExpenses([]);
       setCategoryOptions(fallbackCategories);
     } finally {
+      hasLoadedOnce.current = true;
       setLoading(false);
+      setRefreshing(false);
     }
   }, [handleUnauthorized]);
 
@@ -727,8 +735,8 @@ export default function Expenses() {
           showsVerticalScrollIndicator={false}
           refreshControl={
             <RefreshControl
-              refreshing={loading}
-              onRefresh={() => void fetchAll()}
+              refreshing={refreshing}
+              onRefresh={() => void fetchAll(true)}
               colors={[Colors.primary]}
               tintColor={Colors.primary}
             />
