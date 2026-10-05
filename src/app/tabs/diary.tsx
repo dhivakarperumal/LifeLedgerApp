@@ -366,7 +366,7 @@ export default function Diary() {
   const [selectedFilter, setSelectedFilter] = useState<EntryFilter>("all");
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [selectedMood, setSelectedMood] = useState("all");
-  const [viewMode, setViewMode] = useState<ViewModeOption>("card");
+  const [viewMode, setViewMode] = useState<ViewModeOption>("table");
   const [editorVisible, setEditorVisible] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<number | null>(null);

@@ -85,13 +85,13 @@ function MoreMenuRow({
   return (
     <Pressable
       onPress={onPress}
-      className="mt-3 flex-row items-center rounded-2xl border border-[#E9EEF0] bg-white px-4 py-4"
+      className="mt-5 flex-row items-center rounded-3xl border border-[#E9EEF0] bg-white px-4 py-5"
       style={{
         shadowColor: "#000000",
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.04,
-        shadowRadius: 6,
-        elevation: 1,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.08,
+        shadowRadius: 8,
+        elevation: 2,
       }}
     >
       <View
@@ -147,9 +147,9 @@ export default function More() {
         paddingHorizontal: 18,
         paddingTop: 20,
         paddingBottom: 140,
-        backgroundColor: Colors.contentBackground,
+        backgroundColor: Colors.white,
       }}
-      style={{ flex: 1, backgroundColor: Colors.contentBackground }}
+      style={{ flex: 1, backgroundColor: Colors.white }}
     >
       <View className="mb-4 flex-row items-center justify-between">
         <View className="flex-row items-center">
@@ -224,7 +224,14 @@ export default function More() {
       <Pressable
         onPress={handleSignOut}
         disabled={isSigningOut}
-        className="mt-8 mb-4 flex-row items-center justify-center rounded-2xl border border-[#F0B7B7] bg-[#FBEAEA] px-5 py-4"
+        className="mt-8 mb-4 flex-row items-center justify-center rounded-3xl border border-[#F0B7B7] bg-white px-5 py-5"
+        style={{
+          shadowColor: "#000000",
+          shadowOffset: { width: 0, height: 2 },
+          shadowOpacity: 0.08,
+          shadowRadius: 8,
+          elevation: 2,
+        }}
         accessibilityRole="button"
         accessibilityLabel="Sign out"
         accessibilityState={{ disabled: isSigningOut }}
