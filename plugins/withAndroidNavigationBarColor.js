@@ -3,15 +3,24 @@ const { withAndroidStyles } = require("expo/config-plugins");
 module.exports = function withAndroidNavigationBarColor(config) {
   return withAndroidStyles(config, (config) => {
     const styles = config.modResults?.resources?.style ?? [];
-    const appTheme = styles.find((style) => style.$?.name === "AppTheme");
+    const appThemes = styles.filter((style) =>
+      ["AppTheme", "Theme.App.SplashScreen"].includes(style.$?.name),
+    );
 
-    if (!appTheme) {
+    if (!appThemes.length) {
       return config;
     }
 
-    const colors = [
+    const navigationBarItems = [
       {
         $: { name: "android:navigationBarColor", "tools:targetApi": "29" },
+        _: "#000000",
+      },
+      {
+        $: {
+          name: "android:navigationBarDividerColor",
+          "tools:targetApi": "28",
+        },
         _: "#000000",
       },
       {
@@ -21,16 +30,27 @@ module.exports = function withAndroidNavigationBarColor(config) {
         },
         _: "false",
       },
+      {
+        $: {
+          name: "android:enforceNavigationBarContrast",
+          "tools:targetApi": "29",
+        },
+        _: "false",
+      },
     ];
 
-    appTheme.item = [
-      ...(appTheme.item ?? []).filter(
-        (item) =>
-          item?.$?.name !== "android:navigationBarColor" &&
-          item?.$?.name !== "android:windowLightNavigationBar",
-      ),
-      ...colors,
-    ];
+    for (const theme of appThemes) {
+      theme.item = [
+        ...(theme.item ?? []).filter(
+          (item) =>
+            !navigationBarItems.some(
+              (navigationBarItem) =>
+                item?.$?.name === navigationBarItem.$.name,
+            ),
+        ),
+        ...navigationBarItems,
+      ];
+    }
 
     return config;
   });

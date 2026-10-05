@@ -1,11 +1,9 @@
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
-import { NavigationBar } from "expo-navigation-bar";
 import { Tabs } from "expo-router";
 import { useState } from "react";
 import {
     Image,
-    Platform,
     Pressable,
     StatusBar,
     Text,
@@ -43,8 +41,6 @@ export default function TabsLayout() {
         barStyle="light-content"
         backgroundColor={Colors.greenGradient[0]}
       />
-      {/* Set Android system navigation bar buttons to light (white) for black background */}
-      {Platform.OS === "android" && <NavigationBar style="dark" />}
       <Tabs
         screenOptions={{
           headerShown: true,

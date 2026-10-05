@@ -48,6 +48,14 @@
         }
       ],
       [
+        "expo-navigation-bar",
+        {
+          "enforceContrast": false,
+          "hidden": false,
+          "style": "light"
+        }
+      ],
+      [
         "./plugins/withAndroidNavigationBarColor.js"
       ],
       [

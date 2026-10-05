@@ -183,7 +183,7 @@ const styles = {
   },
   taglineText: {
     color: Colors.textPrimary,
-    fontSize: 14,
+    fontSize: 12,
     letterSpacing: 1.5,
   },
   taglineDot: {
