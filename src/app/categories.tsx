@@ -12,7 +12,6 @@ import {
     RefreshControl,
     ScrollView,
     Text,
-    TextInput,
     View,
     useWindowDimensions,
     type ViewStyle,
@@ -26,9 +25,15 @@ import api, {
     logoutUser,
 } from "../api";
 import { AddButton } from "../components/AddButton";
+import {
+  countActiveFilters,
+  DEFAULT_FILTER_STATE,
+  type FilterState,
+  type StatusOption,
+} from "../components/filters";
 import { FormInput, FormOption } from "../components/FormControls";
 import { GradientSafeAreaView as SafeAreaView } from "../components/GradientSafeAreaView";
-import { PopupSelect } from "../components/PopupSelect";
+import { SearchBar } from "../components/SearchBar";
 import { Colors } from "../constants/colors";
 
 type CategoryType =
@@ -146,7 +151,7 @@ export default function Categories() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState("All");
-  const [statusFilter, setStatusFilter] = useState("All");
+  const [statusFilter, setStatusFilter] = useState<StatusOption>("All");
   const [modalVisible, setModalVisible] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [saving, setSaving] = useState(false);
@@ -192,6 +197,20 @@ export default function Categories() {
       void fetchCategories();
     }, [fetchCategories]),
   );
+
+  const categoryFilterValues = useMemo<FilterState>(
+    () => ({
+      ...DEFAULT_FILTER_STATE,
+      status: statusFilter,
+      custom: { categoryType: typeFilter },
+    }),
+    [statusFilter, typeFilter],
+  );
+
+  const applyCategoryFilters = (filters: FilterState) => {
+    setStatusFilter(filters.status);
+    setTypeFilter(filters.custom?.categoryType || "All");
+  };
 
   const filteredCategories = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -476,57 +495,38 @@ export default function Categories() {
           />
         </View>
 
-        <View className="mb-4 flex-row items-center rounded-xl border border-[#E4E8E3] bg-white px-3">
-          <Ionicons name="search-outline" size={19} color="#87918A" />
-          <TextInput
-            accessibilityLabel="Search categories"
-            className="h-12 flex-1 px-3 text-sm text-[#25332C]"
-            placeholder="Search name or ID"
-            placeholderTextColor="#9AA39D"
-            value={search}
-            onChangeText={setSearch}
-          />
-          {!!search && (
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Clear search"
-              onPress={() => setSearch("")}
-            >
-              <Ionicons name="close-circle" size={19} color="#87918A" />
-            </Pressable>
-          )}
-        </View>
-
-        <PopupSelect
-          label="Filter by type"
-          placeholder="All types"
-          options={[
-            { label: "All types", value: "All" },
-            ...categoryTypes.map((type) => ({ label: type, value: type })),
-          ]}
-          value={typeFilter}
-          searchPlaceholder="Search category types"
-          onChange={setTypeFilter}
+        <SearchBar
+          value={search}
+          onChangeText={setSearch}
+          placeholder="Search name or ID"
+          activeFilterCount={
+            countActiveFilters(categoryFilterValues) +
+            (typeFilter === "All" ? 0 : 1)
+          }
+          filterSheet={{
+            currentFilters: categoryFilterValues,
+            onApply: applyCategoryFilters,
+            onReset: () => {
+              setTypeFilter("All");
+              setStatusFilter("All");
+            },
+            sections: ["status"],
+            additionalFilters: [
+              {
+                key: "categoryType",
+                label: "Category type",
+                options: [
+                  { label: "All types", value: "All" },
+                  ...categoryTypes.map((type) => ({
+                    label: type,
+                    value: type,
+                  })),
+                ],
+              },
+            ],
+          }}
+          style={{ marginBottom: 12 }}
         />
-
-        <View className="mb-3 flex-row gap-2">
-          {["All", "Active", "Inactive"].map((status) => {
-            const selected = statusFilter === status;
-            return (
-              <Pressable
-                key={status}
-                className={`rounded-lg px-3 py-2 ${selected ? "bg-[#E3ECE4]" : "bg-transparent"}`}
-                onPress={() => setStatusFilter(status)}
-              >
-                <Text
-                  className={`text-xs font-bold ${selected ? "text-[#315640]" : "text-[#7B8580]"}`}
-                >
-                  {status === "All" ? "All statuses" : status}
-                </Text>
-              </Pressable>
-            );
-          })}
-        </View>
 
         {loading ? (
           <View className="items-center py-16">
