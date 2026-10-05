@@ -1049,6 +1049,7 @@ export default function Diary() {
                         style={{
                           position: "relative",
                           width: viewMode === "card" ? "48%" : "100%",
+                          minWidth: 0,
                           flexDirection: viewMode === "card" ? "column" : "row",
                           alignItems:
                             viewMode === "card" ? "stretch" : "center",
@@ -1283,7 +1284,7 @@ export default function Diary() {
                             style={{
                               alignSelf: "flex-end",
                               maxWidth: "100%",
-                              marginRight: 18,
+                              marginRight: viewMode === "card" ? 0 : 18,
                               paddingHorizontal: 9,
                               paddingVertical: 5,
                               borderRadius: 16,

@@ -831,6 +831,7 @@ export default function Memories() {
                         accessibilityLabel={`View ${memory.title}`}
                         style={{
                           width: viewMode === "card" ? "48%" : "100%",
+                          minWidth: 0,
                           flexDirection: viewMode === "card" ? "column" : "row",
                           minHeight: viewMode === "card" ? 220 : 148,
                           overflow: "hidden",
@@ -943,6 +944,7 @@ export default function Memories() {
                               numberOfLines={1}
                               style={{
                                 flex: 1,
+                                minWidth: 0,
                                 color: Colors.textPrimary,
                                 fontSize: 16,
                                 fontWeight: "800",
@@ -1010,6 +1012,7 @@ export default function Memories() {
                                 color: Colors.textSecondary,
                                 fontSize: 12,
                                 marginLeft: 5,
+                                flexShrink: 1,
                               }}
                             >
                               {formatDateTime(memory.memory_date)}
@@ -1057,7 +1060,8 @@ export default function Memories() {
                                 <Text
                                   numberOfLines={1}
                                   style={{
-                                    maxWidth: 100,
+                                    maxWidth: "100%",
+                                    flexShrink: 1,
                                     color: Colors.forest,
                                     fontSize: 11,
                                     fontWeight: "600",

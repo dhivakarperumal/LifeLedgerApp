@@ -1156,9 +1156,11 @@ export default function Reports() {
               return (
                 <View
                   key={`${record._type}-${record.id}`}
-                  className={`mb-3 rounded-2xl border border-[#E4E8E3] bg-white p-4 ${viewMode === "grid" ? "w-[48%]" : "w-full"}`}
+                  className={`mb-3 min-w-0 rounded-2xl border border-[#E4E8E3] bg-white ${viewMode === "grid" ? "w-[48%] p-3" : "w-full p-4"}`}
                 >
-                  <View className="flex-row items-start justify-between gap-2">
+                  <View
+                    className={`gap-2 ${viewMode === "grid" ? "flex-col items-start" : "flex-row items-start justify-between"}`}
+                  >
                     <View className="min-w-0 flex-1">
                       <Text
                         className="text-sm font-bold text-[#293930]"
@@ -1168,7 +1170,7 @@ export default function Reports() {
                       </Text>
                       <Text
                         className="mt-1 text-xs font-medium text-[#818D84]"
-                        numberOfLines={1}
+                        numberOfLines={viewMode === "grid" ? 2 : 1}
                       >
                         {formatDate(record._date)} · {payment}
                       </Text>
@@ -1178,20 +1180,25 @@ export default function Reports() {
                     >
                       <Text
                         className={`text-[9px] font-bold ${isExpense ? "text-[#B64C45]" : "text-[#356B9A]"}`}
+                        numberOfLines={1}
                       >
                         {isExpense ? "Expense" : "Transfer"}
                       </Text>
                     </View>
                   </View>
-                  <View className="mt-3 flex-row items-center justify-between">
+                  <View
+                    className={`mt-3 gap-2 ${viewMode === "grid" ? "flex-col items-start" : "flex-row items-center justify-between"}`}
+                  >
                     <Text
                       className={`text-base font-extrabold ${isExpense ? "text-[#B64C45]" : "text-[#356B9A]"}`}
+                      numberOfLines={1}
+                      adjustsFontSizeToFit
                     >
                       {formatAmount(amount)}
                     </Text>
                     {record.category ? (
                       <Text
-                        className="max-w-[55%] rounded-lg bg-[#F1F3F0] px-2 py-1 text-[9px] font-bold text-[#68776D]"
+                        className={`rounded-lg bg-[#F1F3F0] px-2 py-1 text-[9px] font-bold text-[#68776D] ${viewMode === "grid" ? "max-w-full" : "max-w-[55%]"}`}
                         numberOfLines={1}
                       >
                         {record.category}
