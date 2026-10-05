@@ -732,6 +732,7 @@ export default function Memories() {
                 key: "mediaType",
                 label: "Media type",
                 options: memoryMediaFilterOptions,
+                presentation: "select",
               },
             ],
           }}
