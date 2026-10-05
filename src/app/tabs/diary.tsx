@@ -1892,7 +1892,7 @@ function AttachmentRow({
 
 const labelStyle = {
   marginBottom: 7,
-  color: Colors.sage,
+  color: "#4B5563",
   fontSize: 12,
   fontWeight: "700" as const,
   textTransform: "uppercase" as const,
