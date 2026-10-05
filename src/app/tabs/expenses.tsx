@@ -185,8 +185,7 @@ export default function Expenses() {
     totalTransfer: 0,
     recurring: 0,
   });
-  const [categoryOptions, setCategoryOptions] =
-    useState<string[]>(fallbackCategories);
+  const [categoryOptions, setCategoryOptions] = useState<string[]>(fallbackCategories);
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [dateRange, setDateRange] = useState<DateRangeSelection>(() =>
     createDateRangeSelection("All"),
@@ -385,7 +384,6 @@ export default function Expenses() {
         },
       );
       setCategoryOptions(acceptableCategories);
-      setSelectedCategory("All");
     } catch (error) {
       const status = (error as any)?.status || (error as any)?.response?.status;
       if (status === 401) {
