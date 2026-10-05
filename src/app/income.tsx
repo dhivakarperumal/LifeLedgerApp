@@ -224,11 +224,6 @@ function Metric({
         borderColor: palette.border,
         borderRadius: 27,
         backgroundColor: palette.background,
-        shadowColor: "#26352A",
-        shadowOffset: { width: 0, height: 8 },
-        shadowOpacity: 0.09,
-        shadowRadius: 18,
-        elevation: 5,
       }}
     >
       <Svg

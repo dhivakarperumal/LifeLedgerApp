@@ -494,6 +494,7 @@ export function FilterBottomSheet({
                         ""
                       }
                       options={filter.options}
+                        presentation={filter.presentation}
                       onChange={(value) =>
                         updateDraft({
                           custom: { ...draft.custom, [filter.key]: value },

@@ -999,58 +999,36 @@ export default function Expenses() {
                     key={String(expense.id)}
                     style={{
                       width: viewMode === "card" ? "48.5%" : "100%",
+                      minWidth: 0,
                       backgroundColor: "#FFFFFF",
-                      borderRadius: 14,
-                      padding: viewMode === "card" ? 10 : 16,
+                      borderRadius: 16,
+                      padding: viewMode === "card" ? 12 : 16,
                       marginBottom: 10,
                       flexDirection: viewMode === "card" ? "column" : "row",
                       alignItems: viewMode === "card" ? "stretch" : "center",
                       borderWidth: 1,
                       borderColor: "#E4E8E3",
-                      borderLeftWidth: viewMode === "card" ? 4 : 1,
-                      borderLeftColor:
-                        viewMode === "card" ? accent.color : "#E4E8E3",
                       shadowColor: "#000",
                       shadowOffset: { width: 0, height: 2 },
-                      shadowOpacity: 0.04,
-                      shadowRadius: 6,
-                      elevation: 2,
+                      shadowOpacity: viewMode === "card" ? 0 : 0.04,
+                      shadowRadius: viewMode === "card" ? 0 : 6,
+                      elevation: viewMode === "card" ? 0 : 2,
                     }}
                   >
-                    {viewMode === "card" && (
-                      <View
-                        style={{
-                          width: 36,
-                          height: 36,
-                          borderRadius: 13,
-                          backgroundColor: accent.bg,
-                          alignItems: "center",
-                          justifyContent: "center",
-                          alignSelf: "flex-start",
-                        }}
-                      >
-                        <Ionicons
-                          name="receipt-outline"
-                          size={18}
-                          color={accent.color}
-                        />
-                      </View>
-                    )}
-
                     {/* Info */}
                     <View
                       style={{
                         flex: 1,
                         minWidth: 0,
                         marginLeft: 0,
-                        marginTop: viewMode === "card" ? 6 : 0,
+                        marginTop: 0,
                       }}
                     >
                       <Text
                         style={{
-                          fontSize: viewMode === "card" ? 16 : 15,
+                          fontSize: 14,
                           fontWeight: "800",
-                          color: "#1E293B",
+                          color: "#293930",
                         }}
                         numberOfLines={viewMode === "card" ? 2 : 1}
                       >
@@ -1067,18 +1045,20 @@ export default function Expenses() {
                       >
                         <View
                           style={{
-                            backgroundColor: accent.bg,
+                            backgroundColor:
+                              viewMode === "card" ? "transparent" : accent.bg,
                             borderRadius: 6,
                             maxWidth: "100%",
-                            paddingHorizontal: 7,
-                            paddingVertical: 2,
+                            paddingHorizontal: viewMode === "card" ? 0 : 7,
+                            paddingVertical: viewMode === "card" ? 0 : 2,
                           }}
                         >
                           <Text
                             style={{
                               fontSize: 12,
                               fontWeight: "700",
-                              color: accent.color,
+                              color:
+                                viewMode === "card" ? "#818D84" : accent.color,
                             }}
                             numberOfLines={1}
                           >
@@ -1088,7 +1068,7 @@ export default function Expenses() {
                         <Text
                           style={{
                             fontSize: 11,
-                            color: "#94A3B8",
+                            color: "#7C8880",
                             flexShrink: 1,
                           }}
                           numberOfLines={1}
@@ -1126,8 +1106,8 @@ export default function Expenses() {
                         flexDirection: "column",
                         alignItems: viewMode === "card" ? "stretch" : "flex-end",
                         marginLeft: viewMode === "card" ? 0 : 10,
-                        marginTop: viewMode === "card" ? 6 : 0,
-                        paddingTop: viewMode === "card" ? 6 : 0,
+                        marginTop: viewMode === "card" ? 12 : 0,
+                        paddingTop: viewMode === "card" ? 12 : 0,
                         borderTopWidth: viewMode === "card" ? 1 : 0,
                         borderTopColor: "#EEF1EE",
                         gap: 6,
@@ -1135,9 +1115,9 @@ export default function Expenses() {
                     >
                       <Text
                         style={{
-                          fontSize: viewMode === "card" ? 17 : 15,
+                          fontSize: viewMode === "card" ? 14 : 15,
                           fontWeight: "800",
-                          color: "#EF4444",
+                          color: "#B64C45",
                         }}
                         numberOfLines={1}
                         adjustsFontSizeToFit

@@ -12,8 +12,8 @@ import {
     RefreshControl,
     ScrollView,
     Text,
-    View,
     useWindowDimensions,
+    View,
     type ViewStyle,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -26,10 +26,11 @@ import api, {
 } from "../api";
 import { AddButton } from "../components/AddButton";
 import {
-  countActiveFilters,
-  DEFAULT_FILTER_STATE,
-  type FilterState,
-  type StatusOption,
+    countActiveFilters,
+    DEFAULT_FILTER_STATE,
+    type FilterState,
+    type StatusOption,
+    type ViewModeOption,
 } from "../components/filters";
 import { FormInput, FormOption } from "../components/FormControls";
 import { GradientSafeAreaView as SafeAreaView } from "../components/GradientSafeAreaView";
@@ -152,6 +153,9 @@ export default function Categories() {
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState("All");
   const [statusFilter, setStatusFilter] = useState<StatusOption>("All");
+  const [viewMode, setViewMode] = useState<ViewModeOption>(
+    DEFAULT_FILTER_STATE.viewMode,
+  );
   const [modalVisible, setModalVisible] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [saving, setSaving] = useState(false);
@@ -202,14 +206,16 @@ export default function Categories() {
     () => ({
       ...DEFAULT_FILTER_STATE,
       status: statusFilter,
+      viewMode,
       custom: { categoryType: typeFilter },
     }),
-    [statusFilter, typeFilter],
+    [statusFilter, typeFilter, viewMode],
   );
 
   const applyCategoryFilters = (filters: FilterState) => {
     setStatusFilter(filters.status);
     setTypeFilter(filters.custom?.categoryType || "All");
+    setViewMode(filters.viewMode);
   };
 
   const filteredCategories = useMemo(() => {
@@ -509,12 +515,14 @@ export default function Categories() {
             onReset: () => {
               setTypeFilter("All");
               setStatusFilter("All");
+              setViewMode(DEFAULT_FILTER_STATE.viewMode);
             },
-            sections: ["status"],
+            sections: ["status", "viewMode"],
             additionalFilters: [
               {
                 key: "categoryType",
                 label: "Category type",
+                presentation: "select",
                 options: [
                   { label: "All types", value: "All" },
                   ...categoryTypes.map((type) => ({
@@ -546,7 +554,18 @@ export default function Categories() {
             </Text>
           </View>
         ) : (
-          <View className="gap-3">
+          <View
+            style={
+              viewMode === "card"
+                ? {
+                    flexDirection: "row",
+                    flexWrap: "wrap",
+                    justifyContent: "space-between",
+                    rowGap: 12,
+                  }
+                : { gap: 12 }
+            }
+          >
             {filteredCategories.map((category) => {
               const type = getCategoryType(category);
               const [typeBackground, typeColor] = getTypeColors(type);
@@ -555,36 +574,56 @@ export default function Categories() {
               return (
                 <View
                   key={category.catId || category.id}
-                  className="rounded-2xl border border-[#E4E8E3] bg-white p-4"
+                  className="min-w-0 rounded-2xl border border-[#E4E8E3] bg-white"
+                  style={{
+                    width: viewMode === "card" ? "48.5%" : "100%",
+                    padding: viewMode === "card" ? 12 : 16,
+                  }}
                 >
-                  <View className="flex-row items-start justify-between">
-                    <View className="mr-3 flex-1 flex-row items-center">
+                  <View
+                    className={`gap-2 ${viewMode === "card" ? "flex-col items-start" : "flex-row items-start justify-between"}`}
+                  >
+                    <View
+                      className={`min-w-0 flex-1 ${viewMode === "card" ? "flex-row items-center" : "mr-3 flex-row items-center"}`}
+                    >
                       {categoryImage ? (
                         <Image
                           source={{ uri: getCategoryImageUri(categoryImage) }}
-                          className="h-12 w-12 rounded-xl bg-[#F1F4EF]"
+                          className={`${viewMode === "card" ? "h-10 w-10" : "h-12 w-12"} rounded-xl bg-[#F1F4EF]`}
                         />
                       ) : (
-                        <View className="h-12 w-12 items-center justify-center rounded-xl bg-[#F1F4EF]">
+                        <View
+                          className={`${viewMode === "card" ? "h-10 w-10" : "h-12 w-12"} items-center justify-center rounded-xl bg-[#F1F4EF]`}
+                        >
                           <Ionicons name="image-outline" size={20} color="#87918A" />
                         </View>
                       )}
-                      <View className="ml-3 flex-1">
-                        <Text className="text-base font-bold text-[#25332C]">
+                      <View className="ml-3 min-w-0 flex-1">
+                        <Text
+                          className="text-base font-bold text-[#25332C]"
+                          numberOfLines={2}
+                        >
                           {category.name}
                         </Text>
-                        <Text className="mt-1 text-xs font-semibold text-[#8A948D]">
+                        <Text
+                          className="mt-1 text-xs font-semibold text-[#8A948D]"
+                          numberOfLines={1}
+                        >
                           {category.catId || "No ID"}
                         </Text>
                       </View>
                     </View>
                     <View
                       className="rounded-full px-2.5 py-1"
-                      style={{ backgroundColor: typeBackground }}
+                      style={{
+                        maxWidth: "100%",
+                        backgroundColor: typeBackground,
+                      }}
                     >
                       <Text
                         className="text-xs font-bold"
                         style={{ color: typeColor }}
+                        numberOfLines={1}
                       >
                         {type}
                       </Text>
@@ -596,7 +635,9 @@ export default function Categories() {
                   >
                     {category.description || "No description"}
                   </Text>
-                  <View className="mt-4 flex-row items-center justify-between border-t border-[#EEF0ED] pt-3">
+                  <View
+                    className={`mt-4 border-t border-[#EEF0ED] pt-3 ${viewMode === "card" ? "gap-2" : "flex-row items-center justify-between"}`}
+                  >
                     <View className="flex-row items-center">
                       <View
                         className={`mr-2 h-2 w-2 rounded-full ${active ? "bg-[#2B9A65]" : "bg-[#C68A42]"}`}
@@ -607,7 +648,10 @@ export default function Categories() {
                         {active ? "Active" : "Inactive"}
                       </Text>
                     </View>
-                    <View className="flex-row gap-2">
+                    <View
+                      className="flex-row gap-2"
+                      style={{ alignSelf: viewMode === "card" ? "flex-end" : undefined }}
+                    >
                       <Pressable
                         accessibilityRole="button"
                         accessibilityLabel={`Edit ${category.name}`}
