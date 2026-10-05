@@ -1,47 +1,47 @@
 import { Ionicons } from "@expo/vector-icons";
 import {
-    AudioModule,
-    RecordingPresets,
-    setAudioModeAsync,
-    useAudioRecorder,
+  AudioModule,
+  RecordingPresets,
+  setAudioModeAsync,
+  useAudioRecorder,
 } from "expo-audio";
 import * as DocumentPicker from "expo-document-picker";
 import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import { useCallback, useMemo, useState } from "react";
 import {
-    ActivityIndicator,
-    Alert,
-    Image,
-    Modal,
-    Pressable,
-    RefreshControl,
-    ScrollView,
-    Text,
-    View,
+  ActivityIndicator,
+  Alert,
+  Image,
+  Modal,
+  Pressable,
+  RefreshControl,
+  ScrollView,
+  Text,
+  View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import api, { API_BASE_URL, getApiErrorMessage, logoutUser } from "../../api";
 import { AddButton } from "../../components/AddButton";
 import {
-    createDateRangeSelection,
-    isDateInRange,
-    type DateRangeSelection,
+  createDateRangeSelection,
+  isDateInRange,
+  type DateRangeSelection,
 } from "../../components/DateRangeFilter";
 import { DateTimePickerComponent } from "../../components/DateTimePickerComponent";
 import {
-    formatLocalDateTime,
-    parseLocalDateTimeValue,
+  formatLocalDateTime,
+  parseLocalDateTimeValue,
 } from "../../components/dateTimeUtils";
 import {
-    countActiveFilters,
-    DEFAULT_FILTER_STATE,
-    type FilterState,
-    type ViewModeOption,
+  countActiveFilters,
+  DEFAULT_FILTER_STATE,
+  type FilterState,
+  type ViewModeOption,
 } from "../../components/filters";
 import {
-    FormField,
-    formFieldStyles,
-    FormOption
+  FormField,
+  formFieldStyles,
+  FormOption
 } from "../../components/FormControls";
 import { GradientSafeAreaView as SafeAreaView } from "../../components/GradientSafeAreaView";
 import { SearchBar } from "../../components/SearchBar";
@@ -212,6 +212,19 @@ function formatDate(value?: string) {
     day: "2-digit",
     month: "short",
     year: "numeric",
+  });
+}
+
+function formatDateTime(value?: string) {
+  if (!value) return "No date";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return date.toLocaleString("en-IN", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
   });
 }
 
@@ -999,7 +1012,7 @@ export default function Memories() {
                                 marginLeft: 5,
                               }}
                             >
-                              {formatDate(memory.memory_date)}
+                              {formatDateTime(memory.memory_date)}
                             </Text>
                           </View>
                           {memory.description ? (

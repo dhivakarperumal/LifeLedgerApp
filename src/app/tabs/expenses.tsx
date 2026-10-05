@@ -3,38 +3,38 @@ import * as DocumentPicker from "expo-document-picker";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useMemo, useState } from "react";
 import {
-  Alert,
-  Modal,
-  Pressable,
-  RefreshControl,
-  ScrollView,
-  Text,
-  View,
+    Alert,
+    Modal,
+    Pressable,
+    RefreshControl,
+    ScrollView,
+    Text,
+    View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import api, { getApiErrorMessage, logoutUser } from "../../api";
 import { AddButton } from "../../components/AddButton";
 import {
-  createDateRangeSelection,
-  isDateInRange,
-  type DateRangeSelection,
+    createDateRangeSelection,
+    isDateInRange,
+    type DateRangeSelection,
 } from "../../components/DateRangeFilter";
 import { DateTimePickerComponent } from "../../components/DateTimePickerComponent";
 import {
-  formatLocalDate,
-  formatLocalTime,
-  parseLocalDateTime,
+    formatLocalDate,
+    formatLocalTime,
+    parseLocalDateTime,
 } from "../../components/dateTimeUtils";
 import {
-  DEFAULT_FILTER_STATE,
-  type FilterState,
-  type SortOption,
-  type ViewModeOption,
+    DEFAULT_FILTER_STATE,
+    type FilterState,
+    type SortOption,
+    type ViewModeOption,
 } from "../../components/filters";
 import {
-  FormField,
-  FormOption,
-  formFieldStyles,
+    FormField,
+    FormOption,
+    formFieldStyles,
 } from "../../components/FormControls";
 import { GradientSafeAreaView as SafeAreaView } from "../../components/GradientSafeAreaView";
 import { SearchBar } from "../../components/SearchBar";
@@ -104,24 +104,6 @@ const categoryAccents: Record<string, { bg: string; color: string }> = {
   Other: { bg: "#F3F4F6", color: "#6B7280" },
 };
 
-const paymentMethods = [
-  "Cash",
-  "UPI",
-  "Bank Transfer",
-  "Card",
-  "Cheque",
-  "Other",
-];
-
-const paymentIcons: Record<string, keyof typeof Ionicons.glyphMap> = {
-  Cash: "cash-outline",
-  UPI: "phone-portrait-outline",
-  "Bank Transfer": "business-outline",
-  Card: "card-outline",
-  Cheque: "document-outline",
-  Other: "ellipsis-horizontal-outline",
-};
-
 function getCurrentDate() {
   const now = new Date();
   // Use local date instead of UTC to avoid timezone-related date mismatches
@@ -172,6 +154,221 @@ function getTransferBalance(transfer: TransferItem) {
   return Math.max(
     0,
     Number(transfer.amount || 0) - Number(transfer.total_expense || 0),
+  );
+}
+
+function CategorySelector({
+  value,
+  options,
+  onSelect,
+}: {
+  value: string;
+  options: string[];
+  onSelect: (value: string) => void;
+}) {
+  const [visible, setVisible] = useState(false);
+
+  return (
+    <>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="Select category"
+        onPress={() => setVisible(true)}
+        className="min-h-[50px] w-full flex-row items-center justify-between rounded-xl border border-[#E5E7EB] bg-white px-3.5 py-3"
+      >
+        <Text
+          className={`text-sm font-semibold ${value ? "text-[#25332C]" : "text-[#9AA39D]"}`}
+          numberOfLines={1}
+        >
+          {value || "Select Category"}
+        </Text>
+        <Ionicons name="chevron-down-outline" size={18} color="#667085" />
+      </Pressable>
+
+      <Modal
+        transparent
+        animationType="slide"
+        visible={visible}
+        onRequestClose={() => setVisible(false)}
+      >
+        <Pressable
+          className="flex-1 justify-end bg-black/40"
+          onPress={() => setVisible(false)}
+        >
+          <Pressable
+            onPress={(event) => event.stopPropagation()}
+            className="rounded-t-[26px] bg-white px-4 pb-8 pt-4"
+          >
+            <View className="mb-3 flex-row items-center justify-between">
+              <Text className="text-base font-bold text-[#25332C]">
+                Category
+              </Text>
+              <Pressable onPress={() => setVisible(false)} className="px-2 py-1">
+                <Text className="text-sm font-semibold text-[#71808A]">Close</Text>
+              </Pressable>
+            </View>
+
+            <ScrollView showsVerticalScrollIndicator={false} className="max-h-[56%]">
+              {options.map((option) => {
+                const selected = value === option;
+                return (
+                  <Pressable
+                    key={option}
+                    onPress={() => {
+                      onSelect(option);
+                      setVisible(false);
+                    }}
+                    className={`mb-2 flex-row items-center justify-between rounded-xl border px-3 py-3 ${
+                      selected
+                        ? "border-[#DDE9DF] bg-[#EEF6F0]"
+                        : "border-[#EEF2F5] bg-white"
+                    }`}
+                  >
+                    <Text
+                      className={`text-sm font-semibold ${
+                        selected ? "text-[#1F3C2F]" : "text-[#344054]"
+                      }`}
+                    >
+                      {option}
+                    </Text>
+                    {selected ? (
+                      <Ionicons name="checkmark" size={18} color="#315640" />
+                    ) : null}
+                  </Pressable>
+                );
+              })}
+            </ScrollView>
+          </Pressable>
+        </Pressable>
+      </Modal>
+    </>
+  );
+}
+
+function TransferAmountSelector({
+  selectedTransferId,
+  selectedAmount,
+  transfers,
+  onSelect,
+}: {
+  selectedTransferId: string;
+  selectedAmount: string;
+  transfers: TransferItem[];
+  onSelect: (transferId: string, amount: string) => void;
+}) {
+  const [visible, setVisible] = useState(false);
+  const options = [
+    { id: "", label: "No transfer", amount: "", disabled: false },
+    ...transfers.map((transfer) => {
+      const amount = getTransferBalance(transfer);
+      return {
+        id: String(transfer.id),
+        label: `${transfer.title || "Transfer"}`,
+        amount: String(amount),
+        disabled: amount <= 0,
+      };
+    }),
+  ];
+
+  const selectedOption = options.find((option) => option.id === selectedTransferId);
+
+  const displayValue = selectedOption && selectedOption.id
+    ? `${selectedOption.label} • ${formatAmount(selectedOption.amount)}`
+    : selectedTransferId
+      ? `Selected transfer • ${formatAmount(selectedAmount)}`
+      : "Select Transfer Amount";
+
+  return (
+    <>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="Select transfer amount"
+        onPress={() => setVisible(true)}
+        className="min-h-[50px] w-full flex-row items-center justify-between rounded-xl border border-[#E5E7EB] bg-white px-3.5 py-3"
+      >
+        <Text
+          className={`text-sm font-semibold ${selectedTransferId ? "text-[#25332C]" : "text-[#9AA39D]"}`}
+          numberOfLines={1}
+        >
+          {displayValue}
+        </Text>
+        <Ionicons name="chevron-down-outline" size={18} color="#667085" />
+      </Pressable>
+
+      <Modal
+        transparent
+        animationType="slide"
+        visible={visible}
+        onRequestClose={() => setVisible(false)}
+      >
+        <Pressable
+          className="flex-1 justify-end bg-black/40"
+          onPress={() => setVisible(false)}
+        >
+          <Pressable
+            onPress={(event) => event.stopPropagation()}
+            className="rounded-t-[26px] bg-white px-4 pb-8 pt-4"
+          >
+            <View className="mb-3 flex-row items-center justify-between">
+              <Text className="text-base font-bold text-[#25332C]">
+                Transfer Amount
+              </Text>
+              <Pressable onPress={() => setVisible(false)} className="px-2 py-1">
+                <Text className="text-sm font-semibold text-[#71808A]">Close</Text>
+              </Pressable>
+            </View>
+
+            <ScrollView showsVerticalScrollIndicator={false} className="max-h-[60%]">
+              {options.map((option) => {
+                const selected = option.id === selectedTransferId;
+                return (
+                  <Pressable
+                    key={option.id || "no-transfer"}
+                    onPress={() => {
+                      if (option.disabled) return;
+                      onSelect(option.id, option.amount);
+                      setVisible(false);
+                    }}
+                    disabled={option.disabled}
+                    className={`mb-2 flex-row items-center justify-between rounded-xl border px-3 py-3 ${
+                      selected
+                        ? "border-[#DDE9DF] bg-[#EEF6F0]"
+                        : option.disabled
+                          ? "border-[#F3F4F6] bg-[#F9FAFB] opacity-50"
+                          : "border-[#EEF2F5] bg-white"
+                    }`}
+                  >
+                    <View className="flex-1">
+                      <Text
+                        className={`text-sm font-semibold ${
+                          selected ? "text-[#1F3C2F]" : "text-[#344054]"
+                        }`}
+                      >
+                        {option.id ? option.label : "No transfer"}
+                      </Text>
+                      {!option.id ? null : (
+                        <Text className="mt-1 text-xs text-[#667085]">
+                          {option.disabled
+                            ? "Unavailable"
+                            : `Available: ${formatAmount(option.amount)}`}
+                        </Text>
+                      )}
+                    </View>
+                    {!option.id ? null : selected ? (
+                      <Ionicons name="checkmark" size={18} color="#315640" />
+                    ) : option.disabled ? (
+                      <Text className="text-[10px] font-bold uppercase text-[#98A2B3]">
+                        Full
+                      </Text>
+                    ) : null}
+                  </Pressable>
+                );
+              })}
+            </ScrollView>
+          </Pressable>
+        </Pressable>
+      </Modal>
+    </>
   );
 }
 
@@ -422,6 +619,29 @@ export default function Expenses() {
     setAttachment(null);
   };
 
+  const applyTransferSelection = (transferId: string, useFullBalance = true) => {
+    const selectedTransfer = transfers.find(
+      (transfer) => String(transfer.id) === String(transferId),
+    );
+    if (!selectedTransfer) {
+      setForm((current) => ({
+        ...current,
+        transfer_id: transferId,
+        transfer_amount: useFullBalance ? "" : current.transfer_amount,
+      }));
+      return;
+    }
+
+    setCustomTransferAmount(false);
+    setForm((current) => ({
+      ...current,
+      transfer_id: String(selectedTransfer.id),
+      transfer_amount: useFullBalance
+        ? String(getTransferBalance(selectedTransfer))
+        : current.transfer_amount,
+    }));
+  };
+
   const pickAttachment = async () => {
     try {
       const result = await DocumentPicker.getDocumentAsync({
@@ -455,6 +675,11 @@ export default function Expenses() {
       return;
     }
 
+    if (!form.payment_method.trim()) {
+      Alert.alert("Payment Type required", "Please select a payment type.");
+      return;
+    }
+
     const isTravel = isTravelCategory(form.category);
     if (isTravel && (!form.from.trim() || !form.to.trim())) {
       Alert.alert(
@@ -464,7 +689,7 @@ export default function Expenses() {
       return;
     }
 
-    if (customTransferAmount && form.transfer_id) {
+    if (form.transfer_id) {
       const selectedTransfer = transfers.find(
         (transfer) => String(transfer.id) === form.transfer_id,
       );
@@ -473,13 +698,13 @@ export default function Expenses() {
         : 0;
       const selectedAmount = Number(form.transfer_amount);
       if (!selectedTransfer || !Number.isFinite(selectedAmount) || selectedAmount <= 0) {
-        Alert.alert("Transfer amount required", "Enter a valid amount to use from the selected transfer.");
+        Alert.alert("Transfer amount required", "Select a valid available transfer amount.");
         return;
       }
       if (selectedAmount > transferBalance) {
         Alert.alert(
           "Transfer amount too high",
-          `Enter an amount up to ${formatAmount(transferBalance)}.`,
+          `Choose an amount up to ${formatAmount(transferBalance)}.`,
         );
         return;
       }
@@ -1077,7 +1302,7 @@ export default function Expenses() {
               borderTopRightRadius: 30,
               paddingHorizontal: 20,
               paddingTop: 10,
-              paddingBottom: insets.bottom + 20,
+              paddingBottom: insets.bottom + 8,
               maxHeight: "92%",
             }}
           >
@@ -1148,207 +1373,21 @@ export default function Expenses() {
               />
 
               <View style={{ marginBottom: 16 }}>
-                <View
-                  style={{
-                    flexDirection: "row",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    marginBottom: 8,
+                <Text className="mb-2 text-xs font-bold text-[#46534B]">
+                  Transfer Amount
+                </Text>
+                <TransferAmountSelector
+                  selectedTransferId={form.transfer_id}
+                  selectedAmount={form.transfer_amount}
+                  transfers={transfers}
+                  onSelect={(transferId, amount) => {
+                    setForm((current) => ({
+                      ...current,
+                      transfer_id: transferId,
+                      transfer_amount: amount,
+                    }));
                   }}
-                >
-                  <ModalSectionLabel label="TRANSFER AMOUNT (₹)" />
-                  <Pressable
-                    onPress={() => {
-                      setManualTransfer((current) => !current);
-                      setCustomTransferAmount(false);
-                      setForm((current) => ({
-                        ...current,
-                        transfer_id: "",
-                        transfer_amount: "",
-                      }));
-                    }}
-                    hitSlop={8}
-                  >
-                    <Text
-                      style={{
-                        color: Colors.primary,
-                        fontSize: 12,
-                        fontWeight: "700",
-                      }}
-                    >
-                      {manualTransfer ? "Select from list" : "Enter manually"}
-                    </Text>
-                  </Pressable>
-                </View>
-
-                {manualTransfer ? (
-                  <FormField
-                    label="Manual transfer amount (₹)"
-                    value={form.transfer_amount}
-                    onChangeText={(text) =>
-                      setForm((current) => ({
-                        ...current,
-                        transfer_amount: text,
-                        transfer_id: "",
-                      }))
-                    }
-                    placeholder="0.00"
-                    keyboardType="decimal-pad"
-                  />
-                ) : (
-                  <ScrollView
-                    horizontal
-                    showsHorizontalScrollIndicator={false}
-                    contentContainerStyle={{ gap: 8, paddingBottom: 2 }}
-                  >
-                    <FormOption
-                      selected={!form.transfer_id}
-                      onPress={() =>
-                        {
-                          setCustomTransferAmount(false);
-                          setForm((current) => ({
-                            ...current,
-                            transfer_id: "",
-                            transfer_amount: "",
-                          }));
-                        }
-                      }
-                      style={{
-                        minHeight: 48,
-                        paddingHorizontal: 12,
-                        borderRadius: 12,
-                        backgroundColor: !form.transfer_id
-                          ? "#F0FDF4"
-                          : "#F8FAFC",
-                        justifyContent: "center",
-                      }}
-                    >
-                      <Text style={{ color: "#334155", fontWeight: "600" }}>
-                        No transfer
-                      </Text>
-                    </FormOption>
-                    {transfers.map((transfer) => {
-                      const balance = getTransferBalance(transfer);
-                      const selected =
-                        String(form.transfer_id) === String(transfer.id);
-                      return (
-                        <FormOption
-                          key={String(transfer.id)}
-                          selected={selected}
-                          disabled={balance <= 0}
-                          onPress={() => {
-                            setCustomTransferAmount(false);
-                            setForm((current) => ({
-                              ...current,
-                              transfer_id: String(transfer.id),
-                              transfer_amount: String(balance),
-                            }));
-                          }}
-                          style={{
-                            minHeight: 48,
-                            paddingHorizontal: 12,
-                            borderRadius: 12,
-                            backgroundColor: selected ? "#F0FDF4" : "#F8FAFC",
-                            justifyContent: "center",
-                            opacity: balance <= 0 ? 0.45 : 1,
-                          }}
-                        >
-                          <Text
-                            numberOfLines={1}
-                            style={{
-                              maxWidth: 150,
-                              color: "#334155",
-                              fontSize: 12,
-                              fontWeight: "700",
-                            }}
-                          >
-                            {transfer.title || "Transfer"}
-                          </Text>
-                          <Text style={{ color: "#64748B", fontSize: 11 }}>
-                            {formatAmount(balance)} left
-                          </Text>
-                        </FormOption>
-                      );
-                    })}
-                  </ScrollView>
-                )}
-                {!manualTransfer && form.transfer_id ? (
-                  <View style={{ marginTop: 10 }}>
-                    <ModalSectionLabel label="AMOUNT TO USE" />
-                    <View style={{ flexDirection: "row", gap: 8 }}>
-                      <FormOption
-                        selected={!customTransferAmount}
-                        onPress={() => {
-                          setCustomTransferAmount(false);
-                          const selectedTransfer = transfers.find(
-                            (transfer) =>
-                              String(transfer.id) === form.transfer_id,
-                          );
-                          if (selectedTransfer) {
-                            setForm((current) => ({
-                              ...current,
-                              transfer_amount: String(
-                                getTransferBalance(selectedTransfer),
-                              ),
-                            }));
-                          }
-                        }}
-                        style={{
-                          flex: 1,
-                          minHeight: 44,
-                          justifyContent: "center",
-                          alignItems: "center",
-                          borderRadius: 12,
-                          backgroundColor: !customTransferAmount
-                            ? "#F0FDF4"
-                            : "#F8FAFC",
-                        }}
-                      >
-                        <Text style={{ color: "#334155", fontWeight: "700" }}>
-                          Full balance
-                        </Text>
-                      </FormOption>
-                      <FormOption
-                        selected={customTransferAmount}
-                        onPress={() => {
-                          setCustomTransferAmount(true);
-                          setForm((current) => ({
-                            ...current,
-                            transfer_amount: "",
-                          }));
-                        }}
-                        style={{
-                          flex: 1,
-                          minHeight: 44,
-                          justifyContent: "center",
-                          alignItems: "center",
-                          borderRadius: 12,
-                          backgroundColor: customTransferAmount
-                            ? "#F0FDF4"
-                            : "#F8FAFC",
-                        }}
-                      >
-                        <Text style={{ color: "#334155", fontWeight: "700" }}>
-                          Custom amount
-                        </Text>
-                      </FormOption>
-                    </View>
-                    {customTransferAmount ? (
-                      <FormField
-                        label="Custom amount from transfer (₹)"
-                        value={form.transfer_amount}
-                        onChangeText={(text) =>
-                          setForm((current) => ({
-                            ...current,
-                            transfer_amount: text,
-                          }))
-                        }
-                        placeholder="0.00"
-                        keyboardType="decimal-pad"
-                      />
-                    ) : null}
-                  </View>
-                ) : null}
+                />
               </View>
 
               {Number(form.transfer_amount) > 0 ? (
@@ -1466,52 +1505,22 @@ export default function Expenses() {
                 </View>
               ) : null}
 
-              {/* Category picker */}
               <View style={{ marginBottom: 16 }}>
-                <ModalSectionLabel label="CATEGORY" />
-                <ScrollView
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
-                  contentContainerStyle={{ gap: 8 }}
-                >
-                  {categoryOptions.map((item) => {
-                    const selected = form.category === item;
-                    return (
-                      <FormOption
-                        key={item}
-                        selected={selected}
-                        onPress={() =>
-                          setForm((current) => ({
-                            ...current,
-                            category: item,
-                            from: isTravelCategory(item)
-                              ? current.from
-                              : "",
-                            to: isTravelCategory(item)
-                              ? current.to
-                              : "",
-                          }))
-                        }
-                        style={{
-                          paddingHorizontal: 14,
-                          paddingVertical: 8,
-                          borderRadius: 12,
-                          backgroundColor: selected ? "#1B4332" : "#F8FAFC",
-                        }}
-                      >
-                        <Text
-                          style={{
-                            color: selected ? "#FFFFFF" : "#374151",
-                            fontWeight: selected ? "700" : "600",
-                            fontSize: 13,
-                          }}
-                        >
-                          {item}
-                        </Text>
-                      </FormOption>
-                    );
-                  })}
-                </ScrollView>
+                <Text className="mb-2 text-xs font-bold text-[#46534B]">
+                  Category
+                </Text>
+                <CategorySelector
+                  value={form.category}
+                  options={categoryOptions}
+                  onSelect={(item) =>
+                    setForm((current) => ({
+                      ...current,
+                      category: item,
+                      from: isTravelCategory(item) ? current.from : "",
+                      to: isTravelCategory(item) ? current.to : "",
+                    }))
+                  }
+                />
               </View>
 
               {isTravelCategory(form.category) ? (
@@ -1571,55 +1580,6 @@ export default function Expenses() {
                   label="Date & Time"
                   placeholder="Select date and time"
                 />
-              </View>
-
-              {/* Payment method */}
-              <View style={{ marginBottom: 16 }}>
-                <ModalSectionLabel label="PAYMENT METHOD" />
-                <View
-                  style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}
-                >
-                  {paymentMethods.map((method) => {
-                    const selected = form.payment_method === method;
-                    const icon = paymentIcons[method] || "card-outline";
-                    return (
-                      <FormOption
-                        key={method}
-                        selected={selected}
-                        onPress={() =>
-                          setForm((current) => ({
-                            ...current,
-                            payment_method: method,
-                          }))
-                        }
-                        style={{
-                          paddingHorizontal: 12,
-                          paddingVertical: 8,
-                          borderRadius: 12,
-                          backgroundColor: selected ? "#F0FDF4" : "#F8FAFC",
-                          flexDirection: "row",
-                          alignItems: "center",
-                          gap: 5,
-                        }}
-                      >
-                        <Ionicons
-                          name={icon}
-                          size={13}
-                          color={selected ? "#2D6A4F" : "#94A3B8"}
-                        />
-                        <Text
-                          style={{
-                            color: selected ? "#1B4332" : "#374151",
-                            fontWeight: selected ? "700" : "500",
-                            fontSize: 13,
-                          }}
-                        >
-                          {method}
-                        </Text>
-                      </FormOption>
-                    );
-                  })}
-                </View>
               </View>
 
               <FormField

@@ -441,8 +441,8 @@ export default function MemoryDetails() {
           {memory.memory_date ? (
             <InfoItem
               icon="calendar-outline"
-              label="Date"
-              value={formatDate(memory.memory_date)}
+              label="Date & time"
+              value={formatDateTime(memory.memory_date)}
             />
           ) : null}
           {memory.location ? (
