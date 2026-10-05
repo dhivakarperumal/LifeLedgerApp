@@ -28,6 +28,7 @@ import api, {
 import { AddButton } from "../components/AddButton";
 import { FormInput, FormOption } from "../components/FormControls";
 import { GradientSafeAreaView as SafeAreaView } from "../components/GradientSafeAreaView";
+import { PopupSelect } from "../components/PopupSelect";
 import { Colors } from "../constants/colors";
 
 type CategoryType =
@@ -496,28 +497,17 @@ export default function Categories() {
           )}
         </View>
 
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={{ gap: 8, paddingBottom: 14 }}
-        >
-          {["All", ...categoryTypes].map((type) => {
-            const selected = typeFilter === type;
-            return (
-              <Pressable
-                key={type}
-                className={`rounded-full border px-3.5 py-2 ${selected ? "border-[#315640] bg-[#315640]" : "border-[#E0E5DF] bg-white"}`}
-                onPress={() => setTypeFilter(type)}
-              >
-                <Text
-                  className={`text-xs font-bold ${selected ? "text-white" : "text-[#637068]"}`}
-                >
-                  {type === "All" ? "All types" : type}
-                </Text>
-              </Pressable>
-            );
-          })}
-        </ScrollView>
+        <PopupSelect
+          label="Filter by type"
+          placeholder="All types"
+          options={[
+            { label: "All types", value: "All" },
+            ...categoryTypes.map((type) => ({ label: type, value: type })),
+          ]}
+          value={typeFilter}
+          searchPlaceholder="Search category types"
+          onChange={setTypeFilter}
+        />
 
         <View className="mb-3 flex-row gap-2">
           {["All", "Active", "Inactive"].map((status) => {

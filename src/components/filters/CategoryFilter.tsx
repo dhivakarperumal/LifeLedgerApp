@@ -7,7 +7,14 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { useFonts } from "expo-font";
 import { useState } from "react";
-import { Modal, Pressable, ScrollView, Text, View } from "react-native";
+import {
+    Modal,
+    Pressable,
+    ScrollView,
+    Text,
+    TextInput,
+    View,
+} from "react-native";
 import { Colors } from "../../constants/colors";
 
 const poppinsFontMap = {
@@ -38,15 +45,21 @@ export function CategoryFilter({
 }: Props) {
   const [fontsLoaded] = useFonts(poppinsFontMap);
   const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState("");
 
   const values = value ? value.split(",") : [];
-  const selectedOptions = categories
+  const normalizedCategories = categories
     .map((category) =>
       typeof category === "string"
         ? { value: category, label: category }
         : category,
-    )
+    );
+  const selectedOptions = normalizedCategories
     .filter((category) => values.includes(category.value));
+  const query = search.trim().toLowerCase();
+  const filteredCategories = normalizedCategories.filter((category) =>
+    `${category.label} ${category.value}`.toLowerCase().includes(query),
+  );
   const selected =
     selectedOptions.length === 0
       ? "All Categories"
@@ -54,11 +67,19 @@ export function CategoryFilter({
         ? `${selectedOptions.length} selected`
         : selectedOptions[0].label;
 
+  const closePicker = () => {
+    setOpen(false);
+    setSearch("");
+  };
+
   return (
     <View>
       {/* Trigger */}
       <Pressable
-        onPress={() => setOpen(true)}
+        onPress={() => {
+          setSearch("");
+          setOpen(true);
+        }}
         accessibilityRole="button"
         accessibilityLabel={`Category: ${selected}`}
         style={{
@@ -122,10 +143,10 @@ export function CategoryFilter({
         visible={open}
         transparent
         animationType="fade"
-        onRequestClose={() => setOpen(false)}
+        onRequestClose={closePicker}
       >
         <Pressable
-          onPress={() => setOpen(false)}
+          onPress={closePicker}
           style={{
             flex: 1,
             backgroundColor: "rgba(19,34,25,0.44)",
@@ -168,7 +189,7 @@ export function CategoryFilter({
                 >
                   Select Category
                 </Text>
-                <Pressable onPress={() => setOpen(false)} hitSlop={8}>
+                <Pressable onPress={closePicker} hitSlop={8}>
                   <Ionicons
                     name="close"
                     size={21}
@@ -177,16 +198,71 @@ export function CategoryFilter({
                 </Pressable>
               </View>
 
+              <View
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  marginHorizontal: 16,
+                  marginBottom: 8,
+                  paddingHorizontal: 12,
+                  borderWidth: 1,
+                  borderColor: Colors.border,
+                  borderRadius: 12,
+                  backgroundColor: "#F8FAF7",
+                }}
+              >
+                <Ionicons
+                  name="search-outline"
+                  size={17}
+                  color={Colors.textSecondary}
+                />
+                <TextInput
+                  accessibilityLabel="Search categories in filter"
+                  value={search}
+                  onChangeText={setSearch}
+                  placeholder="Search categories"
+                  placeholderTextColor={Colors.textSecondary}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  style={{
+                    flex: 1,
+                    height: 44,
+                    marginLeft: 8,
+                    color: Colors.textPrimary,
+                    fontSize: 14,
+                  }}
+                />
+                {search ? (
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel="Clear category search"
+                    onPress={() => setSearch("")}
+                    hitSlop={8}
+                  >
+                    <Ionicons
+                      name="close-circle"
+                      size={18}
+                      color={Colors.textSecondary}
+                    />
+                  </Pressable>
+                ) : null}
+              </View>
+
               <ScrollView showsVerticalScrollIndicator={false}>
                 {/* All Categories */}
                 {[
                   { value: "", label: "All Categories" },
-                  ...categories.map((category) =>
-                    typeof category === "string"
-                      ? { value: category, label: category }
-                      : category,
-                  ),
+                  ...filteredCategories,
                 ].map((category) => {
+                  if (
+                    category.value !== "" &&
+                    query &&
+                    !`${category.label} ${category.value}`
+                      .toLowerCase()
+                      .includes(query)
+                  ) {
+                    return null;
+                  }
                   const isSelected =
                     category.value === ""
                       ? values.length === 0
@@ -197,7 +273,7 @@ export function CategoryFilter({
                       onPress={() => {
                         if (category.value === "") {
                           onChange("");
-                          setOpen(false);
+                          closePicker();
                           return;
                         }
                         if (multiSelect) {
@@ -207,7 +283,7 @@ export function CategoryFilter({
                           onChange(nextValues.join(","));
                         } else {
                           onChange(category.value);
-                          setOpen(false);
+                          closePicker();
                         }
                       }}
                       style={{
@@ -243,6 +319,13 @@ export function CategoryFilter({
                     </Pressable>
                   );
                 })}
+                {query && filteredCategories.length === 0 ? (
+                  <View style={{ alignItems: "center", paddingVertical: 20 }}>
+                    <Text style={{ color: Colors.textSecondary, fontSize: 13 }}>
+                      No categories found
+                    </Text>
+                  </View>
+                ) : null}
               </ScrollView>
             </View>
           </Pressable>

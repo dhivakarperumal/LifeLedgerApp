@@ -9,6 +9,7 @@ import {
     RefreshControl,
     ScrollView,
     Text,
+    TextInput,
     View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -190,6 +191,7 @@ export default function Expenses() {
   const [loading, setLoading] = useState(true);
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [isFilterSheetVisible, setIsFilterSheetVisible] = useState(false);
+  const [categoryFilterSearch, setCategoryFilterSearch] = useState("");
   const [formErrors, setFormErrors] = useState({
     category: "",
     payment_method: "",
@@ -1066,8 +1068,36 @@ export default function Expenses() {
               </Pressable>
             </View>
 
+            <View className="mb-3 flex-row items-center rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] px-3">
+              <Ionicons name="search-outline" size={17} color="#667085" />
+              <TextInput
+                accessibilityLabel="Search categories in filter"
+                value={categoryFilterSearch}
+                onChangeText={setCategoryFilterSearch}
+                placeholder="Search categories"
+                placeholderTextColor="#98A2B3"
+                className="h-11 flex-1 px-2 text-sm text-[#25332C]"
+                autoCapitalize="none"
+                autoCorrect={false}
+              />
+              {categoryFilterSearch ? (
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Clear category search"
+                  onPress={() => setCategoryFilterSearch("")}
+                  hitSlop={8}
+                >
+                  <Ionicons name="close-circle" size={18} color="#667085" />
+                </Pressable>
+              ) : null}
+            </View>
+
             <ScrollView showsVerticalScrollIndicator={false}>
-              {["All", ...categoryOptions].map((item) => {
+              {["All", ...categoryOptions]
+                .filter((item) =>
+                  item.toLowerCase().includes(categoryFilterSearch.trim().toLowerCase()),
+                )
+                .map((item) => {
                 const active = selectedCategory === item;
                 return (
                   <Pressable
@@ -1104,6 +1134,16 @@ export default function Expenses() {
                   </Pressable>
                 );
               })}
+              {categoryFilterSearch &&
+              !["All", ...categoryOptions].some((item) =>
+                item
+                  .toLowerCase()
+                  .includes(categoryFilterSearch.trim().toLowerCase()),
+              ) ? (
+                <Text className="py-6 text-center text-sm text-[#667085]">
+                  No categories found
+                </Text>
+              ) : null}
             </ScrollView>
           </View>
         </View>
