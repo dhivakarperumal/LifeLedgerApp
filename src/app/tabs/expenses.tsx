@@ -694,8 +694,8 @@ export default function Expenses() {
         {/* ── Hero Header ── */}
         <View
           style={{
-            paddingTop: insets.top + 16,
-            paddingBottom: 28,
+            paddingTop: showSummaryCards ? 8 : 0,
+            paddingBottom: showSummaryCards ? 28 : 0,
             paddingHorizontal: 20,
           }}
         >
