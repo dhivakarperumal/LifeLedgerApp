@@ -816,6 +816,7 @@ export default function Expenses() {
               onApply: applyExpenseFilters,
               categories: categoryOptions,
               sections: ["date", "category", "amount", "sort", "viewMode"],
+              initialExpandedSections: ["viewMode"],
             }}
             style={{ marginBottom: 12 }}
           />
@@ -1062,6 +1063,41 @@ export default function Expenses() {
                           >
                             {expense.location}
                           </Text>
+                        </View>
+                      ) : null}
+                      {expense.from?.trim() || expense.to?.trim() ? (
+                        <View
+                          style={{
+                            flexDirection: "row",
+                            alignItems: "flex-start",
+                            marginTop: 6,
+                            gap: 5,
+                          }}
+                        >
+                          <Ionicons
+                            name="navigate-outline"
+                            size={12}
+                            color="#64748B"
+                            style={{ marginTop: 2 }}
+                          />
+                          <View style={{ flex: 1, gap: 2 }}>
+                            {expense.from?.trim() ? (
+                              <Text
+                                style={{ fontSize: 11, color: "#64748B" }}
+                                numberOfLines={viewMode === "card" ? 2 : 1}
+                              >
+                                From: {expense.from.trim()}
+                              </Text>
+                            ) : null}
+                            {expense.to?.trim() ? (
+                              <Text
+                                style={{ fontSize: 11, color: "#64748B" }}
+                                numberOfLines={viewMode === "card" ? 2 : 1}
+                              >
+                                To: {expense.to.trim()}
+                              </Text>
+                            ) : null}
+                          </View>
                         </View>
                       ) : null}
                     </View>
@@ -1544,6 +1580,27 @@ export default function Expenses() {
                 }}
               />
 
+              {isTravelCategory(form.category) ? (
+                <View style={{ marginBottom: 4 }}>
+                  <FormField
+                    label="From location"
+                    value={form.from}
+                    onChangeText={(text) =>
+                      setForm((current) => ({ ...current, from: text }))
+                    }
+                    placeholder="Starting point"
+                  />
+                  <FormField
+                    label="To location"
+                    value={form.to}
+                    onChangeText={(text) =>
+                      setForm((current) => ({ ...current, to: text }))
+                    }
+                    placeholder="Destination"
+                  />
+                </View>
+              ) : null}
+
               <PopupSelect
                 label="Payment Type"
                 placeholder="Select Payment Type"
@@ -1555,35 +1612,6 @@ export default function Expenses() {
                   setForm((current) => ({ ...current, payment_method: value }));
                 }}
               />
-
-              {isTravelCategory(form.category) ? (
-                <View>
-                  <FormField
-                    label="From"
-                    labelColor="#000000"
-                    value={form.from}
-                    onChangeText={(text) =>
-                      setForm((current) => ({
-                        ...current,
-                        from: text,
-                      }))
-                    }
-                    placeholder="Starting point"
-                  />
-                  <FormField
-                    label="To"
-                    labelColor="#000000"
-                    value={form.to}
-                    onChangeText={(text) =>
-                      setForm((current) => ({
-                        ...current,
-                        to: text,
-                      }))
-                    }
-                    placeholder="Destination"
-                  />
-                </View>
-              ) : null}
 
               <FormField
                 label="Location"
