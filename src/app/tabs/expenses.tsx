@@ -33,10 +33,10 @@ import {
 } from "../../components/filters";
 import {
     FormField,
-    FormOption,
-    formFieldStyles,
+    formFieldStyles
 } from "../../components/FormControls";
 import { GradientSafeAreaView as SafeAreaView } from "../../components/GradientSafeAreaView";
+import { PopupSelect } from "../../components/PopupSelect";
 import { SearchBar } from "../../components/SearchBar";
 import { Colors } from "../../constants/colors";
 
@@ -93,6 +93,14 @@ const fallbackCategories = [
   "Other",
 ];
 
+const paymentTypeOptions = [
+  "Cash",
+  "UPI",
+  "Card",
+  "Bank Transfer",
+  "Wallet",
+];
+
 /** Category accent colours used by expense badges */
 const categoryAccents: Record<string, { bg: string; color: string }> = {
   Food: { bg: "#FFF0E6", color: "#F97316" },
@@ -136,10 +144,6 @@ function formatDate(dateString?: string) {
   });
 }
 
-function isTravelCategory(category: string) {
-  return category.trim().toLowerCase().includes("travel");
-}
-
 function getTransferRows(data: any): TransferItem[] {
   if (Array.isArray(data)) return data;
   if (Array.isArray(data?.transfers)) return data.transfers;
@@ -157,219 +161,8 @@ function getTransferBalance(transfer: TransferItem) {
   );
 }
 
-function CategorySelector({
-  value,
-  options,
-  onSelect,
-}: {
-  value: string;
-  options: string[];
-  onSelect: (value: string) => void;
-}) {
-  const [visible, setVisible] = useState(false);
-
-  return (
-    <>
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel="Select category"
-        onPress={() => setVisible(true)}
-        className="min-h-[50px] w-full flex-row items-center justify-between rounded-xl border border-[#E5E7EB] bg-white px-3.5 py-3"
-      >
-        <Text
-          className={`text-sm font-semibold ${value ? "text-[#25332C]" : "text-[#9AA39D]"}`}
-          numberOfLines={1}
-        >
-          {value || "Select Category"}
-        </Text>
-        <Ionicons name="chevron-down-outline" size={18} color="#667085" />
-      </Pressable>
-
-      <Modal
-        transparent
-        animationType="slide"
-        visible={visible}
-        onRequestClose={() => setVisible(false)}
-      >
-        <Pressable
-          className="flex-1 justify-end bg-black/40"
-          onPress={() => setVisible(false)}
-        >
-          <Pressable
-            onPress={(event) => event.stopPropagation()}
-            className="rounded-t-[26px] bg-white px-4 pb-8 pt-4"
-          >
-            <View className="mb-3 flex-row items-center justify-between">
-              <Text className="text-base font-bold text-[#25332C]">
-                Category
-              </Text>
-              <Pressable onPress={() => setVisible(false)} className="px-2 py-1">
-                <Text className="text-sm font-semibold text-[#71808A]">Close</Text>
-              </Pressable>
-            </View>
-
-            <ScrollView showsVerticalScrollIndicator={false} className="max-h-[56%]">
-              {options.map((option) => {
-                const selected = value === option;
-                return (
-                  <Pressable
-                    key={option}
-                    onPress={() => {
-                      onSelect(option);
-                      setVisible(false);
-                    }}
-                    className={`mb-2 flex-row items-center justify-between rounded-xl border px-3 py-3 ${
-                      selected
-                        ? "border-[#DDE9DF] bg-[#EEF6F0]"
-                        : "border-[#EEF2F5] bg-white"
-                    }`}
-                  >
-                    <Text
-                      className={`text-sm font-semibold ${
-                        selected ? "text-[#1F3C2F]" : "text-[#344054]"
-                      }`}
-                    >
-                      {option}
-                    </Text>
-                    {selected ? (
-                      <Ionicons name="checkmark" size={18} color="#315640" />
-                    ) : null}
-                  </Pressable>
-                );
-              })}
-            </ScrollView>
-          </Pressable>
-        </Pressable>
-      </Modal>
-    </>
-  );
-}
-
-function TransferAmountSelector({
-  selectedTransferId,
-  selectedAmount,
-  transfers,
-  onSelect,
-}: {
-  selectedTransferId: string;
-  selectedAmount: string;
-  transfers: TransferItem[];
-  onSelect: (transferId: string, amount: string) => void;
-}) {
-  const [visible, setVisible] = useState(false);
-  const options = [
-    { id: "", label: "No transfer", amount: "", disabled: false },
-    ...transfers.map((transfer) => {
-      const amount = getTransferBalance(transfer);
-      return {
-        id: String(transfer.id),
-        label: `${transfer.title || "Transfer"}`,
-        amount: String(amount),
-        disabled: amount <= 0,
-      };
-    }),
-  ];
-
-  const selectedOption = options.find((option) => option.id === selectedTransferId);
-
-  const displayValue = selectedOption && selectedOption.id
-    ? `${selectedOption.label} • ${formatAmount(selectedOption.amount)}`
-    : selectedTransferId
-      ? `Selected transfer • ${formatAmount(selectedAmount)}`
-      : "Select Transfer Amount";
-
-  return (
-    <>
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel="Select transfer amount"
-        onPress={() => setVisible(true)}
-        className="min-h-[50px] w-full flex-row items-center justify-between rounded-xl border border-[#E5E7EB] bg-white px-3.5 py-3"
-      >
-        <Text
-          className={`text-sm font-semibold ${selectedTransferId ? "text-[#25332C]" : "text-[#9AA39D]"}`}
-          numberOfLines={1}
-        >
-          {displayValue}
-        </Text>
-        <Ionicons name="chevron-down-outline" size={18} color="#667085" />
-      </Pressable>
-
-      <Modal
-        transparent
-        animationType="slide"
-        visible={visible}
-        onRequestClose={() => setVisible(false)}
-      >
-        <Pressable
-          className="flex-1 justify-end bg-black/40"
-          onPress={() => setVisible(false)}
-        >
-          <Pressable
-            onPress={(event) => event.stopPropagation()}
-            className="rounded-t-[26px] bg-white px-4 pb-8 pt-4"
-          >
-            <View className="mb-3 flex-row items-center justify-between">
-              <Text className="text-base font-bold text-[#25332C]">
-                Transfer Amount
-              </Text>
-              <Pressable onPress={() => setVisible(false)} className="px-2 py-1">
-                <Text className="text-sm font-semibold text-[#71808A]">Close</Text>
-              </Pressable>
-            </View>
-
-            <ScrollView showsVerticalScrollIndicator={false} className="max-h-[60%]">
-              {options.map((option) => {
-                const selected = option.id === selectedTransferId;
-                return (
-                  <Pressable
-                    key={option.id || "no-transfer"}
-                    onPress={() => {
-                      if (option.disabled) return;
-                      onSelect(option.id, option.amount);
-                      setVisible(false);
-                    }}
-                    disabled={option.disabled}
-                    className={`mb-2 flex-row items-center justify-between rounded-xl border px-3 py-3 ${
-                      selected
-                        ? "border-[#DDE9DF] bg-[#EEF6F0]"
-                        : option.disabled
-                          ? "border-[#F3F4F6] bg-[#F9FAFB] opacity-50"
-                          : "border-[#EEF2F5] bg-white"
-                    }`}
-                  >
-                    <View className="flex-1">
-                      <Text
-                        className={`text-sm font-semibold ${
-                          selected ? "text-[#1F3C2F]" : "text-[#344054]"
-                        }`}
-                      >
-                        {option.id ? option.label : "No transfer"}
-                      </Text>
-                      {!option.id ? null : (
-                        <Text className="mt-1 text-xs text-[#667085]">
-                          {option.disabled
-                            ? "Unavailable"
-                            : `Available: ${formatAmount(option.amount)}`}
-                        </Text>
-                      )}
-                    </View>
-                    {!option.id ? null : selected ? (
-                      <Ionicons name="checkmark" size={18} color="#315640" />
-                    ) : option.disabled ? (
-                      <Text className="text-[10px] font-bold uppercase text-[#98A2B3]">
-                        Full
-                      </Text>
-                    ) : null}
-                  </Pressable>
-                );
-              })}
-            </ScrollView>
-          </Pressable>
-        </Pressable>
-      </Modal>
-    </>
-  );
+function isTravelCategory(category: string) {
+  return category.trim().toLowerCase().includes("travel");
 }
 
 export default function Expenses() {
@@ -397,6 +190,11 @@ export default function Expenses() {
   const [loading, setLoading] = useState(true);
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [isFilterSheetVisible, setIsFilterSheetVisible] = useState(false);
+  const [formErrors, setFormErrors] = useState({
+    category: "",
+    payment_method: "",
+    transfer_amount: "",
+  });
   const [saving, setSaving] = useState(false);
   const [manualTransfer, setManualTransfer] = useState(false);
   const [customTransferAmount, setCustomTransferAmount] = useState(false);
@@ -427,6 +225,22 @@ export default function Expenses() {
       viewMode,
     }),
     [dateRange, selectedCategory, amountMin, amountMax, sort, viewMode],
+  );
+
+  const transferAmountOptions = useMemo(
+    () => [
+      { label: "No transfer", value: "", description: "" },
+      ...transfers.map((transfer) => {
+        const amount = getTransferBalance(transfer);
+        return {
+          label: `${transfer.title || "Transfer"} • ${formatAmount(amount)}`,
+          value: String(transfer.id),
+          description: amount > 0 ? `Available: ${formatAmount(amount)}` : "Unavailable",
+          disabled: amount <= 0,
+        };
+      }),
+    ],
+    [transfers],
   );
 
   const applyExpenseFilters = (filters: FilterState) => {
@@ -667,6 +481,16 @@ export default function Expenses() {
   };
 
   const handleCreateExpense = async () => {
+    const nextErrors = {
+      category: !form.category.trim() ? "Please select a category." : "",
+      payment_method: !form.payment_method.trim()
+        ? "Please select a payment type."
+        : "",
+      transfer_amount: "",
+    };
+
+    setFormErrors(nextErrors);
+
     if (!form.title.trim() || !form.expense_amount || !form.category.trim() || !form.date.trim()) {
       Alert.alert(
         "Error",
@@ -698,10 +522,14 @@ export default function Expenses() {
         : 0;
       const selectedAmount = Number(form.transfer_amount);
       if (!selectedTransfer || !Number.isFinite(selectedAmount) || selectedAmount <= 0) {
+        nextErrors.transfer_amount = "Select a valid available transfer amount.";
+        setFormErrors(nextErrors);
         Alert.alert("Transfer amount required", "Select a valid available transfer amount.");
         return;
       }
       if (selectedAmount > transferBalance) {
+        nextErrors.transfer_amount = `Choose an amount up to ${formatAmount(transferBalance)}.`;
+        setFormErrors(nextErrors);
         Alert.alert(
           "Transfer amount too high",
           `Choose an amount up to ${formatAmount(transferBalance)}.`,
@@ -1302,7 +1130,7 @@ export default function Expenses() {
               borderTopRightRadius: 30,
               paddingHorizontal: 20,
               paddingTop: 10,
-              paddingBottom: insets.bottom + 8,
+              paddingBottom: insets.bottom + 4,
               maxHeight: "92%",
             }}
           >
@@ -1372,23 +1200,27 @@ export default function Expenses() {
                 keyboardType="decimal-pad"
               />
 
-              <View style={{ marginBottom: 16 }}>
-                <Text className="mb-2 text-xs font-bold text-[#46534B]">
-                  Transfer Amount
-                </Text>
-                <TransferAmountSelector
-                  selectedTransferId={form.transfer_id}
-                  selectedAmount={form.transfer_amount}
-                  transfers={transfers}
-                  onSelect={(transferId, amount) => {
-                    setForm((current) => ({
-                      ...current,
-                      transfer_id: transferId,
-                      transfer_amount: amount,
-                    }));
-                  }}
-                />
-              </View>
+              <PopupSelect
+                label="Transfer Amount"
+                placeholder="Select Transfer Amount"
+                options={transferAmountOptions}
+                value={form.transfer_id}
+                error={formErrors.transfer_amount}
+                onChange={(transferId) => {
+                  const selectedTransfer = transfers.find(
+                    (transfer) => String(transfer.id) === transferId,
+                  );
+
+                  setFormErrors((current) => ({ ...current, transfer_amount: "" }));
+                  setForm((current) => ({
+                    ...current,
+                    transfer_id: transferId,
+                    transfer_amount: selectedTransfer
+                      ? String(getTransferBalance(selectedTransfer))
+                      : "",
+                  }));
+                }}
+              />
 
               {Number(form.transfer_amount) > 0 ? (
                 <View
@@ -1505,23 +1337,34 @@ export default function Expenses() {
                 </View>
               ) : null}
 
-              <View style={{ marginBottom: 16 }}>
-                <Text className="mb-2 text-xs font-bold text-[#46534B]">
-                  Category
-                </Text>
-                <CategorySelector
-                  value={form.category}
-                  options={categoryOptions}
-                  onSelect={(item) =>
-                    setForm((current) => ({
-                      ...current,
-                      category: item,
-                      from: isTravelCategory(item) ? current.from : "",
-                      to: isTravelCategory(item) ? current.to : "",
-                    }))
-                  }
-                />
-              </View>
+              <PopupSelect
+                label="Category"
+                placeholder="Select Category"
+                options={categoryOptions}
+                value={form.category}
+                error={formErrors.category}
+                onChange={(item) => {
+                  setFormErrors((current) => ({ ...current, category: "" }));
+                  setForm((current) => ({
+                    ...current,
+                    category: item,
+                    from: isTravelCategory(item) ? current.from : "",
+                    to: isTravelCategory(item) ? current.to : "",
+                  }));
+                }}
+              />
+
+              <PopupSelect
+                label="Payment Type"
+                placeholder="Select Payment Type"
+                options={paymentTypeOptions}
+                value={form.payment_method}
+                error={formErrors.payment_method}
+                onChange={(value) => {
+                  setFormErrors((current) => ({ ...current, payment_method: "" }));
+                  setForm((current) => ({ ...current, payment_method: value }));
+                }}
+              />
 
               {isTravelCategory(form.category) ? (
                 <View>

@@ -1,53 +1,54 @@
 import { Ionicons } from "@expo/vector-icons";
 import {
-    AudioModule,
-    RecordingPresets,
-    setAudioModeAsync,
-    useAudioRecorder,
+  AudioModule,
+  RecordingPresets,
+  setAudioModeAsync,
+  useAudioRecorder,
 } from "expo-audio";
 import * as DocumentPicker from "expo-document-picker";
 import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import {
-    useCallback,
-    useEffect,
-    useEffectEvent,
-    useMemo,
-    useState,
+  useCallback,
+  useEffect,
+  useEffectEvent,
+  useMemo,
+  useState,
 } from "react";
 import {
-    ActivityIndicator,
-    Alert,
-    Image,
-    Modal,
-    Pressable,
-    RefreshControl,
-    ScrollView,
-    Text,
-    View,
+  ActivityIndicator,
+  Alert,
+  Image,
+  Modal,
+  Pressable,
+  RefreshControl,
+  ScrollView,
+  Text,
+  View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import api, { API_BASE_URL, getApiErrorMessage, logoutUser } from "../../api";
 import { AddButton } from "../../components/AddButton";
 import {
-    createDateRangeSelection,
-    isDateInRange,
-    type DateRangeSelection,
+  createDateRangeSelection,
+  isDateInRange,
+  type DateRangeSelection,
 } from "../../components/DateRangeFilter";
 import { DateTimePickerComponent } from "../../components/DateTimePickerComponent";
 import {
-    formatLocalDate,
-    formatLocalTime,
-    parseLocalDate,
-    parseLocalDateTime,
+  formatLocalDate,
+  formatLocalTime,
+  parseLocalDate,
+  parseLocalDateTime,
 } from "../../components/dateTimeUtils";
 import {
-    countActiveFilters,
-    DEFAULT_FILTER_STATE,
-    type FilterState,
-    type ViewModeOption,
+  countActiveFilters,
+  DEFAULT_FILTER_STATE,
+  type FilterState,
+  type ViewModeOption,
 } from "../../components/filters";
 import { FormInput, FormOption } from "../../components/FormControls";
 import { GradientSafeAreaView as SafeAreaView } from "../../components/GradientSafeAreaView";
+import { PopupSelect } from "../../components/PopupSelect";
 import { SearchBar } from "../../components/SearchBar";
 import { Colors } from "../../constants/colors";
 
@@ -1528,41 +1529,17 @@ export default function Diary() {
                 })}
               </ScrollView>
 
-              <Text style={labelStyle}>Category</Text>
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={{ gap: 7, paddingBottom: 13 }}
-              >
-                {categories.map((category) => {
-                  const active = form.category_id === String(category.id);
-                  return (
-                    <FormOption
-                      key={String(category.id)}
-                      selected={active}
-                      onPress={() =>
-                        updateForm("category_id", String(category.id))
-                      }
-                      style={{
-                        paddingHorizontal: 12,
-                        paddingVertical: 8,
-                        borderRadius: 13,
-                        backgroundColor: active ? "#E6F1E9" : "#F5F7F5",
-                      }}
-                    >
-                      <Text
-                        style={{
-                          color: Colors.forest,
-                          fontSize: 13,
-                          fontWeight: "600",
-                        }}
-                      >
-                        {category.name}
-                      </Text>
-                    </FormOption>
-                  );
-                })}
-              </ScrollView>
+              <PopupSelect
+                label="Category"
+                placeholder="Select Category"
+                options={categories.map((category) => ({
+                  value: String(category.id),
+                  label: category.name,
+                }))}
+                value={form.category_id}
+                loading={loading && categories.length === 0}
+                onChange={(value) => updateForm("category_id", value)}
+              />
 
               <FormField
                 label="Location"

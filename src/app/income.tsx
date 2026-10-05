@@ -35,6 +35,7 @@ import {
 } from "../components/filters";
 import { FormInput, FormOption } from "../components/FormControls";
 import { GradientSafeAreaView as SafeAreaView } from "../components/GradientSafeAreaView";
+import { PopupSelect } from "../components/PopupSelect";
 import { SearchBar } from "../components/SearchBar";
 import { Colors } from "../constants/colors";
 
@@ -1223,37 +1224,18 @@ export default function Income() {
                 </View>
               </View>
 
-              <Text className="mb-1.5 text-xs font-bold text-[#46534B]">
-                Category
-              </Text>
-              <FormInput
-                className="mb-2 rounded-xl bg-white px-4 py-3 text-sm text-[#25332C]"
-                placeholder="Choose or enter a category"
+              <PopupSelect
+                label="Category"
+                placeholder="Select Category"
+                options={
+                  form.category && !incomeCategories.includes(form.category)
+                    ? [...incomeCategories, form.category]
+                    : incomeCategories
+                }
                 value={form.category}
-                onChangeText={(value) => updateForm("category", value)}
+                loading={loading && incomeCategories.length === 0}
+                onChange={(value) => updateForm("category", value)}
               />
-              {incomeCategories.length > 0 && (
-                <ScrollView
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
-                  contentContainerStyle={{ gap: 7, paddingBottom: 14 }}
-                >
-                  {incomeCategories.map((category) => (
-                    <FormOption
-                      key={category}
-                      selected={form.category === category}
-                      className={`rounded-full px-3 py-2 ${form.category === category ? "bg-[#315640]" : "bg-white"}`}
-                      onPress={() => updateForm("category", category)}
-                    >
-                      <Text
-                        className={`text-xs font-bold ${form.category === category ? "text-white" : "text-[#637068]"}`}
-                      >
-                        {category}
-                      </Text>
-                    </FormOption>
-                  ))}
-                </ScrollView>
-              )}
 
               <Text className="mb-2 text-xs font-bold text-[#46534B]">
                 Payment method

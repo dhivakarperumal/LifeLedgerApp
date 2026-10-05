@@ -41,9 +41,9 @@ import {
 import {
   FormField,
   formFieldStyles,
-  FormOption
 } from "../../components/FormControls";
 import { GradientSafeAreaView as SafeAreaView } from "../../components/GradientSafeAreaView";
+import { PopupSelect } from "../../components/PopupSelect";
 import { SearchBar } from "../../components/SearchBar";
 import { Colors } from "../../constants/colors";
 
@@ -1191,35 +1191,17 @@ export default function Memories() {
                 placeholder="What do you want to remember?"
                 multiline
               />
-              <Text style={formFieldStyles.label}>Category</Text>
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={{ gap: 8, paddingBottom: 14 }}
-              >
-                {categories.map((category) => {
-                  const selected = form.category_id === String(category.id);
-                  return (
-                    <FormOption
-                      key={String(category.id)}
-                      selected={selected}
-                      onPress={() =>
-                        updateForm("category_id", String(category.id))
-                      }
-                      style={{
-                        paddingHorizontal: 12,
-                        paddingVertical: 8,
-                        borderRadius: 14,
-                        backgroundColor: selected ? "#E5F1E9" : "#F4F6F4",
-                      }}
-                    >
-                      <Text style={{ color: Colors.forest, fontWeight: "600" }}>
-                        {category.name}
-                      </Text>
-                    </FormOption>
-                  );
-                })}
-              </ScrollView>
+              <PopupSelect
+                label="Category"
+                placeholder="Select Category"
+                options={categories.map((category) => ({
+                  value: String(category.id),
+                  label: category.name,
+                }))}
+                value={form.category_id}
+                loading={loading && categories.length === 0}
+                onChange={(value) => updateForm("category_id", value)}
+              />
               <DateTimePickerComponent
                 mode="datetime"
                 value={parseLocalDateTimeValue(form.memory_date)}
