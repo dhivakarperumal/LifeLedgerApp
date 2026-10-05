@@ -884,6 +884,7 @@ export default function Diary() {
                   value: filter,
                   label: entryFilterLabels[filter],
                 })),
+                presentation: "select",
               },
               {
                 key: "mood",
@@ -895,6 +896,7 @@ export default function Diary() {
                     label: `${mood.emoji} ${mood.name}`,
                   })),
                 ],
+                presentation: "select",
               },
             ],
           }}
