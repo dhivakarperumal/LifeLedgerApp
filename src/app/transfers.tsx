@@ -940,15 +940,30 @@ export default function Transfers() {
                   accessibilityLabel={`View details for ${transfer.title || "transfer"}`}
                   onPress={() => setSelectedTransfer(transfer)}
                 >
-                  <View className="flex-row items-center">
-                    <View className="h-11 w-11 items-center justify-center rounded-xl bg-[#EEF5F0]">
+                  <View
+                    style={{
+                      flexDirection: viewMode === "card" ? "column" : "row",
+                      alignItems: viewMode === "card" ? "stretch" : "center",
+                    }}
+                  >
+                    <View
+                      className="h-11 w-11 items-center justify-center rounded-xl bg-[#EEF5F0]"
+                      style={{ alignSelf: "flex-start" }}
+                    >
                       <Ionicons
                         name="swap-horizontal-outline"
                         size={21}
                         color="#315640"
                       />
                     </View>
-                    <View className="ml-3 min-w-0 flex-1">
+                    <View
+                      style={{
+                        minWidth: 0,
+                        flex: 1,
+                        marginLeft: viewMode === "card" ? 0 : 12,
+                        marginTop: viewMode === "card" ? 10 : 0,
+                      }}
+                    >
                       <Text
                         className="text-sm font-bold text-[#293930]"
                         numberOfLines={1}
@@ -963,14 +978,30 @@ export default function Transfers() {
                       </Text>
                     </View>
                     <Text
-                      className="ml-2 text-base font-extrabold text-[#315640]"
+                      className="text-base font-extrabold text-[#315640]"
+                      style={{
+                        marginLeft: viewMode === "card" ? 0 : 8,
+                        marginTop: viewMode === "card" ? 8 : 0,
+                        alignSelf:
+                          viewMode === "card" ? "flex-start" : undefined,
+                      }}
                       numberOfLines={1}
                       adjustsFontSizeToFit
                     >
                       {formatAmount(transfer.amount)}
                     </Text>
                   </View>
-                  <View className="mt-3 flex-row items-center justify-between border-t border-[#EEF1EE] pt-3">
+                  <View
+                    style={{
+                      marginTop: 12,
+                      paddingTop: 10,
+                      borderTopWidth: 1,
+                      borderTopColor: "#EEF1EE",
+                      flexDirection: viewMode === "card" ? "column" : "row",
+                      alignItems: viewMode === "card" ? "stretch" : "center",
+                      gap: 8,
+                    }}
+                  >
                     <View className="flex-row items-center">
                       <Ionicons
                         name="calendar-outline"
@@ -981,28 +1012,28 @@ export default function Transfers() {
                         {formatDate(transfer.transfer_date)}
                       </Text>
                     </View>
-                    <Text className="text-xs font-medium text-[#6F7B73]">
+                    <Text
+                      className="text-xs font-medium text-[#6F7B73]"
+                      numberOfLines={1}
+                    >
                       {transfer.payment_method || "-"}
                     </Text>
-                    <View className="flex-row items-center">
-                      <Text className="text-xs font-bold text-[#315640]">
-                        View details
-                      </Text>
-                      <Ionicons
-                        name="chevron-forward"
-                        size={14}
-                        color="#315640"
-                        style={{ marginLeft: 3 }}
-                      />
-                    </View>
                   </View>
                 </Pressable>
-                <View className="mt-3 flex-row justify-end gap-2">
+                <View className="mt-3 flex-row justify-end gap-1">
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={`View details for ${transfer.title || "transfer"}`}
+                    onPress={() => setSelectedTransfer(transfer)}
+                    className="h-8 w-8 items-center justify-center rounded-lg bg-[#EEF5F0]"
+                  >
+                    <Ionicons name="eye-outline" size={16} color="#315640" />
+                  </Pressable>
                   <Pressable
                     accessibilityRole="button"
                     accessibilityLabel={`Edit ${transfer.title || "transfer"}`}
                     onPress={() => openEditTransfer(transfer)}
-                    className="h-9 w-9 items-center justify-center rounded-lg bg-[#EEF5F0]"
+                    className="h-8 w-8 items-center justify-center rounded-lg bg-[#EEF5F0]"
                   >
                     <Ionicons name="create-outline" size={17} color="#315640" />
                   </Pressable>
@@ -1011,7 +1042,7 @@ export default function Transfers() {
                     accessibilityLabel={`Delete ${transfer.title || "transfer"}`}
                     disabled={deletingId === transfer.id}
                     onPress={() => deleteTransfer(transfer)}
-                    className="h-9 w-9 items-center justify-center rounded-lg bg-[#FFF1EF]"
+                    className="h-8 w-8 items-center justify-center rounded-lg bg-[#FFF1EF]"
                   >
                     <Ionicons
                       name={deletingId === transfer.id ? "hourglass-outline" : "trash-outline"}

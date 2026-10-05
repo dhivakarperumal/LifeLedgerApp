@@ -1069,6 +1069,7 @@ export default function Expenses() {
                           style={{
                             backgroundColor: accent.bg,
                             borderRadius: 6,
+                            maxWidth: "100%",
                             paddingHorizontal: 7,
                             paddingVertical: 2,
                           }}
@@ -1085,7 +1086,11 @@ export default function Expenses() {
                           </Text>
                         </View>
                         <Text
-                          style={{ fontSize: 11, color: "#94A3B8" }}
+                          style={{
+                            fontSize: 11,
+                            color: "#94A3B8",
+                            flexShrink: 1,
+                          }}
                           numberOfLines={1}
                         >
                           {formatDate(expense.expense_date)}
@@ -1118,10 +1123,8 @@ export default function Expenses() {
                     {/* Amount and expense actions */}
                     <View
                       style={{
-                        flexDirection: viewMode === "card" ? "row" : "column",
-                        alignItems: "flex-end",
-                        justifyContent:
-                          viewMode === "card" ? "space-between" : undefined,
+                        flexDirection: "column",
+                        alignItems: viewMode === "card" ? "stretch" : "flex-end",
                         marginLeft: viewMode === "card" ? 0 : 10,
                         marginTop: viewMode === "card" ? 10 : 0,
                         paddingTop: viewMode === "card" ? 10 : 0,
@@ -1143,7 +1146,14 @@ export default function Expenses() {
                           expense.expense_amount ?? expense.amount ?? 0,
                         )}
                       </Text>
-                      <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                      <View
+                        style={{
+                          flexDirection: "row",
+                          alignItems: "center",
+                          justifyContent: "flex-end",
+                          gap: 6,
+                        }}
+                      >
                         <Pressable
                           accessibilityRole="button"
                           accessibilityLabel={`Edit ${expense.title || "expense"}`}
