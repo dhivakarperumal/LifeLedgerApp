@@ -378,8 +378,9 @@ export default function Reports() {
       amountMax,
       sort,
       viewMode: viewMode === "grid" ? "card" : "table",
+      custom: { paymentMethod: paymentFilter },
     }),
-    [dateRange, categoryFilter, amountMin, amountMax, sort, viewMode],
+    [dateRange, categoryFilter, amountMin, amountMax, sort, viewMode, paymentFilter],
   );
 
   const applyReportFilters = (filters: FilterState) => {
@@ -389,6 +390,7 @@ export default function Reports() {
     setAmountMax(filters.amountMax);
     setSort(filters.sort);
     setViewMode(filters.viewMode === "card" ? "grid" : "list");
+    setPaymentFilter(filters.custom?.paymentMethod || "All");
     setCurrentPage(1);
   };
 
@@ -620,6 +622,7 @@ export default function Reports() {
     setAmountMin("");
     setAmountMax("");
     setSort(DEFAULT_FILTER_STATE.sort);
+    setViewMode("grid");
     setCurrentPage(1);
   };
 
@@ -785,7 +788,8 @@ export default function Reports() {
     dateRange.filter !== "All" ||
     amountMin !== "" ||
     amountMax !== "" ||
-    sort !== DEFAULT_FILTER_STATE.sort;
+    sort !== DEFAULT_FILTER_STATE.sort ||
+    viewMode !== "grid";
 
   return (
     <SafeAreaView className="flex-1 bg-[#F5F6F2]" edges={["bottom"]}>
@@ -1016,6 +1020,18 @@ export default function Reports() {
               },
               categories: categories.filter((category) => category !== "All"),
               sections: ["date", "category", "amount", "sort", "viewMode"],
+              initialExpandedSections: ["viewMode"],
+              additionalFilters: [
+                {
+                  key: "paymentMethod",
+                  label: "Payment method",
+                  presentation: "chips",
+                  options: paymentMethods.map((payment) => ({
+                    value: payment,
+                    label: payment === "All" ? "All methods" : payment,
+                  })),
+                },
+              ],
             }}
             style={{ marginBottom: 12 }}
           />
@@ -1042,84 +1058,27 @@ export default function Reports() {
             ))}
           </View>
 
-          <Text className="mb-1.5 text-xs font-bold uppercase tracking-[0.8px] text-[#87918A]">
-            Payment method
-          </Text>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={{ gap: 7, paddingBottom: 12 }}
-          >
-            {paymentMethods.map((payment) => {
-              const selected = paymentFilter === payment;
-              return (
-                <Pressable
-                  key={payment}
-                  className={`rounded-full border px-3 py-2 ${selected ? "border-[#315640] bg-[#315640]" : "border-[#E1E6E0] bg-white"}`}
-                  onPress={() => {
-                    setPaymentFilter(payment);
-                    setCurrentPage(1);
-                  }}
-                >
-                  <Text
-                    className={`text-xs font-bold ${selected ? "text-white" : "text-[#637068]"}`}
-                  >
-                    {payment === "All" ? "All methods" : payment}
-                  </Text>
-                </Pressable>
-              );
-            })}
-          </ScrollView>
-
           <View className="flex-row items-center justify-between border-t border-[#EEF0ED] pt-3">
             <Text className="text-xs font-medium text-[#7C8880]">
               {visible.length} matching{" "}
               {visible.length === 1 ? "record" : "records"}
             </Text>
-            <View className="flex-row items-center">
-              {hasFilters && (
-                <Pressable
-                  accessibilityRole="button"
-                  className="mr-3 flex-row items-center"
-                  onPress={resetFilters}
-                >
-                  <Ionicons
-                    name="close-circle-outline"
-                    size={15}
-                    color="#B64C45"
-                  />
-                  <Text className="ml-1 text-xs font-bold text-[#B64C45]">
-                    Reset
-                  </Text>
-                </Pressable>
-              )}
-              <View className="flex-row rounded-lg border border-[#E1E6E0] bg-[#F5F6F2] p-0.5">
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel="List view"
-                  className={`h-7 w-7 items-center justify-center rounded-md ${viewMode === "list" ? "bg-white" : ""}`}
-                  onPress={() => setViewMode("list")}
-                >
-                  <Ionicons
-                    name="list-outline"
-                    size={15}
-                    color={viewMode === "list" ? "#315640" : "#87918A"}
-                  />
-                </Pressable>
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel="Grid view"
-                  className={`h-7 w-7 items-center justify-center rounded-md ${viewMode === "grid" ? "bg-white" : ""}`}
-                  onPress={() => setViewMode("grid")}
-                >
-                  <Ionicons
-                    name="grid-outline"
-                    size={15}
-                    color={viewMode === "grid" ? "#315640" : "#87918A"}
-                  />
-                </Pressable>
-              </View>
-            </View>
+            {hasFilters && (
+              <Pressable
+                accessibilityRole="button"
+                className="flex-row items-center"
+                onPress={resetFilters}
+              >
+                <Ionicons
+                  name="close-circle-outline"
+                  size={15}
+                  color="#B64C45"
+                />
+                <Text className="ml-1 text-xs font-bold text-[#B64C45]">
+                  Reset
+                </Text>
+              </Pressable>
+            )}
           </View>
         </View>
 

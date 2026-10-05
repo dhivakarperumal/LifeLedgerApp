@@ -88,6 +88,8 @@ export type FilterBottomSheetProps = {
   additionalFilters?: ChoiceFilterGroup[];
   /** Control which filter sections to show */
   sections?: SectionKey[];
+  /** Sections expanded the first time the sheet opens. */
+  initialExpandedSections?: SectionKey[];
 };
 
 /**
@@ -105,6 +107,7 @@ export function FilterBottomSheet({
   multiSelectCategories = false,
   additionalFilters = [],
   sections = ["date", "category", "status", "amount", "sort", "viewMode"],
+  initialExpandedSections = [],
 }: FilterBottomSheetProps) {
   const [fontsLoaded] = useFonts(poppinsFontMap);
   const insets = useSafeAreaInsets();
@@ -115,11 +118,11 @@ export function FilterBottomSheet({
   // Collapsed/expanded state for each section
   const [expanded, setExpanded] = useState<Record<SectionKey, boolean>>({
     date: true,
-    category: false,
-    status: false,
-    amount: false,
-    sort: false,
-    viewMode: false,
+    category: initialExpandedSections.includes("category"),
+    status: initialExpandedSections.includes("status"),
+    amount: initialExpandedSections.includes("amount"),
+    sort: initialExpandedSections.includes("sort"),
+    viewMode: initialExpandedSections.includes("viewMode"),
   });
 
   // Slide-up animation
