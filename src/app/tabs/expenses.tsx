@@ -1,9 +1,10 @@
 import { Ionicons } from "@expo/vector-icons";
 import * as DocumentPicker from "expo-document-picker";
-import { useFocusEffect, useRouter } from "expo-router";
-import { useCallback, useMemo, useState } from "react";
+import { useFocusEffect, useNavigation, useRouter } from "expo-router";
+import { useCallback, useLayoutEffect, useMemo, useState } from "react";
 import {
     Alert,
+    LayoutAnimation,
     Modal,
     Pressable,
     RefreshControl,
@@ -168,6 +169,7 @@ function isTravelCategory(category: string) {
 
 export default function Expenses() {
   const insets = useSafeAreaInsets();
+  const navigation = useNavigation();
   const router = useRouter();
   const [expenses, setExpenses] = useState<ExpenseItem[]>([]);
   const [transfers, setTransfers] = useState<TransferItem[]>([]);
@@ -189,6 +191,7 @@ export default function Expenses() {
   const [viewMode, setViewMode] = useState<ViewModeOption>("card");
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
+  const [showSummaryCards, setShowSummaryCards] = useState(false);
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [isFilterSheetVisible, setIsFilterSheetVisible] = useState(false);
   const [categoryFilterSearch, setCategoryFilterSearch] = useState("");
@@ -215,6 +218,41 @@ export default function Expenses() {
     notes: "",
     location: "",
   });
+
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      headerRight: () => (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={
+            showSummaryCards ? "Hide expense summaries" : "Show expense summaries"
+          }
+          accessibilityState={{ selected: showSummaryCards }}
+          onPress={() => {
+            LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+            setShowSummaryCards((visible) => !visible);
+          }}
+          style={{
+            width: 44,
+            height: 44,
+            alignItems: "center",
+            justifyContent: "center",
+            borderRadius: 22,
+            marginRight: 12,
+            backgroundColor: showSummaryCards
+              ? "rgba(255,255,255,0.28)"
+              : "rgba(255,255,255,0.15)",
+          }}
+        >
+          <Ionicons
+            name={showSummaryCards ? "options" : "options-outline"}
+            size={22}
+            color={showSummaryCards ? Colors.accent : Colors.white}
+          />
+        </Pressable>
+      ),
+    });
+  }, [navigation, showSummaryCards]);
 
   const filterValues = useMemo<FilterState>(
     () => ({
@@ -653,29 +691,36 @@ export default function Expenses() {
             paddingHorizontal: 20,
           }}
         >
-          {/* Stat cards inside header */}
-          <View style={{ flexDirection: "row", gap: 12 }}>
-            <HeroStatCard
-              title="Total Amount"
-              subtitle="All time expenses"
-              value={formatAmount(stats.totalAmount || totals.totalExpense)}
-              icon="wallet-outline"
-              iconBg="#8EB379"
-              iconColor="#FFFFFF"
-              trendPercent="8%"
-              trendText="more than last month"
-            />
-            <HeroStatCard
-              title="Today Amount"
-              subtitle="Your expenses today"
-              value={formatAmount(totals.todayExpense)}
-              icon="calendar-outline"
-              iconBg="#DDF2D1"
-              iconColor="#7E9E67"
-              trendPercent="12%"
-              trendText="more than yesterday"
-            />
-          </View>
+          {showSummaryCards && (
+            <View
+              style={{
+                flexDirection: "row",
+                flexWrap: "wrap",
+                gap: 12,
+              }}
+            >
+              <HeroStatCard
+                title="Total Amount"
+                subtitle="All time expenses"
+                value={formatAmount(stats.totalAmount || totals.totalExpense)}
+                icon="wallet-outline"
+                iconBg="#8EB379"
+                iconColor="#FFFFFF"
+                trendPercent="8%"
+                trendText="more than last month"
+              />
+              <HeroStatCard
+                title="Today Amount"
+                subtitle="Your expenses today"
+                value={formatAmount(totals.todayExpense)}
+                icon="calendar-outline"
+                iconBg="#DDF2D1"
+                iconColor="#7E9E67"
+                trendPercent="12%"
+                trendText="more than yesterday"
+              />
+            </View>
+          )}
         </View>
 
         <ScrollView
@@ -690,7 +735,7 @@ export default function Expenses() {
           }
           contentContainerStyle={{
             paddingHorizontal: 16,
-            paddingTop: 18,
+            paddingTop: 0,
             paddingBottom: insets.bottom + 100,
           }}
         >
@@ -705,7 +750,7 @@ export default function Expenses() {
               categories: categoryOptions,
               sections: ["date", "category", "amount", "sort", "viewMode"],
             }}
-            style={{ marginBottom: 12 }}
+            style={{ marginTop: 8, marginBottom: 12 }}
           />
 
           {/* Active filter chip */}
@@ -1736,7 +1781,9 @@ function HeroStatCard({
   return (
     <View
       style={{
-        flex: 1,
+        flexGrow: 1,
+        flexBasis: 145,
+        minWidth: 145,
         backgroundColor: "#F8FCF8",
         borderRadius: 20,
         padding: 10,
