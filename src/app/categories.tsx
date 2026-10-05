@@ -797,9 +797,12 @@ export default function Categories() {
                 placeholder="Select category type"
                 options={categoryTypes}
                 value={form.catType}
-                onChange={(value) =>
-                  setFormValue("catType", value as CategoryType)
-                }
+                onChange={(value) => {
+                  const selectedType = categoryTypes.find(
+                    (type) => type === value,
+                  );
+                  if (selectedType) setFormValue("catType", selectedType);
+                }}
               />
 
               <Text className="mb-2 text-xs font-bold text-[#46534B]">
