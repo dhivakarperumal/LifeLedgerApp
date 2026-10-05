@@ -580,15 +580,7 @@ export default function CalendarScreen() {
           )}
         </View>
 
-        <Pressable
-          onPress={() => openForm(activeType)}
-          className="mx-4 mt-4 flex-row items-center justify-center border border-[#264B2A] bg-[#366039] py-4"
-        >
-          <Ionicons name="add" size={20} color={Colors.white} />
-          <Text className="ml-2 text-base font-bold text-white">
-            Add {activeType === "event" ? "Event" : "Reminder"}
-          </Text>
-        </Pressable>
+       
       </ScrollView>
 
       <AddButton
@@ -601,6 +593,7 @@ export default function CalendarScreen() {
             ? "Opens the new event form"
             : "Opens the new reminder form"
         }
+        bottomOffset={37}
       />
 
       {/* Day Entries Popup */}

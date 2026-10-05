@@ -79,8 +79,6 @@ const incomeKeywords = [
   "business",
   "freelance",
 ];
-const pageSize = 10;
-
 function createInitialForm(): IncomeForm {
   return {
     title: "",
@@ -393,7 +391,6 @@ export default function Income() {
   const [amountMax, setAmountMax] = useState("");
   const [sort, setSort] = useState<SortOption>(DEFAULT_FILTER_STATE.sort);
   const [viewMode, setViewMode] = useState<"list" | "grid">("grid");
-  const [currentPage, setCurrentPage] = useState(1);
   const [editorVisible, setEditorVisible] = useState(false);
   const [budgetVisible, setBudgetVisible] = useState(false);
   const [detailsIncome, setDetailsIncome] = useState<IncomeRecord | null>(null);
@@ -427,7 +424,6 @@ export default function Income() {
     setAmountMax(filters.amountMax);
     setSort(filters.sort);
     setViewMode(filters.viewMode === "card" ? "grid" : "list");
-    setCurrentPage(1);
   };
 
   const handleUnauthorized = useCallback(async () => {
@@ -552,12 +548,6 @@ export default function Income() {
     sort,
   ]);
 
-  const totalPages = Math.max(1, Math.ceil(filteredIncomes.length / pageSize));
-  const safeCurrentPage = Math.min(currentPage, totalPages);
-  const paginatedIncomes = filteredIncomes.slice(
-    (safeCurrentPage - 1) * pageSize,
-    safeCurrentPage * pageSize,
-  );
   const totalIncome = incomes.reduce(
     (total, income) => total + Number(income.amount || 0),
     0,
@@ -689,10 +679,8 @@ export default function Income() {
             income.id === editingIncomeId ? savedIncome : income,
           ),
         );
-        setCurrentPage(1);
       } else {
         setIncomes((current) => [savedIncome, ...current]);
-        setCurrentPage(1);
       }
       closeEditor();
       Alert.alert(
@@ -724,7 +712,6 @@ export default function Income() {
               setIncomes((current) =>
                 current.filter((item) => item.id !== income.id),
               );
-              setCurrentPage(1);
               if (detailsIncome?.id === income.id) setDetailsIncome(null);
             })
             .catch((error) =>
@@ -911,7 +898,6 @@ export default function Income() {
           value={search}
           onChangeText={(value) => {
             setSearch(value);
-            setCurrentPage(1);
           }}
           placeholder="Search title, category, payment"
           activeFilterCount={
@@ -955,7 +941,7 @@ export default function Income() {
                 : "gap-3"
             }
           >
-            {paginatedIncomes.map((income) => (
+            {filteredIncomes.map((income) => (
               <View
                 key={income.id}
                 className={`mb-3 min-w-0 rounded-2xl border border-[#E4E8E3] bg-white ${viewMode === "grid" ? "w-[48%] p-3" : "w-full p-4"}`}
@@ -1059,44 +1045,6 @@ export default function Income() {
           </View>
         )}
 
-        {!loading && filteredIncomes.length > 0 && (
-          <View className="mt-1 flex-row items-center justify-between rounded-xl border border-[#E4E8E3] bg-white px-3 py-2.5">
-            <Text className="text-xs font-semibold text-[#6F7B73]">
-              Showing{" "}
-              {Math.min(
-                (safeCurrentPage - 1) * pageSize + 1,
-                filteredIncomes.length,
-              )}
-              -{Math.min(safeCurrentPage * pageSize, filteredIncomes.length)} of{" "}
-              {filteredIncomes.length}
-            </Text>
-            <View className="flex-row items-center gap-2">
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="Previous page"
-                disabled={safeCurrentPage === 1}
-                className="h-8 w-8 items-center justify-center rounded-lg border border-[#E1E6E0] disabled:opacity-40"
-                onPress={() => setCurrentPage((page) => Math.max(1, page - 1))}
-              >
-                <Ionicons name="chevron-back" size={16} color="#526058" />
-              </Pressable>
-              <Text className="text-xs font-bold text-[#6F7B73]">
-                {safeCurrentPage} / {totalPages}
-              </Text>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="Next page"
-                disabled={safeCurrentPage === totalPages}
-                className="h-8 w-8 items-center justify-center rounded-lg border border-[#E1E6E0] disabled:opacity-40"
-                onPress={() =>
-                  setCurrentPage((page) => Math.min(totalPages, page + 1))
-                }
-              >
-                <Ionicons name="chevron-forward" size={16} color="#526058" />
-              </Pressable>
-            </View>
-          </View>
-        )}
       </ScrollView>
 
       <AddButton

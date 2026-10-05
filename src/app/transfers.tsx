@@ -94,8 +94,6 @@ const transferKeywords = [
   "investment",
   "investments",
 ];
-const pageSize = 10;
-
 function emptyForm(): TransferForm {
   return {
     title: "",
@@ -390,7 +388,6 @@ export default function Transfers() {
   const [viewMode, setViewMode] = useState<ViewModeOption>(
     DEFAULT_FILTER_STATE.viewMode,
   );
-  const [currentPage, setCurrentPage] = useState(1);
   const [deletingId, setDeletingId] = useState<number | string | null>(null);
 
   const handleUnauthorized = useCallback(async () => {
@@ -541,7 +538,6 @@ export default function Transfers() {
     setAmountMax(filters.amountMax);
     setSort(filters.sort);
     setViewMode(filters.viewMode);
-    setCurrentPage(1);
   };
 
   const visibleTransfers = useMemo(() => {
@@ -584,13 +580,6 @@ export default function Transfers() {
     amountMax,
     sort,
   ]);
-  const totalPages = Math.max(1, Math.ceil(visibleTransfers.length / pageSize));
-  const safeCurrentPage = Math.min(currentPage, totalPages);
-  const pageTransfers = visibleTransfers.slice(
-    (safeCurrentPage - 1) * pageSize,
-    safeCurrentPage * pageSize,
-  );
-
   const updateForm = <K extends keyof TransferForm>(
     key: K,
     value: TransferForm[K],
@@ -721,7 +710,6 @@ export default function Transfers() {
         });
       }
       closeModal();
-      setCurrentPage(1);
       await loadAll();
     } catch (error) {
       if ((error as { status?: number })?.status === 401) {
@@ -754,7 +742,6 @@ export default function Transfers() {
                 setTransfers((current) =>
                   current.filter((item) => item.id !== transfer.id),
                 );
-                setCurrentPage(1);
                 if (selectedTransfer?.id === transfer.id) {
                   setSelectedTransfer(null);
                 }
@@ -878,7 +865,6 @@ export default function Transfers() {
           value={search}
           onChangeText={(value) => {
             setSearch(value);
-            setCurrentPage(1);
           }}
           placeholder="Search title or category"
           activeFilterCount={countActiveFilters(filterValues)}
@@ -923,7 +909,7 @@ export default function Transfers() {
                 : { gap: 8 }
             }
           >
-            {pageTransfers.map((transfer) => (
+            {visibleTransfers.map((transfer) => (
               <View
                 key={String(transfer.id)}
                 style={{
@@ -1063,46 +1049,6 @@ export default function Transfers() {
           </View>
         )}
 
-        {!loading && visibleTransfers.length > 0 && (
-          <View className="mt-1 flex-row items-center justify-between rounded-xl border border-[#E4E8E3] bg-white px-3 py-2.5">
-            <Text className="text-xs font-semibold text-[#6F7B73]">
-              Showing{" "}
-              {Math.min(
-                (safeCurrentPage - 1) * pageSize + 1,
-                visibleTransfers.length,
-              )}
-              -{Math.min(safeCurrentPage * pageSize, visibleTransfers.length)}{" "}
-              of {visibleTransfers.length}
-            </Text>
-            <View className="flex-row items-center gap-2">
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="Previous page"
-                disabled={safeCurrentPage === 1}
-                className="h-8 w-8 items-center justify-center rounded-lg border border-[#E1E6E0] disabled:opacity-40"
-                onPress={() =>
-                  setCurrentPage((page) => Math.max(1, safeCurrentPage - 1))
-                }
-              >
-                <Ionicons name="chevron-back" size={16} color="#526058" />
-              </Pressable>
-              <Text className="text-xs font-bold text-[#6F7B73]">
-                {safeCurrentPage} / {totalPages}
-              </Text>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="Next page"
-                disabled={safeCurrentPage === totalPages}
-                className="h-8 w-8 items-center justify-center rounded-lg border border-[#E1E6E0] disabled:opacity-40"
-                onPress={() =>
-                  setCurrentPage(Math.min(totalPages, safeCurrentPage + 1))
-                }
-              >
-                <Ionicons name="chevron-forward" size={16} color="#526058" />
-              </Pressable>
-            </View>
-          </View>
-        )}
       </ScrollView>
 
       <AddButton
