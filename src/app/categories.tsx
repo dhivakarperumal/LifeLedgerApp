@@ -6,9 +6,11 @@ import { useCallback, useMemo, useState } from "react";
 import {
     ActivityIndicator,
     Alert,
+    KeyboardAvoidingView,
     Image,
     Modal,
     Pressable,
+    Platform,
     RefreshControl,
     ScrollView,
     Text,
@@ -34,6 +36,7 @@ import {
 } from "../components/filters";
 import { FormInput, FormOption } from "../components/FormControls";
 import { GradientSafeAreaView as SafeAreaView } from "../components/GradientSafeAreaView";
+import { PopupSelect } from "../components/PopupSelect";
 import { SearchBar } from "../components/SearchBar";
 import { Colors } from "../constants/colors";
 
@@ -698,8 +701,15 @@ export default function Categories() {
         transparent
         visible={modalVisible}
       >
-        <View className="flex-1 justify-end bg-black/40">
-          <View className="max-h-[90%] rounded-t-[26px] bg-[#F8F9F6] px-5 pb-8 pt-5">
+        <View className="flex-1 bg-black/40">
+          <KeyboardAvoidingView
+            behavior={Platform.OS === "ios" ? "padding" : "height"}
+            style={{ flex: 1, justifyContent: "flex-end" }}
+          >
+          <View
+            className="max-h-[90%] rounded-t-[26px] bg-[#F8F9F6] px-5 pb-8 pt-5"
+            style={{ height: "90%" }}
+          >
             <View className="mb-5 flex-row items-center justify-between">
               <View>
                 <Text className="text-xl font-bold text-[#25332C]">
@@ -722,8 +732,11 @@ export default function Categories() {
             </View>
 
             <ScrollView
+              style={{ flex: 1, minHeight: 0 }}
               keyboardShouldPersistTaps="handled"
               showsVerticalScrollIndicator={false}
+              automaticallyAdjustKeyboardInsets
+              keyboardDismissMode="none"
             >
               <Text className="mb-2 text-xs font-bold text-[#46534B]">
                 Category name
@@ -779,28 +792,15 @@ export default function Categories() {
                 </View>
               )}
 
-              <Text className="mb-2 text-xs font-bold text-[#46534B]">
-                Category type
-              </Text>
-              <View className="mb-4 flex-row flex-wrap gap-2">
-                {categoryTypes.map((type) => {
-                  const selected = form.catType === type;
-                  return (
-                    <FormOption
-                      key={type}
-                      selected={selected}
-                      className={`rounded-full px-3 py-2 ${selected ? "bg-[#315640]" : "bg-white"}`}
-                      onPress={() => setFormValue("catType", type)}
-                    >
-                      <Text
-                        className={`text-xs font-bold ${selected ? "text-white" : "text-[#637068]"}`}
-                      >
-                        {type}
-                      </Text>
-                    </FormOption>
-                  );
-                })}
-              </View>
+              <PopupSelect
+                label="Category type"
+                placeholder="Select category type"
+                options={categoryTypes}
+                value={form.catType}
+                onChange={(value) =>
+                  setFormValue("catType", value as CategoryType)
+                }
+              />
 
               <Text className="mb-2 text-xs font-bold text-[#46534B]">
                 Description
@@ -873,6 +873,7 @@ export default function Categories() {
               </Pressable>
             </View>
           </View>
+            </KeyboardAvoidingView>
         </View>
       </Modal>
     </SafeAreaView>

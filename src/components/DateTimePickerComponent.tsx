@@ -3,7 +3,14 @@ import DateTimePicker, {
 } from "@react-native-community/datetimepicker";
 import { CalendarDays, Clock3 } from "lucide-react-native";
 import { useState } from "react";
-import { Modal, Platform, Pressable, Text, View } from "react-native";
+import {
+  Keyboard,
+  Modal,
+  Platform,
+  Pressable,
+  Text,
+  View,
+} from "react-native";
 
 export type DateTimePickerMode = "date" | "time" | "datetime";
 
@@ -49,6 +56,7 @@ export function DateTimePickerComponent({
 
   const openPicker = (pickerMode: "date" | "time") => {
     if (disabled) return;
+    Keyboard.dismiss();
     setDraft(value ?? new Date());
     setAndroidMode(pickerMode);
     setVisible(true);

@@ -4,9 +4,11 @@ import { useFocusEffect, useNavigation, useRouter } from "expo-router";
 import { useCallback, useLayoutEffect, useMemo, useState } from "react";
 import {
   Alert,
+  KeyboardAvoidingView,
   LayoutAnimation,
   Modal,
   Pressable,
+  Platform,
   RefreshControl,
   ScrollView,
   Text,
@@ -1299,13 +1301,11 @@ export default function Expenses() {
         animationType="slide"
         onRequestClose={() => setIsModalVisible(false)}
       >
-        <View
-          style={{
-            flex: 1,
-            backgroundColor: "rgba(0,0,0,0.5)",
-            justifyContent: "flex-end",
-          }}
-        >
+        <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.5)" }}>
+          <KeyboardAvoidingView
+            behavior={Platform.OS === "ios" ? "padding" : "height"}
+            style={{ flex: 1, justifyContent: "flex-end" }}
+          >
           <View
             style={{
               backgroundColor: "#FFFFFF",
@@ -1314,6 +1314,7 @@ export default function Expenses() {
               paddingHorizontal: 20,
               paddingTop: 10,
               paddingBottom: insets.bottom + 4,
+              height: "92%",
               maxHeight: "92%",
             }}
           >
@@ -1363,7 +1364,13 @@ export default function Expenses() {
               </Pressable>
             </View>
 
-            <ScrollView showsVerticalScrollIndicator={false}>
+            <ScrollView
+              style={{ flex: 1, minHeight: 0 }}
+              showsVerticalScrollIndicator={false}
+              keyboardShouldPersistTaps="handled"
+              automaticallyAdjustKeyboardInsets
+              keyboardDismissMode="none"
+            >
               <FormField
                 label="Expense title *"
                 value={form.title}
@@ -1667,6 +1674,7 @@ export default function Expenses() {
                   ) : null}
                 </Pressable>
               </View>
+            </ScrollView>
 
               <View style={{ flexDirection: "row", gap: 10, marginTop: 8 }}>
                 <Pressable
@@ -1737,8 +1745,8 @@ export default function Expenses() {
                   </Text>
                 </Pressable>
               </View>
-            </ScrollView>
           </View>
+          </KeyboardAvoidingView>
         </View>
       </Modal>
 

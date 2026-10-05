@@ -5,8 +5,10 @@ import { useCallback, useState } from "react";
 import {
     ActivityIndicator,
     Alert,
+    KeyboardAvoidingView,
     Modal,
     Pressable,
+    Platform,
     RefreshControl,
     ScrollView,
     Text,
@@ -739,8 +741,15 @@ export default function CalendarScreen() {
         animationType="slide"
         onRequestClose={() => setModalType(null)}
       >
-        <View className="flex-1 justify-end bg-black/40">
-          <View className="max-h-[90%] rounded-t-3xl border-t-4 border-[#366039] bg-[#F9FAFC] px-5 pb-8 pt-5">
+        <View className="flex-1 bg-black/40">
+          <KeyboardAvoidingView
+            behavior={Platform.OS === "ios" ? "padding" : "height"}
+            style={{ flex: 1, justifyContent: "flex-end" }}
+          >
+          <View
+            className="max-h-[90%] rounded-t-3xl border-t-4 border-[#366039] bg-[#F9FAFC] px-5 pb-8 pt-5"
+            style={{ height: "90%" }}
+          >
             <View className="mb-4 flex-row items-center justify-between">
               <Text className="text-xl font-extrabold capitalize text-[#264B2A]">
                 New {modalType === "event" ? "event" : "reminder"}
@@ -752,7 +761,12 @@ export default function CalendarScreen() {
                 <Ionicons name="close" size={24} color={Colors.primaryDark} />
               </Pressable>
             </View>
-            <ScrollView keyboardShouldPersistTaps="handled">
+            <ScrollView
+              style={{ flex: 1, minHeight: 0 }}
+              keyboardShouldPersistTaps="handled"
+              automaticallyAdjustKeyboardInsets
+              keyboardDismissMode="none"
+            >
               {(
                 [
                   ["title", "Title", "What needs your attention?"],
@@ -814,6 +828,7 @@ export default function CalendarScreen() {
               </Pressable>
             </ScrollView>
           </View>
+          </KeyboardAvoidingView>
         </View>
       </Modal>
     </SafeAreaView>

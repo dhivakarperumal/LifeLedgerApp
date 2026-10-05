@@ -79,7 +79,7 @@ export function BottomSheet({
           style={StyleSheet.absoluteFill}
         />
         <KeyboardAvoidingView
-          behavior={Platform.OS === "ios" ? "padding" : undefined}
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
           style={[
             styles.sheet,
             {
@@ -100,6 +100,8 @@ export function BottomSheet({
             contentContainerStyle={styles.scrollContent}
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"
+            automaticallyAdjustKeyboardInsets
+            keyboardDismissMode="none"
           >
             {children}
           </ScrollView>

@@ -2,8 +2,10 @@ import { Ionicons } from "@expo/vector-icons";
 import { useMemo, useState } from "react";
 import {
     ActivityIndicator,
+    KeyboardAvoidingView,
     Modal,
     Pressable,
+    Platform,
     ScrollView,
     Text,
     TextInput,
@@ -145,14 +147,22 @@ export function PopupSelect({
         onRequestClose={closePicker}
       >
         <Pressable className="flex-1 bg-black/40" onPress={closePicker}>
-          <Pressable
-            onPress={(event) => event.stopPropagation()}
-            className={
-              isDesktop
-                ? "mx-auto my-auto w-[92%] max-w-[420px] overflow-hidden rounded-[28px] bg-white p-4"
-                : "mt-auto w-full overflow-hidden rounded-t-[28px] bg-white p-4 pb-5"
-            }
-          >
+            <KeyboardAvoidingView
+              behavior={Platform.OS === "ios" ? "padding" : "height"}
+              style={{
+                flex: 1,
+                justifyContent: isDesktop ? "center" : "flex-end",
+              }}
+            >
+              <Pressable
+                onPress={(event) => event.stopPropagation()}
+                className={
+                  isDesktop
+                    ? "mx-auto my-auto w-[92%] max-w-[420px] overflow-hidden rounded-[28px] bg-white p-4"
+                    : "mt-auto w-full overflow-hidden rounded-t-[28px] bg-white p-4 pb-5"
+                }
+                style={{ maxHeight: "90%" }}
+              >
             <View className="mb-3 flex-row items-center justify-between">
               <Text className="text-base font-bold text-[#25332C]">{label}</Text>
               <Pressable
@@ -193,6 +203,9 @@ export function PopupSelect({
               <ScrollView
                 showsVerticalScrollIndicator={false}
                 className={isDesktop ? "max-h-[50vh]" : "max-h-[56vh]"}
+                keyboardShouldPersistTaps="handled"
+                automaticallyAdjustKeyboardInsets
+                keyboardDismissMode="none"
               >
                 {filteredOptions.map((option) => {
                   const optionDisabled = Boolean(option.disabled);
@@ -238,7 +251,8 @@ export function PopupSelect({
                 })}
               </ScrollView>
             )}
-          </Pressable>
+            </Pressable>
+          </KeyboardAvoidingView>
         </Pressable>
       </Modal>
     </View>

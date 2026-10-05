@@ -12,8 +12,10 @@ import {
   ActivityIndicator,
   Alert,
   Image,
+  KeyboardAvoidingView,
   Modal,
   Pressable,
+  Platform,
   RefreshControl,
   ScrollView,
   Text,
@@ -1135,19 +1137,18 @@ export default function Memories() {
         animationType="slide"
         onRequestClose={() => setEditorVisible(false)}
       >
-        <View
-          style={{
-            flex: 1,
-            justifyContent: "flex-end",
-            backgroundColor: "rgba(14,31,26,0.48)",
-          }}
-        >
+        <View style={{ flex: 1, backgroundColor: "rgba(14,31,26,0.48)" }}>
+          <KeyboardAvoidingView
+            behavior={Platform.OS === "ios" ? "padding" : "height"}
+            style={{ flex: 1, justifyContent: "flex-end" }}
+          >
           <View
             style={{
               maxHeight: "92%",
               paddingHorizontal: 18,
               paddingTop: 18,
               paddingBottom: insets.bottom + 16,
+              height: "92%",
               borderTopLeftRadius: 24,
               borderTopRightRadius: 24,
               backgroundColor: Colors.white,
@@ -1181,8 +1182,11 @@ export default function Memories() {
               </Pressable>
             </View>
             <ScrollView
+              style={{ flex: 1, minHeight: 0 }}
               keyboardShouldPersistTaps="handled"
               showsVerticalScrollIndicator={false}
+              automaticallyAdjustKeyboardInsets
+              keyboardDismissMode="none"
             >
               <FormField
                 label="Title"
@@ -1356,6 +1360,8 @@ export default function Memories() {
                   Mark as favorite
                 </Text>
               </Pressable>
+            </ScrollView>
+
               <Pressable
                 onPress={() => void handleSubmit()}
                 disabled={submitting || isRecording}
@@ -1382,8 +1388,8 @@ export default function Memories() {
                   </Text>
                 )}
               </Pressable>
-            </ScrollView>
           </View>
+          </KeyboardAvoidingView>
         </View>
       </Modal>
     </SafeAreaView>

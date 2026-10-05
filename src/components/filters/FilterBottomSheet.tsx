@@ -191,6 +191,7 @@ export function FilterBottomSheet({
                 backgroundColor: Colors.white,
                 borderTopLeftRadius: 28,
                 borderTopRightRadius: 28,
+                height: "90%",
                 maxHeight: SCREEN_HEIGHT * 0.9,
                 shadowColor: "#000",
                 shadowOffset: { width: 0, height: -4 },
@@ -258,9 +259,12 @@ export function FilterBottomSheet({
 
               {/* Scrollable filter sections */}
               <ScrollView
+                style={{ flex: 1, minHeight: 0 }}
                 keyboardShouldPersistTaps="handled"
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={{ padding: 16, paddingBottom: 8 }}
+                automaticallyAdjustKeyboardInsets
+                keyboardDismissMode="none"
               >
                 {visibleSections.map((section) => (
                   <View
