@@ -207,6 +207,7 @@ export default function CalendarScreen() {
   const [events, setEvents] = useState<CalendarEntry[]>([]);
   const [reminders, setReminders] = useState<CalendarEntry[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [activeType, setActiveType] = useState<EntryType>("event");
   const [selectedDate, setSelectedDate] = useState(new Date());
@@ -222,8 +223,8 @@ export default function CalendarScreen() {
     details: "",
   });
 
-  const fetchCalendar = useCallback(async () => {
-    setLoading(true);
+  const fetchCalendar = useCallback(async (showLoading = true) => {
+    if (showLoading) setLoading(true);
     try {
       const [eventResponse, reminderResponse] = await Promise.all([
         api.get("/calendar/events"),
@@ -234,9 +235,18 @@ export default function CalendarScreen() {
     } catch (error) {
       Alert.alert("Calendar unavailable", getApiErrorMessage(error));
     } finally {
-      setLoading(false);
+      if (showLoading) setLoading(false);
     }
   }, []);
+
+  const refreshCalendar = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      await fetchCalendar(false);
+    } finally {
+      setRefreshing(false);
+    }
+  }, [fetchCalendar]);
 
   useFocusEffect(
     useCallback(() => {
@@ -361,8 +371,10 @@ export default function CalendarScreen() {
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
-            refreshing={loading}
-            onRefresh={() => void fetchCalendar()}
+            refreshing={refreshing}
+            onRefresh={() => {
+              if (!loading) void refreshCalendar();
+            }}
             colors={[Colors.primary]}
             tintColor={Colors.primary}
           />

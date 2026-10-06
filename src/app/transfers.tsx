@@ -412,6 +412,7 @@ export default function Transfers() {
   const [modalVisible, setModalVisible] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("All Transfers");
   const [dateRange, setDateRange] = useState<DateRangeSelection>(() =>
@@ -430,8 +431,8 @@ export default function Transfers() {
     router.replace("/auth/login");
   }, [router]);
 
-  const loadAll = useCallback(async () => {
-    setLoading(true);
+  const loadAll = useCallback(async (showLoading = true) => {
+    if (showLoading) setLoading(true);
     try {
       const transferResponse = await api.get("/transfers");
       setTransfers(getRows(transferResponse.data, "transfers"));
@@ -500,9 +501,18 @@ export default function Transfers() {
       }
       Alert.alert("Unable to load transfers", getApiErrorMessage(error));
     } finally {
-      setLoading(false);
+      if (showLoading) setLoading(false);
     }
   }, [handleUnauthorized]);
+
+  const refreshAll = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      await loadAll(false);
+    } finally {
+      setRefreshing(false);
+    }
+  }, [loadAll]);
 
   useFocusEffect(
     useCallback(() => {
@@ -841,8 +851,10 @@ export default function Transfers() {
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
-            refreshing={loading}
-            onRefresh={() => void loadAll()}
+            refreshing={refreshing}
+            onRefresh={() => {
+              if (!loading) void refreshAll();
+            }}
             colors={[Colors.primary]}
             tintColor={Colors.primary}
           />

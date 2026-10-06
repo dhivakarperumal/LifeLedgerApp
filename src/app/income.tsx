@@ -410,6 +410,7 @@ export default function Income() {
   const [incomeCategories, setIncomeCategories] = useState<string[]>([]);
   const [monthlyBudget, setMonthlyBudget] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [budgetSaving, setBudgetSaving] = useState(false);
   const [search, setSearch] = useState("");
@@ -462,8 +463,8 @@ export default function Income() {
     router.replace("/auth/login");
   }, [router]);
 
-  const fetchIncome = useCallback(async () => {
-    setLoading(true);
+  const fetchIncome = useCallback(async (showLoading = true) => {
+    if (showLoading) setLoading(true);
     try {
       const incomeResponse = await api.get("/incomes");
       setIncomes(getRows(incomeResponse.data, "incomes"));
@@ -523,9 +524,18 @@ export default function Income() {
       }
       Alert.alert("Unable to load income", getApiErrorMessage(error));
     } finally {
-      setLoading(false);
+      if (showLoading) setLoading(false);
     }
   }, [handleUnauthorized]);
+
+  const refreshIncome = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      await fetchIncome(false);
+    } finally {
+      setRefreshing(false);
+    }
+  }, [fetchIncome]);
 
   useFocusEffect(
     useCallback(() => {
@@ -822,8 +832,10 @@ export default function Income() {
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
-            refreshing={loading}
-            onRefresh={() => void fetchIncome()}
+            refreshing={refreshing}
+            onRefresh={() => {
+              if (!loading) void refreshIncome();
+            }}
             colors={[Colors.primary]}
             tintColor={Colors.primary}
           />

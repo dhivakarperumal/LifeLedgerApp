@@ -153,6 +153,7 @@ export default function Categories() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [userId, setUserId] = useState<string | number | null>(null);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState("All");
   const [statusFilter, setStatusFilter] = useState<StatusOption>("All");
@@ -167,8 +168,8 @@ export default function Categories() {
   const [existingImage, setExistingImage] = useState<string | null>(null);
   const [imageRemoved, setImageRemoved] = useState(false);
 
-  const fetchCategories = useCallback(async () => {
-    setLoading(true);
+  const fetchCategories = useCallback(async (showLoading = true) => {
+    if (showLoading) setLoading(true);
     try {
       const [response, user] = await Promise.all([
         api.get("/categories"),
@@ -195,9 +196,18 @@ export default function Categories() {
       }
       Alert.alert("Unable to load categories", getApiErrorMessage(error));
     } finally {
-      setLoading(false);
+      if (showLoading) setLoading(false);
     }
   }, [router]);
+
+  const refreshCategories = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      await fetchCategories(false);
+    } finally {
+      setRefreshing(false);
+    }
+  }, [fetchCategories]);
 
   useFocusEffect(
     useCallback(() => {
@@ -454,8 +464,10 @@ export default function Categories() {
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
-            refreshing={loading}
-            onRefresh={() => void fetchCategories()}
+            refreshing={refreshing}
+            onRefresh={() => {
+              if (!loading) void refreshCategories();
+            }}
             colors={[Colors.primary]}
             tintColor={Colors.primary}
           />

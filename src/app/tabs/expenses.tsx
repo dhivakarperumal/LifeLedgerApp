@@ -3,6 +3,7 @@ import * as DocumentPicker from "expo-document-picker";
 import { useFocusEffect, useNavigation, useRouter } from "expo-router";
 import { useCallback, useLayoutEffect, useMemo, useState } from "react";
 import {
+    ActivityIndicator,
     Alert,
     KeyboardAvoidingView,
     LayoutAnimation,
@@ -238,6 +239,7 @@ export default function Expenses() {
   const router = useRouter();
   const [expenses, setExpenses] = useState<ExpenseItem[]>([]);
   const [transfers, setTransfers] = useState<TransferItem[]>([]);
+  const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({
     total: 0,
     totalAmount: 0,
@@ -452,6 +454,7 @@ export default function Expenses() {
       setCategoryOptions(fallbackCategories);
     } finally {
       setRefreshing(false);
+      setLoading(false);
     }
   }, [handleUnauthorized]);
 
@@ -846,22 +849,51 @@ export default function Expenses() {
           )}
         </View>
 
-        <ScrollView
-          showsVerticalScrollIndicator={false}
-          refreshControl={
-            <RefreshControl
-              refreshing={refreshing}
-              onRefresh={() => void fetchAll(true)}
-              colors={[Colors.primary]}
-              tintColor={Colors.primary}
-            />
-          }
-          contentContainerStyle={{
-            paddingHorizontal: 16,
-            paddingTop: 0,
-            paddingBottom: insets.bottom + 100,
-          }}
-        >
+        {loading ? (
+          <View
+            style={{
+              flex: 1,
+              alignItems: "center",
+              justifyContent: "center",
+              paddingHorizontal: 16,
+              paddingBottom: insets.bottom + 80,
+            }}
+          >
+            <View
+              style={{
+                
+                
+                alignItems: "center",
+                justifyContent: "center",
+                
+               
+                
+                
+              }}
+            >
+              <ActivityIndicator size="large" color={Colors.primary} />
+              <Text style={{ marginTop: 12, fontSize: 14, color: "#7B8580" }}>
+                Loading expenses...
+              </Text>
+            </View>
+          </View>
+        ) : (
+          <ScrollView
+            showsVerticalScrollIndicator={false}
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={() => void fetchAll(true)}
+                colors={[Colors.primary]}
+                tintColor={Colors.primary}
+              />
+            }
+            contentContainerStyle={{
+              paddingHorizontal: 16,
+              paddingTop: 0,
+              paddingBottom: insets.bottom + 100,
+            }}
+          >
           {/* ── Search bar + Filter button ── */}
           <SearchBar
             className="mt-5"
@@ -1251,7 +1283,8 @@ export default function Expenses() {
               })}
             </View>
           )}
-        </ScrollView>
+          </ScrollView>
+        )}
       </View>
 
       <AddButton
