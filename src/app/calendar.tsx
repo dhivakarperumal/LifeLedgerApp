@@ -790,7 +790,7 @@ export default function CalendarScreen() {
           >
           <View
             className="rounded-t-3xl bg-[#F9FAFC] px-5 pb-8 pt-5"
-            style={{ height: "78%", maxHeight: "78%" }}
+            style={{ height: "85%", maxHeight: "85%" }}
           >
             <View
               className="mb-4 flex-row items-center justify-between"
