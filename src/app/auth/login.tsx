@@ -206,7 +206,7 @@ export default function LoginScreen() {
             </Text>
 
             {/* Email field */}
-            <View className="mb-[14px]">
+            <View className="mb-4">
               <Text className="mb-2 text-sm font-semibold text-[#263238]">
                 Email Or Mobile Number
               </Text>

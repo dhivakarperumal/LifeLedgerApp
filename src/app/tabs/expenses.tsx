@@ -1625,7 +1625,7 @@ export default function Expenses() {
                 placeholder="Where was this expense?"
               />
 
-              <View style={{ marginBottom: 13 }}>
+              <View>
                 <DateTimePickerComponent
                   mode="datetime"
                   compact
@@ -2047,5 +2047,9 @@ function HeroStatCard({
 }
 
 function ModalSectionLabel({ label }: { label: string }) {
-  return <Text style={formFieldStyles.label}>{label}</Text>;
+  return (
+    <Text className="mb-2" style={formFieldStyles.label}>
+      {label}
+    </Text>
+  );
 }

@@ -1276,7 +1276,7 @@ export default function Transfers() {
                 </Pressable>
               )}
 
-              <Text className="mb-1.5 text-xs font-bold text-[#46534B]">
+              <Text className="mb-2 text-xs font-bold text-[#46534B]">
                 Transfer Title
               </Text>
               <FormInput
@@ -1288,7 +1288,7 @@ export default function Transfers() {
 
               <View className="flex-row gap-3">
                 <View className="flex-1">
-                  <Text className="mb-1.5 text-xs font-bold text-[#46534B]">
+                  <Text className="mb-2 text-xs font-bold text-[#46534B]">
                     Amount
                   </Text>
                   <FormInput
@@ -1300,7 +1300,7 @@ export default function Transfers() {
                   />
                 </View>
                 <View className="flex-1">
-                  <View className="mb-4">
+                  <View>
                     <DateTimePickerComponent
                       mode="date"
                       value={parseLocalDate(form.date)}
@@ -1347,7 +1347,7 @@ export default function Transfers() {
                 ))}
               </View>
 
-              <Text className="mb-1.5 text-xs font-bold text-[#46534B]">
+              <Text className="mb-2 text-xs font-bold text-[#46534B]">
                 Notes
               </Text>
               <FormInput

@@ -754,7 +754,7 @@ export default function Categories() {
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel={selectedImage || existingImage ? "Change category image" : "Upload category image"}
-                className="mb-3 min-h-[50px] flex-row items-center rounded-xl border border-[#E4E8E3] bg-white px-4 py-3"
+                className="mb-4 min-h-[50px] flex-row items-center rounded-xl border border-[#E4E8E3] bg-white px-4 py-3"
                 onPress={() => void pickCategoryImage()}
               >
                 <Ionicons name="cloud-upload-outline" size={19} color="#315640" />

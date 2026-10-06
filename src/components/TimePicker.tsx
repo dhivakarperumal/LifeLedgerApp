@@ -52,7 +52,7 @@ export default function TimePicker({
   };
 
   return (
-    <View className="w-full">
+    <View className="mb-4 w-full">
       <Text
         className={`mb-2 text-sm font-medium ${
           disabled ? "text-gray-400" : "text-gray-700"

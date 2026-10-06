@@ -1096,7 +1096,7 @@ export default function Income() {
               automaticallyAdjustKeyboardInsets
               keyboardDismissMode="none"
             >
-              <Text className="mb-1.5 text-xs font-bold text-[#46534B]">
+              <Text className="mb-2 text-xs font-bold text-[#46534B]">
                 Income Title
               </Text>
               <FormInput
@@ -1108,7 +1108,7 @@ export default function Income() {
 
               <View className="flex-row gap-3">
                 <View className="flex-1">
-                  <Text className="mb-1.5 text-xs font-bold text-[#46534B]">
+                  <Text className="mb-2 text-xs font-bold text-[#46534B]">
                     Amount
                   </Text>
                   <FormInput
@@ -1120,7 +1120,7 @@ export default function Income() {
                   />
                 </View>
                 <View className="flex-1">
-                  <View className="mb-4">
+                  <View>
                     <DateTimePickerComponent
                       mode="date"
                       value={parseLocalDate(form.date)}
@@ -1187,7 +1187,7 @@ export default function Income() {
                 ))}
               </View>
 
-              <Text className="mb-1.5 text-xs font-bold text-[#46534B]">
+              <Text className="mb-2 text-xs font-bold text-[#46534B]">
                 Notes
               </Text>
               <FormInput

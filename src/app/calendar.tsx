@@ -776,8 +776,8 @@ export default function CalendarScreen() {
                   ["details", "Notes", "Add details"],
                 ] as const
               ).map(([key, label, placeholder]) => (
-                <View key={key} className="mb-3">
-                  <Text className="mb-1.5 text-xs font-bold tracking-[0.8px] text-[#7B8589]">
+                <View key={key} className="mb-4">
+                  <Text className="mb-2 text-xs font-bold tracking-[0.8px] text-[#7B8589]">
                     {label}
                   </Text>
                   <FormInput

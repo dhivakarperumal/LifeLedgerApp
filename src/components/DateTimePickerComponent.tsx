@@ -142,7 +142,7 @@ export function DateTimePickerComponent({
     );
 
   return (
-    <View className="w-full">
+    <View className="mb-4 w-full">
       {displayLabel && (
         <Text className="mb-2 text-xs font-bold text-[#46534B]">
           {displayLabel}

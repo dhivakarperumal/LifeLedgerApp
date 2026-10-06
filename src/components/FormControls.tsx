@@ -64,8 +64,9 @@ export function FormField({
   labelColor,
 }: FormFieldProps) {
   return (
-    <View style={styles.formFieldContainer}>
+    <View className="mb-4">
       <Text
+        className="mb-2"
         style={[
           formFieldStyles.label,
           labelColor ? { color: labelColor } : undefined,
@@ -93,7 +94,6 @@ export function FormField({
 
 export const formFieldStyles = StyleSheet.create({
   label: {
-    marginBottom: 7,
     color: "#4B5563",
     fontSize: 12,
     fontWeight: "700",
@@ -141,9 +141,6 @@ export function FormOption({
 }
 
 const styles = StyleSheet.create({
-  formFieldContainer: {
-    marginBottom: 13,
-  },
   multilineFormFieldInput: {
     minHeight: 88,
   },

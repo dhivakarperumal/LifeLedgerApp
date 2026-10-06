@@ -50,7 +50,7 @@ function FormField({
   [key: string]: unknown;
 }) {
   return (
-    <View className="mb-[14px]">
+    <View className="mb-4">
       <Text className="mb-2 text-sm font-semibold text-[#263238]">{label}</Text>
       <View className="min-h-[52px] flex-row items-center rounded-[14px] border border-[#E5EAE7] bg-[#F9FAFC] px-[14px]">
         <Ionicons name={icon} size={20} color={Colors.textMuted} />
@@ -85,7 +85,7 @@ function PasswordField({
   onToggle: () => void;
 }) {
   return (
-    <View className="mb-[14px]">
+    <View className="mb-4">
       <Text className="mb-2 text-sm font-semibold text-[#263238]">{label}</Text>
       <View className="min-h-[52px] flex-row items-center rounded-[14px] border border-[#E5EAE7] bg-[#F9FAFC] px-[14px]">
         <Ionicons

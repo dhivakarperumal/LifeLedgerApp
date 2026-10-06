@@ -1264,7 +1264,9 @@ export default function Memories() {
                 </Text>
               </Pressable>
 
-              <Text style={formFieldStyles.label}>Attachments</Text>
+              <Text className="mb-2" style={formFieldStyles.label}>
+                Attachments
+              </Text>
               <Pressable
                 onPress={() => void pickMedia()}
                 style={{

@@ -1479,7 +1479,9 @@ export default function Diary() {
                 </View>
               </View>
 
-              <Text style={labelStyle}>Mood</Text>
+              <Text className="mb-2" style={labelStyle}>
+                Mood
+              </Text>
               <ScrollView
                 horizontal
                 showsHorizontalScrollIndicator={false}
@@ -1736,8 +1738,8 @@ function FormField({
   multiline?: boolean;
 }) {
   return (
-    <View style={{ marginBottom: 13 }}>
-      <Text style={labelStyle}>{label}</Text>
+    <View className="mb-4">
+      <Text className="mb-2" style={labelStyle}>{label}</Text>
       <FormInput
         value={value}
         onChangeText={onChangeText}
@@ -1828,7 +1830,6 @@ function AttachmentRow({
 }
 
 const labelStyle = {
-  marginBottom: 7,
   color: "#4B5563",
   fontSize: 12,
   fontWeight: "700" as const,

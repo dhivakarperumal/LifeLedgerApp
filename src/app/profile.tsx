@@ -484,7 +484,7 @@ export default function Profile() {
               ].map((field) => (
                 <View
                   key={field.key}
-                  className="mb-3 flex-row items-center rounded-xl border border-[#E4E8E3] bg-white px-3"
+                  className="mb-4 flex-row items-center rounded-xl border border-[#E4E8E3] bg-white px-3"
                 >
                   <Ionicons
                     name={field.icon}
@@ -493,7 +493,7 @@ export default function Profile() {
                     style={{ marginRight: 12 }}
                   />
                   <View className="flex-1 py-2">
-                    <Text className="mb-1 text-xs font-bold tracking-[0.8px] text-[#839087]">
+                    <Text className="mb-2 text-xs font-bold tracking-[0.8px] text-[#839087]">
                       {field.label}
                     </Text>
                     <FormInput
@@ -602,8 +602,8 @@ export default function Profile() {
           </Text>
 
           {passwordFields.map((field) => (
-            <View key={field.key} className="mb-3">
-              <Text className="mb-1.5 text-xs font-bold text-[#526058]">
+            <View key={field.key} className="mb-4">
+              <Text className="mb-2 text-xs font-bold text-[#526058]">
                 {field.label}
               </Text>
               <View className="flex-row items-center rounded-xl border border-[#E5EAE7] bg-[#F9FAF8] px-3">
