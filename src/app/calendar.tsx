@@ -141,7 +141,7 @@ function EntryCard({
   return (
     <Pressable
       onPress={onPress}
-      className="mb-2 border border-[#E5EAE7] bg-[#ECF2EE] p-3"
+      className="mb-2 rounded-2xl border border-[#E5EAE7] bg-[#ECF2EE] p-3"
     >
       <View className="flex-row items-start">
         <View className="mr-3 h-10 w-10 items-center justify-center rounded-full bg-[#366039]">
@@ -523,7 +523,7 @@ export default function CalendarScreen() {
             <Pressable
               key={type}
               onPress={() => setActiveType(type)}
-              className={`mr-1.5 min-h-[114px] flex-1 items-center justify-center border border-white/70 px-2 py-4 ${activeType === type ? "bg-[#366039]" : "bg-[#264B2A]"}`}
+              className={`mr-1.5 min-h-[114px] flex-1 items-center justify-center rounded-2xl border border-white/70 px-2 py-4 ${activeType === type ? "bg-[#366039]" : "bg-[#264B2A]"}`}
             >
               <Ionicons
                 name={
@@ -602,7 +602,7 @@ export default function CalendarScreen() {
               />
             ))
           ) : (
-            <View className="items-center border border-[#E5EAE7] bg-white px-6 py-8">
+            <View className="items-center rounded-2xl border border-[#E5EAE7] bg-white px-6 py-8">
               <Ionicons
                 name={
                   activeType === "event"

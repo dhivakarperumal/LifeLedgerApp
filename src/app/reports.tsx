@@ -53,8 +53,6 @@ type ReportRecord = {
   _date?: string;
 };
 
-const pageSize = 10;
-
 function getRows(data: any, key: string): any[] {
   if (Array.isArray(data)) return data;
   if (Array.isArray(data?.[key])) return data[key];
@@ -366,7 +364,6 @@ export default function Reports() {
   const [amountMax, setAmountMax] = useState("");
   const [sort, setSort] = useState<SortOption>(DEFAULT_FILTER_STATE.sort);
   const [viewMode, setViewMode] = useState<"list" | "grid">("grid");
-  const [currentPage, setCurrentPage] = useState(1);
   const [exporting, setExporting] = useState<"pdf" | "csv" | null>(null);
 
   const filterValues = useMemo<FilterState>(
@@ -391,7 +388,6 @@ export default function Reports() {
     setSort(filters.sort);
     setViewMode(filters.viewMode === "card" ? "grid" : "list");
     setPaymentFilter(filters.custom?.paymentMethod || "All");
-    setCurrentPage(1);
   };
 
   const handleUnauthorized = useCallback(async () => {
@@ -521,12 +517,6 @@ export default function Reports() {
     sort,
   ]);
 
-  const totalPages = Math.max(1, Math.ceil(visible.length / pageSize));
-  const safeCurrentPage = Math.min(currentPage, totalPages);
-  const paginatedRecords = visible.slice(
-    (safeCurrentPage - 1) * pageSize,
-    safeCurrentPage * pageSize,
-  );
   const stats = useMemo(() => {
     const expenseRows = visible.filter((record) => record._type === "expense");
     const transferRows = visible.filter(
@@ -623,14 +613,12 @@ export default function Reports() {
     setAmountMax("");
     setSort(DEFAULT_FILTER_STATE.sort);
     setViewMode("grid");
-    setCurrentPage(1);
   };
 
   const changeReportType = (nextType: "all" | ReportType) => {
     setReportType(nextType);
     setCategoryFilter("All");
     setPaymentFilter("All");
-    setCurrentPage(1);
   };
 
   const exportRows = visible.map((record, index) => ({
@@ -1002,10 +990,7 @@ export default function Reports() {
         <View className="mb-4 rounded-2xl border border-[#E4E8E3] bg-white p-3.5">
           <SearchBar
             value={search}
-            onChangeText={(value) => {
-              setSearch(value);
-              setCurrentPage(1);
-            }}
+            onChangeText={setSearch}
             placeholder="Search title, category, notes, amount"
             activeFilterCount={
               countActiveFilters(filterValues) +
@@ -1107,7 +1092,7 @@ export default function Reports() {
                 : "gap-3"
             }
           >
-            {paginatedRecords.map((record, index) => {
+            {visible.map((record, index) => {
               const isExpense = record._type === "expense";
               const amount = getRecordAmount(record);
               const payment =
@@ -1180,7 +1165,7 @@ export default function Reports() {
                       </Text>
                     )}
                     <Text className="text-[9px] font-medium text-[#A0A9A2]">
-                      #{(safeCurrentPage - 1) * pageSize + index + 1}
+                      #{index + 1}
                     </Text>
                   </View>
                   {!!record.notes && (
@@ -1197,40 +1182,6 @@ export default function Reports() {
           </View>
         )}
 
-        {!loading && visible.length > 0 && (
-          <View className="mt-1 flex-row items-center justify-between rounded-xl border border-[#E4E8E3] bg-white px-3 py-2.5">
-            <Text className="text-xs font-semibold text-[#6F7B73]">
-              {Math.min((safeCurrentPage - 1) * pageSize + 1, visible.length)}-
-              {Math.min(safeCurrentPage * pageSize, visible.length)} of{" "}
-              {visible.length}
-            </Text>
-            <View className="flex-row items-center gap-2">
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="Previous page"
-                disabled={safeCurrentPage === 1}
-                className="h-8 w-8 items-center justify-center rounded-lg border border-[#E1E6E0] disabled:opacity-40"
-                onPress={() => setCurrentPage(Math.max(1, safeCurrentPage - 1))}
-              >
-                <Ionicons name="chevron-back" size={16} color="#526058" />
-              </Pressable>
-              <Text className="text-xs font-bold text-[#6F7B73]">
-                {safeCurrentPage}/{totalPages}
-              </Text>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="Next page"
-                disabled={safeCurrentPage === totalPages}
-                className="h-8 w-8 items-center justify-center rounded-lg border border-[#E1E6E0] disabled:opacity-40"
-                onPress={() =>
-                  setCurrentPage(Math.min(totalPages, safeCurrentPage + 1))
-                }
-              >
-                <Ionicons name="chevron-forward" size={16} color="#526058" />
-              </Pressable>
-            </View>
-          </View>
-        )}
       </ScrollView>
     </SafeAreaView>
   );
