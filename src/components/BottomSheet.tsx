@@ -79,12 +79,13 @@ export function BottomSheet({
           style={StyleSheet.absoluteFill}
         />
         <KeyboardAvoidingView
-          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          behavior={Platform.OS === "ios" ? "padding" : "position"}
+          keyboardVerticalOffset={0}
           style={[
             styles.sheet,
             {
               maxHeight,
-              paddingBottom: footer ? 0 : Math.max(insets.bottom, 16),
+              paddingBottom: Math.max(insets.bottom, 16),
             },
           ]}
         >
@@ -97,11 +98,15 @@ export function BottomSheet({
           />
           <ScrollView
             style={styles.scrollArea}
-            contentContainerStyle={styles.scrollContent}
+            contentContainerStyle={[
+              styles.scrollContent,
+              { paddingBottom: Math.max(insets.bottom, 16) + 16 },
+            ]}
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"
+            keyboardDismissMode="interactive"
             automaticallyAdjustKeyboardInsets
-            keyboardDismissMode="none"
+            bounces={true}
           >
             {children}
           </ScrollView>
@@ -193,7 +198,7 @@ const styles = StyleSheet.create({
   },
   sheet: {
     width: "100%",
-    height: "82%",
+    maxHeight: "82%",
     overflow: "hidden",
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,

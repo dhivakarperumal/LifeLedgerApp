@@ -4,35 +4,35 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useMemo, useState } from "react";
 import {
-    ActivityIndicator,
-    Alert,
-    Image,
-    KeyboardAvoidingView,
-    Modal,
-    Platform,
-    Pressable,
-    RefreshControl,
-    ScrollView,
-    Text,
-    useWindowDimensions,
-    View,
-    type ViewStyle,
+  ActivityIndicator,
+  Alert,
+  Image,
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  Pressable,
+  RefreshControl,
+  ScrollView,
+  Text,
+  useWindowDimensions,
+  View,
+  type ViewStyle,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Svg, { Path, Rect } from "react-native-svg";
 import api, {
-    API_BASE_URL,
-    getApiErrorMessage,
-    getStoredUser,
-    logoutUser,
+  API_BASE_URL,
+  getApiErrorMessage,
+  getStoredUser,
+  logoutUser,
 } from "../api";
 import { AddButton } from "../components/AddButton";
 import {
-    countActiveFilters,
-    DEFAULT_FILTER_STATE,
-    type FilterState,
-    type StatusOption,
-    type ViewModeOption,
+  countActiveFilters,
+  DEFAULT_FILTER_STATE,
+  type FilterState,
+  type StatusOption,
+  type ViewModeOption,
 } from "../components/filters";
 import { FormInput, FormLabel, FormOption } from "../components/FormControls";
 import { GradientSafeAreaView as SafeAreaView } from "../components/GradientSafeAreaView";
@@ -701,14 +701,15 @@ export default function Categories() {
         transparent
         visible={modalVisible}
       >
-        <View className="flex-1 bg-black/40">
+        <View className="flex-1 bg-black/40" style={{ paddingBottom: insets.bottom }}>
           <KeyboardAvoidingView
-            behavior={Platform.OS === "ios" ? "padding" : "height"}
+            behavior={Platform.OS === "ios" ? "padding" : "position"}
+            keyboardVerticalOffset={0}
             style={{ flex: 1, justifyContent: "flex-end" }}
           >
           <View
             className="max-h-[90%] rounded-t-[26px] bg-[#F8F9F6] px-5 pb-8 pt-5"
-            style={{ height: "90%" }}
+            style={{ maxHeight: "90%" }}
           >
             <View className="mb-5 flex-row items-center justify-between">
               <View>
@@ -733,10 +734,12 @@ export default function Categories() {
 
             <ScrollView
               style={{ flex: 1, minHeight: 0 }}
+              contentContainerStyle={{ paddingBottom: 24 + insets.bottom }}
               keyboardShouldPersistTaps="handled"
               showsVerticalScrollIndicator={false}
               automaticallyAdjustKeyboardInsets
-              keyboardDismissMode="none"
+              keyboardDismissMode="interactive"
+              bounces={true}
             >
               <FormLabel>Category Name</FormLabel>
               <FormInput

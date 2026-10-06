@@ -3,16 +3,16 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import { useCallback, useState } from "react";
 import {
-    ActivityIndicator,
-    Alert,
-    KeyboardAvoidingView,
-    Modal,
-    Platform,
-    Pressable,
-    RefreshControl,
-    ScrollView,
-    Text,
-    View,
+  ActivityIndicator,
+  Alert,
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  Pressable,
+  RefreshControl,
+  ScrollView,
+  Text,
+  View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import api, { getApiErrorMessage } from "../api";
@@ -769,14 +769,15 @@ export default function CalendarScreen() {
         animationType="slide"
         onRequestClose={() => setModalType(null)}
       >
-        <View className="flex-1 bg-black/40">
+        <View className="flex-1 bg-black/40" style={{ paddingBottom: insets.bottom }}>
           <KeyboardAvoidingView
-            behavior={Platform.OS === "ios" ? "padding" : "height"}
+            behavior={Platform.OS === "ios" ? "padding" : "position"}
+            keyboardVerticalOffset={0}
             style={{ flex: 1, justifyContent: "flex-end" }}
           >
           <View
             className="max-h-[90%] rounded-t-3xl border-t-4 border-[#366039] bg-[#F9FAFC] px-5 pb-8 pt-5"
-            style={{ height: "90%" }}
+            style={{ maxHeight: "90%" }}
           >
             <View className="mb-4 flex-row items-center justify-between">
               <Text className="text-xl font-extrabold capitalize text-[#264B2A]">
@@ -791,9 +792,11 @@ export default function CalendarScreen() {
             </View>
             <ScrollView
               style={{ flex: 1, minHeight: 0 }}
+              contentContainerStyle={{ paddingBottom: 24 + insets.bottom }}
               keyboardShouldPersistTaps="handled"
               automaticallyAdjustKeyboardInsets
-              keyboardDismissMode="none"
+              keyboardDismissMode="interactive"
+              bounces={true}
             >
               {(
                 [

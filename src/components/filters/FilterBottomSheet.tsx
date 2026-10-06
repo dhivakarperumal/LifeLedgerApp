@@ -187,7 +187,8 @@ export function FilterBottomSheet({
         {/* Sheet container — intercept taps so backdrop only fires outside */}
         <Pressable onPress={(e) => e.stopPropagation()} style={{ flex: 1 }}>
           <KeyboardAvoidingView
-            behavior={Platform.OS === "ios" ? "padding" : "height"}
+            behavior={Platform.OS === "ios" ? "padding" : "position"}
+            keyboardVerticalOffset={0}
             style={{ flex: 1, justifyContent: "flex-end" }}
           >
             <Animated.View
@@ -196,7 +197,6 @@ export function FilterBottomSheet({
                 backgroundColor: Colors.white,
                 borderTopLeftRadius: 28,
                 borderTopRightRadius: 28,
-                height: "90%",
                 maxHeight: SCREEN_HEIGHT * 0.9,
                 shadowColor: "#000",
                 shadowOffset: { width: 0, height: -4 },
@@ -267,9 +267,10 @@ export function FilterBottomSheet({
                 style={{ flex: 1, minHeight: 0 }}
                 keyboardShouldPersistTaps="handled"
                 showsVerticalScrollIndicator={false}
-                contentContainerStyle={{ padding: 16, paddingBottom: 8 }}
+                contentContainerStyle={{ padding: 16, paddingBottom: 20 + insets.bottom }}
                 automaticallyAdjustKeyboardInsets
-                keyboardDismissMode="none"
+                keyboardDismissMode="interactive"
+                bounces={true}
               >
                 {visibleSections.map((section) => (
                   <View

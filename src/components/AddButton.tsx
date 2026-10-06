@@ -14,7 +14,7 @@ export function AddButton({
   onPress,
   accessibilityLabel,
   accessibilityHint,
-  bottomOffset = 92,
+  bottomOffset = 76,
 }: AddButtonProps) {
   const insets = useSafeAreaInsets();
 
@@ -26,7 +26,7 @@ export function AddButton({
       accessibilityHint={accessibilityHint}
       style={[styles.button, { bottom: insets.bottom + bottomOffset }]}
     >
-      <Ionicons name="add" size={30} color={Colors.white} />
+      <Ionicons name="add" size={24} color={Colors.white} />
     </Pressable>
   );
 }
@@ -34,19 +34,19 @@ export function AddButton({
 const styles = StyleSheet.create({
   button: {
     position: "absolute",
-    right: 20,
-    width: 60,
-    height: 60,
+    right: 18,
+    width: 52,
+    height: 52,
     padding: 0,
-    borderRadius: 30,
+    borderRadius: 26,
     backgroundColor: Colors.deepForest,
     alignItems: "center",
     justifyContent: "center",
     shadowColor: Colors.deepForest,
-    shadowOffset: { width: 0, height: 5 },
-    shadowOpacity: 0.28,
-    shadowRadius: 9,
-    elevation: 9,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.22,
+    shadowRadius: 7,
+    elevation: 8,
     zIndex: 10,
   },
 });

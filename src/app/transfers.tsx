@@ -1066,14 +1066,15 @@ export default function Transfers() {
         transparent
         visible={modalVisible}
       >
-        <View className="flex-1 bg-black/40">
+        <View className="flex-1 bg-black/40" style={{ paddingBottom: insets.bottom }}>
           <KeyboardAvoidingView
-            behavior={Platform.OS === "ios" ? "padding" : "height"}
+            behavior={Platform.OS === "ios" ? "padding" : "position"}
+            keyboardVerticalOffset={0}
             style={{ flex: 1, justifyContent: "flex-end" }}
           >
             <View
               className="max-h-[92%] rounded-t-[26px] bg-[#F8F9F6] px-5 pb-8 pt-5"
-              style={{ height: "92%" }}
+              style={{ maxHeight: "92%" }}
             >
             <View className="mb-4 flex-row items-center justify-between">
               <View>
@@ -1098,10 +1099,12 @@ export default function Transfers() {
 
             <ScrollView
               style={{ flex: 1, minHeight: 0 }}
+              contentContainerStyle={{ paddingBottom: 24 + insets.bottom }}
               keyboardShouldPersistTaps="handled"
               showsVerticalScrollIndicator={false}
               automaticallyAdjustKeyboardInsets
-              keyboardDismissMode="none"
+              keyboardDismissMode="interactive"
+              bounces={true}
             >
               <View className="mb-4">
                 <View className="mb-2 flex-row items-center justify-between">
