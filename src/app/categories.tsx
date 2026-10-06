@@ -3,6 +3,7 @@ import * as ImagePicker from "expo-image-picker";
 import { LinearGradient } from "expo-linear-gradient";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useMemo, useState } from "react";
+import { StatusBar } from "expo-status-bar";
 import {
   ActivityIndicator,
   Alert,
@@ -431,6 +432,11 @@ export default function Categories() {
 
   return (
     <SafeAreaView className="flex-1 bg-[#F2F5EA]" edges={["bottom"]}>
+      <StatusBar
+        style="light"
+        backgroundColor={Colors.greenGradient[0]}
+        translucent={false}
+      />
       <LinearGradient
         colors={Colors.greenGradient}
         start={{ x: 0, y: 0 }}

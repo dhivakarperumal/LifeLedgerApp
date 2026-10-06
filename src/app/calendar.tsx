@@ -366,7 +366,9 @@ export default function CalendarScreen() {
       style={{ backgroundColor: Colors.primary }}
     >
       {loading ? (
-        <CenteredPageLoader message="Loading calendar..." />
+        <View style={{ flex: 1, backgroundColor: Colors.white }}>
+          <CenteredPageLoader message="Loading calendar..." />
+        </View>
       ) : (
       <ScrollView
         className="flex-1"
