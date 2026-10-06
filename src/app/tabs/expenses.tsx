@@ -122,6 +122,16 @@ const categoryAccents: Record<string, { bg: string; color: string }> = {
   Other: { bg: "#F3F4F6", color: "#6B7280" },
 };
 
+const categoryIcons: Record<string, keyof typeof Ionicons.glyphMap> = {
+  food: "restaurant-outline",
+  travel: "bus-outline",
+  bills: "document-text-outline",
+  shopping: "bag-handle-outline",
+  health: "medkit-outline",
+  education: "school-outline",
+  other: "pricetag-outline",
+};
+
 function getCurrentDate() {
   const now = new Date();
   // Use local date instead of UTC to avoid timezone-related date mismatches
@@ -960,6 +970,9 @@ export default function Expenses() {
                   bg: "#F3F4F6",
                   color: "#6B7280",
                 };
+                const categoryIcon =
+                  categoryIcons[(expense.category || "Other").toLowerCase()] ||
+                  categoryIcons.other;
 
                 return (
                   <View
@@ -982,6 +995,27 @@ export default function Expenses() {
                       elevation: viewMode === "card" ? 0 : 2,
                     }}
                   >
+                    <View
+                      style={{
+                        width: 36,
+                        height: 36,
+                        borderRadius: 12,
+                        backgroundColor: accent.bg,
+                        alignItems: "center",
+                        justifyContent: "center",
+                        alignSelf:
+                          viewMode === "card" ? "flex-start" : undefined,
+                        marginRight: viewMode === "card" ? 0 : 12,
+                        marginBottom: viewMode === "card" ? 10 : 0,
+                      }}
+                    >
+                      <Ionicons
+                        name={categoryIcon}
+                        size={19}
+                        color={accent.color}
+                      />
+                    </View>
+
                     {/* Info */}
                     <View
                       style={{

@@ -76,13 +76,13 @@ type CalendarEvent = {
 };
 
 const categoryIcons: Record<string, keyof typeof Ionicons.glyphMap> = {
-  Food: "restaurant-outline",
-  Travel: "car-outline",
-  Bills: "document-text-outline",
-  Shopping: "bag-handle-outline",
-  Health: "medkit-outline",
-  Education: "school-outline",
-  Other: "ellipsis-horizontal-outline",
+  food: "restaurant-outline",
+  travel: "bus-outline",
+  bills: "document-text-outline",
+  shopping: "bag-handle-outline",
+  health: "medkit-outline",
+  education: "school-outline",
+  other: "ellipsis-horizontal-outline",
 };
 
 let hasLoadedHomeOnce = false;
@@ -1125,9 +1125,10 @@ export default function Index() {
                 <SectionHeader title="Recent Transactions" />
                 {recentTransactions.length > 0 ? (
                   recentTransactions.map((tx) => {
+                    const categoryName = getExpenseCategoryName(tx);
                     const iconName =
-                      categoryIcons[getExpenseCategoryName(tx)] ||
-                      "pricetag-outline";
+                      categoryIcons[categoryName.toLowerCase()] ||
+                      categoryIcons.other;
                     return (
                       <View
                         key={String(tx.id)}
