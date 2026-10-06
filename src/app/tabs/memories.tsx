@@ -1,48 +1,48 @@
 import { Ionicons } from "@expo/vector-icons";
 import {
-  AudioModule,
-  RecordingPresets,
-  setAudioModeAsync,
-  useAudioRecorder,
+    AudioModule,
+    RecordingPresets,
+    setAudioModeAsync,
+    useAudioRecorder,
 } from "expo-audio";
 import * as DocumentPicker from "expo-document-picker";
 import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import { useCallback, useMemo, useState } from "react";
 import {
-  ActivityIndicator,
-  Alert,
-  Image,
-  KeyboardAvoidingView,
-  Modal,
-  Pressable,
-  Platform,
-  RefreshControl,
-  ScrollView,
-  Text,
-  View,
+    ActivityIndicator,
+    Alert,
+    Image,
+    KeyboardAvoidingView,
+    Modal,
+    Platform,
+    Pressable,
+    RefreshControl,
+    ScrollView,
+    Text,
+    View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import api, { API_BASE_URL, getApiErrorMessage, logoutUser } from "../../api";
 import { AddButton } from "../../components/AddButton";
 import {
-  createDateRangeSelection,
-  isDateInRange,
-  type DateRangeSelection,
+    createDateRangeSelection,
+    isDateInRange,
+    type DateRangeSelection,
 } from "../../components/DateRangeFilter";
 import { DateTimePickerComponent } from "../../components/DateTimePickerComponent";
 import {
-  formatLocalDateTime,
-  parseLocalDateTimeValue,
+    formatLocalDateTime,
+    parseLocalDateTimeValue,
 } from "../../components/dateTimeUtils";
 import {
-  countActiveFilters,
-  DEFAULT_FILTER_STATE,
-  type FilterState,
-  type ViewModeOption,
+    countActiveFilters,
+    DEFAULT_FILTER_STATE,
+    type FilterState,
+    type ViewModeOption,
 } from "../../components/filters";
 import {
-  FormField,
-  formFieldStyles,
+    FormField,
+    formFieldStyles,
 } from "../../components/FormControls";
 import { GradientSafeAreaView as SafeAreaView } from "../../components/GradientSafeAreaView";
 import { PopupSelect } from "../../components/PopupSelect";
@@ -1357,7 +1357,7 @@ export default function Memories() {
                   color={Colors.forest}
                 />
                 <Text style={{ color: Colors.textPrimary, fontWeight: "600" }}>
-                  Mark as favorite
+                  Mark As Favorite
                 </Text>
               </Pressable>
             </ScrollView>

@@ -4,36 +4,36 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useMemo, useState } from "react";
 import {
-  ActivityIndicator,
-  Alert,
-  Linking,
-  KeyboardAvoidingView,
-  Modal,
-  Platform,
-  Pressable,
-  RefreshControl,
-  ScrollView,
-  Text,
-  useWindowDimensions,
-  View,
+    ActivityIndicator,
+    Alert,
+    KeyboardAvoidingView,
+    Linking,
+    Modal,
+    Platform,
+    Pressable,
+    RefreshControl,
+    ScrollView,
+    Text,
+    useWindowDimensions,
+    View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Svg, { Path, Rect } from "react-native-svg";
 import api, { API_BASE_URL, getApiErrorMessage, logoutUser } from "../api";
 import { AddButton } from "../components/AddButton";
 import {
-  createDateRangeSelection,
-  isDateInRange,
-  type DateRangeSelection,
+    createDateRangeSelection,
+    isDateInRange,
+    type DateRangeSelection,
 } from "../components/DateRangeFilter";
 import { DateTimePickerComponent } from "../components/DateTimePickerComponent";
 import { formatLocalDate, parseLocalDate } from "../components/dateTimeUtils";
 import {
-  countActiveFilters,
-  DEFAULT_FILTER_STATE,
-  type FilterState,
-  type SortOption,
-  type ViewModeOption,
+    countActiveFilters,
+    DEFAULT_FILTER_STATE,
+    type FilterState,
+    type SortOption,
+    type ViewModeOption,
 } from "../components/filters";
 import { FormInput, FormOption } from "../components/FormControls";
 import { GradientSafeAreaView as SafeAreaView } from "../components/GradientSafeAreaView";
@@ -1197,7 +1197,7 @@ export default function Transfers() {
               </View>
 
               <Text className="mb-2 text-xs font-bold text-[#46534B]">
-                Source income (optional)
+                Source Income (Optional)
               </Text>
               <ScrollView
                 horizontal
@@ -1213,10 +1213,10 @@ export default function Transfers() {
                   }}
                 >
                   <Text className="text-xs font-bold text-[#293930]">
-                    No source
+                    No Source
                   </Text>
                   <Text className="mt-1 text-xs text-[#818D84]">
-                    Unlinked transfer
+                    Unlinked Transfer
                   </Text>
                 </FormOption>
                 {incomes.map((income) => {
@@ -1277,7 +1277,7 @@ export default function Transfers() {
               )}
 
               <Text className="mb-1.5 text-xs font-bold text-[#46534B]">
-                Transfer title
+                Transfer Title
               </Text>
               <FormInput
                 className="mb-4 rounded-xl bg-white px-4 py-3 text-sm text-[#25332C]"
@@ -1328,7 +1328,7 @@ export default function Transfers() {
               />
 
               <Text className="mb-2 text-xs font-bold text-[#46534B]">
-                Payment method
+                Payment Method
               </Text>
               <View className="mb-4 flex-row flex-wrap gap-2">
                 {paymentMethods.map((method) => (

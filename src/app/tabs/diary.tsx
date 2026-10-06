@@ -1540,7 +1540,7 @@ export default function Diary() {
                 placeholder="family, travel, gratitude"
               />
               <FormField
-                label="Today's entry"
+                label="Today's Entry"
                 value={form.content}
                 onChangeText={(value) => updateForm("content", value)}
                 placeholder="Write about your day, thoughts, or moments..."
@@ -1832,7 +1832,6 @@ const labelStyle = {
   color: "#4B5563",
   fontSize: 12,
   fontWeight: "700" as const,
-  textTransform: "uppercase" as const,
 };
 const inputStyle = {
   minHeight: 44,

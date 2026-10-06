@@ -3,41 +3,41 @@ import * as DocumentPicker from "expo-document-picker";
 import { useFocusEffect, useNavigation, useRouter } from "expo-router";
 import { useCallback, useLayoutEffect, useMemo, useState } from "react";
 import {
-  Alert,
-  KeyboardAvoidingView,
-  LayoutAnimation,
-  Modal,
-  Pressable,
-  Platform,
-  RefreshControl,
-  ScrollView,
-  Text,
-  TextInput,
-  View,
+    Alert,
+    KeyboardAvoidingView,
+    LayoutAnimation,
+    Modal,
+    Platform,
+    Pressable,
+    RefreshControl,
+    ScrollView,
+    Text,
+    TextInput,
+    View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import api, { getApiErrorMessage, logoutUser } from "../../api";
 import { AddButton } from "../../components/AddButton";
 import {
-  createDateRangeSelection,
-  isDateInRange,
-  type DateRangeSelection,
+    createDateRangeSelection,
+    isDateInRange,
+    type DateRangeSelection,
 } from "../../components/DateRangeFilter";
 import { DateTimePickerComponent } from "../../components/DateTimePickerComponent";
 import {
-  formatLocalDate,
-  formatLocalTime,
-  parseLocalDateTime,
+    formatLocalDate,
+    formatLocalTime,
+    parseLocalDateTime,
 } from "../../components/dateTimeUtils";
 import {
-  DEFAULT_FILTER_STATE,
-  type FilterState,
-  type SortOption,
-  type ViewModeOption,
+    DEFAULT_FILTER_STATE,
+    type FilterState,
+    type SortOption,
+    type ViewModeOption,
 } from "../../components/filters";
 import {
-  FormField,
-  formFieldStyles
+    FormField,
+    formFieldStyles
 } from "../../components/FormControls";
 import { GradientSafeAreaView as SafeAreaView } from "../../components/GradientSafeAreaView";
 import { PopupSelect } from "../../components/PopupSelect";
@@ -1654,7 +1654,7 @@ export default function Expenses() {
               />
 
               <View style={{ marginBottom: 12 }}>
-                <ModalSectionLabel label="ATTACHMENT / RECEIPT (OPTIONAL)" />
+                <ModalSectionLabel label="Attachment / Receipt (Optional)" />
                 <Pressable
                   onPress={() => void pickAttachment()}
                   style={{

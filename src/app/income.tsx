@@ -4,36 +4,36 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useMemo, useState } from "react";
 import {
-  ActivityIndicator,
-  Alert,
-  Linking,
-  KeyboardAvoidingView,
-  Modal,
-  Platform,
-  Pressable,
-  RefreshControl,
-  ScrollView,
-  Text,
-  useWindowDimensions,
-  View,
+    ActivityIndicator,
+    Alert,
+    KeyboardAvoidingView,
+    Linking,
+    Modal,
+    Platform,
+    Pressable,
+    RefreshControl,
+    ScrollView,
+    Text,
+    useWindowDimensions,
+    View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Svg, { Path } from "react-native-svg";
 import api, { API_BASE_URL, getApiErrorMessage, logoutUser } from "../api";
 import { AddButton } from "../components/AddButton";
 import {
-  createDateRangeSelection,
-  isDateInRange,
-  type DateRangeSelection,
+    createDateRangeSelection,
+    isDateInRange,
+    type DateRangeSelection,
 } from "../components/DateRangeFilter";
 import { DateTimePickerComponent } from "../components/DateTimePickerComponent";
 
 import { formatLocalDate, parseLocalDate } from "../components/dateTimeUtils";
 import {
-  countActiveFilters,
-  DEFAULT_FILTER_STATE,
-  type FilterState,
-  type SortOption,
+    countActiveFilters,
+    DEFAULT_FILTER_STATE,
+    type FilterState,
+    type SortOption,
 } from "../components/filters";
 import { FormInput, FormOption } from "../components/FormControls";
 import { GradientSafeAreaView as SafeAreaView } from "../components/GradientSafeAreaView";
@@ -1097,7 +1097,7 @@ export default function Income() {
               keyboardDismissMode="none"
             >
               <Text className="mb-1.5 text-xs font-bold text-[#46534B]">
-                Income title
+                Income Title
               </Text>
               <FormInput
                 className="mb-4 rounded-xl bg-white px-4 py-3 text-sm text-[#25332C]"
@@ -1148,7 +1148,7 @@ export default function Income() {
               />
 
               <Text className="mb-2 text-xs font-bold text-[#46534B]">
-                Payment method
+                Payment Method
               </Text>
               <View className="mb-4 flex-row flex-wrap gap-2">
                 {paymentMethods.map((method) => (
@@ -1168,7 +1168,7 @@ export default function Income() {
               </View>
 
               <Text className="mb-2 text-xs font-bold text-[#46534B]">
-                Recurring income
+                Recurring Income
               </Text>
               <View className="mb-4 flex-row gap-2">
                 {(["Yes", "No"] as const).map((value) => (
@@ -1200,7 +1200,7 @@ export default function Income() {
               />
 
               <Text className="mb-2 text-xs font-bold text-[#46534B]">
-                Attachment / receipt
+                Attachment / Receipt
               </Text>
               {existingAttachment && !attachment && (
                 <Pressable

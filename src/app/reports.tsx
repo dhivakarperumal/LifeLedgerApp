@@ -1024,7 +1024,7 @@ export default function Reports() {
               additionalFilters: [
                 {
                   key: "paymentMethod",
-                  label: "Payment method",
+                  label: "Payment Method",
                   presentation: "select",
                   options: paymentMethods.map((payment) => ({
                     value: payment,

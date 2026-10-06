@@ -4,6 +4,7 @@ import DateTimePicker, {
 import { Clock } from "lucide-react-native";
 import { useState } from "react";
 import { Modal, Platform, Pressable, Text, View } from "react-native";
+import { toTitleCase } from "./formLabelUtils";
 
 interface TimePickerProps {
   value?: Date;
@@ -30,6 +31,7 @@ export default function TimePicker({
   disabled = false,
 }: TimePickerProps) {
   const [isPickerVisible, setIsPickerVisible] = useState(false);
+  const displayLabel = toTitleCase(label);
   const hasValue = value instanceof Date && !Number.isNaN(value.getTime());
   const displayedTime = hasValue ? value : new Date();
 
@@ -56,12 +58,12 @@ export default function TimePicker({
           disabled ? "text-gray-400" : "text-gray-700"
         }`}
       >
-        {label}
+        {displayLabel}
       </Text>
 
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel={`${label}, ${hasValue ? formatTime(displayedTime) : placeholder}`}
+        accessibilityLabel={`${displayLabel}, ${hasValue ? formatTime(displayedTime) : placeholder}`}
         accessibilityState={{ disabled }}
         disabled={disabled}
         onPress={openPicker}

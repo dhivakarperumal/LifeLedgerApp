@@ -208,7 +208,7 @@ export default function LoginScreen() {
             {/* Email field */}
             <View className="mb-[14px]">
               <Text className="mb-2 text-sm font-semibold text-[#263238]">
-                Email or Mobile Number
+                Email Or Mobile Number
               </Text>
               <View className="h-[52px] flex-row items-center rounded-[14px] border border-[#E5EAE7] bg-[#F9FAFC] px-[14px]">
                 <Ionicons
@@ -220,7 +220,7 @@ export default function LoginScreen() {
                   bordered={false}
                   value={identifier}
                   onChangeText={setIdentifier}
-                  accessibilityLabel="Email or mobile number"
+                  accessibilityLabel="Email Or Mobile Number"
                   placeholder="Email or mobile number"
                   autoCapitalize="none"
                   autoCorrect={false}

@@ -22,11 +22,10 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Colors } from "../../constants/colors";
 import { DateRangeFilter, type DateRangeSelection } from "../DateRangeFilter";
+import { toTitleCase } from "../formLabelUtils";
 import { AmountRangeFilter } from "./AmountRangeFilter";
 import { CategoryFilter, type CategoryOption } from "./CategoryFilter";
 import { ChoiceFilter, type ChoiceFilterGroup } from "./ChoiceFilter";
-import { SortFilter } from "./SortFilter";
-import { StatusFilter } from "./StatusFilter";
 import {
     DEFAULT_FILTER_STATE,
     type FilterState,
@@ -34,6 +33,8 @@ import {
     type StatusOption,
     type ViewModeOption,
 } from "./filterTypes";
+import { SortFilter } from "./SortFilter";
+import { StatusFilter } from "./StatusFilter";
 
 const poppinsFontMap = {
   Poppins_400Regular,
@@ -492,7 +493,7 @@ export function FilterBottomSheet({
                           : undefined,
                       }}
                     >
-                      {filter.label}
+                      {toTitleCase(filter.label)}
                     </Text>
                     <ChoiceFilter
                       label={filter.label}

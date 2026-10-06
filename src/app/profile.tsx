@@ -3,20 +3,20 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useState } from "react";
 import {
-  ActivityIndicator,
-  Alert,
-  Pressable,
-  RefreshControl,
-  ScrollView,
-  Text,
-  View,
+    ActivityIndicator,
+    Alert,
+    Pressable,
+    RefreshControl,
+    ScrollView,
+    Text,
+    View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import api, {
-  getApiErrorMessage,
-  getStoredUser,
-  logoutUser,
-  saveUser,
+    getApiErrorMessage,
+    getStoredUser,
+    logoutUser,
+    saveUser,
 } from "../api";
 import { FormInput } from "../components/FormControls";
 import { GradientSafeAreaView as SafeAreaView } from "../components/GradientSafeAreaView";
@@ -50,11 +50,11 @@ const passwordFields: {
 }[] = [
   {
     key: "current",
-    label: "Current password",
+    label: "Current Password",
     autoComplete: "current-password",
   },
-  { key: "next", label: "New password", autoComplete: "new-password" },
-  { key: "confirm", label: "Confirm password", autoComplete: "new-password" },
+  { key: "next", label: "New Password", autoComplete: "new-password" },
+  { key: "confirm", label: "Confirm Password", autoComplete: "new-password" },
 ];
 
 function getDisplayName(user: UserProfile | null) {
@@ -462,21 +462,21 @@ export default function Profile() {
               {[
                 {
                   key: "name" as const,
-                  label: "Full name",
+                  label: "Full Name",
                   icon: "person-outline" as const,
                   keyboardType: "default" as const,
                   autoCapitalize: "words" as const,
                 },
                 {
                   key: "email" as const,
-                  label: "Email address",
+                  label: "Email Address",
                   icon: "mail-outline" as const,
                   keyboardType: "email-address" as const,
                   autoCapitalize: "none" as const,
                 },
                 {
                   key: "phone" as const,
-                  label: "Phone number",
+                  label: "Phone Number",
                   icon: "call-outline" as const,
                   keyboardType: "phone-pad" as const,
                   autoCapitalize: "none" as const,
@@ -493,7 +493,7 @@ export default function Profile() {
                     style={{ marginRight: 12 }}
                   />
                   <View className="flex-1 py-2">
-                    <Text className="mb-1 text-xs font-bold uppercase tracking-[0.8px] text-[#839087]">
+                    <Text className="mb-1 text-xs font-bold tracking-[0.8px] text-[#839087]">
                       {field.label}
                     </Text>
                     <FormInput

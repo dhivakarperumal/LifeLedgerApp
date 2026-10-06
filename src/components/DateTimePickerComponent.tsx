@@ -1,16 +1,17 @@
 import DateTimePicker, {
-  type DateTimePickerEvent,
+    type DateTimePickerEvent,
 } from "@react-native-community/datetimepicker";
 import { CalendarDays, Clock3 } from "lucide-react-native";
 import { useState } from "react";
 import {
-  Keyboard,
-  Modal,
-  Platform,
-  Pressable,
-  Text,
-  View,
+    Keyboard,
+    Modal,
+    Platform,
+    Pressable,
+    Text,
+    View,
 } from "react-native";
+import { toTitleCase } from "./formLabelUtils";
 
 export type DateTimePickerMode = "date" | "time" | "datetime";
 
@@ -53,6 +54,7 @@ export function DateTimePickerComponent({
     mode === "time" ? "time" : "date",
   );
   const isValidValue = value instanceof Date && !Number.isNaN(value.getTime());
+  const displayLabel = label ? toTitleCase(label) : undefined;
 
   const openPicker = (pickerMode: "date" | "time") => {
     if (disabled) return;
@@ -141,8 +143,10 @@ export function DateTimePickerComponent({
 
   return (
     <View className="w-full">
-      {label && (
-        <Text className="mb-2 text-xs font-bold text-[#46534B]">{label}</Text>
+      {displayLabel && (
+        <Text className="mb-2 text-xs font-bold text-[#46534B]">
+          {displayLabel}
+        </Text>
       )}
       {fields}
 
@@ -168,7 +172,9 @@ export function DateTimePickerComponent({
             <View className="rounded-t-3xl bg-white px-5 pb-8 pt-5">
               <View className="mb-3 flex-row items-center justify-between border-b border-gray-100 pb-3">
                 <Text className="text-base font-bold text-[#25332C]">
-                  {mode === "datetime" ? "Date & time" : label || (mode === "date" ? "Date" : "Time")}
+                  {mode === "datetime"
+                    ? toTitleCase("Date & time")
+                    : displayLabel || (mode === "date" ? "Date" : "Time")}
                 </Text>
                 <Pressable
                   accessibilityRole="button"

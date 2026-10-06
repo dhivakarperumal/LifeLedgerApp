@@ -4,6 +4,7 @@ import DateTimePicker, {
 import { CalendarDays } from "lucide-react-native";
 import { useState } from "react";
 import { Modal, Platform, Pressable, Text, View } from "react-native";
+import { toTitleCase } from "./formLabelUtils";
 
 interface DatePickerProps {
   value?: Date;
@@ -29,6 +30,7 @@ export default function DatePicker({
   disabled = false,
 }: DatePickerProps) {
   const [isPickerVisible, setIsPickerVisible] = useState(false);
+  const displayLabel = toTitleCase(label);
   const hasValue = value instanceof Date && !Number.isNaN(value.getTime());
   const displayedDate = hasValue ? value : new Date();
 
@@ -55,12 +57,12 @@ export default function DatePicker({
           disabled ? "text-gray-400" : "text-gray-700"
         }`}
       >
-        {label}
+        {displayLabel}
       </Text>
 
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel={`${label}, ${hasValue ? formatDate(displayedDate) : placeholder}`}
+        accessibilityLabel={`${displayLabel}, ${hasValue ? formatDate(displayedDate) : placeholder}`}
         accessibilityState={{ disabled }}
         disabled={disabled}
         onPress={openPicker}

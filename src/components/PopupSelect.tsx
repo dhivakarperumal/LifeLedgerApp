@@ -12,6 +12,7 @@ import {
     View,
     useWindowDimensions,
 } from "react-native";
+import { toTitleCase } from "./formLabelUtils";
 
 export type PopupSelectOption =
   | string
@@ -72,6 +73,7 @@ export function PopupSelect({
   );
 
   const selectedOption = normalizedOptions.find((option) => option.value === value);
+  const displayLabel = toTitleCase(label);
 
   const filteredOptions = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -110,15 +112,15 @@ export function PopupSelect({
   return (
     <View className="mb-4">
       {showLabel && label ? (
-        <Text className="mb-2 text-xs font-bold uppercase tracking-[0.12em] text-[#46534B]">
-          {label}
+        <Text className="mb-2 text-xs font-bold tracking-[0.12em] text-[#46534B]">
+          {displayLabel}
           {required ? " *" : ""}
         </Text>
       ) : null}
 
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel={label}
+        accessibilityLabel={displayLabel}
         onPress={openPicker}
         disabled={disabled}
         className={`min-h-[50px] w-full flex-row items-center justify-between rounded-xl border bg-white px-3.5 py-3 ${
@@ -166,7 +168,9 @@ export function PopupSelect({
                 style={{ maxHeight: "90%" }}
               >
             <View className="mb-3 flex-row items-center justify-between">
-              <Text className="text-base font-bold text-[#25332C]">{label}</Text>
+              <Text className="text-base font-bold text-[#25332C]">
+                {displayLabel}
+              </Text>
               <Pressable
                 onPress={closePicker}
                 className="h-8 w-8 items-center justify-center rounded-full bg-[#F1F5F9]"

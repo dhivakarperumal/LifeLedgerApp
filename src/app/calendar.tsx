@@ -7,8 +7,8 @@ import {
     Alert,
     KeyboardAvoidingView,
     Modal,
-    Pressable,
     Platform,
+    Pressable,
     RefreshControl,
     ScrollView,
     Text,
@@ -777,7 +777,7 @@ export default function CalendarScreen() {
                 ] as const
               ).map(([key, label, placeholder]) => (
                 <View key={key} className="mb-3">
-                  <Text className="mb-1.5 text-xs font-bold uppercase tracking-[0.8px] text-[#7B8589]">
+                  <Text className="mb-1.5 text-xs font-bold tracking-[0.8px] text-[#7B8589]">
                     {label}
                   </Text>
                   <FormInput
@@ -796,7 +796,7 @@ export default function CalendarScreen() {
                   />
                 </View>
               ))}
-              <Text className="mb-2 text-xs font-bold uppercase tracking-[0.8px] text-[#7B8589]">
+              <Text className="mb-2 text-xs font-bold tracking-[0.8px] text-[#7B8589]">
                 Priority
               </Text>
               <View className="mb-5 flex-row">

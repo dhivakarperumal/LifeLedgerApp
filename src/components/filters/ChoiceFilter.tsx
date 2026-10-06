@@ -8,6 +8,7 @@ import { useState } from "react";
 import { Pressable, Text, View } from "react-native";
 import { Colors } from "../../constants/colors";
 import { PopupSelect } from "../PopupSelect";
+import { toTitleCase } from "../formLabelUtils";
 
 export type ChoiceFilterOption = {
   value: string;
@@ -44,7 +45,10 @@ export function ChoiceFilter({
       <PopupSelect
         label={label ?? "Select an option"}
         placeholder="Select an option"
-        options={options}
+        options={options.map((option) => ({
+          ...option,
+          label: toTitleCase(option.label),
+        }))}
         value={value}
         onChange={onChange}
         searchPlaceholder={`Search ${(label ?? "options").toLowerCase()}`}
@@ -140,7 +144,7 @@ export function ChoiceFilter({
                         : undefined,
                     }}
                   >
-                    {option.label}
+                    {toTitleCase(option.label)}
                   </Text>
                   {selected ? (
                     <Ionicons name="checkmark" size={17} color={Colors.forest} />

@@ -12,6 +12,7 @@ import {
     type ViewStyle,
 } from "react-native";
 import { Colors } from "../constants/colors";
+import { toTitleCase } from "./formLabelUtils";
 
 type FormInputProps = Omit<TextInputProps, "placeholderTextColor" | "style"> & {
   bordered?: boolean;
@@ -70,7 +71,7 @@ export function FormField({
           labelColor ? { color: labelColor } : undefined,
         ]}
       >
-        {label}
+        {toTitleCase(label)}
       </Text>
       <FormInput
         value={value}
@@ -96,7 +97,6 @@ export const formFieldStyles = StyleSheet.create({
     color: "#4B5563",
     fontSize: 12,
     fontWeight: "700",
-    textTransform: "uppercase",
   },
   input: {
     minHeight: 46,
