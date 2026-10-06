@@ -1306,7 +1306,45 @@ export default function Index() {
                     );
                   })
                 ) : (
-                  <EmptyStateCard message="No diary entries recorded today." />
+                  <LinearGradient
+                    colors={["#2F6039", "#173D25"]}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                    style={{
+                      alignItems: "center",
+                      borderRadius: 28,
+                      paddingHorizontal: 18,
+                      paddingTop: 18,
+                      paddingBottom: 16,
+                    }}
+                  >
+                    <View
+                      className="mb-3 h-12 w-12 items-center justify-center rounded-full"
+                      style={{ backgroundColor: "rgba(255,255,255,0.2)" }}
+                    >
+                      <Ionicons name="book" size={24} color={Colors.white} />
+                    </View>
+                    <Text
+                      className="mb-4 text-center text-xs font-semibold"
+                      style={{ color: "#D3E5D2" }}
+                    >
+                      You haven&apos;t documented your day yet.
+                    </Text>
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel="Write a diary entry"
+                      accessibilityHint="Opens the diary page"
+                      onPress={() => router.push("/tabs/diary")}
+                      className="w-full items-center rounded-full bg-white py-3"
+                    >
+                      <Text
+                        className="text-[11px] font-extrabold tracking-[1px]"
+                        style={{ color: "#315A38" }}
+                      >
+                        WRITE A DIARY
+                      </Text>
+                    </Pressable>
+                  </LinearGradient>
                 )}
 
                 {/* --- Recent Events --- */}
