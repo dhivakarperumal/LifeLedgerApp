@@ -212,6 +212,23 @@ function formatDate(dateString?: string) {
   });
 }
 
+function getExpenseMonth(dateString?: string) {
+  if (!dateString) return { key: "unknown", label: "Date not set" };
+  const isoDate = dateString.match(/^(\d{4})-(\d{2})/);
+  const date = isoDate
+    ? new Date(Number(isoDate[1]), Number(isoDate[2]) - 1, 1)
+    : new Date(dateString);
+  if (Number.isNaN(date.getTime())) return { key: "unknown", label: "Date not set" };
+  const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+  return {
+    key,
+    label: date.toLocaleDateString("en-IN", {
+      month: "long",
+      year: "numeric",
+    }),
+  };
+}
+
 function getTransferRows(data: any): TransferItem[] {
   if (Array.isArray(data)) return data;
   if (Array.isArray(data?.transfers)) return data.transfers;
@@ -254,7 +271,7 @@ export default function Expenses() {
   const [amountMin, setAmountMin] = useState("");
   const [amountMax, setAmountMax] = useState("");
   const [sort, setSort] = useState<SortOption>(DEFAULT_FILTER_STATE.sort);
-  const [viewMode, setViewMode] = useState<ViewModeOption>("card");
+  const [viewMode, setViewMode] = useState<ViewModeOption>("table");
   const [search, setSearch] = useState("");
   const [refreshing, setRefreshing] = useState(false);
   const [showSummaryCards, setShowSummaryCards] = useState(false);
@@ -505,6 +522,26 @@ export default function Expenses() {
     amountMax,
     sort,
   ]);
+
+  const expensesByMonth = useMemo(() => {
+    const groups = new Map<
+      string,
+      { label: string; expenses: ExpenseItem[] }
+    >();
+    for (const expense of visibleExpenses) {
+      const month = getExpenseMonth(expense.expense_date);
+      const group = groups.get(month.key) || { label: month.label, expenses: [] };
+      group.expenses.push(expense);
+      groups.set(month.key, group);
+    }
+    return Array.from(groups.entries())
+      .sort(([left], [right]) => {
+        if (left === "unknown") return 1;
+        if (right === "unknown") return -1;
+        return right.localeCompare(left);
+      })
+      .map(([key, group]) => ({ key, ...group }));
+  }, [visibleExpenses]);
 
   const totals = useMemo(
     () => ({
@@ -964,29 +1001,8 @@ export default function Expenses() {
               marginBottom: 12,
             }}
           >
-            <Text style={{ fontSize: 16, fontWeight: "800", color: "#1E293B" }}>
-              {selectedCategory === "All"
-                ? "All Expenses"
-                : `${selectedCategory} Expenses`}
-            </Text>
-            <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
-              <Text style={{ fontSize: 12, color: "#94A3B8" }}>
-                {visibleExpenses.length} item
-                {visibleExpenses.length !== 1 ? "s" : ""}
-              </Text>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="View all expenses"
-                onPress={showAllExpenses}
-                hitSlop={8}
-                style={{ flexDirection: "row", alignItems: "center", gap: 4 }}
-              >
-                <Text style={{ fontSize: 13, fontWeight: "700", color: Colors.primary }}>
-                  View All
-                </Text>
-                <Ionicons name="arrow-forward" size={14} color={Colors.primary} />
-              </Pressable>
-            </View>
+           
+            
           </View>
 
           {visibleExpenses.length === 0 ? (
@@ -1033,18 +1049,44 @@ export default function Expenses() {
               </Text>
             </View>
           ) : (
-            <View
-              style={
-                viewMode === "card"
-                  ? {
+            <View>
+              {expensesByMonth.map((month) => (
+                <View key={month.key} style={{ marginBottom: 18 }}>
+                  <View
+                    style={{
                       flexDirection: "row",
-                      flexWrap: "wrap",
+                      alignItems: "center",
                       justifyContent: "space-between",
+                      marginBottom: 10,
+                      paddingHorizontal: 2,
+                    }}
+                  >
+                    <Text
+                      style={{
+                        fontSize: 14,
+                        fontWeight: "800",
+                        color: "#52635A",
+                      }}
+                    >
+                      {month.label}
+                    </Text>
+                    <Text style={{ fontSize: 12, color: "#94A3B8" }}>
+                      {month.expenses.length}{" "}
+                      {month.expenses.length === 1 ? "expense" : "expenses"}
+                    </Text>
+                  </View>
+                  <View
+                    style={
+                      viewMode === "card"
+                        ? {
+                            flexDirection: "row",
+                            flexWrap: "wrap",
+                            justifyContent: "space-between",
+                          }
+                        : undefined
                     }
-                  : undefined
-              }
-            >
-              {visibleExpenses.map((expense, index) => {
+                  >
+              {month.expenses.map((expense, index) => {
                 const accent = getCategoryAccent(expense.category);
                 const categoryIcon = getCategoryIcon(expense.category);
 
@@ -1281,6 +1323,9 @@ export default function Expenses() {
                   </View>
                 );
               })}
+                  </View>
+                </View>
+              ))}
             </View>
           )}
           </ScrollView>
