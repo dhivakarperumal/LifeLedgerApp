@@ -13,6 +13,7 @@ import {
     Pressable,
     RefreshControl,
     ScrollView,
+    StyleSheet,
     Text,
     useWindowDimensions,
     View,
@@ -49,6 +50,8 @@ type TransferRecord = {
   category?: string;
   payment_method?: string;
   transfer_date?: string;
+  time?: string;
+  transfer_time?: string;
   source_income_id?: number | string | null;
   notes?: string;
   receipt?: string | null;
@@ -75,6 +78,7 @@ type TransferForm = {
   paymentMethod: string;
   category: string;
   date: string;
+  time: string;
   notes: string;
 };
 
@@ -96,6 +100,34 @@ const transferKeywords = [
   "investment",
   "investments",
 ];
+
+const transferFormStyles = StyleSheet.create({
+  input: {
+    minHeight: 52,
+    marginBottom: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 12,
+    backgroundColor: "#FFFFFF",
+    color: "#25332C",
+    fontSize: 16,
+  },
+  multilineInput: {
+    minHeight: 88,
+    textAlignVertical: "top",
+  },
+});
+
+function parseLocalTime(value?: string | null) {
+  if (!value) return null;
+  const match = /^([01]\d|2[0-3]):([0-5]\d)$/.exec(value);
+  if (!match) return null;
+
+  const date = new Date();
+  date.setHours(Number(match[1]), Number(match[2]), 0, 0);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
 function emptyForm(): TransferForm {
   return {
     title: "",
@@ -103,6 +135,7 @@ function emptyForm(): TransferForm {
     paymentMethod: "Cash",
     category: "",
     date: new Date().toISOString().slice(0, 10),
+    time: "09:00",
     notes: "",
   };
 }
@@ -627,6 +660,7 @@ export default function Transfers() {
       date: transfer.transfer_date
         ? String(transfer.transfer_date).split("T")[0]
         : emptyForm().date,
+      time: transfer.time || transfer.transfer_time || "09:00",
       notes: transfer.notes || "",
     });
     setModalVisible(true);
@@ -689,6 +723,7 @@ export default function Transfers() {
       payload.append("category", category);
       payload.append("paymentMethod", form.paymentMethod);
       payload.append("date", form.date);
+      payload.append("time", form.time);
       payload.append("notes", form.notes);
       payload.append(
         "sourceIncomeId",
@@ -1068,13 +1103,13 @@ export default function Transfers() {
       >
         <View className="flex-1 bg-black/40" style={{ paddingBottom: insets.bottom }}>
           <KeyboardAvoidingView
-            behavior={Platform.OS === "ios" ? "padding" : "position"}
+            behavior={Platform.OS === "ios" ? "padding" : "height"}
             keyboardVerticalOffset={0}
             style={{ flex: 1, justifyContent: "flex-end" }}
           >
             <View
-              className="max-h-[92%] rounded-t-[26px] bg-[#F8F9F6] px-5 pb-8 pt-5"
-              style={{ maxHeight: "92%" }}
+              className="rounded-t-[26px] bg-[#F8F9F6] px-5 pb-8 pt-5"
+              style={{ height: "92%", maxHeight: "92%" }}
             >
             <View className="mb-4 flex-row items-center justify-between">
               <View>
@@ -1274,43 +1309,63 @@ export default function Transfers() {
                 </Pressable>
               )}
 
-              <FormLabel>Transfer Title</FormLabel>
+              <FormLabel>Transfer title *</FormLabel>
               <FormInput
-                className="mb-4 rounded-xl bg-white px-4 py-3 text-sm text-[#25332C]"
+                accessibilityLabel="Transfer title, required"
+                autoCapitalize="sentences"
+                borderColor="#AAB8AE"
+                maxLength={100}
                 placeholder="e.g. Monthly savings"
+                returnKeyType="next"
+                style={transferFormStyles.input}
                 value={form.title}
                 onChangeText={(value) => updateForm("title", value)}
               />
 
               <View className="flex-row gap-3">
                 <View className="flex-1">
-                  <FormLabel>Amount</FormLabel>
+                  <FormLabel>Amount *</FormLabel>
                   <FormInput
-                    className="mb-4 rounded-xl bg-white px-4 py-3 text-sm text-[#25332C]"
+                    accessibilityLabel="Transfer amount, required"
+                    borderColor="#AAB8AE"
                     keyboardType="decimal-pad"
                     placeholder="0.00"
+                    returnKeyType="done"
+                    style={transferFormStyles.input}
                     value={form.amount}
                     onChangeText={(value) => updateForm("amount", value)}
                   />
                 </View>
                 <View className="flex-1">
-                  <View>
-                    <DateTimePickerComponent
-                      mode="date"
-                      value={parseLocalDate(form.date)}
-                      onChange={(date) => {
-                        if (date) updateForm("date", formatLocalDate(date));
-                      }}
-                      label="Date"
-                      placeholder="Select date"
-                    />
-                  </View>
+                  <DateTimePickerComponent
+                    mode="date"
+                    value={parseLocalDate(form.date)}
+                    onChange={(date) => {
+                      if (date) updateForm("date", formatLocalDate(date));
+                    }}
+                    label="Date"
+                    placeholder="Select date"
+                  />
                 </View>
               </View>
+
+              <DateTimePickerComponent
+                mode="time"
+                value={parseLocalTime(form.time)}
+                onChange={(date) => {
+                  if (date) {
+                    const formatted = `${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
+                    updateForm("time", formatted);
+                  }
+                }}
+                label="Time"
+                placeholder="Select time"
+              />
 
               <PopupSelect
                 label="Category"
                 placeholder="Select Category"
+                required
                 options={
                   form.category && !categoryOptions.includes(form.category)
                     ? [...categoryOptions, form.category]
@@ -1339,10 +1394,11 @@ export default function Transfers() {
 
               <FormLabel>Notes</FormLabel>
               <FormInput
-                className="mb-4 min-h-[78px] rounded-xl bg-white px-4 py-3 text-sm text-[#25332C]"
+                accessibilityLabel="Transfer notes"
+                borderColor="#AAB8AE"
                 multiline
                 placeholder="Add any useful details"
-                textAlignVertical="top"
+                style={[transferFormStyles.input, transferFormStyles.multilineInput]}
                 value={form.notes}
                 onChangeText={(value) => updateForm("notes", value)}
               />

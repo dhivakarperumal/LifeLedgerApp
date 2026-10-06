@@ -703,13 +703,13 @@ export default function Categories() {
       >
         <View className="flex-1 bg-black/40" style={{ paddingBottom: insets.bottom }}>
           <KeyboardAvoidingView
-            behavior={Platform.OS === "ios" ? "padding" : "position"}
+            behavior={Platform.OS === "ios" ? "padding" : "height"}
             keyboardVerticalOffset={0}
             style={{ flex: 1, justifyContent: "flex-end" }}
           >
           <View
-            className="max-h-[90%] rounded-t-[26px] bg-[#F8F9F6] px-5 pb-8 pt-5"
-            style={{ maxHeight: "90%" }}
+            className="rounded-t-[26px] bg-[#F8F9F6] px-5 pb-8 pt-5"
+            style={{ height: "90%", maxHeight: "90%" }}
           >
             <View className="mb-5 flex-row items-center justify-between">
               <View>
@@ -741,10 +741,24 @@ export default function Categories() {
               keyboardDismissMode="interactive"
               bounces={true}
             >
-              <FormLabel>Category Name</FormLabel>
+              <FormLabel>Category name *</FormLabel>
               <FormInput
-                className="mb-4 rounded-xl bg-white px-4 py-3 text-sm text-[#25332C]"
+                accessibilityLabel="Category name, required"
+                autoCapitalize="words"
+                borderColor="#AAB8AE"
+                maxLength={60}
                 placeholder="e.g. Groceries"
+                returnKeyType="done"
+                style={{
+                  minHeight: 54,
+                  paddingHorizontal: 16,
+                  paddingVertical: 12,
+                  borderRadius: 12,
+                  backgroundColor: "#FFFFFF",
+                  color: "#25332C",
+                  fontSize: 16,
+                  marginBottom: 16,
+                }}
                 value={form.name}
                 onChangeText={(value) => setFormValue("name", value)}
               />
@@ -806,12 +820,44 @@ export default function Categories() {
 
               <FormLabel>Description</FormLabel>
               <FormInput
-                className="mb-4 min-h-[88px] rounded-xl bg-white px-4 py-3 text-sm text-[#25332C]"
+                accessibilityLabel="Category description"
+                borderColor="#AAB8AE"
                 multiline
                 placeholder="Add a short description"
                 textAlignVertical="top"
+                style={{
+                  minHeight: 88,
+                  marginBottom: 16,
+                  paddingHorizontal: 16,
+                  paddingVertical: 12,
+                  borderRadius: 12,
+                  backgroundColor: "#FFFFFF",
+                  color: "#25332C",
+                  fontSize: 15,
+                }}
                 value={form.description}
                 onChangeText={(value) => setFormValue("description", value)}
+              />
+
+              <FormLabel>Subcategories</FormLabel>
+              <FormInput
+                accessibilityLabel="Subcategories"
+                borderColor="#AAB8AE"
+                multiline
+                placeholder={"Add one subcategory per line\nFor example: Food"}
+                textAlignVertical="top"
+                style={{
+                  minHeight: 88,
+                  marginBottom: 16,
+                  paddingHorizontal: 16,
+                  paddingVertical: 12,
+                  borderRadius: 12,
+                  backgroundColor: "#FFFFFF",
+                  color: "#25332C",
+                  fontSize: 15,
+                }}
+                value={form.subcategory}
+                onChangeText={(value) => setFormValue("subcategory", value)}
               />
 
               <FormLabel>Status</FormLabel>

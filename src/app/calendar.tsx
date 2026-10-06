@@ -11,6 +11,7 @@ import {
   Pressable,
   RefreshControl,
   ScrollView,
+  StyleSheet,
   Text,
   View,
 } from "react-native";
@@ -46,6 +47,24 @@ type EntryForm = {
   priority: string;
   details: string;
 };
+
+const calendarFormStyles = StyleSheet.create({
+  input: {
+    minHeight: 52,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#AAB8AE",
+    backgroundColor: "#FFFFFF",
+    color: "#263238",
+    fontSize: 16,
+  },
+  multilineInput: {
+    minHeight: 88,
+    textAlignVertical: "top",
+  },
+});
 
 function dateKey(date: Date) {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
@@ -541,13 +560,7 @@ export default function CalendarScreen() {
                 })}
               </Text>
             </View>
-            <Pressable
-              onPress={() => openForm(activeType)}
-              className="flex-row items-center rounded-full bg-[#ECF2EE] px-3 py-2"
-            >
-              <Ionicons name="add" size={17} color={Colors.primary} />
-              <Text className="ml-1 text-xs font-bold text-[#366039]">New</Text>
-            </Pressable>
+           
           </View>
 
           {loading ? (
@@ -771,21 +784,35 @@ export default function CalendarScreen() {
       >
         <View className="flex-1 bg-black/40" style={{ paddingBottom: insets.bottom }}>
           <KeyboardAvoidingView
-            behavior={Platform.OS === "ios" ? "padding" : "position"}
+            behavior={Platform.OS === "ios" ? "padding" : "height"}
             keyboardVerticalOffset={0}
             style={{ flex: 1, justifyContent: "flex-end" }}
           >
           <View
-            className="max-h-[90%] rounded-t-3xl border-t-4 border-[#366039] bg-[#F9FAFC] px-5 pb-8 pt-5"
-            style={{ maxHeight: "90%" }}
+            className="rounded-t-3xl bg-[#F9FAFC] px-5 pb-8 pt-5"
+            style={{ height: "78%", maxHeight: "78%" }}
           >
-            <View className="mb-4 flex-row items-center justify-between">
+            <View
+              className="mb-4 flex-row items-center justify-between"
+              style={{
+                marginHorizontal: -20,
+                marginTop: -20,
+                paddingHorizontal: 20,
+                paddingTop: 20,
+                paddingBottom: 16,
+                backgroundColor: "#FFFFFF",
+                borderTopLeftRadius: 24,
+                borderTopRightRadius: 24,
+              }}
+            >
               <Text className="text-xl font-extrabold capitalize text-[#264B2A]">
                 New {modalType === "event" ? "event" : "reminder"}
               </Text>
               <Pressable
+                accessibilityRole="button"
                 onPress={() => setModalType(null)}
                 accessibilityLabel="Close"
+                className="h-9 w-9 items-center justify-center rounded-full bg-[#F2F4F2]"
               >
                 <Ionicons name="close" size={24} color={Colors.primaryDark} />
               </Pressable>
@@ -794,6 +821,7 @@ export default function CalendarScreen() {
               style={{ flex: 1, minHeight: 0 }}
               contentContainerStyle={{ paddingBottom: 24 + insets.bottom }}
               keyboardShouldPersistTaps="handled"
+              showsVerticalScrollIndicator={false}
               automaticallyAdjustKeyboardInsets
               keyboardDismissMode="interactive"
               bounces={true}
@@ -807,55 +835,65 @@ export default function CalendarScreen() {
                 <View key={key} className="mb-4">
                   <FormLabel>{label}</FormLabel>
                   <FormInput
+                    accessibilityLabel={`${label}${key === "title" ? ", required" : ""}`}
+                    autoCapitalize="sentences"
+                    maxLength={key === "title" ? 100 : 60}
                     value={form[key]}
                     onChangeText={(value) =>
                       setForm((current) => ({ ...current, [key]: value }))
                     }
                     placeholder={placeholder}
                     keyboardType="default"
-                    className="rounded-xl bg-white px-3.5 py-3 text-base text-[#263238]"
+                    returnKeyType={key === "title" ? "next" : "done"}
+                    style={calendarFormStyles.input}
                   />
                 </View>
               ))}
 
-              <DateTimePickerComponent
-                mode="date"
-                label="Date"
-                value={parseDateString(form.date)}
-                placeholder="Select date"
-                onChange={(date) =>
-                  setForm((current) => ({
-                    ...current,
-                    date: date ? dateKey(date) : current.date,
-                  }))
-                }
-              />
-
-              <DateTimePickerComponent
-                mode="time"
-                label="Time"
-                value={parseTimeString(form.time)}
-                placeholder="Select time"
-                onChange={(date) =>
-                  setForm((current) => ({
-                    ...current,
-                    time: date
-                      ? `${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`
-                      : current.time,
-                  }))
-                }
-              />
+              <View className="flex-row gap-3">
+                <View className="min-w-0 flex-1">
+                  <DateTimePickerComponent
+                    mode="date"
+                    label="Date"
+                    value={parseDateString(form.date)}
+                    placeholder="Select date"
+                    onChange={(date) =>
+                      setForm((current) => ({
+                        ...current,
+                        date: date ? dateKey(date) : current.date,
+                      }))
+                    }
+                  />
+                </View>
+                <View className="min-w-0 flex-1">
+                  <DateTimePickerComponent
+                    mode="time"
+                    label="Time"
+                    value={parseTimeString(form.time)}
+                    placeholder="Select time"
+                    onChange={(date) =>
+                      setForm((current) => ({
+                        ...current,
+                        time: date
+                          ? `${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`
+                          : current.time,
+                      }))
+                    }
+                  />
+                </View>
+              </View>
 
               <View className="mb-4">
                 <FormLabel>Notes</FormLabel>
                 <FormInput
+                  accessibilityLabel="Event or reminder notes"
                   value={form.details}
                   onChangeText={(value) =>
                     setForm((current) => ({ ...current, details: value }))
                   }
                   placeholder="Add details"
                   multiline
-                  className="rounded-xl bg-white px-3.5 py-3 text-base text-[#263238]"
+                  style={[calendarFormStyles.input, calendarFormStyles.multilineInput]}
                 />
               </View>
               <FormLabel>Priority</FormLabel>

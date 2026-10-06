@@ -13,6 +13,7 @@ import {
   Pressable,
   RefreshControl,
   ScrollView,
+  StyleSheet,
   Text,
   useWindowDimensions,
   View,
@@ -81,6 +82,34 @@ const incomeKeywords = [
   "business",
   "freelance",
 ];
+
+const incomeFormStyles = StyleSheet.create({
+  input: {
+    minHeight: 52,
+    marginBottom: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 12,
+    backgroundColor: "#FFFFFF",
+    color: "#25332C",
+    fontSize: 16,
+  },
+  multilineInput: {
+    minHeight: 88,
+    textAlignVertical: "top",
+  },
+  budgetInput: {
+    minHeight: 52,
+    marginBottom: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 12,
+    backgroundColor: "#FFFFFF",
+    color: "#25332C",
+    fontSize: 16,
+  },
+});
+
 function createInitialForm(): IncomeForm {
   return {
     title: "",
@@ -1064,13 +1093,13 @@ export default function Income() {
       >
         <View className="flex-1 bg-black/40" style={{ paddingBottom: insets.bottom }}>
           <KeyboardAvoidingView
-            behavior={Platform.OS === "ios" ? "padding" : "position"}
+            behavior={Platform.OS === "ios" ? "padding" : "height"}
             keyboardVerticalOffset={0}
             style={{ flex: 1, justifyContent: "flex-end" }}
           >
             <View
-              className="max-h-[92%] rounded-t-[26px] bg-[#F8F9F6] px-5 pb-8 pt-5"
-              style={{ maxHeight: "92%" }}
+              className="rounded-t-[26px] bg-[#F8F9F6] px-5 pb-8 pt-5"
+              style={{ height: "92%", maxHeight: "92%" }}
             >
             <View className="mb-4 flex-row items-center justify-between">
               <View>
@@ -1099,21 +1128,29 @@ export default function Income() {
               keyboardDismissMode="interactive"
               bounces={true}
             >
-              <FormLabel>Income Title</FormLabel>
+              <FormLabel>Income title *</FormLabel>
               <FormInput
-                className="mb-4 rounded-xl bg-white px-4 py-3 text-sm text-[#25332C]"
+                accessibilityLabel="Income title, required"
+                autoCapitalize="sentences"
+                borderColor="#AAB8AE"
+                maxLength={100}
                 placeholder="e.g. Freelance payment"
+                returnKeyType="next"
+                style={incomeFormStyles.input}
                 value={form.title}
                 onChangeText={(value) => updateForm("title", value)}
               />
 
               <View className="flex-row gap-3">
                 <View className="flex-1">
-                  <FormLabel>Amount</FormLabel>
+                  <FormLabel>Amount *</FormLabel>
                   <FormInput
-                    className="mb-4 rounded-xl bg-white px-4 py-3 text-sm text-[#25332C]"
+                    accessibilityLabel="Amount, required"
+                    borderColor="#AAB8AE"
                     keyboardType="decimal-pad"
                     placeholder="0.00"
+                    returnKeyType="done"
+                    style={incomeFormStyles.input}
                     value={form.amount}
                     onChangeText={(value) => updateForm("amount", value)}
                   />
@@ -1136,6 +1173,7 @@ export default function Income() {
               <PopupSelect
                 label="Category"
                 placeholder="Select Category"
+                required
                 options={
                   form.category && !incomeCategories.includes(form.category)
                     ? [...incomeCategories, form.category]
@@ -1180,10 +1218,11 @@ export default function Income() {
 
               <FormLabel>Notes</FormLabel>
               <FormInput
-                className="mb-4 min-h-[78px] rounded-xl bg-white px-4 py-3 text-sm text-[#25332C]"
+                accessibilityLabel="Income notes"
+                borderColor="#AAB8AE"
                 multiline
                 placeholder="Add any useful details"
-                textAlignVertical="top"
+                style={[incomeFormStyles.input, incomeFormStyles.multilineInput]}
                 value={form.notes}
                 onChangeText={(value) => updateForm("notes", value)}
               />
@@ -1279,9 +1318,11 @@ export default function Income() {
               Set your income budget for the month
             </Text>
             <FormInput
-              className="mb-5 rounded-xl bg-white px-4 py-3 text-base text-[#25332C]"
+              accessibilityLabel="Monthly income budget"
+              borderColor="#AAB8AE"
               keyboardType="decimal-pad"
               placeholder="0.00"
+              style={incomeFormStyles.budgetInput}
               value={budgetDraft}
               onChangeText={setBudgetDraft}
             />
