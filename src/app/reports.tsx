@@ -791,7 +791,10 @@ export default function Reports() {
     viewMode !== "grid";
 
   return (
-    <SafeAreaView className="flex-1 bg-[#F2F5EA]" edges={["bottom"]}>
+    <SafeAreaView
+      className="flex-1 bg-[#F2F5EA]"
+      edges={["top", "bottom"]}
+    >
       <LinearGradient
         colors={Colors.greenGradient}
         start={{ x: 0, y: 0 }}
@@ -802,7 +805,7 @@ export default function Reports() {
           justifyContent: "flex-start",
           paddingHorizontal: 16,
           paddingBottom: 16,
-          paddingTop: insets.top + 8,
+          paddingTop: 8,
         }}
       >
         <Pressable
