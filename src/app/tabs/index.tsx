@@ -176,7 +176,7 @@ function SectionHeader({
 }) {
   return (
     <View className="mt-7 mb-3 flex-row items-center justify-between">
-      <Text className="text-lg font-bold" style={{ color: Colors.textPrimary }}>
+      <Text className="text-base font-bold" style={{ color: Colors.textPrimary }}>
         {title}
       </Text>
       {onAction && (
