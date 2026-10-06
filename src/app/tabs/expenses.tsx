@@ -1056,24 +1056,72 @@ export default function Expenses() {
                     style={{
                       flexDirection: "row",
                       alignItems: "center",
-                      justifyContent: "space-between",
+                      gap: 10,
                       marginBottom: 10,
                       paddingHorizontal: 2,
                     }}
                   >
-                    <Text
+                    <View
                       style={{
-                        fontSize: 14,
-                        fontWeight: "800",
-                        color: "#52635A",
+                        flex: 1,
+                        height: 1,
+                        backgroundColor: "#D8E5D8",
+                      }}
+                    />
+                    <View
+                      style={{
+                        flexDirection: "row",
+                        alignItems: "center",
+                        gap: 7,
+                        paddingHorizontal: 12,
+                        paddingVertical: 5,
+                        borderRadius: 20,
+                        backgroundColor: "#E9F4E8",
+                        borderWidth: 1,
+                        borderColor: "#C5DEC3",
                       }}
                     >
-                      {month.label}
-                    </Text>
-                    <Text style={{ fontSize: 12, color: "#94A3B8" }}>
-                      {month.expenses.length}{" "}
-                      {month.expenses.length === 1 ? "expense" : "expenses"}
-                    </Text>
+                      <Ionicons
+                        name="calendar-outline"
+                        size={13}
+                        color={Colors.forest}
+                      />
+                      <Text
+                        style={{
+                          color: Colors.forest,
+                          fontSize: 12,
+                          fontWeight: "700",
+                          letterSpacing: 0.3,
+                        }}
+                      >
+                        {month.label}
+                      </Text>
+                      <View
+                        style={{
+                          paddingHorizontal: 6,
+                          paddingVertical: 1,
+                          borderRadius: 10,
+                          backgroundColor: Colors.forest,
+                        }}
+                      >
+                        <Text
+                          style={{
+                            color: Colors.white,
+                            fontSize: 10,
+                            fontWeight: "700",
+                          }}
+                        >
+                          {month.expenses.length}
+                        </Text>
+                      </View>
+                    </View>
+                    <View
+                      style={{
+                        flex: 1,
+                        height: 1,
+                        backgroundColor: "#D8E5D8",
+                      }}
+                    />
                   </View>
                   <View
                     style={
