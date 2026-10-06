@@ -263,7 +263,7 @@ export default function Memories() {
   const [search, setSearch] = useState("");
   const [selectedMediaType, setSelectedMediaType] = useState("all");
   const [selectedCategory, setSelectedCategory] = useState("all");
-  const [viewMode, setViewMode] = useState<ViewModeOption>("card");
+  const [viewMode, setViewMode] = useState<ViewModeOption>("table");
   const [dateRange, setDateRange] = useState<DateRangeSelection>(() =>
     createDateRangeSelection("All"),
   );
