@@ -14,6 +14,7 @@ import {
 } from "react-native";
 import api, { getStoredUser, logoutUser } from "../api";
 import { GradientSafeAreaView as SafeAreaView } from "../components/GradientSafeAreaView";
+import ConfirmPopup from "../components/ConfirmPopup";
 import { Colors } from "../constants/colors";
 
 type UserProfile = {
@@ -58,6 +59,7 @@ export function TopHeader({ showLogo = true }: { showLogo?: boolean } = {}) {
   const [notificationsVisible, setNotificationsVisible] = useState(false);
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [showLogoutPopup, setShowLogoutPopup] = useState(false);
   const [drawerPosition] = useState(() => new Animated.Value(-width));
 
   useEffect(() => {
@@ -210,6 +212,7 @@ export function TopHeader({ showLogo = true }: { showLogo?: boolean } = {}) {
     } finally {
       setMenuVisible(false);
       setIsLoggingOut(false);
+      setShowLogoutPopup(false);
       router.replace("/auth/login");
     }
   };
@@ -507,7 +510,7 @@ export function TopHeader({ showLogo = true }: { showLogo?: boolean } = {}) {
             <Pressable
               className="flex-row items-center rounded-xl px-3 py-3"
               disabled={isLoggingOut}
-              onPress={handleLogout}
+              onPress={() => setShowLogoutPopup(true)}
             >
               <Ionicons
                 name="log-out-outline"
@@ -521,6 +524,13 @@ export function TopHeader({ showLogo = true }: { showLogo?: boolean } = {}) {
           </Pressable>
         </Pressable>
       </Modal>
+      <ConfirmPopup
+        visible={showLogoutPopup}
+        type="logout"
+        loading={isLoggingOut}
+        onConfirm={handleLogout}
+        onCancel={() => setShowLogoutPopup(false)}
+      />
     </>
   );
 }

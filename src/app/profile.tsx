@@ -21,6 +21,7 @@ import api, {
 import { FormInput, FormLabel } from "../components/FormControls";
 import { GradientSafeAreaView as SafeAreaView } from "../components/GradientSafeAreaView";
 import { CenteredPageLoader } from "../components/CenteredPageLoader";
+import ConfirmPopup from "../components/ConfirmPopup";
 import { Colors } from "../constants/colors";
 
 type UserProfile = {
@@ -112,6 +113,11 @@ export default function Profile() {
   });
   const [editingProfile, setEditingProfile] = useState(false);
   const [savingProfile, setSavingProfile] = useState(false);
+  const [showProfileSaveConfirmation, setShowProfileSaveConfirmation] =
+    useState(false);
+  const [showPasswordSaveConfirmation, setShowPasswordSaveConfirmation] =
+    useState(false);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [profileStatus, setProfileStatus] = useState<{
     type: "success" | "error" | "";
     message: string;
@@ -136,6 +142,7 @@ export default function Profile() {
   const [refreshKey, setRefreshKey] = useState(0);
   const [savingPassword, setSavingPassword] = useState(false);
   const [deactivating, setDeactivating] = useState(false);
+  const [showDeactivatePopup, setShowDeactivatePopup] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
@@ -219,10 +226,8 @@ export default function Profile() {
       setUser(updatedUser);
       setProfileForm({ name, email, phone });
       setEditingProfile(false);
-      setProfileStatus({
-        type: "success",
-        message: response.data?.message || "Profile updated successfully.",
-      });
+      setProfileStatus({ type: "", message: "" });
+      setSuccessMessage(response.data?.message || "Profile updated successfully.");
     } catch (error) {
       if ((error as { status?: number })?.status === 401) {
         await logoutUser();
@@ -238,6 +243,7 @@ export default function Profile() {
       });
     } finally {
       setSavingProfile(false);
+      setShowProfileSaveConfirmation(false);
     }
   };
 
@@ -282,10 +288,8 @@ export default function Profile() {
         newPassword: passwords.next,
       });
       setPasswords({ current: "", next: "", confirm: "" });
-      setPasswordStatus({
-        type: "success",
-        message: response.data?.message || "Password changed successfully.",
-      });
+      setPasswordStatus({ type: "", message: "" });
+      setSuccessMessage(response.data?.message || "Password changed successfully.");
     } catch (error) {
       if ((error as { status?: number })?.status === 401) {
         await logoutUser();
@@ -301,6 +305,7 @@ export default function Profile() {
       });
     } finally {
       setSavingPassword(false);
+      setShowPasswordSaveConfirmation(false);
     }
   };
 
@@ -336,22 +341,48 @@ export default function Profile() {
   };
 
   const confirmDeactivation = () => {
-    Alert.alert(
-      "Deactivate account?",
-      "Your account details will be kept, but you will no longer be able to log in.",
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Deactivate",
-          style: "destructive",
-          onPress: () => void deactivateAccount(),
-        },
-      ],
-    );
+    setShowDeactivatePopup(true);
   };
 
   return (
     <SafeAreaView className="flex-1 bg-[#F2F5EA]" edges={["bottom"]}>
+      <ConfirmPopup
+        visible={showDeactivatePopup}
+        type="delete"
+        title="Deactivate account?"
+        message="Your account details will be kept, but you will no longer be able to log in."
+        confirmText="Deactivate"
+        destructive
+        loading={deactivating}
+        onConfirm={deactivateAccount}
+        onCancel={() => setShowDeactivatePopup(false)}
+      />
+      <ConfirmPopup
+        visible={showProfileSaveConfirmation}
+        type="edit"
+        loading={savingProfile}
+        onConfirm={async () => {
+          await handleProfileSave();
+          setShowProfileSaveConfirmation(false);
+        }}
+        onCancel={() => setShowProfileSaveConfirmation(false)}
+      />
+      <ConfirmPopup
+        visible={showPasswordSaveConfirmation}
+        type="save"
+        loading={savingPassword}
+        onConfirm={async () => {
+          await handlePasswordChange();
+          setShowPasswordSaveConfirmation(false);
+        }}
+        onCancel={() => setShowPasswordSaveConfirmation(false)}
+      />
+      <ConfirmPopup
+        visible={successMessage !== null}
+        type="success"
+        message={successMessage ?? ""}
+        onConfirm={() => setSuccessMessage(null)}
+      />
       <LinearGradient
         colors={Colors.greenGradient}
         start={{ x: 0, y: 0 }}
@@ -540,7 +571,7 @@ export default function Profile() {
                 <Pressable
                   accessibilityRole="button"
                   disabled={savingProfile}
-                  onPress={() => void handleProfileSave()}
+                  onPress={() => setShowProfileSaveConfirmation(true)}
                   className={`flex-1 flex-row items-center justify-center rounded-xl bg-[#315640] py-3 ${savingProfile ? "opacity-60" : ""}`}
                 >
                   {savingProfile ? (
@@ -668,7 +699,7 @@ export default function Profile() {
               !passwords.next ||
               !passwords.confirm
             }
-            onPress={() => void handlePasswordChange()}
+            onPress={() => setShowPasswordSaveConfirmation(true)}
           >
             {savingPassword ? (
               <ActivityIndicator color="#FFFFFF" />

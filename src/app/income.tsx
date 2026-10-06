@@ -40,6 +40,7 @@ import {
 import { FormInput, FormLabel, FormOption } from "../components/FormControls";
 import { GradientSafeAreaView as SafeAreaView } from "../components/GradientSafeAreaView";
 import { CenteredPageLoader } from "../components/CenteredPageLoader";
+import ConfirmPopup from "../components/ConfirmPopup";
 import { createSessionDataCache } from "../components/SessionDataCache";
 import { PopupSelect } from "../components/PopupSelect";
 import { SearchBar } from "../components/SearchBar";
@@ -429,7 +430,11 @@ export default function Income() {
   const [loading, setLoading] = useState(() => !incomeDataCache.hasData());
   const [refreshing, setRefreshing] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [showSaveConfirmation, setShowSaveConfirmation] = useState(false);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<IncomeRecord | null>(null);
   const [budgetSaving, setBudgetSaving] = useState(false);
+  const [showBudgetConfirmation, setShowBudgetConfirmation] = useState(false);
   const [search, setSearch] = useState("");
   const [incomeFilter, setIncomeFilter] = useState("All Income");
   const [selectedCategory, setSelectedCategory] = useState("");
@@ -757,8 +762,7 @@ export default function Income() {
         setIncomes((current) => [savedIncome, ...current]);
       }
       closeEditor();
-      Alert.alert(
-        "Saved",
+      setSuccessMessage(
         editingIncomeId ? "Income updated." : "Income added.",
       );
     } catch (error) {
@@ -770,30 +774,25 @@ export default function Income() {
       Alert.alert("Unable to save income", getApiErrorMessage(error));
     } finally {
       setSaving(false);
+      setShowSaveConfirmation(false);
     }
   };
 
   const deleteIncome = (income: IncomeRecord) => {
-    Alert.alert("Delete income?", `Delete “${income.title}”?`, [
-      { text: "Cancel", style: "cancel" },
-      {
-        text: "Delete",
-        style: "destructive",
-        onPress: () => {
-          void api
-            .delete(`/incomes/${income.id}`)
-            .then(() => {
-              setIncomes((current) =>
-                current.filter((item) => item.id !== income.id),
-              );
-              if (detailsIncome?.id === income.id) setDetailsIncome(null);
-            })
-            .catch((error) =>
-              Alert.alert("Unable to delete income", getApiErrorMessage(error)),
-            );
-        },
-      },
-    ]);
+    setPendingDelete(income);
+  };
+
+  const confirmDeleteIncome = async () => {
+    if (!pendingDelete) return;
+    const income = pendingDelete;
+    setPendingDelete(null);
+    try {
+      await api.delete(`/incomes/${income.id}`);
+      setIncomes((current) => current.filter((item) => item.id !== income.id));
+      if (detailsIncome?.id === income.id) setDetailsIncome(null);
+    } catch (error) {
+      Alert.alert("Unable to delete income", getApiErrorMessage(error));
+    }
   };
 
   const saveBudget = async () => {
@@ -816,6 +815,7 @@ export default function Income() {
       Alert.alert("Unable to save budget", getApiErrorMessage(error));
     } finally {
       setBudgetSaving(false);
+      setShowBudgetConfirmation(false);
     }
   };
 
@@ -829,6 +829,43 @@ export default function Income() {
 
   return (
     <SafeAreaView className="flex-1 bg-[#F2F5EA]" edges={["bottom"]}>
+      <ConfirmPopup
+        visible={pendingDelete !== null}
+        type="delete"
+        message={
+          pendingDelete
+            ? `Delete “${pendingDelete.title}”?`
+            : undefined
+        }
+        onConfirm={confirmDeleteIncome}
+        onCancel={() => setPendingDelete(null)}
+      />
+      <ConfirmPopup
+        visible={showSaveConfirmation}
+        type={editingIncomeId ? "edit" : "add"}
+        loading={saving}
+        onConfirm={async () => {
+          await submitIncome();
+          setShowSaveConfirmation(false);
+        }}
+        onCancel={() => setShowSaveConfirmation(false)}
+      />
+      <ConfirmPopup
+        visible={successMessage !== null}
+        type="success"
+        message={successMessage ?? ""}
+        onConfirm={() => setSuccessMessage(null)}
+      />
+      <ConfirmPopup
+        visible={showBudgetConfirmation}
+        type="save"
+        loading={budgetSaving}
+        onConfirm={async () => {
+          await saveBudget();
+          setShowBudgetConfirmation(false);
+        }}
+        onCancel={() => setShowBudgetConfirmation(false)}
+      />
       <StatusBar
         style="light"
       />
@@ -1332,7 +1369,7 @@ export default function Income() {
               <Pressable
                 className="flex-1 flex-row items-center justify-center rounded-xl bg-[#315640] py-3.5"
                 disabled={saving}
-                onPress={() => void submitIncome()}
+                onPress={() => setShowSaveConfirmation(true)}
               >
                 {saving ? (
                   <ActivityIndicator color="#FFFFFF" />
@@ -1382,7 +1419,7 @@ export default function Income() {
               <Pressable
                 className="flex-1 items-center rounded-xl bg-[#315640] py-3"
                 disabled={budgetSaving}
-                onPress={() => void saveBudget()}
+                onPress={() => setShowBudgetConfirmation(true)}
               >
                 {budgetSaving ? (
                   <ActivityIndicator color="#FFFFFF" />

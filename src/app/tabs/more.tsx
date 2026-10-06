@@ -3,6 +3,7 @@ import { useRouter } from "expo-router";
 import { useState } from "react";
 import { Alert, Pressable, ScrollView, Text, View } from "react-native";
 import { getApiErrorMessage, logoutUser } from "../../api";
+import ConfirmPopup from "../../components/ConfirmPopup";
 import { Colors } from "../../constants/colors";
 
 type MoreRowItem = {
@@ -124,6 +125,7 @@ function MoreMenuRow({
 export default function More() {
   const router = useRouter();
   const [isSigningOut, setIsSigningOut] = useState(false);
+  const [showLogoutPopup, setShowLogoutPopup] = useState(false);
 
   const handleSignOut = async () => {
     setIsSigningOut(true);
@@ -222,7 +224,7 @@ export default function More() {
       ))}
 
       <Pressable
-        onPress={handleSignOut}
+        onPress={() => setShowLogoutPopup(true)}
         disabled={isSigningOut}
         className="mt-8 mb-4 flex-row items-center justify-center rounded-3xl border border-[#F0B7B7] bg-white px-5 py-5"
         style={{
@@ -244,6 +246,13 @@ export default function More() {
           {isSigningOut ? "SIGNING OUT..." : "SIGN OUT ACCOUNT"}
         </Text>
       </Pressable>
+      <ConfirmPopup
+        visible={showLogoutPopup}
+        type="logout"
+        onConfirm={handleSignOut}
+        onCancel={() => setShowLogoutPopup(false)}
+        loading={isSigningOut}
+      />
     </ScrollView>
   );
 }

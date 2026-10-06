@@ -23,6 +23,7 @@ import api, {
     logoutUser,
 } from "../../api";
 import { GradientSafeAreaView as SafeAreaView } from "../../components/GradientSafeAreaView";
+import ConfirmPopup from "../../components/ConfirmPopup";
 import { Colors } from "../../constants/colors";
 
 type MemoryMedia = {
@@ -168,6 +169,7 @@ export default function MemoryDetails() {
   const [memory, setMemory] = useState<MemoryRecord | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [showDeletePopup, setShowDeletePopup] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -240,31 +242,27 @@ export default function MemoryDetails() {
 
   const deleteMemory = () => {
     if (!memory) return;
-    Alert.alert("Delete memory", `Delete "${memory.title}" permanently?`, [
-      { text: "Cancel", style: "cancel" },
-      {
-        text: "Delete",
-        style: "destructive",
-        onPress: async () => {
-          try {
-            await api.delete(`/memories/${memory.id}`);
-            router.replace("/tabs/memories");
-          } catch (error) {
-            const status =
-              (error as any)?.status || (error as any)?.response?.status;
-            if (status === 401) {
-              await logoutUser();
-              router.replace("/auth/login");
-            } else {
-              Alert.alert(
-                "Unable to delete memory",
-                getApiErrorMessage(error, "Please try again."),
-              );
-            }
-          }
-        },
-      },
-    ]);
+    setShowDeletePopup(true);
+  };
+
+  const confirmDeleteMemory = async () => {
+    if (!memory) return;
+    try {
+      await api.delete(`/memories/${memory.id}`);
+      router.replace("/tabs/memories");
+    } catch (error) {
+      const status =
+        (error as any)?.status || (error as any)?.response?.status;
+      if (status === 401) {
+        await logoutUser();
+        router.replace("/auth/login");
+      } else {
+        Alert.alert(
+          "Unable to delete memory",
+          getApiErrorMessage(error, "Please try again."),
+        );
+      }
+    }
   };
 
   const editMemory = () => {
@@ -316,6 +314,13 @@ export default function MemoryDetails() {
       edges={["top", "bottom"]}
       style={{ flex: 1, backgroundColor: Colors.contentBackground }}
     >
+      <ConfirmPopup
+        visible={showDeletePopup}
+        type="delete"
+        message={`Delete "${memory.title}" permanently?`}
+        onConfirm={confirmDeleteMemory}
+        onCancel={() => setShowDeletePopup(false)}
+      />
       <LinearGradient
         colors={Colors.greenGradient}
         start={{ x: 0, y: 0 }}

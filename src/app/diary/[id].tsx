@@ -18,6 +18,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import api, { API_BASE_URL, getApiErrorMessage, logoutUser } from "../../api";
 import { GradientSafeAreaView as SafeAreaView } from "../../components/GradientSafeAreaView";
+import ConfirmPopup from "../../components/ConfirmPopup";
 import { Colors } from "../../constants/colors";
 
 type DiaryMedia = {
@@ -180,6 +181,7 @@ export default function DiaryDetails() {
   const [entry, setEntry] = useState<DiaryDetailsEntry | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [showDeletePopup, setShowDeletePopup] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -261,31 +263,27 @@ export default function DiaryDetails() {
 
   const deleteEntry = () => {
     if (!entry) return;
-    Alert.alert("Delete diary entry", `Delete "${entry.title}"?`, [
-      { text: "Cancel", style: "cancel" },
-      {
-        text: "Delete",
-        style: "destructive",
-        onPress: async () => {
-          try {
-            await api.delete(`/diary/${entry.id}`);
-            router.replace("/tabs/diary");
-          } catch (error) {
-            const status =
-              (error as any)?.status || (error as any)?.response?.status;
-            if (status === 401) {
-              await logoutUser();
-              router.replace("/auth/login");
-            } else {
-              Alert.alert(
-                "Unable to delete diary entry",
-                getApiErrorMessage(error, "Please try again."),
-              );
-            }
-          }
-        },
-      },
-    ]);
+    setShowDeletePopup(true);
+  };
+
+  const confirmDeleteEntry = async () => {
+    if (!entry) return;
+    try {
+      await api.delete(`/diary/${entry.id}`);
+      router.replace("/tabs/diary");
+    } catch (error) {
+      const status =
+        (error as any)?.status || (error as any)?.response?.status;
+      if (status === 401) {
+        await logoutUser();
+        router.replace("/auth/login");
+      } else {
+        Alert.alert(
+          "Unable to delete diary entry",
+          getApiErrorMessage(error, "Please try again."),
+        );
+      }
+    }
   };
 
   const editEntry = () => {
@@ -330,6 +328,13 @@ export default function DiaryDetails() {
       edges={["top", "bottom"]}
       style={{ flex: 1, backgroundColor: Colors.contentBackground }}
     >
+      <ConfirmPopup
+        visible={showDeletePopup}
+        type="delete"
+        message={`Delete "${entry.title}"?`}
+        onConfirm={confirmDeleteEntry}
+        onCancel={() => setShowDeletePopup(false)}
+      />
       <LinearGradient
         colors={Colors.greenGradient}
         start={{ x: 0, y: 0 }}

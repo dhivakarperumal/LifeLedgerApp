@@ -51,6 +51,7 @@ import {
 import { FormInput, FormLabel } from "../../components/FormControls";
 import { GradientSafeAreaView as SafeAreaView } from "../../components/GradientSafeAreaView";
 import { CenteredPageLoader } from "../../components/CenteredPageLoader";
+import ConfirmPopup from "../../components/ConfirmPopup";
 import { PopupSelect } from "../../components/PopupSelect";
 import { SearchBar } from "../../components/SearchBar";
 import { Colors } from "../../constants/colors";
@@ -373,6 +374,12 @@ export default function Diary() {
   const [viewMode, setViewMode] = useState<ViewModeOption>("table");
   const [editorVisible, setEditorVisible] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [pendingDeleteEntry, setPendingDeleteEntry] =
+    useState<DiaryEntry | null>(null);
+  const [pendingSaveStatus, setPendingSaveStatus] = useState<
+    "draft" | "published" | null
+  >(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [uploadProgress, setUploadProgress] = useState<number | null>(null);
   const [editingId, setEditingId] = useState<number | string | null>(null);
   const [form, setForm] = useState<DiaryForm>(initialDiaryForm());
@@ -751,8 +758,7 @@ export default function Diary() {
       if (attachments.length && savedId)
         await uploadAttachments(savedId, attachments);
       else if (attachments.length && !savedId) {
-        Alert.alert(
-          "Entry saved",
+        setSuccessMessage(
           "The entry was saved, but the server did not return an ID for its attachments.",
         );
       }
@@ -760,8 +766,7 @@ export default function Diary() {
       setAttachments([]);
       await fetchData();
       if (savedId || !attachments.length)
-        Alert.alert(
-          "Saved",
+        setSuccessMessage(
           status === "draft" ? "Diary draft saved." : "Diary entry saved.",
         );
     } catch (error) {
@@ -780,31 +785,34 @@ export default function Diary() {
     }
   };
 
+  const confirmSaveEntry = async () => {
+    if (!pendingSaveStatus) return;
+    const status = pendingSaveStatus;
+    await saveEntry(status);
+    setPendingSaveStatus(null);
+  };
+
   const deleteEntry = (entry: DiaryEntry) => {
-    Alert.alert("Delete diary entry", `Delete "${entry.title}"?`, [
-      { text: "Cancel", style: "cancel" },
-      {
-        text: "Delete",
-        style: "destructive",
-        onPress: async () => {
-          try {
-            await api.delete(`/diary/${entry.id}`);
-            setEntries((current) =>
-              current.filter((item) => item.id !== entry.id),
-            );
-          } catch (error) {
-            const code =
-              (error as any)?.status || (error as any)?.response?.status;
-            if (code === 401) await handleUnauthorized();
-            else
-              Alert.alert(
-                "Unable to delete entry",
-                getApiErrorMessage(error, "Please try again."),
-              );
-          }
-        },
-      },
-    ]);
+    setPendingDeleteEntry(entry);
+  };
+
+  const confirmDeleteEntry = async () => {
+    if (!pendingDeleteEntry) return;
+    const entry = pendingDeleteEntry;
+    setPendingDeleteEntry(null);
+    try {
+      await api.delete(`/diary/${entry.id}`);
+      setEntries((current) => current.filter((item) => item.id !== entry.id));
+    } catch (error) {
+      const code =
+        (error as any)?.status || (error as any)?.response?.status;
+      if (code === 401) await handleUnauthorized();
+      else
+        Alert.alert(
+          "Unable to delete entry",
+          getApiErrorMessage(error, "Please try again."),
+        );
+    }
   };
 
   const toggleFavorite = async (entry: DiaryEntry) => {
@@ -841,6 +849,30 @@ export default function Diary() {
       edges={["bottom"]}
       style={{ flex: 1, backgroundColor: Colors.contentBackground }}
     >
+      <ConfirmPopup
+        visible={pendingDeleteEntry !== null}
+        type="delete"
+        message={
+          pendingDeleteEntry
+            ? `Delete "${pendingDeleteEntry.title}"?`
+            : undefined
+        }
+        onConfirm={confirmDeleteEntry}
+        onCancel={() => setPendingDeleteEntry(null)}
+      />
+      <ConfirmPopup
+        visible={successMessage !== null}
+        type="success"
+        message={successMessage ?? ""}
+        onConfirm={() => setSuccessMessage(null)}
+      />
+      <ConfirmPopup
+        visible={pendingSaveStatus !== null}
+        type={editingId !== null ? "edit" : "add"}
+        loading={submitting}
+        onConfirm={confirmSaveEntry}
+        onCancel={() => setPendingSaveStatus(null)}
+      />
       {loading ? (
         <CenteredPageLoader message="Loading diary..." />
       ) : (
@@ -1662,7 +1694,7 @@ export default function Diary() {
                 }}
               >
                 <Pressable
-                  onPress={() => void saveEntry("draft")}
+                  onPress={() => setPendingSaveStatus("draft")}
                   disabled={submitting || isRecording}
                   style={{
                     flex: 1,
@@ -1681,7 +1713,7 @@ export default function Diary() {
                   </Text>
                 </Pressable>
                 <Pressable
-                  onPress={() => void saveEntry("published")}
+                  onPress={() => setPendingSaveStatus("published")}
                   disabled={submitting || isRecording}
                   style={{
                     flex: 1.3,

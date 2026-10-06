@@ -39,6 +39,7 @@ import {
 import { FormInput, FormLabel, FormOption } from "../components/FormControls";
 import { GradientSafeAreaView as SafeAreaView } from "../components/GradientSafeAreaView";
 import { CenteredPageLoader } from "../components/CenteredPageLoader";
+import ConfirmPopup from "../components/ConfirmPopup";
 import { createSessionDataCache } from "../components/SessionDataCache";
 import { PopupSelect } from "../components/PopupSelect";
 import { SearchBar } from "../components/SearchBar";
@@ -430,6 +431,8 @@ export default function Transfers() {
   const [existingReceipt, setExistingReceipt] = useState<string | null>(null);
   const [modalVisible, setModalVisible] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [showSaveConfirmation, setShowSaveConfirmation] = useState(false);
+  const [pendingDelete, setPendingDelete] = useState<TransferRecord | null>(null);
   const [loading, setLoading] = useState(() => !transfersDataCache.hasData());
   const [refreshing, setRefreshing] = useState(false);
   const [search, setSearch] = useState("");
@@ -796,45 +799,34 @@ export default function Transfers() {
       );
     } finally {
       setSubmitting(false);
+      setShowSaveConfirmation(false);
     }
   };
 
   const deleteTransfer = (transfer: TransferRecord) => {
-    Alert.alert(
-      "Delete transfer?",
-      "Any linked expenses will keep their data.",
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Delete",
-          style: "destructive",
-          onPress: () => {
-            setDeletingId(transfer.id);
-            void api
-              .delete(`/transfers/${transfer.id}`)
-              .then(() => {
-                setTransfers((current) =>
-                  current.filter((item) => item.id !== transfer.id),
-                );
-                if (selectedTransfer?.id === transfer.id) {
-                  setSelectedTransfer(null);
-                }
-              })
-              .catch(async (error) => {
-                if ((error as { status?: number })?.status === 401) {
-                  await handleUnauthorized();
-                  return;
-                }
-                Alert.alert(
-                  "Unable to delete transfer",
-                  getApiErrorMessage(error),
-                );
-              })
-              .finally(() => setDeletingId(null));
-          },
-        },
-      ],
-    );
+    setPendingDelete(transfer);
+  };
+
+  const confirmDeleteTransfer = async () => {
+    if (!pendingDelete) return;
+    const transfer = pendingDelete;
+    setPendingDelete(null);
+    setDeletingId(transfer.id);
+    try {
+      await api.delete(`/transfers/${transfer.id}`);
+      setTransfers((current) =>
+        current.filter((item) => item.id !== transfer.id),
+      );
+      if (selectedTransfer?.id === transfer.id) setSelectedTransfer(null);
+    } catch (error) {
+      if ((error as { status?: number })?.status === 401) {
+        await handleUnauthorized();
+        return;
+      }
+      Alert.alert("Unable to delete transfer", getApiErrorMessage(error));
+    } finally {
+      setDeletingId(null);
+    }
   };
 
   const openReceipt = async (path: string) => {
@@ -847,6 +839,24 @@ export default function Transfers() {
 
   return (
     <SafeAreaView className="flex-1 bg-[#F2F5EA]" edges={["bottom"]}>
+      <ConfirmPopup
+        visible={pendingDelete !== null}
+        type="delete"
+        message="Any linked expenses will keep their data."
+        onConfirm={confirmDeleteTransfer}
+        onCancel={() => setPendingDelete(null)}
+        loading={pendingDelete !== null && deletingId === pendingDelete.id}
+      />
+      <ConfirmPopup
+        visible={showSaveConfirmation}
+        type={editingTransferId !== null ? "edit" : "add"}
+        loading={submitting}
+        onConfirm={async () => {
+          await submitTransfer();
+          setShowSaveConfirmation(false);
+        }}
+        onCancel={() => setShowSaveConfirmation(false)}
+      />
       <LinearGradient
         colors={Colors.greenGradient}
         start={{ x: 0, y: 0 }}
@@ -1493,7 +1503,7 @@ export default function Transfers() {
               <Pressable
                 className="flex-1 flex-row items-center justify-center rounded-xl bg-[#315640] py-3.5"
                 disabled={submitting}
-                onPress={() => void submitTransfer()}
+                onPress={() => setShowSaveConfirmation(true)}
               >
                 {submitting ? (
                   <ActivityIndicator color="#FFFFFF" />

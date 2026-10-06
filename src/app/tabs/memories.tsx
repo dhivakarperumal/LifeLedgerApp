@@ -46,6 +46,7 @@ import {
 } from "../../components/FormControls";
 import { GradientSafeAreaView as SafeAreaView } from "../../components/GradientSafeAreaView";
 import { CenteredPageLoader } from "../../components/CenteredPageLoader";
+import ConfirmPopup from "../../components/ConfirmPopup";
 import { PopupSelect } from "../../components/PopupSelect";
 import { SearchBar } from "../../components/SearchBar";
 import { Colors } from "../../constants/colors";
@@ -271,6 +272,10 @@ export default function Memories() {
   const [refreshing, setRefreshing] = useState(false);
   const [editorVisible, setEditorVisible] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [pendingDeleteMemory, setPendingDeleteMemory] =
+    useState<Memory | null>(null);
+  const [showSaveConfirmation, setShowSaveConfirmation] = useState(false);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<number | string | null>(null);
   const [form, setForm] = useState<MemoryForm>(initialForm);
   const [newMedia, setNewMedia] = useState<LocalMedia[]>([]);
@@ -640,7 +645,7 @@ export default function Memories() {
       setEditorVisible(false);
       setNewMedia([]);
       await fetchData();
-      Alert.alert("Saved", editingId ? "Memory updated." : "Memory created.");
+      setSuccessMessage(editingId ? "Memory updated." : "Memory created.");
     } catch (error) {
       const status = (error as any)?.status || (error as any)?.response?.status;
       if (status === 401) {
@@ -653,34 +658,33 @@ export default function Memories() {
       );
     } finally {
       setSubmitting(false);
+      setShowSaveConfirmation(false);
     }
   };
 
   const handleDelete = (memory: Memory) => {
-    Alert.alert("Delete memory", `Delete "${memory.title}"?`, [
-      { text: "Cancel", style: "cancel" },
-      {
-        text: "Delete",
-        style: "destructive",
-        onPress: async () => {
-          try {
-            await api.delete(`/memories/${memory.id}`);
-            setMemories((current) =>
-              current.filter((item) => item.id !== memory.id),
-            );
-          } catch (error) {
-            const status =
-              (error as any)?.status || (error as any)?.response?.status;
-            if (status === 401) await handleUnauthorized();
-            else
-              Alert.alert(
-                "Unable to delete memory",
-                getApiErrorMessage(error, "Please try again."),
-              );
-          }
-        },
-      },
-    ]);
+    setPendingDeleteMemory(memory);
+  };
+
+  const confirmDeleteMemory = async () => {
+    if (!pendingDeleteMemory) return;
+    const memory = pendingDeleteMemory;
+    setPendingDeleteMemory(null);
+    try {
+      await api.delete(`/memories/${memory.id}`);
+      setMemories((current) =>
+        current.filter((item) => item.id !== memory.id),
+      );
+    } catch (error) {
+      const status =
+        (error as any)?.status || (error as any)?.response?.status;
+      if (status === 401) await handleUnauthorized();
+      else
+        Alert.alert(
+          "Unable to delete memory",
+          getApiErrorMessage(error, "Please try again."),
+        );
+    }
   };
 
   const toggleFavorite = async (memory: Memory) => {
@@ -717,6 +721,33 @@ export default function Memories() {
       edges={["bottom"]}
       style={{ flex: 1, backgroundColor: Colors.contentBackground }}
     >
+      <ConfirmPopup
+        visible={pendingDeleteMemory !== null}
+        type="delete"
+        message={
+          pendingDeleteMemory
+            ? `Delete "${pendingDeleteMemory.title}"?`
+            : undefined
+        }
+        onConfirm={confirmDeleteMemory}
+        onCancel={() => setPendingDeleteMemory(null)}
+      />
+      <ConfirmPopup
+        visible={successMessage !== null}
+        type="success"
+        message={successMessage ?? ""}
+        onConfirm={() => setSuccessMessage(null)}
+      />
+      <ConfirmPopup
+        visible={showSaveConfirmation}
+        type={editingId !== null ? "edit" : "add"}
+        loading={submitting}
+        onConfirm={async () => {
+          await handleSubmit();
+          setShowSaveConfirmation(false);
+        }}
+        onCancel={() => setShowSaveConfirmation(false)}
+      />
       {loading ? (
         <CenteredPageLoader message="Loading memories..." />
       ) : (
@@ -1427,7 +1458,7 @@ export default function Memories() {
             </ScrollView>
 
               <Pressable
-                onPress={() => void handleSubmit()}
+                onPress={() => setShowSaveConfirmation(true)}
                 disabled={submitting || isRecording}
                 style={{
                   height: 50,

@@ -22,6 +22,7 @@ import { DateTimePickerComponent } from "../components/DateTimePickerComponent";
 import { FormInput, FormLabel, FormOption } from "../components/FormControls";
 import { GradientSafeAreaView as SafeAreaView } from "../components/GradientSafeAreaView";
 import { CenteredPageLoader } from "../components/CenteredPageLoader";
+import ConfirmPopup from "../components/ConfirmPopup";
 import { createSessionDataCache } from "../components/SessionDataCache";
 import { Colors } from "../constants/colors";
 
@@ -222,6 +223,11 @@ export default function CalendarScreen() {
   const [loading, setLoading] = useState(() => !calendarDataCache.hasData());
   const [refreshing, setRefreshing] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [showAddConfirmation, setShowAddConfirmation] = useState(false);
+  const [pendingDelete, setPendingDelete] = useState<{
+    type: EntryType;
+    entry: CalendarEntry;
+  } | null>(null);
   const [activeType, setActiveType] = useState<EntryType>("event");
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [calendarMonth, setCalendarMonth] = useState(() => new Date());
@@ -332,27 +338,26 @@ export default function CalendarScreen() {
       Alert.alert("Unable to save", getApiErrorMessage(error));
     } finally {
       setSaving(false);
+      setShowAddConfirmation(false);
     }
   };
 
   const deleteEntry = (type: EntryType, entry: CalendarEntry) => {
-    Alert.alert("Delete item?", `Remove "${entry.title}"?`, [
-      { text: "Cancel", style: "cancel" },
-      {
-        text: "Delete",
-        style: "destructive",
-        onPress: async () => {
-          try {
-            await api.delete(
-              `/calendar/${type === "event" ? "events" : "reminders"}/${entry.id}`,
-            );
-            await fetchCalendar();
-          } catch (error) {
-            Alert.alert("Unable to delete", getApiErrorMessage(error));
-          }
-        },
-      },
-    ]);
+    setPendingDelete({ type, entry });
+  };
+
+  const confirmDeleteEntry = async () => {
+    if (!pendingDelete) return;
+    const { type, entry } = pendingDelete;
+    setPendingDelete(null);
+    try {
+      await api.delete(
+        `/calendar/${type === "event" ? "events" : "reminders"}/${entry.id}`,
+      );
+      await fetchCalendar();
+    } catch (error) {
+      Alert.alert("Unable to delete", getApiErrorMessage(error));
+    }
   };
 
   const completeReminder = async (reminder: CalendarEntry) => {
@@ -671,6 +676,30 @@ export default function CalendarScreen() {
         bottomOffset={37}
       />
 
+      <ConfirmPopup
+        visible={pendingDelete !== null}
+        type="delete"
+        message={
+          pendingDelete
+            ? `Remove "${pendingDelete.entry.title}"?`
+            : undefined
+        }
+        onConfirm={confirmDeleteEntry}
+        onCancel={() => setPendingDelete(null)}
+      />
+      <ConfirmPopup
+        visible={showAddConfirmation}
+        type="add"
+        title="Add Confirmation"
+        message={`Are you sure you want to add this ${modalType}?`}
+        loading={saving}
+        onConfirm={async () => {
+          await saveEntry();
+          setShowAddConfirmation(false);
+        }}
+        onCancel={() => setShowAddConfirmation(false)}
+      />
+
       {/* Day Entries Popup */}
       <Modal
         visible={dayPopupDate !== null}
@@ -947,7 +976,7 @@ export default function CalendarScreen() {
               </View>
               <Pressable
                 disabled={saving}
-                onPress={() => void saveEntry()}
+                onPress={() => setShowAddConfirmation(true)}
                 className="items-center rounded-xl bg-[#366039] py-3.5"
               >
                 {saving ? (

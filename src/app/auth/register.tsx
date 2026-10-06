@@ -13,6 +13,7 @@ import { getApiErrorMessage, registerUser } from "../../api";
 import { FormInput, FormLabel } from "../../components/FormControls";
 import { GradientSafeAreaView as SafeAreaView } from "../../components/GradientSafeAreaView";
 import { KeyboardAwareFormScrollView } from "../../components/KeyboardAwareFormScrollView";
+import ConfirmPopup from "../../components/ConfirmPopup";
 import { Colors } from "../../constants/colors";
 
 type FormState = {
@@ -116,6 +117,7 @@ export default function RegisterScreen() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showSuccessPopup, setShowSuccessPopup] = useState(false);
 
   const updateField = (field: keyof FormState, value: string) => {
     setForm((current) => ({ ...current, [field]: value }));
@@ -143,9 +145,7 @@ export default function RegisterScreen() {
     setIsSubmitting(true);
     try {
       await registerUser(form);
-      Alert.alert("Registration successful", "Please log in to continue.", [
-        { text: "OK", onPress: () => router.replace("/auth/login") },
-      ]);
+      setShowSuccessPopup(true);
     } catch (error) {
       Alert.alert(
         "Registration failed",
@@ -159,6 +159,12 @@ export default function RegisterScreen() {
   return (
     <SafeAreaView edges={["top", "bottom"]} className="flex-1 bg-[#F2F5EA]">
       <StatusBar style="dark" />
+      <ConfirmPopup
+        visible={showSuccessPopup}
+        type="success"
+        message="Please log in to continue."
+        onConfirm={() => router.replace("/auth/login")}
+      />
       <KeyboardAwareFormScrollView>
         <View
           className="justify-center bg-[#DFE7C8] px-5"

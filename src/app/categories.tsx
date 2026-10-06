@@ -38,6 +38,7 @@ import {
 import { FormInput, FormLabel, FormOption } from "../components/FormControls";
 import { GradientSafeAreaView as SafeAreaView } from "../components/GradientSafeAreaView";
 import { CenteredPageLoader } from "../components/CenteredPageLoader";
+import ConfirmPopup from "../components/ConfirmPopup";
 import { createSessionDataCache } from "../components/SessionDataCache";
 import { PopupSelect } from "../components/PopupSelect";
 import { SearchBar } from "../components/SearchBar";
@@ -177,6 +178,8 @@ export default function Categories() {
   const [modalVisible, setModalVisible] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [saving, setSaving] = useState(false);
+  const [showSaveConfirmation, setShowSaveConfirmation] = useState(false);
+  const [pendingDelete, setPendingDelete] = useState<Category | null>(null);
   const [form, setForm] = useState<CategoryForm>(initialForm);
   const [selectedImage, setSelectedImage] = useState<CategoryImage | null>(null);
   const [existingImage, setExistingImage] = useState<string | null>(null);
@@ -411,36 +414,26 @@ export default function Categories() {
       Alert.alert("Unable to save category", getApiErrorMessage(error));
     } finally {
       setSaving(false);
+      setShowSaveConfirmation(false);
     }
   };
 
   const deleteCategory = (category: Category) => {
-    Alert.alert(
-      "Delete category?",
-      `Delete ${category.name}? This action cannot be undone.`,
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Delete",
-          style: "destructive",
-          onPress: () => {
-            void api
-              .delete(`/categories/${category.catId}`)
-              .then(() =>
-                setCategories((current) =>
-                  current.filter((item) => item.catId !== category.catId),
-                ),
-              )
-              .catch((error) =>
-                Alert.alert(
-                  "Unable to delete category",
-                  getApiErrorMessage(error),
-                ),
-              );
-          },
-        },
-      ],
-    );
+    setPendingDelete(category);
+  };
+
+  const confirmDeleteCategory = async () => {
+    if (!pendingDelete) return;
+    const category = pendingDelete;
+    setPendingDelete(null);
+    try {
+      await api.delete(`/categories/${category.catId}`);
+      setCategories((current) =>
+        current.filter((item) => item.catId !== category.catId),
+      );
+    } catch (error) {
+      Alert.alert("Unable to delete category", getApiErrorMessage(error));
+    }
   };
 
   const setFormValue = <K extends keyof CategoryForm>(
@@ -727,6 +720,28 @@ export default function Categories() {
         bottomOffset={37}
       />
 
+      <ConfirmPopup
+        visible={pendingDelete !== null}
+        type="delete"
+        message={
+          pendingDelete
+            ? `Delete ${pendingDelete.name}? This action cannot be undone.`
+            : undefined
+        }
+        onConfirm={confirmDeleteCategory}
+        onCancel={() => setPendingDelete(null)}
+      />
+      <ConfirmPopup
+        visible={showSaveConfirmation}
+        type={editingCategory ? "edit" : "add"}
+        loading={saving}
+        onConfirm={async () => {
+          await saveCategory();
+          setShowSaveConfirmation(false);
+        }}
+        onCancel={() => setShowSaveConfirmation(false)}
+      />
+
       <Modal
         animationType="slide"
         onRequestClose={() => setModalVisible(false)}
@@ -923,7 +938,7 @@ export default function Categories() {
               <Pressable
                 className="flex-1 flex-row items-center justify-center rounded-xl bg-[#315640] py-3.5"
                 disabled={saving}
-                onPress={() => void saveCategory()}
+                onPress={() => setShowSaveConfirmation(true)}
               >
                 {saving ? (
                   <ActivityIndicator color="#FFFFFF" />

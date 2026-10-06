@@ -41,6 +41,7 @@ import {
     FormLabel,
 } from "../../components/FormControls";
 import { GradientSafeAreaView as SafeAreaView } from "../../components/GradientSafeAreaView";
+import ConfirmPopup from "../../components/ConfirmPopup";
 import { PopupSelect } from "../../components/PopupSelect";
 import { SearchBar } from "../../components/SearchBar";
 import { Colors } from "../../constants/colors";
@@ -285,6 +286,10 @@ export default function Expenses() {
     transfer_amount: "",
   });
   const [saving, setSaving] = useState(false);
+  const [pendingDeleteExpense, setPendingDeleteExpense] =
+    useState<ExpenseItem | null>(null);
+  const [showSaveConfirmation, setShowSaveConfirmation] = useState(false);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [manualTransfer, setManualTransfer] = useState(false);
   const [customTransferAmount, setCustomTransferAmount] = useState(false);
   const [attachment, setAttachment] = useState<PickedAttachment | null>(null);
@@ -761,9 +766,10 @@ export default function Expenses() {
       setIsModalVisible(false);
       resetForm();
       void fetchAll();
-      Alert.alert(
-        "Success",
-        isEditing ? "Expense updated successfully." : "Expense saved successfully.",
+      setSuccessMessage(
+        isEditing
+          ? "Expense updated successfully."
+          : "Expense saved successfully.",
       );
     } catch (error) {
       const status = (error as any)?.status || (error as any)?.response?.status;
@@ -777,6 +783,7 @@ export default function Expenses() {
       );
     } finally {
       setSaving(false);
+      setShowSaveConfirmation(false);
     }
   };
 
@@ -811,33 +818,31 @@ export default function Expenses() {
   };
 
   const handleDeleteExpense = (expense: ExpenseItem) => {
-    Alert.alert("Delete expense", `Delete "${expense.title}"?`, [
-      { text: "Cancel", style: "cancel" },
-      {
-        text: "Delete",
-        style: "destructive",
-        onPress: async () => {
-          try {
-            await api.delete(`/expenses/${expense.id}`);
-            setExpenses((current) =>
-              current.filter((item) => String(item.id) !== String(expense.id)),
-            );
-            Alert.alert("Deleted", "Expense removed.");
-          } catch (error) {
-            const status =
-              (error as any)?.status || (error as any)?.response?.status;
-            if (status === 401) {
-              await handleUnauthorized();
-              return;
-            }
-            Alert.alert(
-              "Error",
-              getApiErrorMessage(error, "Failed to delete expense."),
-            );
-          }
-        },
-      },
-    ]);
+    setPendingDeleteExpense(expense);
+  };
+
+  const confirmDeleteExpense = async () => {
+    if (!pendingDeleteExpense) return;
+    const expense = pendingDeleteExpense;
+    setPendingDeleteExpense(null);
+    try {
+      await api.delete(`/expenses/${expense.id}`);
+      setExpenses((current) =>
+        current.filter((item) => String(item.id) !== String(expense.id)),
+      );
+      setSuccessMessage("Expense removed.");
+    } catch (error) {
+      const status =
+        (error as any)?.status || (error as any)?.response?.status;
+      if (status === 401) {
+        await handleUnauthorized();
+        return;
+      }
+      Alert.alert(
+        "Error",
+        getApiErrorMessage(error, "Failed to delete expense."),
+      );
+    }
   };
 
   return (
@@ -845,6 +850,33 @@ export default function Expenses() {
       edges={["bottom"]}
       style={{ flex: 1, backgroundColor: "#F2F5EA" }}
     >
+      <ConfirmPopup
+        visible={pendingDeleteExpense !== null}
+        type="delete"
+        message={
+          pendingDeleteExpense
+            ? `Delete "${pendingDeleteExpense.title}"?`
+            : undefined
+        }
+        onConfirm={confirmDeleteExpense}
+        onCancel={() => setPendingDeleteExpense(null)}
+      />
+      <ConfirmPopup
+        visible={successMessage !== null}
+        type="success"
+        message={successMessage ?? ""}
+        onConfirm={() => setSuccessMessage(null)}
+      />
+      <ConfirmPopup
+        visible={showSaveConfirmation}
+        type={editingExpenseId !== null ? "edit" : "add"}
+        loading={saving}
+        onConfirm={async () => {
+          await handleCreateExpense();
+          setShowSaveConfirmation(false);
+        }}
+        onCancel={() => setShowSaveConfirmation(false)}
+      />
       <View style={{ flex: 1, backgroundColor: "#F2F5EA" }}>
         {/* ── Hero Header ── */}
         <View
@@ -1930,7 +1962,7 @@ export default function Expenses() {
                   </Text>
                 </Pressable>
                 <Pressable
-                  onPress={handleCreateExpense}
+                  onPress={() => setShowSaveConfirmation(true)}
                   disabled={saving}
                   style={{
                     flex: 1.5,
