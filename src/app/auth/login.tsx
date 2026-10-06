@@ -3,14 +3,14 @@ import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useState } from "react";
 import {
-    Alert,
-    Image,
-    KeyboardAvoidingView,
-    Platform,
-    Pressable,
-    ScrollView,
-    Text,
-    View,
+  Alert,
+  Image,
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  ScrollView,
+  Text,
+  View,
 } from "react-native";
 import { getApiErrorMessage, loginWithIdentifier } from "../../api";
 import { FormInput, FormLabel } from "../../components/FormControls";
@@ -90,14 +90,14 @@ export default function LoginScreen() {
 
           <View className="mx-7 mt-8">
             <View className="mt-2 mb-5">
-              <FormLabel color="#4B5563">Username / Email / Mobile</FormLabel>
+              <FormLabel color="#4B5563">Email</FormLabel>
               <View className="h-16 flex-row items-center rounded-[32px] border border-[#D1DABB] bg-[#DFE7C8] px-5">
                 <FormInput
                   bordered={false}
                   value={identifier}
                   onChangeText={setIdentifier}
-                  accessibilityLabel="Username / Email / Mobile"
-                  placeholder="Enter details"
+                  accessibilityLabel="Email Address"
+                  placeholder="Enter email address"
                   autoCapitalize="none"
                   autoCorrect={false}
                   autoComplete="username"
@@ -159,7 +159,7 @@ export default function LoginScreen() {
 
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="Sign in"
+              accessibilityLabel="Sign In"
               disabled={isSubmitting}
               onPress={handleSubmit}
               style={({ pressed }) => ({
@@ -174,23 +174,17 @@ export default function LoginScreen() {
                 shadowOffset: { width: 0, height: 6 },
                 elevation: pressed || isSubmitting ? 0 : 8,
               })}
-              className="mb-10 mt-2 h-[68px] flex-row items-center justify-center gap-3 rounded-full bg-[#366039]"
+              className="mb-10 mt-2 h-[60px] flex-row items-center justify-center gap-3 rounded-full bg-[#366039]"
             >
-              {isSubmitting ? (
+              {isSubmitting && (
                 <Ionicons
                   name="refresh-outline"
                   size={20}
                   color={Colors.primaryDark}
                 />
-              ) : (
-                <Ionicons
-                  name="arrow-forward"
-                  size={26}
-                  color={Colors.white}
-                />
               )}
               <Text className="text-[17px] font-extrabold tracking-[0.22em] text-white">
-                {isSubmitting ? "SIGNING IN" : "SIGN IN"}
+                {isSubmitting ? "Signing In" : "Sign In"}
               </Text>
             </Pressable>
 
