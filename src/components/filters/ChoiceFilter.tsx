@@ -7,6 +7,7 @@ import { useFonts } from "expo-font";
 import { useState } from "react";
 import { Pressable, Text, View } from "react-native";
 import { Colors } from "../../constants/colors";
+import { PopupSelect } from "../PopupSelect";
 
 export type ChoiceFilterOption = {
   value: string;
@@ -17,14 +18,15 @@ export type ChoiceFilterGroup = {
   key: string;
   label: string;
   options: ChoiceFilterOption[];
-  presentation?: "chips" | "select";
+  presentation?: "chips" | "select" | "popup";
 };
 
 type Props = {
   value: string;
   options: ChoiceFilterOption[];
   onChange: (value: string) => void;
-  presentation?: "chips" | "select";
+  presentation?: "chips" | "select" | "popup";
+  label?: string;
 };
 
 export function ChoiceFilter({
@@ -32,9 +34,24 @@ export function ChoiceFilter({
   options,
   onChange,
   presentation = "chips",
+  label,
 }: Props) {
   const [fontsLoaded] = useFonts({ Poppins_500Medium, Poppins_600SemiBold });
   const [isExpanded, setIsExpanded] = useState(false);
+
+  if (presentation === "popup") {
+    return (
+      <PopupSelect
+        label={label ?? "Select an option"}
+        placeholder="Select an option"
+        options={options}
+        value={value}
+        onChange={onChange}
+        searchPlaceholder={`Search ${(label ?? "options").toLowerCase()}`}
+        showLabel={false}
+      />
+    );
+  }
 
   if (presentation === "select") {
     const selectedOption = options.find((option) => option.value === value);

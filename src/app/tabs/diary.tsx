@@ -1,52 +1,52 @@
 import { Ionicons } from "@expo/vector-icons";
 import {
-  AudioModule,
-  RecordingPresets,
-  setAudioModeAsync,
-  useAudioRecorder,
+    AudioModule,
+    RecordingPresets,
+    setAudioModeAsync,
+    useAudioRecorder,
 } from "expo-audio";
 import * as DocumentPicker from "expo-document-picker";
 import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import {
-  useCallback,
-  useEffect,
-  useEffectEvent,
-  useMemo,
-  useState,
+    useCallback,
+    useEffect,
+    useEffectEvent,
+    useMemo,
+    useState,
 } from "react";
 import {
-  ActivityIndicator,
-  Alert,
-  Image,
-  KeyboardAvoidingView,
-  Modal,
-  Pressable,
-  Platform,
-  RefreshControl,
-  ScrollView,
-  Text,
-  View,
+    ActivityIndicator,
+    Alert,
+    Image,
+    KeyboardAvoidingView,
+    Modal,
+    Platform,
+    Pressable,
+    RefreshControl,
+    ScrollView,
+    Text,
+    View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import api, { API_BASE_URL, getApiErrorMessage, logoutUser } from "../../api";
 import { AddButton } from "../../components/AddButton";
 import {
-  createDateRangeSelection,
-  isDateInRange,
-  type DateRangeSelection,
+    createDateRangeSelection,
+    isDateInRange,
+    type DateRangeSelection,
 } from "../../components/DateRangeFilter";
 import { DateTimePickerComponent } from "../../components/DateTimePickerComponent";
 import {
-  formatLocalDate,
-  formatLocalTime,
-  parseLocalDate,
-  parseLocalDateTime,
+    formatLocalDate,
+    formatLocalTime,
+    parseLocalDate,
+    parseLocalDateTime,
 } from "../../components/dateTimeUtils";
 import {
-  countActiveFilters,
-  DEFAULT_FILTER_STATE,
-  type FilterState,
-  type ViewModeOption,
+    countActiveFilters,
+    DEFAULT_FILTER_STATE,
+    type FilterState,
+    type ViewModeOption,
 } from "../../components/filters";
 import { FormInput, FormOption } from "../../components/FormControls";
 import { GradientSafeAreaView as SafeAreaView } from "../../components/GradientSafeAreaView";
@@ -454,23 +454,6 @@ export default function Diary() {
       return () => clearTimeout(timeout);
     }, [fetchData]),
   );
-
-  const stats = useMemo(() => {
-    const now = new Date();
-    const thisMonth = entries.filter((entry) => {
-      const date = new Date(entry.entry_date || "");
-      return (
-        date.getMonth() === now.getMonth() &&
-        date.getFullYear() === now.getFullYear()
-      );
-    }).length;
-    return {
-      total: entries.length,
-      thisMonth,
-      favorites: entries.filter((entry) => asBoolean(entry.is_favorite)).length,
-      drafts: entries.filter((entry) => entry.status === "draft").length,
-    };
-  }, [entries]);
 
   const filteredEntries = useMemo(() => {
     const term = search.trim().toLowerCase();
@@ -898,7 +881,7 @@ export default function Diary() {
                     label: `${mood.emoji} ${mood.name}`,
                   })),
                 ],
-                presentation: "select",
+                presentation: "popup",
               },
             ],
           }}
@@ -1736,52 +1719,6 @@ export default function Diary() {
         </View>
       </Modal>
     </SafeAreaView>
-  );
-}
-
-function StatCard({
-  label,
-  value,
-  icon,
-}: {
-  label: string;
-  value: number;
-  icon: keyof typeof Ionicons.glyphMap;
-}) {
-  return (
-    <View
-      style={{
-        flex: 1,
-        minHeight: 76,
-        justifyContent: "center",
-        paddingHorizontal: 11,
-        paddingVertical: 10,
-        borderRadius: 14,
-        borderWidth: 1,
-        borderColor: "#E0E8E3",
-        backgroundColor: Colors.white,
-      }}
-    >
-      <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-        <Ionicons name={icon} size={15} color={Colors.forest} />
-        <Text
-          numberOfLines={1}
-          style={{ color: Colors.sage, fontSize: 12, fontWeight: "700" }}
-        >
-          {label}
-        </Text>
-      </View>
-      <Text
-        style={{
-          color: Colors.textPrimary,
-          fontSize: 21,
-          fontWeight: "800",
-          marginTop: 4,
-        }}
-      >
-        {value}
-      </Text>
-    </View>
   );
 }
 

@@ -495,6 +495,7 @@ export function FilterBottomSheet({
                       {filter.label}
                     </Text>
                     <ChoiceFilter
+                      label={filter.label}
                       value={
                         draft.custom?.[filter.key] ??
                         filter.options[0]?.value ??

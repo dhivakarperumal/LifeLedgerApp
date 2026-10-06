@@ -4,8 +4,8 @@ import {
     ActivityIndicator,
     KeyboardAvoidingView,
     Modal,
-    Pressable,
     Platform,
+    Pressable,
     ScrollView,
     Text,
     TextInput,
@@ -34,6 +34,7 @@ type PopupSelectProps = {
   error?: string;
   required?: boolean;
   disabled?: boolean;
+  showLabel?: boolean;
 };
 
 export function PopupSelect({
@@ -48,6 +49,7 @@ export function PopupSelect({
   error,
   required = false,
   disabled = false,
+  showLabel = true,
 }: PopupSelectProps) {
   const [visible, setVisible] = useState(false);
   const [search, setSearch] = useState("");
@@ -107,7 +109,7 @@ export function PopupSelect({
 
   return (
     <View className="mb-4">
-      {label ? (
+      {showLabel && label ? (
         <Text className="mb-2 text-xs font-bold uppercase tracking-[0.12em] text-[#46534B]">
           {label}
           {required ? " *" : ""}
