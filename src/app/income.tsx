@@ -2,6 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import * as DocumentPicker from "expo-document-picker";
 import { LinearGradient } from "expo-linear-gradient";
 import { useFocusEffect, useRouter } from "expo-router";
+import { StatusBar } from "expo-status-bar";
 import { useCallback, useMemo, useState } from "react";
 import {
   ActivityIndicator,
@@ -797,6 +798,11 @@ export default function Income() {
 
   return (
     <SafeAreaView className="flex-1 bg-[#F2F5EA]" edges={["bottom"]}>
+      <StatusBar
+        style="light"
+        backgroundColor={Colors.greenGradient[0]}
+        translucent={false}
+      />
       <LinearGradient
         colors={Colors.greenGradient}
         start={{ x: 0, y: 0 }}
