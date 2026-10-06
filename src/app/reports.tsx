@@ -26,6 +26,7 @@ import {
     type DateRangeSelection,
 } from "../components/DateRangeFilter";
 import { GradientSafeAreaView as SafeAreaView } from "../components/GradientSafeAreaView";
+import { CenteredPageLoader } from "../components/CenteredPageLoader";
 import { SearchBar } from "../components/SearchBar";
 import {
     countActiveFilters,
@@ -353,6 +354,7 @@ export default function Reports() {
   const [expenses, setExpenses] = useState<ReportRecord[]>([]);
   const [transfers, setTransfers] = useState<ReportRecord[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [reportType, setReportType] = useState<"all" | ReportType>("all");
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("All");
@@ -395,8 +397,8 @@ export default function Reports() {
     router.replace("/auth/login");
   }, [router]);
 
-  const fetchAll = useCallback(async () => {
-    setLoading(true);
+  const fetchAll = useCallback(async (showLoading = true) => {
+    if (showLoading) setLoading(true);
     try {
       const [expenseResponse, transferResponse] = await Promise.all([
         api.get("/expenses"),
@@ -423,9 +425,18 @@ export default function Reports() {
       }
       Alert.alert("Unable to load reports", getApiErrorMessage(error));
     } finally {
-      setLoading(false);
+      if (showLoading) setLoading(false);
     }
   }, [handleUnauthorized]);
+
+  const refreshReports = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      await fetchAll(false);
+    } finally {
+      setRefreshing(false);
+    }
+  }, [fetchAll]);
 
   useFocusEffect(
     useCallback(() => {
@@ -811,13 +822,18 @@ export default function Reports() {
         </View>
       </LinearGradient>
 
+      {loading ? (
+        <CenteredPageLoader message="Loading report data..." />
+      ) : (
       <ScrollView
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
-            refreshing={loading}
-            onRefresh={() => void fetchAll()}
+            refreshing={refreshing}
+            onRefresh={() => {
+              if (!loading) void refreshReports();
+            }}
             colors={[Colors.primary]}
             tintColor={Colors.primary}
           />
@@ -1067,14 +1083,7 @@ export default function Reports() {
           </View>
         </View>
 
-        {loading ? (
-          <View className="items-center rounded-2xl border border-[#E4E8E3] bg-white py-16">
-            <ActivityIndicator size="large" color="#315640" />
-            <Text className="mt-3 text-sm font-medium text-[#7B8580]">
-              Loading report data...
-            </Text>
-          </View>
-        ) : visible.length === 0 ? (
+        {visible.length === 0 ? (
           <View className="items-center rounded-2xl border border-[#E4E8E3] bg-white px-6 py-12">
             <Ionicons name="file-tray-outline" size={34} color="#A4ADA6" />
             <Text className="mt-3 text-base font-bold text-[#25332C]">
@@ -1183,6 +1192,7 @@ export default function Reports() {
         )}
 
       </ScrollView>
+      )}
     </SafeAreaView>
   );
 }

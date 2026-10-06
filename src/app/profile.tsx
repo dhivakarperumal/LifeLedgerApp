@@ -20,6 +20,7 @@ import api, {
 } from "../api";
 import { FormInput, FormLabel } from "../components/FormControls";
 import { GradientSafeAreaView as SafeAreaView } from "../components/GradientSafeAreaView";
+import { CenteredPageLoader } from "../components/CenteredPageLoader";
 import { Colors } from "../constants/colors";
 
 type UserProfile = {
@@ -378,6 +379,9 @@ export default function Profile() {
         <Text className="ml-3 text-lg font-bold text-white">My Profile</Text>
       </LinearGradient>
 
+      {loading ? (
+        <CenteredPageLoader message="Loading profile..." />
+      ) : (
       <ScrollView
         showsVerticalScrollIndicator={false}
         refreshControl={
@@ -440,7 +444,6 @@ export default function Profile() {
               </Text>
             </View>
             <View className="flex-row items-center">
-              {loading && <ActivityIndicator color="#315640" />}
               {!editingProfile && (
                 <Pressable
                   accessibilityRole="button"
@@ -718,6 +721,7 @@ export default function Profile() {
           </Pressable>
         </View>
       </ScrollView>
+      )}
     </SafeAreaView>
   );
 }

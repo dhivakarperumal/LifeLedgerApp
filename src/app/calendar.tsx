@@ -21,6 +21,7 @@ import { AddButton } from "../components/AddButton";
 import { DateTimePickerComponent } from "../components/DateTimePickerComponent";
 import { FormInput, FormLabel, FormOption } from "../components/FormControls";
 import { GradientSafeAreaView as SafeAreaView } from "../components/GradientSafeAreaView";
+import { CenteredPageLoader } from "../components/CenteredPageLoader";
 import { Colors } from "../constants/colors";
 
 type CalendarEntry = {
@@ -364,6 +365,9 @@ export default function CalendarScreen() {
       edges={["top"]}
       style={{ backgroundColor: Colors.primary }}
     >
+      {loading ? (
+        <CenteredPageLoader message="Loading calendar..." />
+      ) : (
       <ScrollView
         className="flex-1"
         style={{ backgroundColor: Colors.contentBackground }}
@@ -575,14 +579,7 @@ export default function CalendarScreen() {
            
           </View>
 
-          {loading ? (
-            <View className="items-center py-8">
-              <ActivityIndicator size="large" color={Colors.primary} />
-              <Text className="mt-3 text-sm font-medium text-[#7B8589]">
-                Loading calendar...
-              </Text>
-            </View>
-          ) : visibleEntries.length ? (
+          {visibleEntries.length ? (
             visibleEntries.map((entry) => (
               <EntryCard
                 key={entry.id}
@@ -637,6 +634,7 @@ export default function CalendarScreen() {
 
        
       </ScrollView>
+      )}
 
       <AddButton
         onPress={() => openForm(activeType)}

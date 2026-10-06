@@ -45,6 +45,7 @@ import {
     FormLabel,
 } from "../../components/FormControls";
 import { GradientSafeAreaView as SafeAreaView } from "../../components/GradientSafeAreaView";
+import { CenteredPageLoader } from "../../components/CenteredPageLoader";
 import { PopupSelect } from "../../components/PopupSelect";
 import { SearchBar } from "../../components/SearchBar";
 import { Colors } from "../../constants/colors";
@@ -716,6 +717,9 @@ export default function Memories() {
       edges={["bottom"]}
       style={{ flex: 1, backgroundColor: Colors.contentBackground }}
     >
+      {loading ? (
+        <CenteredPageLoader message="Loading memories..." />
+      ) : (
       <ScrollView
         showsVerticalScrollIndicator={false}
         refreshControl={
@@ -760,11 +764,7 @@ export default function Memories() {
           style={{ marginBottom: 14 }}
         />
 
-        {loading ? (
-          <View style={{ paddingVertical: 54, alignItems: "center" }}>
-            <ActivityIndicator size="large" color={Colors.forest} />
-          </View>
-        ) : filteredMemories.length === 0 ? (
+        {filteredMemories.length === 0 ? (
           <View
             style={{
               alignItems: "center",
@@ -1186,6 +1186,7 @@ export default function Memories() {
           </View>
         )}
       </ScrollView>
+      )}
 
       <AddButton
         onPress={openNewMemory}

@@ -38,6 +38,7 @@ import {
 } from "../components/filters";
 import { FormInput, FormLabel, FormOption } from "../components/FormControls";
 import { GradientSafeAreaView as SafeAreaView } from "../components/GradientSafeAreaView";
+import { CenteredPageLoader } from "../components/CenteredPageLoader";
 import { PopupSelect } from "../components/PopupSelect";
 import { SearchBar } from "../components/SearchBar";
 import { Colors } from "../constants/colors";
@@ -847,6 +848,9 @@ export default function Transfers() {
         <Text className="ml-3 text-lg font-bold text-white">Transfers</Text>
       </LinearGradient>
 
+      {loading ? (
+        <CenteredPageLoader message="Loading transfers..." />
+      ) : (
       <ScrollView
         showsVerticalScrollIndicator={false}
         refreshControl={
@@ -926,14 +930,7 @@ export default function Transfers() {
           style={{ marginBottom: 12 }}
         />
 
-        {loading ? (
-          <View className="items-center rounded-2xl border border-[#E4E8E3] bg-white px-5 py-10">
-            <Ionicons name="hourglass-outline" size={30} color="#87918A" />
-            <Text className="mt-3 text-sm font-semibold text-[#6F7B73]">
-              Loading transfers…
-            </Text>
-          </View>
-        ) : visibleTransfers.length === 0 ? (
+        {visibleTransfers.length === 0 ? (
           <View className="items-center rounded-2xl border border-[#E4E8E3] bg-white px-5 py-10">
             <View className="mb-3 h-14 w-14 items-center justify-center rounded-full bg-[#EEF5F0]">
               <Ionicons name="swap-horizontal-outline" size={26} color="#315640" />
@@ -1099,6 +1096,7 @@ export default function Transfers() {
         )}
 
       </ScrollView>
+      )}
 
       <AddButton
         onPress={openAddTransfer}

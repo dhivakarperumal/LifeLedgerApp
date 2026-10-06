@@ -36,6 +36,7 @@ import {
 } from "../components/filters";
 import { FormInput, FormLabel, FormOption } from "../components/FormControls";
 import { GradientSafeAreaView as SafeAreaView } from "../components/GradientSafeAreaView";
+import { CenteredPageLoader } from "../components/CenteredPageLoader";
 import { PopupSelect } from "../components/PopupSelect";
 import { SearchBar } from "../components/SearchBar";
 import { Colors } from "../constants/colors";
@@ -459,6 +460,9 @@ export default function Categories() {
         </View>
       </LinearGradient>
 
+      {loading ? (
+        <CenteredPageLoader message="Loading categories..." />
+      ) : (
       <ScrollView
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
@@ -551,14 +555,7 @@ export default function Categories() {
           style={{ marginBottom: 12 }}
         />
 
-        {loading ? (
-          <View className="items-center py-16">
-            <ActivityIndicator size="large" color="#315640" />
-            <Text className="mt-3 text-sm font-medium text-[#7B8580]">
-              Loading categories...
-            </Text>
-          </View>
-        ) : filteredCategories.length === 0 ? (
+        {filteredCategories.length === 0 ? (
           <View className="items-center rounded-2xl border border-[#E4E8E3] bg-white px-6 py-12">
             <Ionicons name="file-tray-outline" size={34} color="#A4ADA6" />
             <Text className="mt-3 text-base font-bold text-[#25332C]">
@@ -699,6 +696,7 @@ export default function Categories() {
           </View>
         )}
       </ScrollView>
+      )}
 
       <AddButton
         onPress={openAddModal}

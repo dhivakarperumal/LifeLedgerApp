@@ -17,6 +17,7 @@ import Svg, { Circle } from "react-native-svg";
 import { TopHeader } from "../../Navigations/TopHeader";
 import api, { API_BASE_URL, getStoredUser } from "../../api";
 import { GradientSafeAreaView as SafeAreaView } from "../../components/GradientSafeAreaView";
+import { CenteredPageLoader } from "../../components/CenteredPageLoader";
 import { Colors } from "../../constants/colors";
 import { HOME_QUOTES, HOME_QUOTE_INDEX_KEY } from "../../constants/homeQuotes";
 
@@ -671,6 +672,9 @@ export default function Index() {
       style={{ flex: 1, backgroundColor: Colors.headerStart }}
     >
       <View style={{ flex: 1, backgroundColor: Colors.contentBackground }}>
+        {isLoading ? (
+          <CenteredPageLoader message="Loading your overview..." />
+        ) : (
         <ScrollView
           style={{ flex: 1 }}
           showsVerticalScrollIndicator={false}
@@ -1533,6 +1537,7 @@ export default function Index() {
             )}
           </View>
         </ScrollView>
+        )}
       </View>
     </SafeAreaView>
   );

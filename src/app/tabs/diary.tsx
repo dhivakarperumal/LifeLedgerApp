@@ -50,6 +50,7 @@ import {
 } from "../../components/filters";
 import { FormInput, FormLabel } from "../../components/FormControls";
 import { GradientSafeAreaView as SafeAreaView } from "../../components/GradientSafeAreaView";
+import { CenteredPageLoader } from "../../components/CenteredPageLoader";
 import { PopupSelect } from "../../components/PopupSelect";
 import { SearchBar } from "../../components/SearchBar";
 import { Colors } from "../../constants/colors";
@@ -840,6 +841,9 @@ export default function Diary() {
       edges={["bottom"]}
       style={{ flex: 1, backgroundColor: Colors.contentBackground }}
     >
+      {loading ? (
+        <CenteredPageLoader message="Loading diary..." />
+      ) : (
       <ScrollView
         showsVerticalScrollIndicator={false}
         refreshControl={
@@ -900,11 +904,7 @@ export default function Diary() {
           style={{ marginBottom: 12 }}
         />
 
-        {loading ? (
-          <View style={{ paddingVertical: 42, alignItems: "center" }}>
-            <ActivityIndicator size="large" color={Colors.forest} />
-          </View>
-        ) : filteredEntries.length === 0 ? (
+        {filteredEntries.length === 0 ? (
           <View
             style={{
               padding: 28,
@@ -1391,6 +1391,7 @@ export default function Diary() {
           </View>
         )}
       </ScrollView>
+      )}
 
       <AddButton
         onPress={openNewEntry}
