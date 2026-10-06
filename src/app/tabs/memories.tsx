@@ -792,28 +792,72 @@ export default function Memories() {
                   style={{
                     flexDirection: "row",
                     alignItems: "center",
+                    gap: 10,
                     marginBottom: 10,
+                    paddingHorizontal: 2,
                   }}
                 >
-                  <Text
+                  <View
                     style={{
-                      color: Colors.textPrimary,
-                      fontSize: 16,
-                      fontWeight: "800",
+                      flex: 1,
+                      height: 1,
+                      backgroundColor: "#D8E5D8",
+                    }}
+                  />
+                  <View
+                    style={{
+                      flexDirection: "row",
+                      alignItems: "center",
+                      gap: 7,
+                      paddingHorizontal: 12,
+                      paddingVertical: 5,
+                      borderRadius: 20,
+                      backgroundColor: "#E9F4E8",
+                      borderWidth: 1,
+                      borderColor: "#C5DEC3",
                     }}
                   >
-                    {group.label}
-                  </Text>
-                  <Text
+                    <Ionicons
+                      name="calendar-outline"
+                      size={13}
+                      color={Colors.forest}
+                    />
+                    <Text
+                      style={{
+                        color: Colors.forest,
+                        fontSize: 12,
+                        fontWeight: "700",
+                        letterSpacing: 0.3,
+                      }}
+                    >
+                      {group.label}
+                    </Text>
+                    <View
+                      style={{
+                        paddingHorizontal: 6,
+                        paddingVertical: 1,
+                        borderRadius: 10,
+                        backgroundColor: Colors.forest,
+                      }}
+                    >
+                      <Text
+                        style={{
+                          color: Colors.white,
+                          fontSize: 10,
+                          fontWeight: "700",
+                        }}
+                      >
+                        {group.memories.length}
+                      </Text>
+                    </View>
+                  </View>
+                  <View
                     style={{
-                      color: Colors.textSecondary,
-                      fontSize: 13,
-                      marginLeft: 10,
+                      flex: 1,
+                      height: 1,
+                      backgroundColor: "#D8E5D8",
                     }}
-                  >
-                    {group.memories.length}{" "}
-                    {group.memories.length === 1 ? "memory" : "memories"}
-                  </Text>
+                  />
                 </View>
                 <View
                   style={{
