@@ -4,6 +4,7 @@ import { StatusBar } from "expo-status-bar";
 import { useState } from "react";
 import {
     Alert,
+    Image,
     KeyboardAvoidingView,
     Platform,
     Pressable,
@@ -23,7 +24,6 @@ export default function LoginScreen() {
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [rememberMe, setRememberMe] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async () => {
@@ -50,83 +50,85 @@ export default function LoginScreen() {
   };
 
   return (
-    <SafeAreaView edges={["top", "bottom"]} className="flex-1 bg-[#E8F5E9]">
-      <StatusBar style="light" />
+    <SafeAreaView edges={["top", "bottom"]} className="flex-1 bg-[#E8EFD9]">
+      <StatusBar style="dark" />
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         className="flex-1"
       >
         <ScrollView
-          contentContainerStyle={{ flexGrow: 1, justifyContent: "center", paddingVertical: 24 }}
+          contentContainerStyle={{ flexGrow: 1, paddingBottom: 28 }}
           keyboardDismissMode="none"
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-          {/* ── Login card ──────────────────────────────────────────────────── */}
-          <View className="mx-4 rounded-[28px] bg-white p-6 shadow-lg">
-            {/* Header */}
-            <Text className="text-center text-2xl font-bold text-[#263238]">
-              Welcome Back
-            </Text>
-            <Text className="mb-6 mt-1 text-center text-sm text-[#7B8589]">
-              Login to your Life Ledger account
-            </Text>
+          <View
+            className="justify-center bg-[#DFE7C8] px-7"
+            style={{
+              minHeight: 225,
+              borderBottomLeftRadius: 62,
+              borderBottomRightRadius: 62,
+            }}
+          >
+            <View className="flex-row items-center gap-3">
+            <Image
+              source={require("../../../assets/images/logo.png")}
+              accessibilityLabel="Life Ledger logo"
+              resizeMode="contain"
+                className="h-14 w-14 rounded-full"
+            />
+              <View className="flex-1">
+                <Text className="text-[34px] font-extrabold leading-[40px] text-[#202936]">
+                  LifeLedger
+                </Text>
+                <Text className="mt-2 text-[11px] font-bold tracking-[0.32em] text-[#58636A]">
+                  LOG IN TO YOUR ACCOUNT
+                </Text>
+              </View>
+            </View>
+          </View>
 
-            {/* Email field */}
-            <View className="mb-4">
-              <FormLabel>
-                Email Or Mobile Number
-              </FormLabel>
-              <View className="h-[52px] flex-row items-center rounded-[14px] border border-[#E5EAE7] bg-[#F9FAFC] px-[14px]">
-                <Ionicons
-                  name="mail-outline"
-                  size={20}
-                  color={Colors.textMuted}
-                />
+          <View className="mx-7 mt-8">
+            <View className="mt-2 mb-5">
+              <FormLabel color="#4B5563">Username / Email / Mobile</FormLabel>
+              <View className="h-16 flex-row items-center rounded-[32px] border border-[#D1DABB] bg-[#DFE7C8] px-5">
                 <FormInput
                   bordered={false}
                   value={identifier}
                   onChangeText={setIdentifier}
-                  accessibilityLabel="Email Or Mobile Number"
-                  placeholder="Email or mobile number"
+                  accessibilityLabel="Username / Email / Mobile"
+                  placeholder="Enter details"
                   autoCapitalize="none"
                   autoCorrect={false}
                   autoComplete="username"
                   keyboardType="email-address"
                   returnKeyType="next"
                   selectionColor={Colors.primary}
-                  className="ml-2.5 flex-1 text-base text-[#263238]"
+                  className="flex-1 text-[15px] font-semibold text-[#263238]"
                 />
               </View>
             </View>
 
-            {/* Password field */}
-            <View className="mb-4">
-              <FormLabel>
-                Password
-              </FormLabel>
-              <View className="h-[52px] flex-row items-center rounded-[14px] border border-[#E5EAE7] bg-[#F9FAFC] px-[14px]">
-                <Ionicons
-                  name="lock-closed-outline"
-                  size={20}
-                  color={Colors.textMuted}
-                />
+            <View className="mt-2 mb-5">
+              <FormLabel color="#4B5563">Password</FormLabel>
+              <View className="h-16 flex-row items-center rounded-[32px] border border-[#D1DABB] bg-[#DFE7C8] px-5">
                 <FormInput
                   bordered={false}
                   value={password}
                   onChangeText={setPassword}
                   accessibilityLabel="Password"
-                  placeholder="Password"
+                  placeholder="Enter password"
                   secureTextEntry={!showPassword}
                   autoComplete="current-password"
                   returnKeyType="done"
                   onSubmitEditing={handleSubmit}
                   selectionColor={Colors.primary}
-                  className="ml-2.5 flex-1 text-base text-[#263238]"
+                  className="flex-1 text-[15px] font-semibold text-[#263238]"
                 />
                 <Pressable
                   hitSlop={10}
                   onPress={() => setShowPassword((v) => !v)}
+                  className="h-9 w-9 items-center justify-center rounded-full bg-[#EDF1E0]"
                   accessibilityLabel={
                     showPassword ? "Hide password" : "Show password"
                   }
@@ -134,35 +136,13 @@ export default function LoginScreen() {
                   <Ionicons
                     name={showPassword ? "eye-off-outline" : "eye-outline"}
                     size={20}
-                    color={Colors.textMuted}
+                    color={Colors.primary}
                   />
                 </Pressable>
               </View>
             </View>
 
-            {/* Remember me + Forgot password */}
-            <View className="mb-5 flex-row items-center justify-between">
-              <Pressable
-                className="flex-row items-center gap-2"
-                onPress={() => setRememberMe((v) => !v)}
-                accessibilityRole="checkbox"
-                accessibilityState={{ checked: rememberMe }}
-              >
-                <View
-                  className="h-5 w-5 items-center justify-center rounded-md"
-                  style={{
-                    borderWidth: rememberMe ? 0 : 1.5,
-                    borderColor: Colors.border,
-                    backgroundColor: rememberMe ? Colors.primary : Colors.white,
-                  }}
-                >
-                  {rememberMe && (
-                    <Ionicons name="checkmark" size={13} color={Colors.white} />
-                  )}
-                </View>
-                <FormLabel inline color="#7B8589">Remember Me</FormLabel>
-              </Pressable>
-
+            <View className="mb-5">
               <Pressable
                 onPress={() =>
                   Alert.alert(
@@ -171,16 +151,15 @@ export default function LoginScreen() {
                   )
                 }
               >
-                <Text className="text-sm font-semibold text-[#366039]">
+                <Text className="text-[13px] font-bold tracking-[0.08em] text-[#366039]">
                   Forgot Password?
                 </Text>
               </Pressable>
             </View>
 
-            {/* Login button */}
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="Login"
+              accessibilityLabel="Sign in"
               disabled={isSubmitting}
               onPress={handleSubmit}
               style={({ pressed }) => ({
@@ -195,7 +174,7 @@ export default function LoginScreen() {
                 shadowOffset: { width: 0, height: 6 },
                 elevation: pressed || isSubmitting ? 0 : 8,
               })}
-              className="mb-5 h-[54px] flex-row items-center justify-center gap-2.5 rounded-2xl"
+              className="mb-10 mt-2 h-[68px] flex-row items-center justify-center gap-3 rounded-full bg-[#366039]"
             >
               {isSubmitting ? (
                 <Ionicons
@@ -205,40 +184,25 @@ export default function LoginScreen() {
                 />
               ) : (
                 <Ionicons
-                  name="log-in-outline"
-                  size={20}
+                  name="arrow-forward"
+                  size={26}
                   color={Colors.white}
                 />
               )}
-              <Text
-                className="text-base font-bold tracking-[0.4px]"
-                style={{
-                  color: isSubmitting ? Colors.primaryDark : Colors.white,
-                }}
-              >
-                {isSubmitting ? "Logging in..." : "Login"}
+              <Text className="text-[17px] font-extrabold tracking-[0.22em] text-white">
+                {isSubmitting ? "SIGNING IN" : "SIGN IN"}
               </Text>
             </Pressable>
 
-            {/* OR divider */}
-            <View className="mb-4 flex-row items-center">
-              <View className="h-px flex-1 bg-[#E5EAE7]" />
-              <Text className="mx-3 text-xs font-semibold text-[#7B8589]">
-                OR
-              </Text>
-              <View className="h-px flex-1 bg-[#E5EAE7]" />
-            </View>
-
-            {/* Sign up link */}
-            <View className="flex-row items-center justify-center gap-1">
-              <Text className="text-sm text-[#7B8589]">
+            <View className="flex-row flex-wrap items-center justify-center gap-x-1">
+              <Text className="text-[12px] font-bold tracking-[0.08em] text-[#707982]">
                 Don&apos;t have an account?
               </Text>
               <Pressable
                 onPress={() => router.push("/auth/register")}
                 className="active:opacity-60"
               >
-                <Text className="text-sm font-bold text-[#366039] underline">
+                <Text className="text-[12px] font-extrabold tracking-[0.08em] text-[#366039] underline">
                   Sign Up
                 </Text>
               </Pressable>

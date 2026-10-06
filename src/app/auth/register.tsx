@@ -4,6 +4,7 @@ import { StatusBar } from "expo-status-bar";
 import { useState } from "react";
 import {
     Alert,
+    Image,
     KeyboardAvoidingView,
     Platform,
     Pressable,
@@ -33,14 +34,12 @@ const initialForm: FormState = {
 };
 
 function FormField({
-  icon,
   label,
   placeholder,
   value,
   onChangeText,
   ...props
 }: {
-  icon: React.ComponentProps<typeof Ionicons>["name"];
   label: string;
   placeholder: string;
   value: string;
@@ -49,9 +48,8 @@ function FormField({
 }) {
   return (
     <View className="mb-4">
-      <FormLabel>{label}</FormLabel>
-      <View className="min-h-[52px] flex-row items-center rounded-[14px] border border-[#E5EAE7] bg-[#F9FAFC] px-[14px]">
-        <Ionicons name={icon} size={20} color={Colors.textMuted} />
+      <FormLabel color="#4B5563">{label}</FormLabel>
+      <View className="h-14 flex-row items-center rounded-[32px] border border-[#D1DABB] bg-[#DFE7C8] px-5">
         <FormInput
           bordered={false}
           {...props}
@@ -60,7 +58,7 @@ function FormField({
           accessibilityLabel={label}
           placeholder={placeholder}
           selectionColor={Colors.primary}
-          className="ml-2.5 flex-1 py-[14px] text-base text-[#263238]"
+          className="flex-1 text-[15px] font-semibold text-[#263238]"
         />
       </View>
     </View>
@@ -84,13 +82,8 @@ function PasswordField({
 }) {
   return (
     <View className="mb-4">
-      <FormLabel>{label}</FormLabel>
-      <View className="min-h-[52px] flex-row items-center rounded-[14px] border border-[#E5EAE7] bg-[#F9FAFC] px-[14px]">
-        <Ionicons
-          name="lock-closed-outline"
-          size={20}
-          color={Colors.textMuted}
-        />
+      <FormLabel color="#4B5563">{label}</FormLabel>
+      <View className="h-14 flex-row items-center rounded-[32px] border border-[#D1DABB] bg-[#DFE7C8] px-5">
         <FormInput
           bordered={false}
           value={value}
@@ -100,17 +93,18 @@ function PasswordField({
           secureTextEntry={!visible}
           autoComplete="password"
           selectionColor={Colors.primary}
-          className="ml-2.5 flex-1 py-[14px] text-base text-[#263238]"
+          className="flex-1 text-[15px] font-semibold text-[#263238]"
         />
         <Pressable
           hitSlop={10}
           onPress={onToggle}
+          className="h-9 w-9 items-center justify-center rounded-full bg-[#EDF1E0]"
           accessibilityLabel={visible ? "Hide password" : "Show password"}
         >
           <Ionicons
             name={visible ? "eye-off-outline" : "eye-outline"}
             size={20}
-            color={Colors.textMuted}
+            color={Colors.primary}
           />
         </Pressable>
       </View>
@@ -165,119 +159,128 @@ export default function RegisterScreen() {
   };
 
   return (
-    <SafeAreaView edges={["top", "bottom"]} className="flex-1 bg-[#E8F5E9]">
-      <StatusBar style="light" />
+    <SafeAreaView edges={["top", "bottom"]} className="flex-1 bg-[#E8EFD9]">
+      <StatusBar style="dark" />
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         className="flex-1"
       >
         <ScrollView
-          contentContainerStyle={{ flexGrow: 1, justifyContent: "center", paddingVertical: 24 }}
+          contentContainerStyle={{ flexGrow: 1, paddingBottom: 28 }}
           keyboardDismissMode="none"
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
-          className="flex-1"
         >
-          <View className="grow justify-center pb-6">
-            <View className="mx-4 rounded-[28px] bg-white p-6 shadow-lg">
-              <FormField
-                icon="person-outline"
-                label="Full Name"
-                placeholder="Full Name"
-                value={form.username}
-                onChangeText={(value) => updateField("username", value)}
-                autoCapitalize="words"
-                autoComplete="name"
+          <View
+            className="justify-center bg-[#DFE7C8] px-7"
+            style={{
+              minHeight: 145,
+              borderBottomLeftRadius: 62,
+              borderBottomRightRadius: 62,
+            }}
+          >
+            <View className="flex-row items-center gap-3">
+              <Image
+                source={require("../../../assets/images/logo.png")}
+                accessibilityLabel="Life Ledger logo"
+                resizeMode="contain"
+                className="h-12 w-12 rounded-full"
               />
-              <FormField
-                icon="mail-outline"
-                label="Email Address"
-                placeholder="Email Address"
-                value={form.email}
-                onChangeText={(value) => updateField("email", value)}
-                autoCapitalize="none"
-                autoCorrect={false}
-                autoComplete="email"
-                keyboardType="email-address"
-              />
-              <FormField
-                icon="call-outline"
-                label="Mobile Number"
-                placeholder="Mobile Number"
-                value={form.phone}
-                onChangeText={(value) => updateField("phone", value)}
-                keyboardType="phone-pad"
-                autoComplete="tel"
-              />
-              <PasswordField
-                label="Password"
-                placeholder="Password"
-                value={form.password}
-                onChangeText={(value) => updateField("password", value)}
-                visible={showPassword}
-                onToggle={() => setShowPassword((value) => !value)}
-              />
-              <PasswordField
-                label="Confirm Password"
-                placeholder="Confirm Password"
-                value={form.confirmPassword}
-                onChangeText={(value) => updateField("confirmPassword", value)}
-                visible={showConfirmPassword}
-                onToggle={() => setShowConfirmPassword((value) => !value)}
-              />
+              <View className="flex-1">
+                <Text className="text-[34px] font-extrabold leading-[40px] text-[#202936]">
+                  Join Us
+                </Text>
+                <Text className="mt-2 text-[11px] font-bold tracking-[0.32em] text-[#58636A]">
+                  CREATE YOUR NEW ACCOUNT
+                </Text>
+              </View>
+            </View>
+          </View>
 
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="Create account"
-                disabled={isSubmitting}
-                onPress={handleSubmit}
-                style={({ pressed }) => ({
-                  backgroundColor: isSubmitting
-                    ? Colors.primaryLight
-                    : pressed
-                      ? Colors.primaryDark
-                      : Colors.primary,
-                  shadowColor: Colors.primaryDark,
-                  shadowOpacity: pressed || isSubmitting ? 0 : 0.45,
-                  shadowRadius: 14,
-                  shadowOffset: { width: 0, height: 6 },
-                  elevation: pressed || isSubmitting ? 0 : 8,
-                })}
-                className="mt-[6px] mb-5 h-[54px] flex-row items-center justify-center gap-2.5 rounded-2xl"
-              >
-                {isSubmitting ? (
-                  <Ionicons
-                    name="refresh-outline"
-                    size={20}
-                    color={Colors.primaryDark}
-                  />
-                ) : (
-                  <Ionicons
-                    name="person-add-outline"
-                    size={20}
-                    color={Colors.white}
-                  />
-                )}
-                <Text
-                  className="text-base font-bold tracking-[0.4px]"
-                  style={{
-                    color: isSubmitting ? Colors.primaryDark : Colors.white,
-                  }}
-                >
-                  {isSubmitting ? "Creating account..." : "Create Account"}
+          <View className="mx-7 mt-7">
+            <FormField
+              label="Username"
+              placeholder="Enter username"
+              value={form.username}
+              onChangeText={(value) => updateField("username", value)}
+              autoCapitalize="words"
+              autoComplete="name"
+            />
+            <FormField
+              label="Email"
+              placeholder="Enter email"
+              value={form.email}
+              onChangeText={(value) => updateField("email", value)}
+              autoCapitalize="none"
+              autoCorrect={false}
+              autoComplete="email"
+              keyboardType="email-address"
+            />
+            <FormField
+              label="Phone"
+              placeholder="Enter phone number"
+              value={form.phone}
+              onChangeText={(value) => updateField("phone", value)}
+              keyboardType="phone-pad"
+              autoComplete="tel"
+            />
+            <PasswordField
+              label="Password"
+              placeholder="Enter password"
+              value={form.password}
+              onChangeText={(value) => updateField("password", value)}
+              visible={showPassword}
+              onToggle={() => setShowPassword((value) => !value)}
+            />
+            <PasswordField
+              label="Confirm Password"
+              placeholder="Confirm password"
+              value={form.confirmPassword}
+              onChangeText={(value) => updateField("confirmPassword", value)}
+              visible={showConfirmPassword}
+              onToggle={() => setShowConfirmPassword((value) => !value)}
+            />
+
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Sign Up"
+              disabled={isSubmitting}
+              onPress={handleSubmit}
+              style={({ pressed }) => ({
+                backgroundColor: isSubmitting
+                  ? Colors.primaryLight
+                  : pressed
+                    ? Colors.primaryDark
+                    : Colors.primary,
+                shadowColor: Colors.primaryDark,
+                shadowOpacity: pressed || isSubmitting ? 0 : 0.25,
+                shadowRadius: 10,
+                shadowOffset: { width: 0, height: 4 },
+                elevation: pressed || isSubmitting ? 0 : 5,
+              })}
+              className="mb-7 mt-2 h-14 flex-row items-center justify-center rounded-full bg-[#366039]"
+            >
+              {isSubmitting ? (
+                <Ionicons
+                  name="refresh-outline"
+                  size={20}
+                  color={Colors.primaryDark}
+                />
+              ) : null}
+              <Text className="text-[16px] font-extrabold tracking-[0.18em] text-white">
+                {isSubmitting ? "Signing Up" : "Sign Up"}
+              </Text>
+            </Pressable>
+
+            <View className="flex-row flex-wrap items-center justify-center gap-x-1">
+              <Text className="text-[12px] font-bold tracking-[0.08em] text-[#707982]">
+                Already have an account?
+              </Text>
+              <Pressable onPress={() => router.replace("/auth/login")}>
+                <Text className="text-[12px] font-extrabold tracking-[0.08em] text-[#366039] underline">
+                  Log In
                 </Text>
               </Pressable>
-
-              <View className="flex-row justify-center gap-1">
-                <Text className="text-sm text-[#7B8589]">
-                  Already have an account?
-                </Text>
-                <Pressable onPress={() => router.replace("/auth/login")}>
-                  <Text className="text-sm font-bold text-[#366039]">
-                    Login
-                  </Text>
-                </Pressable>
-              </View>
             </View>
           </View>
         </ScrollView>

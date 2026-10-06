@@ -5,18 +5,23 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { VideoView, useVideoPlayer } from "expo-video";
 import { useEffect, useMemo, useState } from "react";
 import {
-  ActivityIndicator,
-  Alert,
-  Image,
-  Linking,
-  Pressable,
-  RefreshControl,
-  ScrollView,
-  Text,
-  View,
+    ActivityIndicator,
+    Alert,
+    Image,
+    Linking,
+    Pressable,
+    RefreshControl,
+    ScrollView,
+    Text,
+    View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import api, { API_BASE_URL, getApiErrorMessage, logoutUser } from "../../api";
+import api, {
+    API_BASE_URL,
+    getApiErrorMessage,
+    getStoredToken,
+    logoutUser,
+} from "../../api";
 import { GradientSafeAreaView as SafeAreaView } from "../../components/GradientSafeAreaView";
 import { Colors } from "../../constants/colors";
 
@@ -61,6 +66,14 @@ function getMediaUrl(value?: string) {
   if (!value) return "";
   if (/^(https?:|file:|content:|data:)/i.test(value)) return value;
   return `${mediaBaseUrl}${value.startsWith("/") ? value : `/${value}`}`;
+}
+
+async function getAuthenticatedMediaSource(url: string) {
+  const token = await getStoredToken();
+  return {
+    uri: url,
+    ...(token ? { headers: { Authorization: `Bearer ${token}` } } : {}),
+  };
 }
 
 function mediaUrlOf(item: string | MemoryMedia) {
@@ -777,7 +790,25 @@ function VideoAttachment({
   name: string;
   hero?: boolean;
 }) {
-  const player = useVideoPlayer(url);
+  const player = useVideoPlayer(null);
+  const [failedUrl, setFailedUrl] = useState<string | null>(null);
+  const loadError = failedUrl === url;
+
+  useEffect(() => {
+    let active = true;
+    void getAuthenticatedMediaSource(url)
+      .then((source) => {
+        if (active) return player.replaceAsync(source);
+      })
+      .catch(() => {
+        if (active) setFailedUrl(url);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [player, url]);
+
   return (
     <View
       style={{
@@ -793,6 +824,11 @@ function VideoAttachment({
         contentFit="contain"
         style={{ width: "100%", height: hero ? 270 : 220 }}
       />
+      {loadError || player.status === "error" ? (
+        <Text style={{ padding: 10, color: Colors.white, fontSize: 13 }}>
+          Unable to load video.
+        </Text>
+      ) : null}
       {!hero ? (
         <Text
           numberOfLines={1}
@@ -814,9 +850,27 @@ function AudioAttachment({
   name: string;
   hero?: boolean;
 }) {
-  const player = useAudioPlayer(url);
+  const player = useAudioPlayer(null);
   const status = useAudioPlayerStatus(player);
+  const [failedUrl, setFailedUrl] = useState<string | null>(null);
+  const loadError = failedUrl === url;
   const elapsed = `${Math.floor(status.currentTime / 60)}:${String(Math.floor(status.currentTime % 60)).padStart(2, "0")}`;
+
+  useEffect(() => {
+    let active = true;
+    void getAuthenticatedMediaSource(url)
+      .then((source) => {
+        if (active) player.replace(source);
+      })
+      .catch(() => {
+        if (active) setFailedUrl(url);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [player, url]);
+
   return (
     <View
       style={[
@@ -828,6 +882,7 @@ function AudioAttachment({
     >
       <Pressable
         onPress={() => (status.playing ? player.pause() : player.play())}
+        disabled={!status.isLoaded || Boolean(status.error) || loadError}
         accessibilityRole="button"
         accessibilityLabel={status.playing ? `Pause ${name}` : `Play ${name}`}
         style={{
@@ -855,6 +910,11 @@ function AudioAttachment({
         <Text style={{ color: Colors.sage, fontSize: 12, marginTop: 4 }}>
           {elapsed}
         </Text>
+        {loadError || status.error ? (
+          <Text style={{ color: Colors.danger, fontSize: 12, marginTop: 4 }}>
+            Unable to load audio.
+          </Text>
+        ) : null}
       </View>
       <Ionicons name="musical-notes-outline" size={21} color={Colors.sage} />
     </View>

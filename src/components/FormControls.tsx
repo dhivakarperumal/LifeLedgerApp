@@ -25,16 +25,18 @@ type FormLabelProps = {
   children: ReactNode;
   inline?: boolean;
   color?: TextStyle["color"];
+  uppercase?: boolean;
 };
 
 export function FormLabel({
   children,
   inline = false,
   color,
+  uppercase = false,
 }: FormLabelProps) {
   return (
     <Text
-      className={`${inline ? "" : "mb-[6px]"} text-[14px] font-medium leading-5`}
+      className={`${inline ? "" : "mb-[6px]"} text-[14px] font-medium leading-5${uppercase ? " uppercase tracking-[0.12em]" : ""}`}
       style={color ? { color } : undefined}
     >
       {children}
