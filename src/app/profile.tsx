@@ -113,10 +113,6 @@ export default function Profile() {
   });
   const [editingProfile, setEditingProfile] = useState(false);
   const [savingProfile, setSavingProfile] = useState(false);
-  const [showProfileSaveConfirmation, setShowProfileSaveConfirmation] =
-    useState(false);
-  const [showPasswordSaveConfirmation, setShowPasswordSaveConfirmation] =
-    useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [profileStatus, setProfileStatus] = useState<{
     type: "success" | "error" | "";
@@ -243,7 +239,6 @@ export default function Profile() {
       });
     } finally {
       setSavingProfile(false);
-      setShowProfileSaveConfirmation(false);
     }
   };
 
@@ -305,7 +300,6 @@ export default function Profile() {
       });
     } finally {
       setSavingPassword(false);
-      setShowPasswordSaveConfirmation(false);
     }
   };
 
@@ -356,26 +350,6 @@ export default function Profile() {
         loading={deactivating}
         onConfirm={deactivateAccount}
         onCancel={() => setShowDeactivatePopup(false)}
-      />
-      <ConfirmPopup
-        visible={showProfileSaveConfirmation}
-        type="edit"
-        loading={savingProfile}
-        onConfirm={async () => {
-          await handleProfileSave();
-          setShowProfileSaveConfirmation(false);
-        }}
-        onCancel={() => setShowProfileSaveConfirmation(false)}
-      />
-      <ConfirmPopup
-        visible={showPasswordSaveConfirmation}
-        type="save"
-        loading={savingPassword}
-        onConfirm={async () => {
-          await handlePasswordChange();
-          setShowPasswordSaveConfirmation(false);
-        }}
-        onCancel={() => setShowPasswordSaveConfirmation(false)}
       />
       <ConfirmPopup
         visible={successMessage !== null}
@@ -571,7 +545,7 @@ export default function Profile() {
                 <Pressable
                   accessibilityRole="button"
                   disabled={savingProfile}
-                  onPress={() => setShowProfileSaveConfirmation(true)}
+                  onPress={() => void handleProfileSave()}
                   className={`flex-1 flex-row items-center justify-center rounded-xl bg-[#315640] py-3 ${savingProfile ? "opacity-60" : ""}`}
                 >
                   {savingProfile ? (
@@ -699,7 +673,7 @@ export default function Profile() {
               !passwords.next ||
               !passwords.confirm
             }
-            onPress={() => setShowPasswordSaveConfirmation(true)}
+            onPress={() => void handlePasswordChange()}
           >
             {savingPassword ? (
               <ActivityIndicator color="#FFFFFF" />

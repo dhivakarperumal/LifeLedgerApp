@@ -288,7 +288,6 @@ export default function Expenses() {
   const [saving, setSaving] = useState(false);
   const [pendingDeleteExpense, setPendingDeleteExpense] =
     useState<ExpenseItem | null>(null);
-  const [showSaveConfirmation, setShowSaveConfirmation] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [manualTransfer, setManualTransfer] = useState(false);
   const [customTransferAmount, setCustomTransferAmount] = useState(false);
@@ -783,7 +782,6 @@ export default function Expenses() {
       );
     } finally {
       setSaving(false);
-      setShowSaveConfirmation(false);
     }
   };
 
@@ -866,16 +864,6 @@ export default function Expenses() {
         type="success"
         message={successMessage ?? ""}
         onConfirm={() => setSuccessMessage(null)}
-      />
-      <ConfirmPopup
-        visible={showSaveConfirmation}
-        type={editingExpenseId !== null ? "edit" : "add"}
-        loading={saving}
-        onConfirm={async () => {
-          await handleCreateExpense();
-          setShowSaveConfirmation(false);
-        }}
-        onCancel={() => setShowSaveConfirmation(false)}
       />
       <View style={{ flex: 1, backgroundColor: "#F2F5EA" }}>
         {/* ── Hero Header ── */}
@@ -1962,7 +1950,7 @@ export default function Expenses() {
                   </Text>
                 </Pressable>
                 <Pressable
-                  onPress={() => setShowSaveConfirmation(true)}
+                  onPress={() => void handleCreateExpense()}
                   disabled={saving}
                   style={{
                     flex: 1.5,

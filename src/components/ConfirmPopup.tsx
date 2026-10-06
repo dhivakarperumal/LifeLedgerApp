@@ -11,10 +11,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 export type ConfirmPopupType =
-  | "add"
-  | "edit"
   | "delete"
-  | "save"
   | "logout"
   | "cancel"
   | "success";
@@ -37,28 +34,10 @@ const DEFAULTS: Record<
   ConfirmPopupType,
   { title: string; message: string; confirmText: string; cancelText: string }
 > = {
-  add: {
-    title: "Add Confirmation",
-    message: "Are you sure you want to add this?",
-    confirmText: "Add",
-    cancelText: "Cancel",
-  },
-  edit: {
-    title: "Edit Confirmation",
-    message: "Are you sure you want to save these changes?",
-    confirmText: "Save",
-    cancelText: "Cancel",
-  },
   delete: {
     title: "Delete Confirmation",
     message: "Are you sure you want to delete this?",
     confirmText: "Delete",
-    cancelText: "Cancel",
-  },
-  save: {
-    title: "Save Confirmation",
-    message: "Are you sure you want to save this?",
-    confirmText: "Save",
     cancelText: "Cancel",
   },
   logout: {
@@ -83,7 +62,7 @@ const DEFAULTS: Record<
 
 export default function ConfirmPopup({
   visible,
-  type = "save",
+  type = "success",
   title,
   message,
   confirmText,

@@ -223,7 +223,7 @@ export default function CalendarScreen() {
   const [loading, setLoading] = useState(() => !calendarDataCache.hasData());
   const [refreshing, setRefreshing] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [showAddConfirmation, setShowAddConfirmation] = useState(false);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [pendingDelete, setPendingDelete] = useState<{
     type: EntryType;
     entry: CalendarEntry;
@@ -334,11 +334,13 @@ export default function CalendarScreen() {
       }
       setModalType(null);
       await fetchCalendar();
+      setSuccessMessage(
+        modalType === "event" ? "Event added successfully." : "Reminder added successfully.",
+      );
     } catch (error) {
       Alert.alert("Unable to save", getApiErrorMessage(error));
     } finally {
       setSaving(false);
-      setShowAddConfirmation(false);
     }
   };
 
@@ -688,16 +690,10 @@ export default function CalendarScreen() {
         onCancel={() => setPendingDelete(null)}
       />
       <ConfirmPopup
-        visible={showAddConfirmation}
-        type="add"
-        title="Add Confirmation"
-        message={`Are you sure you want to add this ${modalType}?`}
-        loading={saving}
-        onConfirm={async () => {
-          await saveEntry();
-          setShowAddConfirmation(false);
-        }}
-        onCancel={() => setShowAddConfirmation(false)}
+        visible={successMessage !== null}
+        type="success"
+        message={successMessage ?? ""}
+        onConfirm={() => setSuccessMessage(null)}
       />
 
       {/* Day Entries Popup */}
@@ -976,7 +972,7 @@ export default function CalendarScreen() {
               </View>
               <Pressable
                 disabled={saving}
-                onPress={() => setShowAddConfirmation(true)}
+                onPress={() => void saveEntry()}
                 className="items-center rounded-xl bg-[#366039] py-3.5"
               >
                 {saving ? (

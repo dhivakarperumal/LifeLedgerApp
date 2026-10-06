@@ -431,7 +431,7 @@ export default function Transfers() {
   const [existingReceipt, setExistingReceipt] = useState<string | null>(null);
   const [modalVisible, setModalVisible] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [showSaveConfirmation, setShowSaveConfirmation] = useState(false);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [pendingDelete, setPendingDelete] = useState<TransferRecord | null>(null);
   const [loading, setLoading] = useState(() => !transfersDataCache.hasData());
   const [refreshing, setRefreshing] = useState(false);
@@ -788,6 +788,11 @@ export default function Transfers() {
       }
       closeModal();
       await loadAll();
+      setSuccessMessage(
+        editingTransferId !== null
+          ? "Transfer updated successfully."
+          : "Transfer added successfully.",
+      );
     } catch (error) {
       if ((error as { status?: number })?.status === 401) {
         await handleUnauthorized();
@@ -799,7 +804,6 @@ export default function Transfers() {
       );
     } finally {
       setSubmitting(false);
-      setShowSaveConfirmation(false);
     }
   };
 
@@ -848,14 +852,10 @@ export default function Transfers() {
         loading={pendingDelete !== null && deletingId === pendingDelete.id}
       />
       <ConfirmPopup
-        visible={showSaveConfirmation}
-        type={editingTransferId !== null ? "edit" : "add"}
-        loading={submitting}
-        onConfirm={async () => {
-          await submitTransfer();
-          setShowSaveConfirmation(false);
-        }}
-        onCancel={() => setShowSaveConfirmation(false)}
+        visible={successMessage !== null}
+        type="success"
+        message={successMessage ?? ""}
+        onConfirm={() => setSuccessMessage(null)}
       />
       <LinearGradient
         colors={Colors.greenGradient}
@@ -1503,7 +1503,7 @@ export default function Transfers() {
               <Pressable
                 className="flex-1 flex-row items-center justify-center rounded-xl bg-[#315640] py-3.5"
                 disabled={submitting}
-                onPress={() => setShowSaveConfirmation(true)}
+                onPress={() => void submitTransfer()}
               >
                 {submitting ? (
                   <ActivityIndicator color="#FFFFFF" />

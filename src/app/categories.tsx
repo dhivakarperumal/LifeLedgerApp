@@ -178,7 +178,7 @@ export default function Categories() {
   const [modalVisible, setModalVisible] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [saving, setSaving] = useState(false);
-  const [showSaveConfirmation, setShowSaveConfirmation] = useState(false);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [pendingDelete, setPendingDelete] = useState<Category | null>(null);
   const [form, setForm] = useState<CategoryForm>(initialForm);
   const [selectedImage, setSelectedImage] = useState<CategoryImage | null>(null);
@@ -410,11 +410,15 @@ export default function Categories() {
         ]);
       }
       setModalVisible(false);
+      setSuccessMessage(
+        editingCategory
+          ? "Category updated successfully."
+          : "Category added successfully.",
+      );
     } catch (error) {
       Alert.alert("Unable to save category", getApiErrorMessage(error));
     } finally {
       setSaving(false);
-      setShowSaveConfirmation(false);
     }
   };
 
@@ -732,14 +736,10 @@ export default function Categories() {
         onCancel={() => setPendingDelete(null)}
       />
       <ConfirmPopup
-        visible={showSaveConfirmation}
-        type={editingCategory ? "edit" : "add"}
-        loading={saving}
-        onConfirm={async () => {
-          await saveCategory();
-          setShowSaveConfirmation(false);
-        }}
-        onCancel={() => setShowSaveConfirmation(false)}
+        visible={successMessage !== null}
+        type="success"
+        message={successMessage ?? ""}
+        onConfirm={() => setSuccessMessage(null)}
       />
 
       <Modal
@@ -938,7 +938,7 @@ export default function Categories() {
               <Pressable
                 className="flex-1 flex-row items-center justify-center rounded-xl bg-[#315640] py-3.5"
                 disabled={saving}
-                onPress={() => setShowSaveConfirmation(true)}
+                onPress={() => void saveCategory()}
               >
                 {saving ? (
                   <ActivityIndicator color="#FFFFFF" />

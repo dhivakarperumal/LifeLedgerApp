@@ -376,9 +376,6 @@ export default function Diary() {
   const [submitting, setSubmitting] = useState(false);
   const [pendingDeleteEntry, setPendingDeleteEntry] =
     useState<DiaryEntry | null>(null);
-  const [pendingSaveStatus, setPendingSaveStatus] = useState<
-    "draft" | "published" | null
-  >(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [uploadProgress, setUploadProgress] = useState<number | null>(null);
   const [editingId, setEditingId] = useState<number | string | null>(null);
@@ -785,13 +782,6 @@ export default function Diary() {
     }
   };
 
-  const confirmSaveEntry = async () => {
-    if (!pendingSaveStatus) return;
-    const status = pendingSaveStatus;
-    await saveEntry(status);
-    setPendingSaveStatus(null);
-  };
-
   const deleteEntry = (entry: DiaryEntry) => {
     setPendingDeleteEntry(entry);
   };
@@ -865,13 +855,6 @@ export default function Diary() {
         type="success"
         message={successMessage ?? ""}
         onConfirm={() => setSuccessMessage(null)}
-      />
-      <ConfirmPopup
-        visible={pendingSaveStatus !== null}
-        type={editingId !== null ? "edit" : "add"}
-        loading={submitting}
-        onConfirm={confirmSaveEntry}
-        onCancel={() => setPendingSaveStatus(null)}
       />
       {loading ? (
         <CenteredPageLoader message="Loading diary..." />
@@ -1694,7 +1677,7 @@ export default function Diary() {
                 }}
               >
                 <Pressable
-                  onPress={() => setPendingSaveStatus("draft")}
+                  onPress={() => void saveEntry("draft")}
                   disabled={submitting || isRecording}
                   style={{
                     flex: 1,
@@ -1713,7 +1696,7 @@ export default function Diary() {
                   </Text>
                 </Pressable>
                 <Pressable
-                  onPress={() => setPendingSaveStatus("published")}
+                  onPress={() => void saveEntry("published")}
                   disabled={submitting || isRecording}
                   style={{
                     flex: 1.3,

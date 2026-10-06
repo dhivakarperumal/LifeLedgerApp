@@ -430,11 +430,9 @@ export default function Income() {
   const [loading, setLoading] = useState(() => !incomeDataCache.hasData());
   const [refreshing, setRefreshing] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [showSaveConfirmation, setShowSaveConfirmation] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [pendingDelete, setPendingDelete] = useState<IncomeRecord | null>(null);
   const [budgetSaving, setBudgetSaving] = useState(false);
-  const [showBudgetConfirmation, setShowBudgetConfirmation] = useState(false);
   const [search, setSearch] = useState("");
   const [incomeFilter, setIncomeFilter] = useState("All Income");
   const [selectedCategory, setSelectedCategory] = useState("");
@@ -774,7 +772,6 @@ export default function Income() {
       Alert.alert("Unable to save income", getApiErrorMessage(error));
     } finally {
       setSaving(false);
-      setShowSaveConfirmation(false);
     }
   };
 
@@ -806,6 +803,7 @@ export default function Income() {
       await api.put("/incomes/monthly-budget", { monthly_budget: value });
       setMonthlyBudget(value);
       setBudgetVisible(false);
+      setSuccessMessage("Monthly income budget saved.");
     } catch (error) {
       const status = (error as { status?: number })?.status;
       if (status === 401) {
@@ -815,7 +813,6 @@ export default function Income() {
       Alert.alert("Unable to save budget", getApiErrorMessage(error));
     } finally {
       setBudgetSaving(false);
-      setShowBudgetConfirmation(false);
     }
   };
 
@@ -841,30 +838,10 @@ export default function Income() {
         onCancel={() => setPendingDelete(null)}
       />
       <ConfirmPopup
-        visible={showSaveConfirmation}
-        type={editingIncomeId ? "edit" : "add"}
-        loading={saving}
-        onConfirm={async () => {
-          await submitIncome();
-          setShowSaveConfirmation(false);
-        }}
-        onCancel={() => setShowSaveConfirmation(false)}
-      />
-      <ConfirmPopup
         visible={successMessage !== null}
         type="success"
         message={successMessage ?? ""}
         onConfirm={() => setSuccessMessage(null)}
-      />
-      <ConfirmPopup
-        visible={showBudgetConfirmation}
-        type="save"
-        loading={budgetSaving}
-        onConfirm={async () => {
-          await saveBudget();
-          setShowBudgetConfirmation(false);
-        }}
-        onCancel={() => setShowBudgetConfirmation(false)}
       />
       <StatusBar
         style="light"
@@ -1369,7 +1346,7 @@ export default function Income() {
               <Pressable
                 className="flex-1 flex-row items-center justify-center rounded-xl bg-[#315640] py-3.5"
                 disabled={saving}
-                onPress={() => setShowSaveConfirmation(true)}
+                onPress={() => void submitIncome()}
               >
                 {saving ? (
                   <ActivityIndicator color="#FFFFFF" />
@@ -1419,7 +1396,7 @@ export default function Income() {
               <Pressable
                 className="flex-1 items-center rounded-xl bg-[#315640] py-3"
                 disabled={budgetSaving}
-                onPress={() => setShowBudgetConfirmation(true)}
+                onPress={() => void saveBudget()}
               >
                 {budgetSaving ? (
                   <ActivityIndicator color="#FFFFFF" />

@@ -274,7 +274,6 @@ export default function Memories() {
   const [submitting, setSubmitting] = useState(false);
   const [pendingDeleteMemory, setPendingDeleteMemory] =
     useState<Memory | null>(null);
-  const [showSaveConfirmation, setShowSaveConfirmation] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<number | string | null>(null);
   const [form, setForm] = useState<MemoryForm>(initialForm);
@@ -658,7 +657,6 @@ export default function Memories() {
       );
     } finally {
       setSubmitting(false);
-      setShowSaveConfirmation(false);
     }
   };
 
@@ -737,16 +735,6 @@ export default function Memories() {
         type="success"
         message={successMessage ?? ""}
         onConfirm={() => setSuccessMessage(null)}
-      />
-      <ConfirmPopup
-        visible={showSaveConfirmation}
-        type={editingId !== null ? "edit" : "add"}
-        loading={submitting}
-        onConfirm={async () => {
-          await handleSubmit();
-          setShowSaveConfirmation(false);
-        }}
-        onCancel={() => setShowSaveConfirmation(false)}
       />
       {loading ? (
         <CenteredPageLoader message="Loading memories..." />
@@ -1458,7 +1446,7 @@ export default function Memories() {
             </ScrollView>
 
               <Pressable
-                onPress={() => setShowSaveConfirmation(true)}
+                onPress={() => void handleSubmit()}
                 disabled={submitting || isRecording}
                 style={{
                   height: 50,
