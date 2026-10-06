@@ -147,7 +147,7 @@ export default function More() {
         paddingHorizontal: 18,
         paddingTop: 20,
         paddingBottom: 140,
-        backgroundColor: Colors.white,
+        backgroundColor: Colors.contentBackground,
       }}
       style={{ flex: 1, backgroundColor: Colors.contentBackground }}
     >
