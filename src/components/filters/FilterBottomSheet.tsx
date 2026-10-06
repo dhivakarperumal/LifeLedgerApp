@@ -22,6 +22,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Colors } from "../../constants/colors";
 import { DateRangeFilter, type DateRangeSelection } from "../DateRangeFilter";
+import { FormLabel } from "../FormControls";
 import { toTitleCase } from "../formLabelUtils";
 import { AmountRangeFilter } from "./AmountRangeFilter";
 import { CategoryFilter, type CategoryOption } from "./CategoryFilter";
@@ -445,22 +446,12 @@ export function FilterBottomSheet({
                                         : Colors.textSecondary
                                     }
                                   />
-                                  <Text
-                                    style={{
-                                      color: selected
-                                        ? Colors.forest
-                                        : Colors.textSecondary,
-                                      fontSize: 12,
-                                      fontWeight: selected ? "700" : "500",
-                                      fontFamily: fontsLoaded
-                                        ? selected
-                                          ? "Poppins_600SemiBold"
-                                          : "Poppins_500Medium"
-                                        : undefined,
-                                    }}
+                                  <FormLabel
+                                    inline
+                                    color={selected ? Colors.forest : Colors.textSecondary}
                                   >
                                     {option.label}
-                                  </Text>
+                                  </FormLabel>
                                 </Pressable>
                               );
                             })}
@@ -482,19 +473,9 @@ export function FilterBottomSheet({
                       backgroundColor: Colors.white,
                     }}
                   >
-                    <Text
-                      style={{
-                        marginBottom: 11,
-                        color: Colors.textPrimary,
-                        fontSize: 14,
-                        fontWeight: "700",
-                        fontFamily: fontsLoaded
-                          ? "Poppins_600SemiBold"
-                          : undefined,
-                      }}
-                    >
+                    <FormLabel>
                       {toTitleCase(filter.label)}
-                    </Text>
+                    </FormLabel>
                     <ChoiceFilter
                       label={filter.label}
                       value={

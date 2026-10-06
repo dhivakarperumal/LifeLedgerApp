@@ -158,6 +158,7 @@ export default function MemoryDetails() {
 
   useEffect(() => {
     let active = true;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoading(true);
     const fetchMemory = async () => {
       if (!id) {

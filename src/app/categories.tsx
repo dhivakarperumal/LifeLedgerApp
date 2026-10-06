@@ -6,11 +6,11 @@ import { useCallback, useMemo, useState } from "react";
 import {
     ActivityIndicator,
     Alert,
-    KeyboardAvoidingView,
     Image,
+    KeyboardAvoidingView,
     Modal,
-    Pressable,
     Platform,
+    Pressable,
     RefreshControl,
     ScrollView,
     Text,
@@ -34,7 +34,7 @@ import {
     type StatusOption,
     type ViewModeOption,
 } from "../components/filters";
-import { FormInput, FormOption } from "../components/FormControls";
+import { FormInput, FormLabel, FormOption } from "../components/FormControls";
 import { GradientSafeAreaView as SafeAreaView } from "../components/GradientSafeAreaView";
 import { PopupSelect } from "../components/PopupSelect";
 import { SearchBar } from "../components/SearchBar";
@@ -738,9 +738,7 @@ export default function Categories() {
               automaticallyAdjustKeyboardInsets
               keyboardDismissMode="none"
             >
-              <Text className="mb-2 text-xs font-bold text-[#46534B]">
-                Category name
-              </Text>
+              <FormLabel>Category Name</FormLabel>
               <FormInput
                 className="mb-4 rounded-xl bg-white px-4 py-3 text-sm text-[#25332C]"
                 placeholder="e.g. Groceries"
@@ -748,9 +746,7 @@ export default function Categories() {
                 onChangeText={(value) => setFormValue("name", value)}
               />
 
-              <Text className="mb-2 text-xs font-bold text-[#46534B]">
-                Category image
-              </Text>
+              <FormLabel>Category Image</FormLabel>
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel={selectedImage || existingImage ? "Change category image" : "Upload category image"}
@@ -805,9 +801,7 @@ export default function Categories() {
                 }}
               />
 
-              <Text className="mb-2 text-xs font-bold text-[#46534B]">
-                Description
-              </Text>
+              <FormLabel>Description</FormLabel>
               <FormInput
                 className="mb-4 min-h-[88px] rounded-xl bg-white px-4 py-3 text-sm text-[#25332C]"
                 multiline
@@ -817,9 +811,7 @@ export default function Categories() {
                 onChangeText={(value) => setFormValue("description", value)}
               />
 
-              <Text className="mb-2 text-xs font-bold text-[#46534B]">
-                Status
-              </Text>
+              <FormLabel>Status</FormLabel>
               <View className="mb-5 flex-row gap-2">
                 {(["Active", "Inactive"] as const).map((status) => {
                   const selected = form.status === status;
@@ -830,11 +822,9 @@ export default function Categories() {
                       className={`flex-1 items-center rounded-xl py-3 ${selected ? "bg-[#E7F0E8]" : "bg-white"}`}
                       onPress={() => setFormValue("status", status)}
                     >
-                      <Text
-                        className={`text-sm font-bold ${selected ? "text-[#315640]" : "text-[#637068]"}`}
-                      >
+                      <FormLabel inline color={selected ? "#315640" : "#637068"}>
                         {status}
-                      </Text>
+                      </FormLabel>
                     </FormOption>
                   );
                 })}

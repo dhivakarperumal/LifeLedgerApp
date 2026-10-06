@@ -7,6 +7,7 @@ import {
 import { useFonts } from "expo-font";
 import { Text, TextInput, View } from "react-native";
 import { Colors } from "../../constants/colors";
+import { FormLabel } from "../FormControls";
 
 const poppinsFontMap = {
   Poppins_400Regular,
@@ -61,19 +62,7 @@ export function AmountRangeFilter({
 
         return (
           <View key={field} style={{ flex: 1 }}>
-            <Text
-              style={{
-                fontSize: 11,
-                fontWeight: "600",
-                fontFamily: fontsLoaded ? "Poppins_600SemiBold" : undefined,
-                color: Colors.textSecondary,
-                marginBottom: 6,
-                textTransform: "uppercase",
-                letterSpacing: 0.5,
-              }}
-            >
-              {label}
-            </Text>
+            <FormLabel color={Colors.textSecondary}>{label}</FormLabel>
             <View
               style={{
                 flexDirection: "row",

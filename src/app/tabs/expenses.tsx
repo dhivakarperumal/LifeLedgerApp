@@ -37,7 +37,7 @@ import {
 } from "../../components/filters";
 import {
     FormField,
-    formFieldStyles
+    FormLabel,
 } from "../../components/FormControls";
 import { GradientSafeAreaView as SafeAreaView } from "../../components/GradientSafeAreaView";
 import { PopupSelect } from "../../components/PopupSelect";
@@ -2047,9 +2047,5 @@ function HeroStatCard({
 }
 
 function ModalSectionLabel({ label }: { label: string }) {
-  return (
-    <Text className="mb-2" style={formFieldStyles.label}>
-      {label}
-    </Text>
-  );
+  return <FormLabel>{label}</FormLabel>;
 }

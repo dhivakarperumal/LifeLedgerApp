@@ -45,10 +45,11 @@ export function ViewModeBottomSheet({
   const [fontsLoaded] = useFonts(poppinsFontMap);
   const insets = useSafeAreaInsets();
   const [draftMode, setDraftMode] = useState<ViewMode>(currentMode);
-  const translateY = useRef(new Animated.Value(SCREEN_HEIGHT)).current;
+  const [translateY] = useState(() => new Animated.Value(SCREEN_HEIGHT));
 
   useEffect(() => {
     if (visible) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setDraftMode(currentMode);
       Animated.spring(translateY, {
         toValue: 0,
@@ -63,7 +64,7 @@ export function ViewModeBottomSheet({
         useNativeDriver: true,
       }).start();
     }
-  }, [visible, currentMode]);
+  }, [visible, currentMode, translateY]);
 
   const handleApply = () => {
     onApply(draftMode);

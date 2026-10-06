@@ -35,7 +35,7 @@ import {
     type SortOption,
     type ViewModeOption,
 } from "../components/filters";
-import { FormInput, FormOption } from "../components/FormControls";
+import { FormInput, FormLabel, FormOption } from "../components/FormControls";
 import { GradientSafeAreaView as SafeAreaView } from "../components/GradientSafeAreaView";
 import { PopupSelect } from "../components/PopupSelect";
 import { SearchBar } from "../components/SearchBar";
@@ -1196,9 +1196,7 @@ export default function Transfers() {
                 )}
               </View>
 
-              <Text className="mb-2 text-xs font-bold text-[#46534B]">
-                Source Income (Optional)
-              </Text>
+              <FormLabel>Source Income (Optional)</FormLabel>
               <ScrollView
                 horizontal
                 showsHorizontalScrollIndicator={false}
@@ -1212,9 +1210,9 @@ export default function Transfers() {
                     setForm((current) => ({ ...current, amount: "" }));
                   }}
                 >
-                  <Text className="text-xs font-bold text-[#293930]">
+                  <FormLabel inline>
                     No Source
-                  </Text>
+                  </FormLabel>
                   <Text className="mt-1 text-xs text-[#818D84]">
                     Unlinked Transfer
                   </Text>
@@ -1232,12 +1230,9 @@ export default function Transfers() {
                         setForm((current) => ({ ...current, amount: "" }));
                       }}
                     >
-                      <Text
-                        className="text-xs font-bold text-[#293930]"
-                        numberOfLines={1}
-                      >
+                      <FormLabel inline>
                         {income.title}
-                      </Text>
+                      </FormLabel>
                       <Text className="mt-1 text-xs text-[#818D84]">
                         {formatAmount(income.remaining_amount ?? income.amount)}{" "}
                         available
@@ -1276,9 +1271,7 @@ export default function Transfers() {
                 </Pressable>
               )}
 
-              <Text className="mb-2 text-xs font-bold text-[#46534B]">
-                Transfer Title
-              </Text>
+              <FormLabel>Transfer Title</FormLabel>
               <FormInput
                 className="mb-4 rounded-xl bg-white px-4 py-3 text-sm text-[#25332C]"
                 placeholder="e.g. Monthly savings"
@@ -1288,9 +1281,7 @@ export default function Transfers() {
 
               <View className="flex-row gap-3">
                 <View className="flex-1">
-                  <Text className="mb-2 text-xs font-bold text-[#46534B]">
-                    Amount
-                  </Text>
+                  <FormLabel>Amount</FormLabel>
                   <FormInput
                     className="mb-4 rounded-xl bg-white px-4 py-3 text-sm text-[#25332C]"
                     keyboardType="decimal-pad"
@@ -1327,9 +1318,7 @@ export default function Transfers() {
                 onChange={(value) => updateForm("category", value)}
               />
 
-              <Text className="mb-2 text-xs font-bold text-[#46534B]">
-                Payment Method
-              </Text>
+              <FormLabel>Payment Method</FormLabel>
               <View className="mb-4 flex-row flex-wrap gap-2">
                 {paymentMethods.map((method) => (
                   <FormOption
@@ -1338,18 +1327,14 @@ export default function Transfers() {
                     className={`rounded-full px-3 py-2 ${form.paymentMethod === method ? "bg-[#315640]" : "bg-white"}`}
                     onPress={() => updateForm("paymentMethod", method)}
                   >
-                    <Text
-                      className={`text-xs font-bold ${form.paymentMethod === method ? "text-white" : "text-[#637068]"}`}
-                    >
+                    <FormLabel inline color={form.paymentMethod === method ? "#FFFFFF" : "#637068"}>
                       {method}
-                    </Text>
+                    </FormLabel>
                   </FormOption>
                 ))}
               </View>
 
-              <Text className="mb-2 text-xs font-bold text-[#46534B]">
-                Notes
-              </Text>
+              <FormLabel>Notes</FormLabel>
               <FormInput
                 className="mb-4 min-h-[78px] rounded-xl bg-white px-4 py-3 text-sm text-[#25332C]"
                 multiline
@@ -1359,9 +1344,7 @@ export default function Transfers() {
                 onChangeText={(value) => updateForm("notes", value)}
               />
 
-              <Text className="mb-2 text-xs font-bold text-[#46534B]">
-                Receipt
-              </Text>
+              <FormLabel>Receipt</FormLabel>
               {existingReceipt && !receipt && (
                 <Pressable
                   className="mb-2 flex-row items-center rounded-xl border border-[#DDE5DD] bg-white p-3"

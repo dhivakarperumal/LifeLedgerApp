@@ -18,6 +18,7 @@ import {
     type ViewStyle,
 } from "react-native";
 import { Colors } from "../constants/colors";
+import { FormLabel } from "./FormControls";
 
 export const DATE_RANGE_PRESETS = [
   "All",
@@ -302,16 +303,9 @@ export function DateRangeFilter({
           <Ionicons name="calendar-outline" size={17} color={Colors.forest} />
         </View>
         <View style={{ flex: 1, marginLeft: 10 }}>
-          <Text
-            style={{
-              color: Colors.textSecondary,
-              fontSize: 11,
-              fontWeight: "600",
-              fontFamily: fontsLoaded ? poppinsFamilies.medium : undefined,
-            }}
-          >
-            Date range
-          </Text>
+          <FormLabel inline color={Colors.textSecondary}>
+            Date Range
+          </FormLabel>
           <Text
             numberOfLines={1}
             style={{
@@ -437,18 +431,9 @@ export function DateRangeFilter({
                           backgroundColor: active ? "#F0F6F1" : Colors.white,
                         }}
                       >
-                        <Text
-                          style={{
-                            color: Colors.textSecondary,
-                            fontSize: 11,
-                            fontWeight: "600",
-                            fontFamily: fontsLoaded
-                              ? poppinsFamilies.medium
-                              : undefined,
-                          }}
-                        >
+                        <FormLabel inline color={Colors.textSecondary}>
                           {field === "from" ? "From Date" : "To Date"}
-                        </Text>
+                        </FormLabel>
                         <Text
                           numberOfLines={1}
                           style={{
@@ -641,22 +626,9 @@ export function DateRangeFilter({
                             selected ? Colors.forest : Colors.textSecondary
                           }
                         />
-                        <Text
-                          style={{
-                            flex: 1,
-                            marginLeft: 11,
-                            color: Colors.textPrimary,
-                            fontSize: 14,
-                            fontWeight: selected ? "700" : "500",
-                            fontFamily: fontsLoaded
-                              ? selected
-                                ? poppinsFamilies.semibold
-                                : poppinsFamilies.medium
-                              : undefined,
-                          }}
-                        >
-                          {preset}
-                        </Text>
+                        <View style={{ flex: 1, marginLeft: 11 }}>
+                          <FormLabel inline>{preset}</FormLabel>
+                        </View>
                         {selected ? (
                           <Ionicons
                             name="checkmark-circle"

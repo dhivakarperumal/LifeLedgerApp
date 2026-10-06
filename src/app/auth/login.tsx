@@ -4,8 +4,6 @@ import { StatusBar } from "expo-status-bar";
 import { useState } from "react";
 import {
     Alert,
-    Image,
-    ImageBackground,
     KeyboardAvoidingView,
     Platform,
     Pressable,
@@ -14,66 +12,10 @@ import {
     View,
 } from "react-native";
 import { getApiErrorMessage, loginWithIdentifier } from "../../api";
-import { FormInput } from "../../components/FormControls";
+import { FormInput, FormLabel } from "../../components/FormControls";
 import { GradientSafeAreaView as SafeAreaView } from "../../components/GradientSafeAreaView";
 import { Colors } from "../../constants/colors";
 
-// ─── Feature icon pill ───────────────────────────────────────────────────────
-function FeaturePill({
-  icon,
-  label,
-}: {
-  icon: React.ReactNode;
-  label: string;
-}) {
-  return (
-    <View className="items-center gap-1">
-      <View className="h-12 w-12 items-center justify-center rounded-2xl bg-white/20">
-        {icon}
-      </View>
-      <Text className="text-center text-xs font-semibold leading-3 text-white/85">
-        {label}
-      </Text>
-    </View>
-  );
-}
-
-// ─── Social button ────────────────────────────────────────────────────────────
-function SocialButton({
-  logo,
-  label,
-  bgColor = Colors.white,
-  textColor = Colors.textPrimary,
-  borderColor = Colors.border,
-  onPress,
-}: {
-  logo: React.ReactNode;
-  label: string;
-  bgColor?: string;
-  textColor?: string;
-  borderColor?: string;
-  onPress?: () => void;
-}) {
-  const [pressed, setPressed] = useState(false);
-  return (
-    <Pressable
-      onPress={onPress}
-      onPressIn={() => setPressed(true)}
-      onPressOut={() => setPressed(false)}
-      className="h-[52px] flex-1 flex-row items-center justify-center gap-2 rounded-[14px] border-[1.5px] shadow-md"
-      style={{
-        borderColor,
-        backgroundColor: bgColor,
-        opacity: pressed ? 0.75 : 1,
-      }}
-    >
-      {logo}
-      <Text className="text-sm font-bold" style={{ color: textColor }}>
-        {label}
-      </Text>
-    </Pressable>
-  );
-}
 
 // ─── Main screen ──────────────────────────────────────────────────────────────
 export default function LoginScreen() {
@@ -115,88 +57,13 @@ export default function LoginScreen() {
         className="flex-1"
       >
         <ScrollView
-          contentContainerStyle={{ flexGrow: 1 }}
+          contentContainerStyle={{ flexGrow: 1, justifyContent: "center", paddingVertical: 24 }}
           keyboardDismissMode="none"
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-          {/* ── Hero section ─────────────────────────────────────────────── */}
-          <ImageBackground
-            source={require("../../../assets/images/bgbanner.png")}
-            resizeMode="cover"
-            className="h-[260px] w-full overflow-hidden rounded-b-[36px]"
-          >
-            {/* Dark green overlay for readability */}
-            <View className="flex-1 bg-[rgba(18,53,26,0.55)] px-6 pb-8 pt-5">
-              {/* Logo row */}
-              <View className="flex-row items-center gap-2.5">
-                <View className="h-11 w-11 items-center justify-center rounded-[14px] bg-white/25">
-                  <Image
-                    source={require("../../../assets/images/logo.png")}
-                    className="h-[30px] w-[30px]"
-                    resizeMode="contain"
-                    accessibilityLabel="Life Ledger logo"
-                  />
-                </View>
-                <View>
-                  <Text className="text-xl font-bold text-white">
-                    <Text className="text-white">Life </Text>
-                    <Text className="text-[#D7D83B]">Ledger</Text>
-                  </Text>
-                  <Text className="mt-px text-xs text-white/75">
-                    Track Today · Build a Better Tomorrow
-                  </Text>
-                </View>
-              </View>
-
-              {/* Feature icons */}
-              <View className="mt-7 flex-row justify-between">
-                <FeaturePill
-                  icon={
-                    <Ionicons
-                      name="wallet-outline"
-                      size={22}
-                      color={Colors.white}
-                    />
-                  }
-                  label={"Expense\nTracking"}
-                />
-                <FeaturePill
-                  icon={
-                    <Ionicons
-                      name="images-outline"
-                      size={22}
-                      color={Colors.white}
-                    />
-                  }
-                  label="Memories"
-                />
-                <FeaturePill
-                  icon={
-                    <Ionicons
-                      name="book-outline"
-                      size={22}
-                      color={Colors.white}
-                    />
-                  }
-                  label="Diary"
-                />
-                <FeaturePill
-                  icon={
-                    <Ionicons
-                      name="calendar-outline"
-                      size={22}
-                      color={Colors.white}
-                    />
-                  }
-                  label={"Events &\nReminders"}
-                />
-              </View>
-            </View>
-          </ImageBackground>
-
           {/* ── Login card ──────────────────────────────────────────────────── */}
-          <View className="mx-4 mb-6 mt-[-1px] rounded-[28px] bg-white p-6 shadow-lg">
+          <View className="mx-4 rounded-[28px] bg-white p-6 shadow-lg">
             {/* Header */}
             <Text className="text-center text-2xl font-bold text-[#263238]">
               Welcome Back
@@ -207,9 +74,9 @@ export default function LoginScreen() {
 
             {/* Email field */}
             <View className="mb-4">
-              <Text className="mb-2 text-sm font-semibold text-[#263238]">
+              <FormLabel>
                 Email Or Mobile Number
-              </Text>
+              </FormLabel>
               <View className="h-[52px] flex-row items-center rounded-[14px] border border-[#E5EAE7] bg-[#F9FAFC] px-[14px]">
                 <Ionicons
                   name="mail-outline"
@@ -235,9 +102,9 @@ export default function LoginScreen() {
 
             {/* Password field */}
             <View className="mb-4">
-              <Text className="mb-2 text-sm font-semibold text-[#263238]">
+              <FormLabel>
                 Password
-              </Text>
+              </FormLabel>
               <View className="h-[52px] flex-row items-center rounded-[14px] border border-[#E5EAE7] bg-[#F9FAFC] px-[14px]">
                 <Ionicons
                   name="lock-closed-outline"
@@ -293,7 +160,7 @@ export default function LoginScreen() {
                     <Ionicons name="checkmark" size={13} color={Colors.white} />
                   )}
                 </View>
-                <Text className="text-sm text-[#7B8589]">Remember Me</Text>
+                <FormLabel inline color="#7B8589">Remember Me</FormLabel>
               </Pressable>
 
               <Pressable
@@ -328,7 +195,7 @@ export default function LoginScreen() {
                 shadowOffset: { width: 0, height: 6 },
                 elevation: pressed || isSubmitting ? 0 : 8,
               })}
-              className="mb-5 h-[54px] flex-row items-center bg-black justify-center gap-2.5 rounded-2xl"
+              className="mb-5 h-[54px] flex-row items-center justify-center gap-2.5 rounded-2xl"
             >
               {isSubmitting ? (
                 <Ionicons

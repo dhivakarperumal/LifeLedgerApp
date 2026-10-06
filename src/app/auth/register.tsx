@@ -4,8 +4,6 @@ import { StatusBar } from "expo-status-bar";
 import { useState } from "react";
 import {
     Alert,
-    Image,
-    ImageBackground,
     KeyboardAvoidingView,
     Platform,
     Pressable,
@@ -14,7 +12,7 @@ import {
     View,
 } from "react-native";
 import { getApiErrorMessage, registerUser } from "../../api";
-import { FormInput } from "../../components/FormControls";
+import { FormInput, FormLabel } from "../../components/FormControls";
 import { GradientSafeAreaView as SafeAreaView } from "../../components/GradientSafeAreaView";
 import { Colors } from "../../constants/colors";
 
@@ -51,7 +49,7 @@ function FormField({
 }) {
   return (
     <View className="mb-4">
-      <Text className="mb-2 text-sm font-semibold text-[#263238]">{label}</Text>
+      <FormLabel>{label}</FormLabel>
       <View className="min-h-[52px] flex-row items-center rounded-[14px] border border-[#E5EAE7] bg-[#F9FAFC] px-[14px]">
         <Ionicons name={icon} size={20} color={Colors.textMuted} />
         <FormInput
@@ -86,7 +84,7 @@ function PasswordField({
 }) {
   return (
     <View className="mb-4">
-      <Text className="mb-2 text-sm font-semibold text-[#263238]">{label}</Text>
+      <FormLabel>{label}</FormLabel>
       <View className="min-h-[52px] flex-row items-center rounded-[14px] border border-[#E5EAE7] bg-[#F9FAFC] px-[14px]">
         <Ionicons
           name="lock-closed-outline"
@@ -174,47 +172,14 @@ export default function RegisterScreen() {
         className="flex-1"
       >
         <ScrollView
-          contentContainerStyle={{ flexGrow: 1 }}
+          contentContainerStyle={{ flexGrow: 1, justifyContent: "center", paddingVertical: 24 }}
           keyboardDismissMode="none"
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
           className="flex-1"
         >
-          <View className="grow pb-6">
-            <ImageBackground
-              source={require("../../../assets/images/bgbanner.png")}
-              resizeMode="cover"
-              className="overflow-hidden rounded-b-[36px] w-full h-[220px]"
-            >
-              <View className="flex-1 bg-[rgba(18,53,26,0.55)] px-6 pt-5 pb-[30px] justify-center">
-                <View className="flex-row items-center gap-[10px]">
-                  <View className="h-11 w-11 items-center justify-center rounded-[14px] bg-white/25">
-                    <Image
-                      source={require("../../../assets/images/logo.png")}
-                      className="h-[30px] w-[30px]"
-                      resizeMode="contain"
-                      accessibilityLabel="Life Ledger logo"
-                    />
-                  </View>
-                  <View>
-                    <Text className="text-xl font-bold text-white">
-                      Life <Text className="text-[#D7D83B]">Ledger</Text>
-                    </Text>
-                    <Text className="mt-px text-xs text-white/75">
-                      Track Today · Build a Better Tomorrow
-                    </Text>
-                  </View>
-                </View>
-                <Text className="mt-7 text-2xl font-bold text-white">
-                  Create your account
-                </Text>
-                <Text className="mt-[5px] text-sm text-white/90">
-                  Start tracking your life with clarity and confidence.
-                </Text>
-              </View>
-            </ImageBackground>
-
-            <View className="mx-4 -mt-px rounded-[28px] bg-white p-6 shadow-md shadow-black/10">
+          <View className="grow justify-center pb-6">
+            <View className="mx-4 rounded-[28px] bg-white p-6 shadow-lg">
               <FormField
                 icon="person-outline"
                 label="Full Name"
@@ -266,14 +231,39 @@ export default function RegisterScreen() {
                 accessibilityLabel="Create account"
                 disabled={isSubmitting}
                 onPress={handleSubmit}
-                className={`h-[52px] flex-row items-center justify-center gap-2 rounded-[14px] bg-black mt-[6px] mb-5 ${isSubmitting ? "opacity-60" : "active:opacity-80"}`}
+                style={({ pressed }) => ({
+                  backgroundColor: isSubmitting
+                    ? Colors.primaryLight
+                    : pressed
+                      ? Colors.primaryDark
+                      : Colors.primary,
+                  shadowColor: Colors.primaryDark,
+                  shadowOpacity: pressed || isSubmitting ? 0 : 0.45,
+                  shadowRadius: 14,
+                  shadowOffset: { width: 0, height: 6 },
+                  elevation: pressed || isSubmitting ? 0 : 8,
+                })}
+                className="mt-[6px] mb-5 h-[54px] flex-row items-center justify-center gap-2.5 rounded-2xl"
               >
-                <Ionicons
-                  name="person-add-outline"
-                  size={20}
-                  color={Colors.white}
-                />
-                <Text className="text-base font-bold text-white">
+                {isSubmitting ? (
+                  <Ionicons
+                    name="refresh-outline"
+                    size={20}
+                    color={Colors.primaryDark}
+                  />
+                ) : (
+                  <Ionicons
+                    name="person-add-outline"
+                    size={20}
+                    color={Colors.white}
+                  />
+                )}
+                <Text
+                  className="text-base font-bold tracking-[0.4px]"
+                  style={{
+                    color: isSubmitting ? Colors.primaryDark : Colors.white,
+                  }}
+                >
                   {isSubmitting ? "Creating account..." : "Create Account"}
                 </Text>
               </Pressable>

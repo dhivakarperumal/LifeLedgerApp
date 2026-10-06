@@ -4,6 +4,7 @@ import DateTimePicker, {
 import { Clock } from "lucide-react-native";
 import { useState } from "react";
 import { Modal, Platform, Pressable, Text, View } from "react-native";
+import { FormLabel } from "./FormControls";
 import { toTitleCase } from "./formLabelUtils";
 
 interface TimePickerProps {
@@ -53,13 +54,9 @@ export default function TimePicker({
 
   return (
     <View className="mb-4 w-full">
-      <Text
-        className={`mb-2 text-sm font-medium ${
-          disabled ? "text-gray-400" : "text-gray-700"
-        }`}
-      >
+      <FormLabel color={disabled ? "#9CA3AF" : "#374151"}>
         {displayLabel}
-      </Text>
+      </FormLabel>
 
       <Pressable
         accessibilityRole="button"

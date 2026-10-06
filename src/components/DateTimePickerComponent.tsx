@@ -11,6 +11,7 @@ import {
     Text,
     View,
 } from "react-native";
+import { FormLabel } from "./FormControls";
 import { toTitleCase } from "./formLabelUtils";
 
 export type DateTimePickerMode = "date" | "time" | "datetime";
@@ -144,9 +145,7 @@ export function DateTimePickerComponent({
   return (
     <View className="mb-4 w-full">
       {displayLabel && (
-        <Text className="mb-2 text-xs font-bold text-[#46534B]">
-          {displayLabel}
-        </Text>
+        <FormLabel>{displayLabel}</FormLabel>
       )}
       {fields}
 

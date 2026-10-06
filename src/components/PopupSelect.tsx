@@ -12,6 +12,7 @@ import {
     View,
     useWindowDimensions,
 } from "react-native";
+import { FormLabel } from "./FormControls";
 import { toTitleCase } from "./formLabelUtils";
 
 export type PopupSelectOption =
@@ -112,10 +113,10 @@ export function PopupSelect({
   return (
     <View className="mb-4">
       {showLabel && label ? (
-        <Text className="mb-2 text-xs font-bold tracking-[0.12em] text-[#46534B]">
+        <FormLabel>
           {displayLabel}
           {required ? " *" : ""}
-        </Text>
+        </FormLabel>
       ) : null}
 
       <Pressable
@@ -231,13 +232,12 @@ export function PopupSelect({
                       }`}
                     >
                       <View className="flex-1">
-                        <Text
-                          className={`text-sm font-semibold ${
-                            isSelected ? "text-[#1F3C2F]" : "text-[#344054]"
-                          }`}
+                        <FormLabel
+                          inline
+                          color={isSelected ? "#1F3C2F" : "#344054"}
                         >
                           {option.label}
-                        </Text>
+                        </FormLabel>
                         {option.description ? (
                           <Text className="mt-1 text-xs text-[#667085]">
                             {option.description}

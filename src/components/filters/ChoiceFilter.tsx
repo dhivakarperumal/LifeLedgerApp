@@ -1,12 +1,10 @@
-import {
-    Poppins_500Medium,
-    Poppins_600SemiBold,
-} from "@expo-google-fonts/poppins";
+import { Poppins_600SemiBold } from "@expo-google-fonts/poppins";
 import { Ionicons } from "@expo/vector-icons";
 import { useFonts } from "expo-font";
 import { useState } from "react";
 import { Pressable, Text, View } from "react-native";
 import { Colors } from "../../constants/colors";
+import { FormLabel } from "../FormControls";
 import { PopupSelect } from "../PopupSelect";
 import { toTitleCase } from "../formLabelUtils";
 
@@ -37,7 +35,7 @@ export function ChoiceFilter({
   presentation = "chips",
   label,
 }: Props) {
-  const [fontsLoaded] = useFonts({ Poppins_500Medium, Poppins_600SemiBold });
+  const [fontsLoaded] = useFonts({ Poppins_600SemiBold });
   const [isExpanded, setIsExpanded] = useState(false);
 
   if (presentation === "popup") {
@@ -132,20 +130,12 @@ export function ChoiceFilter({
                     backgroundColor: selected ? "#F3F7EF" : Colors.white,
                   }}
                 >
-                  <Text
-                    style={{
-                      color: selected ? Colors.forest : Colors.textPrimary,
-                      fontSize: 12,
-                      fontWeight: selected ? "600" : "500",
-                      fontFamily: fontsLoaded
-                        ? selected
-                          ? "Poppins_600SemiBold"
-                          : "Poppins_500Medium"
-                        : undefined,
-                    }}
+                  <FormLabel
+                    inline
+                    color={selected ? Colors.forest : Colors.textPrimary}
                   >
                     {toTitleCase(option.label)}
-                  </Text>
+                  </FormLabel>
                   {selected ? (
                     <Ionicons name="checkmark" size={17} color={Colors.forest} />
                   ) : null}
@@ -179,20 +169,12 @@ export function ChoiceFilter({
               backgroundColor: selected ? "#F3F7EF" : Colors.white,
             }}
           >
-            <Text
-              style={{
-                color: selected ? Colors.forest : Colors.textSecondary,
-                fontSize: 12,
-                fontWeight: selected ? "600" : "500",
-                fontFamily: fontsLoaded
-                  ? selected
-                    ? "Poppins_600SemiBold"
-                    : "Poppins_500Medium"
-                  : undefined,
-              }}
+            <FormLabel
+              inline
+              color={selected ? Colors.forest : Colors.textSecondary}
             >
               {option.label}
-            </Text>
+            </FormLabel>
           </Pressable>
         );
       })}

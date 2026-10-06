@@ -18,7 +18,7 @@ import api, {
     logoutUser,
     saveUser,
 } from "../api";
-import { FormInput } from "../components/FormControls";
+import { FormInput, FormLabel } from "../components/FormControls";
 import { GradientSafeAreaView as SafeAreaView } from "../components/GradientSafeAreaView";
 import { Colors } from "../constants/colors";
 
@@ -493,9 +493,9 @@ export default function Profile() {
                     style={{ marginRight: 12 }}
                   />
                   <View className="flex-1 py-2">
-                    <Text className="mb-2 text-xs font-bold tracking-[0.8px] text-[#839087]">
+                    <FormLabel color="#839087">
                       {field.label}
-                    </Text>
+                    </FormLabel>
                     <FormInput
                       bordered={false}
                       accessibilityLabel={field.label}
@@ -603,9 +603,9 @@ export default function Profile() {
 
           {passwordFields.map((field) => (
             <View key={field.key} className="mb-4">
-              <Text className="mb-2 text-xs font-bold text-[#526058]">
+              <FormLabel color="#526058">
                 {field.label}
-              </Text>
+              </FormLabel>
               <View className="flex-row items-center rounded-xl border border-[#E5EAE7] bg-[#F9FAF8] px-3">
                 <FormInput
                   bordered={false}

@@ -17,7 +17,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import api, { getApiErrorMessage } from "../api";
 import { AddButton } from "../components/AddButton";
-import { FormInput, FormOption } from "../components/FormControls";
+import { FormInput, FormLabel, FormOption } from "../components/FormControls";
 import { GradientSafeAreaView as SafeAreaView } from "../components/GradientSafeAreaView";
 import { Colors } from "../constants/colors";
 
@@ -777,9 +777,7 @@ export default function CalendarScreen() {
                 ] as const
               ).map(([key, label, placeholder]) => (
                 <View key={key} className="mb-4">
-                  <Text className="mb-2 text-xs font-bold tracking-[0.8px] text-[#7B8589]">
-                    {label}
-                  </Text>
+                  <FormLabel>{label}</FormLabel>
                   <FormInput
                     value={form[key]}
                     onChangeText={(value) =>
@@ -796,9 +794,7 @@ export default function CalendarScreen() {
                   />
                 </View>
               ))}
-              <Text className="mb-2 text-xs font-bold tracking-[0.8px] text-[#7B8589]">
-                Priority
-              </Text>
+              <FormLabel>Priority</FormLabel>
               <View className="mb-5 flex-row">
                 {["Low", "Medium", "High"].map((priority) => (
                   <FormOption
@@ -809,9 +805,9 @@ export default function CalendarScreen() {
                     }
                     className={`mr-2 flex-1 items-center rounded-xl py-2.5 ${form.priority === priority ? "bg-[#ECF2EE]" : "bg-white"}`}
                   >
-                    <Text className="text-sm font-bold text-[#263238]">
+                    <FormLabel inline>
                       {priority}
-                    </Text>
+                    </FormLabel>
                   </FormOption>
                 ))}
               </View>

@@ -16,6 +16,7 @@ import {
     View,
 } from "react-native";
 import { Colors } from "../../constants/colors";
+import { FormLabel } from "../FormControls";
 
 const poppinsFontMap = {
   Poppins_400Regular,
@@ -294,21 +295,11 @@ export function CategoryFilter({
                         backgroundColor: isSelected ? "#F3F7EF" : Colors.white,
                       }}
                     >
-                      <Text
-                        style={{
-                          flex: 1,
-                          fontSize: 14,
-                          fontWeight: isSelected ? "700" : "500",
-                          fontFamily: fontsLoaded
-                            ? isSelected
-                              ? "Poppins_600SemiBold"
-                              : "Poppins_500Medium"
-                            : undefined,
-                          color: Colors.textPrimary,
-                        }}
-                      >
-                        {category.label}
-                      </Text>
+                      <View style={{ flex: 1 }}>
+                        <FormLabel inline color={Colors.textPrimary}>
+                          {category.label}
+                        </FormLabel>
+                      </View>
                       {isSelected && (
                         <Ionicons
                           name="checkmark-circle"

@@ -48,7 +48,7 @@ import {
     type FilterState,
     type ViewModeOption,
 } from "../../components/filters";
-import { FormInput, FormOption } from "../../components/FormControls";
+import { FormInput, FormLabel } from "../../components/FormControls";
 import { GradientSafeAreaView as SafeAreaView } from "../../components/GradientSafeAreaView";
 import { PopupSelect } from "../../components/PopupSelect";
 import { SearchBar } from "../../components/SearchBar";
@@ -1479,43 +1479,16 @@ export default function Diary() {
                 </View>
               </View>
 
-              <Text className="mb-2" style={labelStyle}>
-                Mood
-              </Text>
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={{ gap: 7, paddingBottom: 14 }}
-              >
-                {moods.map((mood) => {
-                  const active = form.mood === mood.name;
-                  return (
-                    <FormOption
-                      key={mood.name}
-                      selected={active}
-                      onPress={() => updateForm("mood", mood.name)}
-                      style={{
-                        alignItems: "center",
-                        minWidth: 61,
-                        paddingVertical: 8,
-                        borderRadius: 13,
-                        backgroundColor: active ? "#FFF2D9" : "#F5F7F5",
-                      }}
-                    >
-                      <Text style={{ fontSize: 18 }}>{mood.emoji}</Text>
-                      <Text
-                        style={{
-                          color: Colors.textPrimary,
-                          fontSize: 12,
-                          marginTop: 3,
-                        }}
-                      >
-                        {mood.name}
-                      </Text>
-                    </FormOption>
-                  );
-                })}
-              </ScrollView>
+              <PopupSelect
+                label="Mood"
+                placeholder="Select Mood"
+                options={moods.map((mood) => ({
+                  value: mood.name,
+                  label: `${mood.emoji} ${mood.name}`,
+                }))}
+                value={form.mood}
+                onChange={(value) => updateForm("mood", value)}
+              />
 
               <PopupSelect
                 label="Category"
@@ -1739,7 +1712,7 @@ function FormField({
 }) {
   return (
     <View className="mb-4">
-      <Text className="mb-2" style={labelStyle}>{label}</Text>
+      <FormLabel>{label}</FormLabel>
       <FormInput
         value={value}
         onChangeText={onChangeText}
@@ -1781,7 +1754,7 @@ function ToggleField({
         color={Colors.forest}
       />
       <Ionicons name={icon} size={15} color={Colors.sage} />
-      <Text style={{ color: Colors.textPrimary, fontSize: 13 }}>{label}</Text>
+      <FormLabel inline color={Colors.textPrimary}>{label}</FormLabel>
     </Pressable>
   );
 }
@@ -1829,11 +1802,6 @@ function AttachmentRow({
   );
 }
 
-const labelStyle = {
-  color: "#4B5563",
-  fontSize: 12,
-  fontWeight: "700" as const,
-};
 const inputStyle = {
   minHeight: 44,
   paddingHorizontal: 11,

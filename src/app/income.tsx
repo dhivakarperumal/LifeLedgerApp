@@ -35,7 +35,7 @@ import {
     type FilterState,
     type SortOption,
 } from "../components/filters";
-import { FormInput, FormOption } from "../components/FormControls";
+import { FormInput, FormLabel, FormOption } from "../components/FormControls";
 import { GradientSafeAreaView as SafeAreaView } from "../components/GradientSafeAreaView";
 import { PopupSelect } from "../components/PopupSelect";
 import { SearchBar } from "../components/SearchBar";
@@ -1096,9 +1096,7 @@ export default function Income() {
               automaticallyAdjustKeyboardInsets
               keyboardDismissMode="none"
             >
-              <Text className="mb-2 text-xs font-bold text-[#46534B]">
-                Income Title
-              </Text>
+              <FormLabel>Income Title</FormLabel>
               <FormInput
                 className="mb-4 rounded-xl bg-white px-4 py-3 text-sm text-[#25332C]"
                 placeholder="e.g. Freelance payment"
@@ -1108,9 +1106,7 @@ export default function Income() {
 
               <View className="flex-row gap-3">
                 <View className="flex-1">
-                  <Text className="mb-2 text-xs font-bold text-[#46534B]">
-                    Amount
-                  </Text>
+                  <FormLabel>Amount</FormLabel>
                   <FormInput
                     className="mb-4 rounded-xl bg-white px-4 py-3 text-sm text-[#25332C]"
                     keyboardType="decimal-pad"
@@ -1147,9 +1143,7 @@ export default function Income() {
                 onChange={(value) => updateForm("category", value)}
               />
 
-              <Text className="mb-2 text-xs font-bold text-[#46534B]">
-                Payment Method
-              </Text>
+              <FormLabel>Payment Method</FormLabel>
               <View className="mb-4 flex-row flex-wrap gap-2">
                 {paymentMethods.map((method) => (
                   <FormOption
@@ -1158,18 +1152,14 @@ export default function Income() {
                     className={`rounded-full px-3 py-2 ${form.paymentMethod === method ? "bg-[#315640]" : "bg-white"}`}
                     onPress={() => updateForm("paymentMethod", method)}
                   >
-                    <Text
-                      className={`text-xs font-bold ${form.paymentMethod === method ? "text-white" : "text-[#637068]"}`}
-                    >
+                    <FormLabel inline color={form.paymentMethod === method ? "#FFFFFF" : "#637068"}>
                       {method}
-                    </Text>
+                    </FormLabel>
                   </FormOption>
                 ))}
               </View>
 
-              <Text className="mb-2 text-xs font-bold text-[#46534B]">
-                Recurring Income
-              </Text>
+              <FormLabel>Recurring Income</FormLabel>
               <View className="mb-4 flex-row gap-2">
                 {(["Yes", "No"] as const).map((value) => (
                   <FormOption
@@ -1178,18 +1168,14 @@ export default function Income() {
                     className={`flex-1 items-center rounded-xl py-3 ${form.recurring === value ? "bg-[#E7F0E8]" : "bg-white"}`}
                     onPress={() => updateForm("recurring", value)}
                   >
-                    <Text
-                      className={`text-sm font-bold ${form.recurring === value ? "text-[#315640]" : "text-[#637068]"}`}
-                    >
+                    <FormLabel inline color={form.recurring === value ? "#315640" : "#637068"}>
                       {value}
-                    </Text>
+                    </FormLabel>
                   </FormOption>
                 ))}
               </View>
 
-              <Text className="mb-2 text-xs font-bold text-[#46534B]">
-                Notes
-              </Text>
+              <FormLabel>Notes</FormLabel>
               <FormInput
                 className="mb-4 min-h-[78px] rounded-xl bg-white px-4 py-3 text-sm text-[#25332C]"
                 multiline
@@ -1199,9 +1185,7 @@ export default function Income() {
                 onChangeText={(value) => updateForm("notes", value)}
               />
 
-              <Text className="mb-2 text-xs font-bold text-[#46534B]">
-                Attachment / Receipt
-              </Text>
+              <FormLabel>Attachment / Receipt</FormLabel>
               {existingAttachment && !attachment && (
                 <Pressable
                   className="mb-2 flex-row items-center rounded-xl border border-[#DDE5DD] bg-white p-3"

@@ -42,7 +42,7 @@ import {
 } from "../../components/filters";
 import {
     FormField,
-    formFieldStyles,
+    FormLabel,
 } from "../../components/FormControls";
 import { GradientSafeAreaView as SafeAreaView } from "../../components/GradientSafeAreaView";
 import { PopupSelect } from "../../components/PopupSelect";
@@ -1264,9 +1264,7 @@ export default function Memories() {
                 </Text>
               </Pressable>
 
-              <Text className="mb-2" style={formFieldStyles.label}>
-                Attachments
-              </Text>
+              <FormLabel>Attachments</FormLabel>
               <Pressable
                 onPress={() => void pickMedia()}
                 style={{
@@ -1358,9 +1356,9 @@ export default function Memories() {
                   size={21}
                   color={Colors.forest}
                 />
-                <Text style={{ color: Colors.textPrimary, fontWeight: "600" }}>
+                <FormLabel inline color={Colors.textPrimary}>
                   Mark As Favorite
-                </Text>
+                </FormLabel>
               </Pressable>
             </ScrollView>
 

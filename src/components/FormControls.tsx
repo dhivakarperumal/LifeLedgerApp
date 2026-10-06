@@ -21,6 +21,27 @@ type FormInputProps = Omit<TextInputProps, "placeholderTextColor" | "style"> & {
   style?: StyleProp<TextStyle>;
 };
 
+type FormLabelProps = {
+  children: ReactNode;
+  inline?: boolean;
+  color?: TextStyle["color"];
+};
+
+export function FormLabel({
+  children,
+  inline = false,
+  color,
+}: FormLabelProps) {
+  return (
+    <Text
+      className={`${inline ? "" : "mb-[6px]"} text-[14px] font-medium leading-5`}
+      style={color ? { color } : undefined}
+    >
+      {children}
+    </Text>
+  );
+}
+
 export function FormInput({
   bordered = true,
   borderColor,
@@ -65,15 +86,9 @@ export function FormField({
 }: FormFieldProps) {
   return (
     <View className="mb-4">
-      <Text
-        className="mb-2"
-        style={[
-          formFieldStyles.label,
-          labelColor ? { color: labelColor } : undefined,
-        ]}
-      >
+      <FormLabel color={labelColor}>
         {toTitleCase(label)}
-      </Text>
+      </FormLabel>
       <FormInput
         value={value}
         onChangeText={onChangeText}
@@ -93,11 +108,6 @@ export function FormField({
 }
 
 export const formFieldStyles = StyleSheet.create({
-  label: {
-    color: "#4B5563",
-    fontSize: 12,
-    fontWeight: "700",
-  },
   input: {
     minHeight: 46,
     paddingHorizontal: 12,
