@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
-import { useFocusEffect, useRouter } from "expo-router";
+import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import { useCallback, useState } from "react";
 import {
     ActivityIndicator,
@@ -164,6 +164,10 @@ function EntryCard({
 
 export default function CalendarScreen() {
   const router = useRouter();
+  const { create: rawCreate } = useLocalSearchParams<{
+    create?: string | string[];
+  }>();
+  const createParam = Array.isArray(rawCreate) ? rawCreate[0] : rawCreate;
   const insets = useSafeAreaInsets();
   const [events, setEvents] = useState<CalendarEntry[]>([]);
   const [reminders, setReminders] = useState<CalendarEntry[]>([]);
@@ -205,7 +209,7 @@ export default function CalendarScreen() {
     }, [fetchCalendar]),
   );
 
-  const openForm = (type: EntryType) => {
+  const openForm = useCallback((type: EntryType) => {
     setForm({
       title: "",
       category: "Personal",
@@ -215,7 +219,15 @@ export default function CalendarScreen() {
       details: "",
     });
     setModalType(type);
-  };
+  }, [selectedDate]);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (createParam !== "event" && createParam !== "reminder") return;
+      openForm(createParam);
+      router.setParams({ create: undefined });
+    }, [createParam, openForm, router]),
+  );
 
   const saveEntry = async () => {
     if (!form.title.trim() || !/^\d{4}-\d{2}-\d{2}$/.test(form.date)) {

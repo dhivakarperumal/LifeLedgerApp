@@ -250,9 +250,11 @@ function getCategoryType(category: MemoryCategory) {
 export default function Memories() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { edit: rawEditId } = useLocalSearchParams<{
+  const { create: rawCreate, edit: rawEditId } = useLocalSearchParams<{
+    create?: string | string[];
     edit?: string | string[];
   }>();
+  const createParam = Array.isArray(rawCreate) ? rawCreate[0] : rawCreate;
   const editId = Array.isArray(rawEditId) ? rawEditId[0] : rawEditId;
   const recorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
   const [memories, setMemories] = useState<Memory[]>([]);
@@ -458,6 +460,11 @@ export default function Memories() {
 
   useFocusEffect(
     useCallback(() => {
+      if (createParam === "1") {
+        openNewMemory();
+        router.setParams({ create: undefined });
+        return;
+      }
       if (!editId) return;
       const target = memories.find(
         (memory) => String(memory.id) === String(editId),
@@ -465,7 +472,7 @@ export default function Memories() {
       if (!target) return;
       openEditMemory(target);
       router.setParams({ edit: undefined });
-    }, [editId, memories, router]),
+    }, [createParam, editId, memories, router]),
   );
 
   const pickMedia = async () => {

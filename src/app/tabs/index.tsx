@@ -5,6 +5,7 @@ import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
+  Image,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -14,7 +15,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Svg, { Circle } from "react-native-svg";
 import { TopHeader } from "../../Navigations/TopHeader";
-import api, { getStoredUser } from "../../api";
+import api, { API_BASE_URL, getStoredUser } from "../../api";
 import { GradientSafeAreaView as SafeAreaView } from "../../components/GradientSafeAreaView";
 import { Colors } from "../../constants/colors";
 import { HOME_QUOTES, HOME_QUOTE_INDEX_KEY } from "../../constants/homeQuotes";
@@ -74,6 +75,34 @@ type CalendarEvent = {
   startTime?: string;
   start_time?: string;
 };
+
+const memoryMediaBaseUrl = API_BASE_URL.replace(/\/api\/?$/, "");
+
+function getMemoryThumbnail(memory: any) {
+  const gallery = Array.isArray(memory.media_gallery) ? memory.media_gallery : [];
+  const image = gallery.find((item: any) => {
+    const url =
+      typeof item === "string"
+        ? item
+        : String(item.file_url || item.url || item.path || "");
+    const type =
+      typeof item === "string" ? "" : String(item.file_type || item.type || "");
+    return (
+      type.toLowerCase().startsWith("image") ||
+      /\.(png|jpe?g|gif|webp|bmp)(\?|$)/i.test(url)
+    );
+  });
+  const value =
+    typeof image === "string"
+      ? image
+      : image?.file_url || image?.url || image?.path ||
+        (String(memory.media_type || "").toLowerCase().startsWith("image")
+          ? memory.media_url
+          : "");
+  if (!value) return "";
+  if (/^(https?:|file:|content:|data:)/i.test(value)) return value;
+  return `${memoryMediaBaseUrl}${value.startsWith("/") ? value : `/${value}`}`;
+}
 
 const categoryIcons: Record<string, keyof typeof Ionicons.glyphMap> = {
   food: "restaurant-outline",
@@ -1224,46 +1253,99 @@ export default function Index() {
                 {/* --- Recent Snaps --- */}
                 <SectionHeader title="Recent Snaps" />
                 {recentMemories.length > 0 ? (
-                  recentMemories.map((memory) => {
-                    return (
-                      <View
-                        key={String(memory.id)}
-                        className="mb-3 flex-row items-center rounded-3xl p-4"
-                        style={{ backgroundColor: Colors.white }}
+                  <View>
+                    <View className="flex-row justify-between gap-3">
+                      {recentMemories.slice(0, 2).map((memory) => {
+                        const thumbnail = getMemoryThumbnail(memory);
+                        return (
+                          <Pressable
+                            key={String(memory.id)}
+                            accessibilityRole="button"
+                            accessibilityLabel={`Open memory ${memory.title || ""}`}
+                            onPress={() =>
+                              router.push(`/memories/${memory.id}` as any)
+                            }
+                            className="min-w-0 flex-1"
+                          >
+                            <View className="h-28 overflow-hidden rounded-2xl bg-[#E3EAE2]">
+                              {thumbnail ? (
+                                <Image
+                                  source={{ uri: thumbnail }}
+                                  resizeMode="cover"
+                                  className="h-full w-full"
+                                />
+                              ) : (
+                                <View className="h-full w-full items-center justify-center">
+                                  <Ionicons
+                                    name="image-outline"
+                                    size={28}
+                                    color={Colors.primary}
+                                  />
+                                </View>
+                              )}
+                            </View>
+                            <Text
+                              className="mt-2 px-1 text-xs font-bold"
+                              style={{ color: Colors.textPrimary }}
+                              numberOfLines={1}
+                            >
+                              {memory.title || "Memory"}
+                            </Text>
+                          </Pressable>
+                        );
+                      })}
+                    </View>
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel="View full memories gallery"
+                      onPress={() => router.push("/tabs/memories")}
+                      className="mt-3 items-center rounded-xl bg-[#EEF3EF] py-3"
+                    >
+                      <Text
+                        className="text-[10px] font-extrabold tracking-[1px]"
+                        style={{ color: Colors.primary }}
                       >
-                        <View
-                          className="mr-4 h-12 w-12 items-center justify-center rounded-full"
-                          style={{ backgroundColor: "#F3E8FF" }}
-                        >
-                          <Ionicons
-                            name="images-outline"
-                            size={21}
-                            color="#9333EA"
-                          />
-                        </View>
-                        <View className="flex-1">
-                          <Text
-                            className="text-base font-semibold"
-                            style={{ color: Colors.textPrimary }}
-                            numberOfLines={1}
-                          >
-                            {memory.title || "Memory"}
-                          </Text>
-                          <Text
-                            className="mt-1 text-sm"
-                            style={{ color: Colors.textSecondary }}
-                          >
-                            {memory.category_name || "Uncategorized"} ·{" "}
-                            {formatDate(
-                              memory.memory_date || memory.created_at,
-                            )}
-                          </Text>
-                        </View>
-                      </View>
-                    );
-                  })
+                        VIEW FULL GALLERY
+                      </Text>
+                    </Pressable>
+                  </View>
                 ) : (
-                  <EmptyStateCard message="No memories recorded today." />
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel="Add a new memory"
+                    accessibilityHint="Opens the form to create a memory"
+                    onPress={() =>
+                      router.push({
+                        pathname: "/tabs/memories",
+                        params: { create: "1" },
+                      })
+                    }
+                    className="items-center rounded-3xl border border-dashed px-4 py-5"
+                    style={{
+                      backgroundColor: "#FFF8DB",
+                      borderColor: "#F2D98A",
+                    }}
+                  >
+                    <View className="mb-2 h-11 w-11 items-center justify-center rounded-full bg-white">
+                      <Ionicons
+                        name="add"
+                        size={25}
+                        color={Colors.primary}
+                      />
+                    </View>
+                    <Text
+                      className="text-sm font-bold"
+                      style={{ color: Colors.textPrimary }}
+                    >
+                      Add a new memory
+                    </Text>
+                    <Text
+                      className="mt-1 text-xs"
+                      style={{ color: Colors.textSecondary }}
+                    >
+                      Save a special moment to your gallery
+                    </Text>
+                  </Pressable>
                 )}
 
                 {/* --- Diary Spotlight --- */}
@@ -1397,7 +1479,55 @@ export default function Index() {
                     );
                   })
                 ) : (
-                  <EmptyStateCard message="No events scheduled for today." />
+                  <View
+                    style={{
+                      alignItems: "center",
+                      borderRadius: 28,
+                      borderWidth: 1,
+                      borderColor: "#FCA5A5",
+                      backgroundColor: "#FCA5A5",
+                      paddingHorizontal: 18,
+                      paddingTop: 18,
+                      paddingBottom: 16,
+                    }}
+                  >
+                    <View
+                      className="mb-3 h-12 w-12 items-center justify-center rounded-full"
+                      style={{ backgroundColor: "rgba(255,255,255,0.2)" }}
+                    >
+                      <Ionicons
+                        name="calendar"
+                        size={24}
+                        color="#7F1D1D"
+                      />
+                    </View>
+                    <Text
+                      className="mb-4 text-center text-xs font-semibold"
+                      style={{ color: "#7F1D1D" }}
+                    >
+                      Nothing scheduled for today.
+                    </Text>
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel="Add a new schedule"
+                      accessibilityHint="Opens the form to create a calendar event"
+                      onPress={() =>
+                        router.push({
+                          pathname: "/calendar",
+                          params: { create: "event" },
+                        })
+                      }
+                      className="w-full items-center rounded-full py-3"
+                      style={{ backgroundColor: Colors.white }}
+                    >
+                      <Text
+                        className="text-[11px] font-extrabold tracking-[1px]"
+                        style={{ color: "#7F1D1D" }}
+                      >
+                        ADD NEW SCHEDULE
+                      </Text>
+                    </Pressable>
+                  </View>
                 )}
               </>
             )}
