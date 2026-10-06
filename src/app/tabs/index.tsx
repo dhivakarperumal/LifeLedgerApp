@@ -504,6 +504,7 @@ export default function Index() {
 
           setTopCategories(sortedCats);
 
+          const currentDateKey = dateKey(now);
           setRecentTransactions(
             [...expensesData]
               .sort((left, right) =>
@@ -1262,7 +1263,7 @@ export default function Index() {
 
                 {/* --- Recent Events --- */}
                 <SectionHeader
-                  title="Today's Schedule"
+                  title="Schedules for Today"
                   onAction={() => router.push("/calendar")}
                 />
                 {todayEvents.length > 0 ? (
