@@ -380,7 +380,7 @@ export default function MemoryDetails() {
           />
         }
         contentContainerStyle={{
-          paddingHorizontal: 18,
+          paddingHorizontal: 16,
           paddingTop: 16,
           paddingBottom: insets.bottom + 28,
         }}

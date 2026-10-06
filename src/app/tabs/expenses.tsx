@@ -754,7 +754,7 @@ export default function Expenses() {
           style={{
             paddingTop: showSummaryCards ? 8 : 0,
             paddingBottom: showSummaryCards ? 28 : 0,
-            paddingHorizontal: 20,
+            paddingHorizontal: 16,
           }}
         >
           {showSummaryCards && (
@@ -1204,7 +1204,7 @@ export default function Expenses() {
               backgroundColor: "#FFFFFF",
               borderTopLeftRadius: 28,
               borderTopRightRadius: 28,
-              paddingHorizontal: 18,
+              paddingHorizontal: 16,
               paddingTop: 12,
               paddingBottom: insets.bottom + 20,
               maxHeight: "78%",

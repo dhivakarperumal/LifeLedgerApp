@@ -144,7 +144,7 @@ export default function More() {
     <ScrollView
       showsVerticalScrollIndicator={false}
       contentContainerStyle={{
-        paddingHorizontal: 18,
+        paddingHorizontal: 16,
         paddingTop: 20,
         paddingBottom: 140,
         backgroundColor: Colors.contentBackground,

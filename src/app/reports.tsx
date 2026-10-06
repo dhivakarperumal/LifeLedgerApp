@@ -801,7 +801,7 @@ export default function Reports() {
           flexDirection: "row",
           alignItems: "center",
           justifyContent: "flex-start",
-          paddingHorizontal: 20,
+          paddingHorizontal: 16,
           paddingBottom: 16,
           paddingTop: insets.top + 8,
         }}
@@ -834,7 +834,7 @@ export default function Reports() {
             tintColor={Colors.primary}
           />
         }
-        contentContainerStyle={{ paddingHorizontal: 18, paddingBottom: 36 }}
+        contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 36 }}
       >
         <View className="mb-4 mt-8 flex-row">
           <Pressable

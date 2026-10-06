@@ -328,7 +328,7 @@ export default function CalendarScreen() {
           style={{
             flexDirection: "row",
             alignItems: "center",
-            paddingHorizontal: 20,
+            paddingHorizontal: 16,
             paddingBottom: 20,
             paddingTop: 12,
           }}

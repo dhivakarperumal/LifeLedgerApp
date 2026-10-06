@@ -765,7 +765,7 @@ export default function Income() {
           flexDirection: "row",
           alignItems: "center",
           justifyContent: "flex-start",
-          paddingHorizontal: 20,
+          paddingHorizontal: 16,
           paddingBottom: 16,
           paddingTop: insets.top + 8,
         }}
@@ -800,7 +800,7 @@ export default function Income() {
           />
         }
         contentContainerStyle={{
-          paddingHorizontal: 18,
+          paddingHorizontal: 16,
           paddingBottom: insets.bottom + 140,
         }}
       >

@@ -428,7 +428,7 @@ export default function Categories() {
           flexDirection: "row",
           alignItems: "center",
           justifyContent: "flex-start",
-          paddingHorizontal: 20,
+          paddingHorizontal: 16,
           paddingBottom: 16,
           paddingTop: insets.top + 8,
         }}
@@ -461,7 +461,7 @@ export default function Categories() {
           />
         }
         contentContainerStyle={{
-          paddingHorizontal: 18,
+          paddingHorizontal: 16,
           paddingBottom: insets.bottom + 90,
         }}
       >

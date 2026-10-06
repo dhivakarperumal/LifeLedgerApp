@@ -504,12 +504,12 @@ export default function Index() {
 
           setTopCategories(sortedCats);
 
-          const currentDateKey = dateKey(now);
           setRecentTransactions(
-            expensesData
-              .filter(
-                (expense) =>
-                  eventDateKey(expense.expense_date) === currentDateKey,
+            [...expensesData]
+              .sort((left, right) =>
+                eventDateKey(right.expense_date).localeCompare(
+                  eventDateKey(left.expense_date),
+                ),
               )
               .slice(0, 3),
           );
@@ -614,7 +614,7 @@ export default function Index() {
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={{
-              paddingHorizontal: 22,
+              paddingHorizontal: 16,
               paddingTop: 12,
               paddingBottom: 54,
               borderBottomLeftRadius: 42,
@@ -662,7 +662,7 @@ export default function Index() {
             <ScrollView
               horizontal
               showsHorizontalScrollIndicator={false}
-              contentContainerStyle={{ paddingHorizontal: 20, gap: 18 }}
+              contentContainerStyle={{ paddingHorizontal: 16, gap: 18 }}
             >
               {[
                 { icon: "wallet", label: "Expense", route: "/tabs/expenses" },
@@ -711,7 +711,7 @@ export default function Index() {
             </ScrollView>
           </View>
 
-          <View className="px-5">
+          <View className="px-4">
             {isLoading ? (
               <View style={{ marginTop: 60, alignItems: "center" }}>
                 <ActivityIndicator size="large" color={Colors.primary} />
@@ -1120,8 +1120,8 @@ export default function Index() {
                  
                 </View>
 
-                {/* --- Today's Expenses --- */}
-                <SectionHeader title="Today's Expenses" />
+                {/* --- Recent Transactions --- */}
+                <SectionHeader title="Recent Transactions" />
                 {recentTransactions.length > 0 ? (
                   recentTransactions.map((tx) => {
                     const iconName =
@@ -1169,11 +1169,11 @@ export default function Index() {
                     );
                   })
                 ) : (
-                  <EmptyStateCard message="No expenses recorded today." />
+                  <EmptyStateCard message="No transactions recorded yet." />
                 )}
 
-                {/* --- Today's Memories --- */}
-                <SectionHeader title="Today's Memories" />
+                {/* --- Recent Snaps --- */}
+                <SectionHeader title="Recent Snaps" />
                 {recentMemories.length > 0 ? (
                   recentMemories.map((memory) => {
                     return (
@@ -1217,8 +1217,8 @@ export default function Index() {
                   <EmptyStateCard message="No memories recorded today." />
                 )}
 
-                {/* --- Today's Diary Entries --- */}
-                <SectionHeader title="Today's Diary Entries" />
+                {/* --- Diary Spotlight --- */}
+                <SectionHeader title="Diary Spotlight" />
                 {recentDiary.length > 0 ? (
                   recentDiary.map((diary) => {
                     return (
@@ -1262,7 +1262,7 @@ export default function Index() {
 
                 {/* --- Recent Events --- */}
                 <SectionHeader
-                  title="Today's Calendar Events"
+                  title="Today's Schedule"
                   onAction={() => router.push("/calendar")}
                 />
                 {todayEvents.length > 0 ? (

@@ -710,7 +710,7 @@ export default function Memories() {
           />
         }
         contentContainerStyle={{
-          paddingHorizontal: 18,
+          paddingHorizontal: 16,
           paddingTop: 18,
           paddingBottom: insets.bottom + 112,
         }}

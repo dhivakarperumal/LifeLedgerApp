@@ -63,7 +63,7 @@ export default function LoginScreen() {
           showsVerticalScrollIndicator={false}
         >
           <View
-            className="justify-center bg-[#DFE7C8] px-7"
+            className="justify-center bg-[#DFE7C8] px-5"
             style={{
               minHeight: 225,
               borderBottomLeftRadius: 62,
@@ -88,7 +88,7 @@ export default function LoginScreen() {
             </View>
           </View>
 
-          <View className="mx-7 mt-8">
+          <View className="mx-5 mt-8">
             <View className="mt-2 mb-5">
               <FormLabel color="#4B5563">Email</FormLabel>
               <View className="h-16 flex-row items-center rounded-[32px] border border-[#D1DABB] bg-[#DFE7C8] px-5">

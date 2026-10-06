@@ -841,7 +841,7 @@ export default function Diary() {
           />
         }
         contentContainerStyle={{
-          paddingHorizontal: 18,
+          paddingHorizontal: 16,
           paddingTop: 0,
           paddingBottom: insets.bottom + 112,
         }}

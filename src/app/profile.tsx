@@ -359,7 +359,7 @@ export default function Profile() {
           flexDirection: "row",
           alignItems: "center",
           justifyContent: "flex-start",
-          paddingHorizontal: 20,
+          paddingHorizontal: 16,
           paddingBottom: 16,
           paddingTop: insets.top + 8,
         }}
@@ -388,7 +388,7 @@ export default function Profile() {
             tintColor={Colors.primary}
           />
         }
-        contentContainerStyle={{ paddingHorizontal: 18, paddingBottom: 36 }}
+        contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 36 }}
       >
         <View className="mb-5 mt-6 overflow-hidden rounded-2xl bg-[#315640] p-5">
           <View className="flex-row items-center justify-between">

@@ -172,7 +172,7 @@ export default function RegisterScreen() {
           showsVerticalScrollIndicator={false}
         >
           <View
-            className="justify-center bg-[#DFE7C8] px-7"
+            className="justify-center bg-[#DFE7C8] px-5"
             style={{
               minHeight: 145,
               borderBottomLeftRadius: 62,
@@ -197,7 +197,7 @@ export default function RegisterScreen() {
             </View>
           </View>
 
-          <View className="mx-7 mt-7">
+          <View className="mx-5 mt-7">
             <FormField
               label="Username"
               placeholder="Enter username"
