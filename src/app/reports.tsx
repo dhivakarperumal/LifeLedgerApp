@@ -17,7 +17,6 @@ import {
     useWindowDimensions,
     View,
 } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Svg, { Path, Rect } from "react-native-svg";
 import api, { getApiErrorMessage, logoutUser } from "../api";
 import {
@@ -27,6 +26,7 @@ import {
 } from "../components/DateRangeFilter";
 import { GradientSafeAreaView as SafeAreaView } from "../components/GradientSafeAreaView";
 import { CenteredPageLoader } from "../components/CenteredPageLoader";
+import { createSessionDataCache } from "../components/SessionDataCache";
 import { SearchBar } from "../components/SearchBar";
 import {
     countActiveFilters,
@@ -53,6 +53,13 @@ type ReportRecord = {
   _type: ReportType;
   _date?: string;
 };
+
+type ReportsData = {
+  expenses: ReportRecord[];
+  transfers: ReportRecord[];
+};
+
+const reportsDataCache = createSessionDataCache<ReportsData>();
 
 function getRows(data: any, key: string): any[] {
   if (Array.isArray(data)) return data;
@@ -348,12 +355,15 @@ function Metric({
 
 export default function Reports() {
   const router = useRouter();
-  const insets = useSafeAreaInsets();
   const { width: screenWidth } = useWindowDimensions();
   const metricCardWidth = Math.min(500, (screenWidth - 36 - 28) / 3);
-  const [expenses, setExpenses] = useState<ReportRecord[]>([]);
-  const [transfers, setTransfers] = useState<ReportRecord[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [expenses, setExpenses] = useState<ReportRecord[]>(
+    () => reportsDataCache.get()?.expenses ?? [],
+  );
+  const [transfers, setTransfers] = useState<ReportRecord[]>(
+    () => reportsDataCache.get()?.transfers ?? [],
+  );
+  const [loading, setLoading] = useState(() => !reportsDataCache.hasData());
   const [refreshing, setRefreshing] = useState(false);
   const [reportType, setReportType] = useState<"all" | ReportType>("all");
   const [search, setSearch] = useState("");
@@ -397,27 +407,35 @@ export default function Reports() {
     router.replace("/auth/login");
   }, [router]);
 
-  const fetchAll = useCallback(async (showLoading = true) => {
-    if (showLoading) setLoading(true);
+  const fetchAll = useCallback(async (
+    showLoading = !reportsDataCache.hasData(),
+  ) => {
+    if (showLoading && !reportsDataCache.hasData()) setLoading(true);
     try {
-      const [expenseResponse, transferResponse] = await Promise.all([
-        api.get("/expenses"),
-        api.get("/transfers"),
-      ]);
-      setExpenses(
-        getRows(expenseResponse.data, "expenses").map((record: any) => ({
-          ...record,
-          _type: "expense" as const,
-          _date: record.expense_date,
-        })),
-      );
-      setTransfers(
-        getRows(transferResponse.data, "transfers").map((record: any) => ({
-          ...record,
-          _type: "transfer" as const,
-          _date: record.transfer_date,
-        })),
-      );
+      const data = await reportsDataCache.load(async () => {
+        const [expenseResponse, transferResponse] = await Promise.all([
+          api.get("/expenses"),
+          api.get("/transfers"),
+        ]);
+        return {
+          expenses: getRows(expenseResponse.data, "expenses").map(
+            (record: any) => ({
+              ...record,
+              _type: "expense" as const,
+              _date: record.expense_date,
+            }),
+          ),
+          transfers: getRows(transferResponse.data, "transfers").map(
+            (record: any) => ({
+              ...record,
+              _type: "transfer" as const,
+              _date: record.transfer_date,
+            }),
+          ),
+        };
+      });
+      setExpenses(data.expenses);
+      setTransfers(data.transfers);
     } catch (error) {
       if ((error as { status?: number })?.status === 401) {
         await handleUnauthorized();
@@ -440,7 +458,7 @@ export default function Reports() {
 
   useFocusEffect(
     useCallback(() => {
-      void fetchAll();
+      void fetchAll(!reportsDataCache.hasData());
     }, [fetchAll]),
   );
 

@@ -39,6 +39,7 @@ import {
 import { FormInput, FormLabel, FormOption } from "../components/FormControls";
 import { GradientSafeAreaView as SafeAreaView } from "../components/GradientSafeAreaView";
 import { CenteredPageLoader } from "../components/CenteredPageLoader";
+import { createSessionDataCache } from "../components/SessionDataCache";
 import { PopupSelect } from "../components/PopupSelect";
 import { SearchBar } from "../components/SearchBar";
 import { Colors } from "../constants/colors";
@@ -72,6 +73,15 @@ type ExpenseRecord = {
   expense_amount?: number | string;
   amount?: number | string;
 };
+
+type TransfersData = {
+  transfers: TransferRecord[];
+  incomes: IncomeRecord[];
+  expenses: ExpenseRecord[];
+  categoryOptions: string[];
+};
+
+const transfersDataCache = createSessionDataCache<TransfersData>();
 
 type TransferForm = {
   title: string;
@@ -395,10 +405,18 @@ export default function Transfers() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { width: screenWidth } = useWindowDimensions();
-  const [transfers, setTransfers] = useState<TransferRecord[]>([]);
-  const [incomes, setIncomes] = useState<IncomeRecord[]>([]);
-  const [expenses, setExpenses] = useState<ExpenseRecord[]>([]);
-  const [categoryOptions, setCategoryOptions] = useState<string[]>([]);
+  const [transfers, setTransfers] = useState<TransferRecord[]>(
+    () => transfersDataCache.get()?.transfers ?? [],
+  );
+  const [incomes, setIncomes] = useState<IncomeRecord[]>(
+    () => transfersDataCache.get()?.incomes ?? [],
+  );
+  const [expenses, setExpenses] = useState<ExpenseRecord[]>(
+    () => transfersDataCache.get()?.expenses ?? [],
+  );
+  const [categoryOptions, setCategoryOptions] = useState<string[]>(
+    () => transfersDataCache.get()?.categoryOptions ?? [],
+  );
   const [selectedIncomeId, setSelectedIncomeId] = useState("");
   const [selectedExpenseId, setSelectedExpenseId] = useState("");
   const [expensePickerVisible, setExpensePickerVisible] = useState(false);
@@ -412,7 +430,7 @@ export default function Transfers() {
   const [existingReceipt, setExistingReceipt] = useState<string | null>(null);
   const [modalVisible, setModalVisible] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(() => !transfersDataCache.hasData());
   const [refreshing, setRefreshing] = useState(false);
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("All Transfers");
@@ -432,71 +450,79 @@ export default function Transfers() {
     router.replace("/auth/login");
   }, [router]);
 
-  const loadAll = useCallback(async (showLoading = true) => {
-    if (showLoading) setLoading(true);
+  const loadAll = useCallback(async (
+    showLoading = !transfersDataCache.hasData(),
+  ) => {
+    if (showLoading && !transfersDataCache.hasData()) setLoading(true);
     try {
-      const transferResponse = await api.get("/transfers");
-      setTransfers(getRows(transferResponse.data, "transfers"));
-
-      const [incomeResult, categoryResult, expensesResult] =
-        await Promise.allSettled([
+      const data = await transfersDataCache.load(async () => {
+        const transferResponse = await api.get("/transfers");
+        const [incomeResult, categoryResult, expensesResult] =
+          await Promise.allSettled([
           api.get("/incomes"),
           api.get("/categories"),
           api.get("/expenses"),
         ]);
-      for (const result of [incomeResult, categoryResult, expensesResult]) {
-        if (
-          result.status === "rejected" &&
-          (result.reason as { status?: number })?.status === 401
-        ) {
-          await handleUnauthorized();
-          return;
+        for (const result of [incomeResult, categoryResult, expensesResult]) {
+          if (
+            result.status === "rejected" &&
+            (result.reason as { status?: number })?.status === 401
+          ) {
+            throw result.reason;
+          }
         }
-      }
 
-      if (incomeResult.status === "fulfilled") {
-        setIncomes(getRows(incomeResult.value.data, "incomes"));
-      } else {
-        setIncomes([]);
-      }
+        let categoryOptions: string[] = [];
+        if (categoryResult.status === "fulfilled") {
+          const categories = getRows(categoryResult.value.data, "categories");
+          const filteredCategories = categories
+            .filter((category: any) => {
+              if (typeof category === "string") return false;
+              const type = String(
+                category?.catType ||
+                  category?.type ||
+                  category?.category_type ||
+                  "",
+              )
+                .trim()
+                .toLowerCase();
+              const name = String(category?.name || "")
+                .trim()
+                .toLowerCase();
+              return (
+                type.includes("transfer") ||
+                type.includes("saving") ||
+                type.includes("investment") ||
+                transferKeywords.some((keyword) => name.includes(keyword))
+              );
+            })
+            .map((category: any) => String(category.name || "").trim())
+            .filter(Boolean);
+          categoryOptions = Array.from(new Set<string>(filteredCategories));
+        }
 
-      if (expensesResult.status === "fulfilled") {
-        setExpenses(getRows(expensesResult.value.data, "expenses"));
-      } else {
-        setExpenses([]);
-      }
-
-      if (categoryResult.status === "fulfilled") {
-        const categories = getRows(categoryResult.value.data, "categories");
-        const filteredCategories = categories
-          .filter((category: any) => {
-            if (typeof category === "string") return false;
-            const type = String(
-              category?.catType ||
-                category?.type ||
-                category?.category_type ||
-                "",
-            )
-              .trim()
-              .toLowerCase();
-            const name = String(category?.name || "")
-              .trim()
-              .toLowerCase();
-            return (
-              type.includes("transfer") ||
-              type.includes("saving") ||
-              type.includes("investment") ||
-              transferKeywords.some((keyword) => name.includes(keyword))
-            );
-          })
-          .map((category: any) => String(category.name || "").trim())
-          .filter(Boolean);
-        setCategoryOptions(Array.from(new Set<string>(filteredCategories)));
-      } else {
-        setCategoryOptions([]);
-      }
+        return {
+          transfers: getRows(transferResponse.data, "transfers"),
+          incomes:
+            incomeResult.status === "fulfilled"
+              ? getRows(incomeResult.value.data, "incomes")
+              : [],
+          expenses:
+            expensesResult.status === "fulfilled"
+              ? getRows(expensesResult.value.data, "expenses")
+              : [],
+          categoryOptions,
+        };
+      });
+      setTransfers(data.transfers);
+      setIncomes(data.incomes);
+      setExpenses(data.expenses);
+      setCategoryOptions(data.categoryOptions);
     } catch (error) {
-      if ((error as { status?: number })?.status === 401) {
+      const status =
+        (error as { status?: number; response?: { status?: number } })?.status ||
+        (error as { response?: { status?: number } })?.response?.status;
+      if (status === 401) {
         await handleUnauthorized();
         return;
       }
@@ -517,7 +543,7 @@ export default function Transfers() {
 
   useFocusEffect(
     useCallback(() => {
-      void loadAll();
+      void loadAll(!transfersDataCache.hasData());
     }, [loadAll]),
   );
 

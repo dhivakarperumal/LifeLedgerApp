@@ -40,6 +40,7 @@ import {
 import { FormInput, FormLabel, FormOption } from "../components/FormControls";
 import { GradientSafeAreaView as SafeAreaView } from "../components/GradientSafeAreaView";
 import { CenteredPageLoader } from "../components/CenteredPageLoader";
+import { createSessionDataCache } from "../components/SessionDataCache";
 import { PopupSelect } from "../components/PopupSelect";
 import { SearchBar } from "../components/SearchBar";
 import { Colors } from "../constants/colors";
@@ -56,6 +57,14 @@ type IncomeRecord = {
   recurring?: string;
   attachment?: string | null;
 };
+
+type IncomeData = {
+  incomes: IncomeRecord[];
+  categories: string[];
+  monthlyBudget: number;
+};
+
+const incomeDataCache = createSessionDataCache<IncomeData>();
 
 type IncomeForm = {
   title: string;
@@ -408,10 +417,16 @@ export default function Income() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { width: screenWidth } = useWindowDimensions();
-  const [incomes, setIncomes] = useState<IncomeRecord[]>([]);
-  const [incomeCategories, setIncomeCategories] = useState<string[]>([]);
-  const [monthlyBudget, setMonthlyBudget] = useState(0);
-  const [loading, setLoading] = useState(true);
+  const [incomes, setIncomes] = useState<IncomeRecord[]>(
+    () => incomeDataCache.get()?.incomes ?? [],
+  );
+  const [incomeCategories, setIncomeCategories] = useState<string[]>(
+    () => incomeDataCache.get()?.categories ?? [],
+  );
+  const [monthlyBudget, setMonthlyBudget] = useState(
+    () => incomeDataCache.get()?.monthlyBudget ?? 0,
+  );
+  const [loading, setLoading] = useState(() => !incomeDataCache.hasData());
   const [refreshing, setRefreshing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [budgetSaving, setBudgetSaving] = useState(false);
@@ -465,61 +480,77 @@ export default function Income() {
     router.replace("/auth/login");
   }, [router]);
 
-  const fetchIncome = useCallback(async (showLoading = true) => {
-    if (showLoading) setLoading(true);
+  const fetchIncome = useCallback(async (
+    showLoading = !incomeDataCache.hasData(),
+  ) => {
+    if (showLoading && !incomeDataCache.hasData()) setLoading(true);
     try {
-      const incomeResponse = await api.get("/incomes");
-      setIncomes(getRows(incomeResponse.data, "incomes"));
-
-      const [categoryResult, budgetResult] = await Promise.allSettled([
-        api.get("/categories"),
-        api.get("/incomes/monthly-budget"),
-      ]);
-
-      for (const result of [categoryResult, budgetResult]) {
-        if (
-          result.status === "rejected" &&
-          (result.reason as { status?: number })?.status === 401
-        ) {
-          await handleUnauthorized();
-          return;
+      const data = await incomeDataCache.load(async () => {
+        const incomeResponse = await api.get("/incomes");
+        const [categoryResult, budgetResult] = await Promise.allSettled([
+          api.get("/categories"),
+          api.get("/incomes/monthly-budget"),
+        ]);
+        for (const result of [categoryResult, budgetResult]) {
+          if (
+            result.status === "rejected" &&
+            (result.reason as { status?: number })?.status === 401
+          ) {
+            throw result.reason;
+          }
         }
-      }
 
-      if (categoryResult.status === "fulfilled") {
-        const categories = getRows(categoryResult.value.data, "categories");
-        const names: string[] = categories
-          .filter((category: any) => {
-            if (typeof category === "string") return false;
-            const typeValue = String(
-              category?.catType ||
-                category?.type ||
-                category?.category_type ||
-                "",
-            )
-              .trim()
-              .toLowerCase();
-            const nameValue = String(category?.name || "")
-              .trim()
-              .toLowerCase();
-            return (
-              typeValue.includes("income") ||
-              typeValue.includes("earning") ||
-              typeValue.includes("revenue") ||
-              incomeKeywords.some((keyword) => nameValue.includes(keyword))
-            );
-          })
-          .map((category: any) => String(category.name || "").trim())
-          .filter(Boolean);
-        setIncomeCategories(Array.from(new Set<string>(names)));
-      }
+        const cachedData = incomeDataCache.get();
+        let categories = cachedData?.categories ?? [];
+        if (categoryResult.status === "fulfilled") {
+          const rows = getRows(categoryResult.value.data, "categories");
+          const names: string[] = rows
+            .filter((category: any) => {
+              if (typeof category === "string") return false;
+              const typeValue = String(
+                category?.catType ||
+                  category?.type ||
+                  category?.category_type ||
+                  "",
+              )
+                .trim()
+                .toLowerCase();
+              const nameValue = String(category?.name || "")
+                .trim()
+                .toLowerCase();
+              return (
+                typeValue.includes("income") ||
+                typeValue.includes("earning") ||
+                typeValue.includes("revenue") ||
+                incomeKeywords.some((keyword) => nameValue.includes(keyword))
+              );
+            })
+            .map((category: any) => String(category.name || "").trim())
+            .filter(Boolean);
+          categories = Array.from(new Set<string>(names));
+        }
 
-      if (budgetResult.status === "fulfilled") {
-        const nextBudget = Number(budgetResult.value.data?.monthly_budget ?? 0);
-        if (Number.isFinite(nextBudget)) setMonthlyBudget(nextBudget);
-      }
+        let nextBudget = cachedData?.monthlyBudget ?? 0;
+        if (budgetResult.status === "fulfilled") {
+          const fetchedBudget = Number(
+            budgetResult.value.data?.monthly_budget ?? 0,
+          );
+          if (Number.isFinite(fetchedBudget)) nextBudget = fetchedBudget;
+        }
+
+        return {
+          incomes: getRows(incomeResponse.data, "incomes"),
+          categories,
+          monthlyBudget: nextBudget,
+        };
+      });
+      setIncomes(data.incomes);
+      setIncomeCategories(data.categories);
+      setMonthlyBudget(data.monthlyBudget);
     } catch (error) {
-      const status = (error as { status?: number })?.status;
+      const status =
+        (error as { status?: number; response?: { status?: number } })?.status ||
+        (error as { response?: { status?: number } })?.response?.status;
       if (status === 401) {
         await handleUnauthorized();
         return;
@@ -541,7 +572,7 @@ export default function Income() {
 
   useFocusEffect(
     useCallback(() => {
-      void fetchIncome();
+      void fetchIncome(!incomeDataCache.hasData());
     }, [fetchIncome]),
   );
 
@@ -800,8 +831,6 @@ export default function Income() {
     <SafeAreaView className="flex-1 bg-[#F2F5EA]" edges={["bottom"]}>
       <StatusBar
         style="light"
-        backgroundColor={Colors.greenGradient[0]}
-        translucent={false}
       />
       <LinearGradient
         colors={Colors.greenGradient}

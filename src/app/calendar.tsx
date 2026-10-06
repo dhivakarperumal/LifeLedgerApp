@@ -22,6 +22,7 @@ import { DateTimePickerComponent } from "../components/DateTimePickerComponent";
 import { FormInput, FormLabel, FormOption } from "../components/FormControls";
 import { GradientSafeAreaView as SafeAreaView } from "../components/GradientSafeAreaView";
 import { CenteredPageLoader } from "../components/CenteredPageLoader";
+import { createSessionDataCache } from "../components/SessionDataCache";
 import { Colors } from "../constants/colors";
 
 type CalendarEntry = {
@@ -38,6 +39,13 @@ type CalendarEntry = {
   notes?: string;
   status?: string;
 };
+
+type CalendarData = {
+  events: CalendarEntry[];
+  reminders: CalendarEntry[];
+};
+
+const calendarDataCache = createSessionDataCache<CalendarData>();
 
 type EntryType = "event" | "reminder";
 type EntryForm = {
@@ -205,9 +213,13 @@ export default function CalendarScreen() {
   }>();
   const createParam = Array.isArray(rawCreate) ? rawCreate[0] : rawCreate;
   const insets = useSafeAreaInsets();
-  const [events, setEvents] = useState<CalendarEntry[]>([]);
-  const [reminders, setReminders] = useState<CalendarEntry[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [events, setEvents] = useState<CalendarEntry[]>(
+    () => calendarDataCache.get()?.events ?? [],
+  );
+  const [reminders, setReminders] = useState<CalendarEntry[]>(
+    () => calendarDataCache.get()?.reminders ?? [],
+  );
+  const [loading, setLoading] = useState(() => !calendarDataCache.hasData());
   const [refreshing, setRefreshing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [activeType, setActiveType] = useState<EntryType>("event");
@@ -224,15 +236,23 @@ export default function CalendarScreen() {
     details: "",
   });
 
-  const fetchCalendar = useCallback(async (showLoading = true) => {
-    if (showLoading) setLoading(true);
+  const fetchCalendar = useCallback(async (
+    showLoading = !calendarDataCache.hasData(),
+  ) => {
+    if (showLoading && !calendarDataCache.hasData()) setLoading(true);
     try {
-      const [eventResponse, reminderResponse] = await Promise.all([
-        api.get("/calendar/events"),
-        api.get("/calendar/reminders"),
-      ]);
-      setEvents(getRows(eventResponse.data));
-      setReminders(getRows(reminderResponse.data));
+      const data = await calendarDataCache.load(async () => {
+        const [eventResponse, reminderResponse] = await Promise.all([
+          api.get("/calendar/events"),
+          api.get("/calendar/reminders"),
+        ]);
+        return {
+          events: getRows(eventResponse.data),
+          reminders: getRows(reminderResponse.data),
+        };
+      });
+      setEvents(data.events);
+      setReminders(data.reminders);
     } catch (error) {
       Alert.alert("Calendar unavailable", getApiErrorMessage(error));
     } finally {
@@ -251,7 +271,7 @@ export default function CalendarScreen() {
 
   useFocusEffect(
     useCallback(() => {
-      void fetchCalendar();
+      void fetchCalendar(!calendarDataCache.hasData());
     }, [fetchCalendar]),
   );
 

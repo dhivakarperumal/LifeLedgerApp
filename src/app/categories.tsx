@@ -38,6 +38,7 @@ import {
 import { FormInput, FormLabel, FormOption } from "../components/FormControls";
 import { GradientSafeAreaView as SafeAreaView } from "../components/GradientSafeAreaView";
 import { CenteredPageLoader } from "../components/CenteredPageLoader";
+import { createSessionDataCache } from "../components/SessionDataCache";
 import { PopupSelect } from "../components/PopupSelect";
 import { SearchBar } from "../components/SearchBar";
 import { Colors } from "../constants/colors";
@@ -57,6 +58,13 @@ type Category = {
   subcategory?: string[];
   images?: string[] | string;
 };
+
+type CategoriesData = {
+  categories: Category[];
+  userId: string | number | null;
+};
+
+const categoriesDataCache = createSessionDataCache<CategoriesData>();
 
 type CategoryForm = {
   name: string;
@@ -152,9 +160,13 @@ export default function Categories() {
   const { width: screenWidth } = useWindowDimensions();
   const statCardWidth: ViewStyle["width"] = "31.8%";
   const compactStats = screenWidth < 480;
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [userId, setUserId] = useState<string | number | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [categories, setCategories] = useState<Category[]>(
+    () => categoriesDataCache.get()?.categories ?? [],
+  );
+  const [userId, setUserId] = useState<string | number | null>(
+    () => categoriesDataCache.get()?.userId ?? null,
+  );
+  const [loading, setLoading] = useState(() => !categoriesDataCache.hasData());
   const [refreshing, setRefreshing] = useState(false);
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState("All");
@@ -170,25 +182,31 @@ export default function Categories() {
   const [existingImage, setExistingImage] = useState<string | null>(null);
   const [imageRemoved, setImageRemoved] = useState(false);
 
-  const fetchCategories = useCallback(async (showLoading = true) => {
-    if (showLoading) setLoading(true);
+  const fetchCategories = useCallback(async (
+    showLoading = !categoriesDataCache.hasData(),
+  ) => {
+    if (showLoading && !categoriesDataCache.hasData()) setLoading(true);
     try {
-      const [response, user] = await Promise.all([
-        api.get("/categories"),
-        getStoredUser(),
-      ]);
-      const currentUserId = user?.user_id || null;
-      setUserId(currentUserId);
-      setCategories(
-        getCategoryRows(response.data).filter(
-          (category) =>
-            !currentUserId ||
-            category.user_id === currentUserId ||
-            category.user_id === null ||
-            category.user_id === undefined ||
-            category.user_id === "",
-        ),
-      );
+      const data = await categoriesDataCache.load(async () => {
+        const [response, user] = await Promise.all([
+          api.get("/categories"),
+          getStoredUser(),
+        ]);
+        const currentUserId = user?.user_id || null;
+        return {
+          userId: currentUserId,
+          categories: getCategoryRows(response.data).filter(
+            (category) =>
+              !currentUserId ||
+              category.user_id === currentUserId ||
+              category.user_id === null ||
+              category.user_id === undefined ||
+              category.user_id === "",
+          ),
+        };
+      });
+      setUserId(data.userId);
+      setCategories(data.categories);
     } catch (error) {
       const status = (error as { status?: number })?.status;
       if (status === 401) {
@@ -213,7 +231,7 @@ export default function Categories() {
 
   useFocusEffect(
     useCallback(() => {
-      void fetchCategories();
+      void fetchCategories(!categoriesDataCache.hasData());
     }, [fetchCategories]),
   );
 
@@ -434,8 +452,6 @@ export default function Categories() {
     <SafeAreaView className="flex-1 bg-[#F2F5EA]" edges={["bottom"]}>
       <StatusBar
         style="light"
-        backgroundColor={Colors.greenGradient[0]}
-        translucent={false}
       />
       <LinearGradient
         colors={Colors.greenGradient}
