@@ -361,6 +361,7 @@ export default function Diary() {
   const [entries, setEntries] = useState<DiaryEntry[]>([]);
   const [categories, setCategories] = useState<DiaryCategory[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [search, setSearch] = useState("");
   const [dateRange, setDateRange] = useState<DateRangeSelection>(() =>
     createDateRangeSelection("All"),
@@ -447,6 +448,15 @@ export default function Diary() {
       setLoading(false);
     }
   }, [handleUnauthorized]);
+
+  const refreshData = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      await fetchData();
+    } finally {
+      setRefreshing(false);
+    }
+  }, [fetchData]);
 
   useFocusEffect(
     useCallback(() => {
@@ -834,8 +844,10 @@ export default function Diary() {
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
-            refreshing={loading}
-            onRefresh={() => void fetchData()}
+            refreshing={refreshing}
+            onRefresh={() => {
+              if (!loading) void refreshData();
+            }}
             colors={[Colors.primary]}
             tintColor={Colors.primary}
           />

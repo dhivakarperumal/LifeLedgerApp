@@ -267,6 +267,7 @@ export default function Memories() {
     createDateRangeSelection("All"),
   );
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [editorVisible, setEditorVisible] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [editingId, setEditingId] = useState<number | string | null>(null);
@@ -342,6 +343,15 @@ export default function Memories() {
       setLoading(false);
     }
   }, [handleUnauthorized]);
+
+  const refreshData = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      await fetchData();
+    } finally {
+      setRefreshing(false);
+    }
+  }, [fetchData]);
 
   useFocusEffect(
     useCallback(() => {
@@ -710,8 +720,10 @@ export default function Memories() {
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
-            refreshing={loading}
-            onRefresh={() => void fetchData()}
+            refreshing={refreshing}
+            onRefresh={() => {
+              if (!loading) void refreshData();
+            }}
             colors={[Colors.primary]}
             tintColor={Colors.primary}
           />
