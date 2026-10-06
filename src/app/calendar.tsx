@@ -17,6 +17,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import api, { getApiErrorMessage } from "../api";
 import { AddButton } from "../components/AddButton";
+import { DateTimePickerComponent } from "../components/DateTimePickerComponent";
 import { FormInput, FormLabel, FormOption } from "../components/FormControls";
 import { GradientSafeAreaView as SafeAreaView } from "../components/GradientSafeAreaView";
 import { Colors } from "../constants/colors";
@@ -48,6 +49,21 @@ type EntryForm = {
 
 function dateKey(date: Date) {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+}
+
+function parseDateString(value: string): Date | null {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return null;
+  const [year, month, day] = value.split("-").map(Number);
+  const date = new Date(year, month - 1, day);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+function parseTimeString(value: string): Date | null {
+  if (!/^\d{2}:\d{2}$/.test(value)) return null;
+  const [hours, minutes] = value.split(":").map(Number);
+  const date = new Date();
+  date.setHours(hours, minutes, 0, 0);
+  return Number.isNaN(date.getTime()) ? null : date;
 }
 
 function entryDateKey(value?: string) {
@@ -783,9 +799,6 @@ export default function CalendarScreen() {
                 [
                   ["title", "Title", "What needs your attention?"],
                   ["category", "Category", "Personal"],
-                  ["date", "Date (YYYY-MM-DD)", "2026-09-29"],
-                  ["time", "Time (HH:MM)", "09:00"],
-                  ["details", "Notes", "Add details"],
                 ] as const
               ).map(([key, label, placeholder]) => (
                 <View key={key} className="mb-4">
@@ -796,16 +809,52 @@ export default function CalendarScreen() {
                       setForm((current) => ({ ...current, [key]: value }))
                     }
                     placeholder={placeholder}
-                    keyboardType={
-                      key === "date" || key === "time"
-                        ? "numbers-and-punctuation"
-                        : "default"
-                    }
-                    multiline={key === "details"}
+                    keyboardType="default"
                     className="rounded-xl bg-white px-3.5 py-3 text-base text-[#263238]"
                   />
                 </View>
               ))}
+
+              <DateTimePickerComponent
+                mode="date"
+                label="Date"
+                value={parseDateString(form.date)}
+                placeholder="Select date"
+                onChange={(date) =>
+                  setForm((current) => ({
+                    ...current,
+                    date: date ? dateKey(date) : current.date,
+                  }))
+                }
+              />
+
+              <DateTimePickerComponent
+                mode="time"
+                label="Time"
+                value={parseTimeString(form.time)}
+                placeholder="Select time"
+                onChange={(date) =>
+                  setForm((current) => ({
+                    ...current,
+                    time: date
+                      ? `${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`
+                      : current.time,
+                  }))
+                }
+              />
+
+              <View className="mb-4">
+                <FormLabel>Notes</FormLabel>
+                <FormInput
+                  value={form.details}
+                  onChangeText={(value) =>
+                    setForm((current) => ({ ...current, details: value }))
+                  }
+                  placeholder="Add details"
+                  multiline
+                  className="rounded-xl bg-white px-3.5 py-3 text-base text-[#263238]"
+                />
+              </View>
               <FormLabel>Priority</FormLabel>
               <View className="mb-5 flex-row">
                 {["Low", "Medium", "High"].map((priority) => (
