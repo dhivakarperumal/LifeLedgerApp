@@ -159,7 +159,7 @@ export default function RegisterScreen() {
   };
 
   return (
-    <SafeAreaView edges={["top", "bottom"]} className="flex-1 bg-[#E8EFD9]">
+    <SafeAreaView edges={["top", "bottom"]} className="flex-1 bg-[#F2F5EA]">
       <StatusBar style="dark" />
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
@@ -258,7 +258,7 @@ export default function RegisterScreen() {
                 shadowOffset: { width: 0, height: 4 },
                 elevation: pressed || isSubmitting ? 0 : 5,
               })}
-              className="mb-7 mt-2 h-14 flex-row items-center justify-center rounded-full bg-[#366039]"
+              className="mb-7 mt-2 h-16 flex-row items-center justify-center rounded-full bg-[#366039]"
             >
               {isSubmitting ? (
                 <Ionicons

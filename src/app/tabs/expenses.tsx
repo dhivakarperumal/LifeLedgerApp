@@ -746,9 +746,9 @@ export default function Expenses() {
   return (
     <SafeAreaView
       edges={["bottom"]}
-      style={{ flex: 1, backgroundColor: "#F0F4F8" }}
+      style={{ flex: 1, backgroundColor: "#F2F5EA" }}
     >
-      <View style={{ flex: 1, backgroundColor: "#F0F4F8" }}>
+      <View style={{ flex: 1, backgroundColor: "#F2F5EA" }}>
         {/* ── Hero Header ── */}
         <View
           style={{

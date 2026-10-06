@@ -149,7 +149,7 @@ export default function More() {
         paddingBottom: 140,
         backgroundColor: Colors.white,
       }}
-      style={{ flex: 1, backgroundColor: Colors.white }}
+      style={{ flex: 1, backgroundColor: Colors.contentBackground }}
     >
       <View className="mb-4 flex-row items-center justify-between">
         <View className="flex-row items-center">

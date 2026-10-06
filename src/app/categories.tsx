@@ -419,7 +419,7 @@ export default function Categories() {
   ) => setForm((current) => ({ ...current, [key]: value }));
 
   return (
-    <SafeAreaView className="flex-1 bg-[#F5F6F2]" edges={["bottom"]}>
+    <SafeAreaView className="flex-1 bg-[#F2F5EA]" edges={["bottom"]}>
       <LinearGradient
         colors={Colors.greenGradient}
         start={{ x: 0, y: 0 }}

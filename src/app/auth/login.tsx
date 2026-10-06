@@ -50,7 +50,7 @@ export default function LoginScreen() {
   };
 
   return (
-    <SafeAreaView edges={["top", "bottom"]} className="flex-1 bg-[#E8EFD9]">
+    <SafeAreaView edges={["top", "bottom"]} className="flex-1 bg-[#F2F5EA]">
       <StatusBar style="dark" />
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
@@ -194,7 +194,7 @@ export default function LoginScreen() {
               </Text>
               <Pressable
                 onPress={() => router.push("/auth/register")}
-                className="active:opacity-60"
+                className="min-h-10 justify-center px-2 active:opacity-60"
               >
                 <Text className="text-[12px] font-extrabold tracking-[0.08em] text-[#366039] underline">
                   Sign Up
