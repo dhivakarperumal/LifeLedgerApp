@@ -115,22 +115,69 @@ const paymentTypeOptions = [
 const categoryAccents: Record<string, { bg: string; color: string }> = {
   Food: { bg: "#FFF0E6", color: "#F97316" },
   Travel: { bg: "#E6F0FF", color: "#3B82F6" },
+  Fuel: { bg: "#FFF7E0", color: "#C27803" },
+  Bike: { bg: "#EDE9FE", color: "#7C3AED" },
+  Motorcycle: { bg: "#EDE9FE", color: "#7C3AED" },
   Bills: { bg: "#FEF3C7", color: "#D97706" },
+  Utilities: { bg: "#FEF3C7", color: "#D97706" },
   Shopping: { bg: "#FCE7F3", color: "#EC4899" },
   Health: { bg: "#ECFDF5", color: "#10B981" },
   Education: { bg: "#EDE9FE", color: "#7C3AED" },
   Other: { bg: "#F3F4F6", color: "#6B7280" },
 };
 
+function getCategoryAccent(category?: string) {
+  const normalized = category?.trim().toLowerCase() || "other";
+  if (normalized.includes("travel")) return categoryAccents.Travel;
+  if (normalized.includes("food")) return categoryAccents.Food;
+  if (normalized.includes("fuel") || normalized.includes("fule")) {
+    return categoryAccents.Fuel;
+  }
+  if (normalized.includes("bike") || normalized.includes("motorcycle")) {
+    return categoryAccents.Bike;
+  }
+  if (normalized.includes("bill") || normalized.includes("utilit")) {
+    return categoryAccents.Bills;
+  }
+  if (normalized.includes("shopping")) return categoryAccents.Shopping;
+  const matchingCategory = Object.keys(categoryAccents).find(
+    (name) => name.toLowerCase() === normalized,
+  );
+  return matchingCategory
+    ? categoryAccents[matchingCategory]
+    : categoryAccents.Other;
+}
+
 const categoryIcons: Record<string, keyof typeof Ionicons.glyphMap> = {
   food: "restaurant-outline",
   travel: "bus-outline",
-  bills: "document-text-outline",
-  shopping: "bag-handle-outline",
+  fuel: "speedometer-outline",
+  bike: "bicycle-outline",
+  motorcycle: "bicycle-outline",
+  bills: "flash-outline",
+  utilities: "flash-outline",
+  shopping: "receipt-outline",
   health: "medkit-outline",
   education: "school-outline",
   other: "pricetag-outline",
 };
+
+function getCategoryIcon(category?: string) {
+  const normalized = category?.trim().toLowerCase() || "";
+  if (normalized.includes("travel")) return categoryIcons.travel;
+  if (normalized.includes("food")) return categoryIcons.food;
+  if (normalized.includes("fuel") || normalized.includes("fule")) {
+    return categoryIcons.fuel;
+  }
+  if (normalized.includes("bike") || normalized.includes("motorcycle")) {
+    return categoryIcons.bike;
+  }
+  if (normalized.includes("bill") || normalized.includes("utilit")) {
+    return categoryIcons.bills;
+  }
+  if (normalized.includes("shopping")) return categoryIcons.shopping;
+  return categoryIcons[normalized] || categoryIcons.other;
+}
 
 function getCurrentDate() {
   const now = new Date();
@@ -966,13 +1013,8 @@ export default function Expenses() {
               }
             >
               {visibleExpenses.map((expense, index) => {
-                const accent = categoryAccents[expense.category || "Other"] || {
-                  bg: "#F3F4F6",
-                  color: "#6B7280",
-                };
-                const categoryIcon =
-                  categoryIcons[(expense.category || "Other").toLowerCase()] ||
-                  categoryIcons.other;
+                const accent = getCategoryAccent(expense.category);
+                const categoryIcon = getCategoryIcon(expense.category);
 
                 return (
                   <View

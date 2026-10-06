@@ -78,12 +78,60 @@ type CalendarEvent = {
 const categoryIcons: Record<string, keyof typeof Ionicons.glyphMap> = {
   food: "restaurant-outline",
   travel: "bus-outline",
-  bills: "document-text-outline",
-  shopping: "bag-handle-outline",
+  fuel: "speedometer-outline",
+  bike: "bicycle-outline",
+  motorcycle: "bicycle-outline",
+  bills: "flash-outline",
+  utilities: "flash-outline",
+  shopping: "receipt-outline",
   health: "medkit-outline",
   education: "school-outline",
-  other: "ellipsis-horizontal-outline",
+  other: "pricetag-outline",
 };
+
+const categoryIconColors: Record<string, { background: string; color: string }> = {
+  food: { background: "#FFF0E6", color: "#F97316" },
+  travel: { background: "#E6F0FF", color: "#3B82F6" },
+  fuel: { background: "#FFF7E0", color: "#C27803" },
+  bike: { background: "#EDE9FE", color: "#7C3AED" },
+  motorcycle: { background: "#EDE9FE", color: "#7C3AED" },
+  bills: { background: "#FEF3C7", color: "#D97706" },
+  shopping: { background: "#FEF3C7", color: "#D97706" },
+  health: { background: "#ECFDF5", color: "#10B981" },
+  education: { background: "#EDE9FE", color: "#7C3AED" },
+  other: { background: "#F3F4F6", color: "#6B7280" },
+};
+
+function getCategoryIcon(category: string) {
+  const normalized = category.trim().toLowerCase();
+  if (normalized.includes("travel")) return categoryIcons.travel;
+  if (normalized.includes("food")) return categoryIcons.food;
+  if (normalized.includes("fuel") || normalized.includes("fule")) {
+    return categoryIcons.fuel;
+  }
+  if (normalized.includes("bike") || normalized.includes("motorcycle")) {
+    return categoryIcons.bike;
+  }
+  if (normalized.includes("bill") || normalized.includes("utilit")) {
+    return categoryIcons.bills;
+  }
+  if (normalized.includes("shopping")) return categoryIcons.shopping;
+  return categoryIcons[normalized] || categoryIcons.other;
+}
+
+function getCategoryIconColors(category: string) {
+  const normalized = category.trim().toLowerCase();
+  if (normalized.includes("travel")) return categoryIconColors.travel;
+  if (normalized.includes("food")) return categoryIconColors.food;
+  if (normalized.includes("fuel") || normalized.includes("fule")) {
+    return categoryIconColors.fuel;
+  }
+  if (normalized.includes("bike") || normalized.includes("motorcycle")) {
+    return categoryIconColors.bike;
+  }
+  if (normalized.includes("shopping")) return categoryIconColors.shopping;
+  return categoryIconColors[normalized] || categoryIconColors.other;
+}
 
 let hasLoadedHomeOnce = false;
 
@@ -1126,9 +1174,8 @@ export default function Index() {
                 {recentTransactions.length > 0 ? (
                   recentTransactions.map((tx) => {
                     const categoryName = getExpenseCategoryName(tx);
-                    const iconName =
-                      categoryIcons[categoryName.toLowerCase()] ||
-                      categoryIcons.other;
+                    const iconName = getCategoryIcon(categoryName);
+                    const iconColors = getCategoryIconColors(categoryName);
                     return (
                       <View
                         key={String(tx.id)}
@@ -1137,12 +1184,12 @@ export default function Index() {
                       >
                         <View
                           className="mr-4 h-12 w-12 items-center justify-center rounded-full"
-                          style={{ backgroundColor: Colors.bgCard }}
+                          style={{ backgroundColor: iconColors.background }}
                         >
                           <Ionicons
                             name={iconName}
                             size={21}
-                            color={Colors.primary}
+                            color={iconColors.color}
                           />
                         </View>
                         <View className="flex-1">
