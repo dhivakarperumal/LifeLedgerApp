@@ -1322,21 +1322,20 @@ export default function Transfers() {
                 onChangeText={(value) => updateForm("title", value)}
               />
 
+              <FormLabel>Amount *</FormLabel>
+              <FormInput
+                accessibilityLabel="Transfer amount, required"
+                borderColor="#AAB8AE"
+                keyboardType="decimal-pad"
+                placeholder="0.00"
+                returnKeyType="done"
+                style={transferFormStyles.input}
+                value={form.amount}
+                onChangeText={(value) => updateForm("amount", value)}
+              />
+
               <View className="flex-row gap-3">
-                <View className="flex-1">
-                  <FormLabel>Amount *</FormLabel>
-                  <FormInput
-                    accessibilityLabel="Transfer amount, required"
-                    borderColor="#AAB8AE"
-                    keyboardType="decimal-pad"
-                    placeholder="0.00"
-                    returnKeyType="done"
-                    style={transferFormStyles.input}
-                    value={form.amount}
-                    onChangeText={(value) => updateForm("amount", value)}
-                  />
-                </View>
-                <View className="flex-1">
+                <View className="min-w-0 flex-1">
                   <DateTimePickerComponent
                     mode="date"
                     value={parseLocalDate(form.date)}
@@ -1347,20 +1346,21 @@ export default function Transfers() {
                     placeholder="Select date"
                   />
                 </View>
+                <View className="min-w-0 flex-1">
+                  <DateTimePickerComponent
+                    mode="time"
+                    value={parseLocalTime(form.time)}
+                    onChange={(date) => {
+                      if (date) {
+                        const formatted = `${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
+                        updateForm("time", formatted);
+                      }
+                    }}
+                    label="Time"
+                    placeholder="Select time"
+                  />
+                </View>
               </View>
-
-              <DateTimePickerComponent
-                mode="time"
-                value={parseLocalTime(form.time)}
-                onChange={(date) => {
-                  if (date) {
-                    const formatted = `${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
-                    updateForm("time", formatted);
-                  }
-                }}
-                label="Time"
-                placeholder="Select time"
-              />
 
               <PopupSelect
                 label="Category"
@@ -1376,21 +1376,13 @@ export default function Transfers() {
                 onChange={(value) => updateForm("category", value)}
               />
 
-              <FormLabel>Payment Method</FormLabel>
-              <View className="mb-4 flex-row flex-wrap gap-2">
-                {paymentMethods.map((method) => (
-                  <FormOption
-                    key={method}
-                    selected={form.paymentMethod === method}
-                    className={`rounded-full px-3 py-2 ${form.paymentMethod === method ? "bg-[#315640]" : "bg-white"}`}
-                    onPress={() => updateForm("paymentMethod", method)}
-                  >
-                    <FormLabel inline color={form.paymentMethod === method ? "#FFFFFF" : "#637068"}>
-                      {method}
-                    </FormLabel>
-                  </FormOption>
-                ))}
-              </View>
+              <PopupSelect
+                label="Payment Method"
+                placeholder="Select payment method"
+                options={paymentMethods}
+                value={form.paymentMethod}
+                onChange={(value) => updateForm("paymentMethod", value)}
+              />
 
               <FormLabel>Notes</FormLabel>
               <FormInput
