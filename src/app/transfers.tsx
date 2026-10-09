@@ -1213,7 +1213,6 @@ export default function Transfers() {
                   ? "Edit Transfer"
                   : "Add New Transfer"
               }
-              subtitle="Move income into a budget or savings category"
               onBack={closeModal}
             />
 

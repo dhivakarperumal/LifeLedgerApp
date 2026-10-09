@@ -39,6 +39,10 @@ type CalendarEntry = {
   categoryId?: number | string | null;
   category_name?: string;
   priority?: string;
+  repeat?: string;
+  recurrence?: string;
+  repeat_frequency?: string;
+  repeatFrequency?: string;
   startDate?: string;
   startTime?: string;
   location?: string;
@@ -80,6 +84,8 @@ type EntryForm = {
   categoryId: string;
   date: string;
   time: string;
+  location: string;
+  repeat: string;
   priority: string;
   details: string;
 };
@@ -385,6 +391,8 @@ export default function CalendarScreen() {
     categoryId: "",
     date: dateKey(initialSelectedDate),
     time: "09:00",
+    location: "",
+    repeat: "None",
     priority: "Medium",
     details: "",
   });
@@ -459,6 +467,8 @@ export default function CalendarScreen() {
       categoryId: "",
       date: dateKey(date),
       time: "09:00",
+      location: "",
+      repeat: "None",
       priority: "Medium",
       details: "",
     });
@@ -516,6 +526,13 @@ export default function CalendarScreen() {
           : String(savedCategoryId),
       date: eventDate ? dateKey(eventDate) : dateKey(selectedDate),
       time: entry.startTime?.slice(0, 5) || "09:00",
+      location: entry.location || "",
+      repeat:
+        entry.repeat ||
+        entry.repeat_frequency ||
+        entry.repeatFrequency ||
+        entry.recurrence ||
+        "None",
       priority: entry.priority || "Medium",
       details: entry.description || "",
     });
@@ -563,6 +580,8 @@ export default function CalendarScreen() {
           category_id: selectedCategory.id,
           startDate: form.date,
           startTime: form.time,
+          location: form.location.trim(),
+          repeat: form.repeat,
           priority: form.priority,
           description: form.details.trim(),
         };
@@ -1257,6 +1276,35 @@ export default function CalendarScreen() {
                   />
                 </View>
               </View>
+
+              {modalType === "event" ? (
+                <>
+                  <View className="mb-4">
+                    <FormLabel>Location</FormLabel>
+                    <FormInput
+                      accessibilityLabel="Event location"
+                      autoCapitalize="words"
+                      maxLength={120}
+                      value={form.location}
+                      onChangeText={(location) =>
+                        setForm((current) => ({ ...current, location }))
+                      }
+                      placeholder="Add location"
+                      returnKeyType="next"
+                      style={calendarFormStyles.input}
+                    />
+                  </View>
+                  <PopupSelect
+                    label="Repeat"
+                    placeholder="Select repeat"
+                    options={["Daily", "Weekly", "Monthly", "Yearly", "None"]}
+                    value={form.repeat}
+                    onChange={(repeat) =>
+                      setForm((current) => ({ ...current, repeat }))
+                    }
+                  />
+                </>
+              ) : null}
 
               <View className="mb-4">
                 <FormLabel>Notes</FormLabel>

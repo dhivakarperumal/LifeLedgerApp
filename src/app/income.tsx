@@ -1222,7 +1222,6 @@ export default function Income() {
             >
             <AddPageHeader
               title={editingIncomeId ? "Edit Income" : "Add New Income"}
-              subtitle="Record a new income source"
               onBack={closeEditor}
             />
             <ScrollView
