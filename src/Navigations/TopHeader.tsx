@@ -1,5 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
+import { LogOut, UserRound } from "lucide-react-native";
 import { useEffect, useState } from "react";
 import {
     Animated,
@@ -59,6 +60,11 @@ export function TopHeader({ showLogo = true }: { showLogo?: boolean } = {}) {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [sideMenuVisible, setSideMenuVisible] = useState(false);
   const [sideMenuMounted, setSideMenuMounted] = useState(false);
+  const [sidebarProfileMenuVisible, setSidebarProfileMenuVisible] =
+    useState(false);
+  const [sidebarProfileMenuAnimation] = useState(
+    () => new Animated.Value(0),
+  );
   const [menuVisible, setMenuVisible] = useState(false);
   const [notificationsVisible, setNotificationsVisible] = useState(false);
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
@@ -86,6 +92,17 @@ export function TopHeader({ showLogo = true }: { showLogo?: boolean } = {}) {
   const displayName = user?.name?.trim() || user?.email?.trim() || "User";
   const profileImageUri = isLoggedIn ? getProfileImageUri(user) : null;
   const profileInitial = isLoggedIn ? getProfileInitial(user) : null;
+
+  useEffect(() => {
+    Animated.timing(sidebarProfileMenuAnimation, {
+      toValue: sidebarProfileMenuVisible ? 1 : 0,
+      duration: sidebarProfileMenuVisible ? 180 : 140,
+      easing: sidebarProfileMenuVisible
+        ? Easing.out(Easing.cubic)
+        : Easing.in(Easing.cubic),
+      useNativeDriver: false,
+    }).start();
+  }, [sidebarProfileMenuAnimation, sidebarProfileMenuVisible]);
 
   useEffect(() => {
     let cancelled = false;
@@ -166,8 +183,14 @@ export function TopHeader({ showLogo = true }: { showLogo?: boolean } = {}) {
   }, []);
 
   const openSideMenu = () => {
+    setSidebarProfileMenuVisible(false);
     setSideMenuMounted(true);
     setSideMenuVisible(true);
+  };
+
+  const closeSideMenu = () => {
+    setSidebarProfileMenuVisible(false);
+    setSideMenuVisible(false);
   };
 
   useEffect(() => {
@@ -209,6 +232,7 @@ export function TopHeader({ showLogo = true }: { showLogo?: boolean } = {}) {
       | "/calendar"
       | "/reports",
   ) => {
+    setSidebarProfileMenuVisible(false);
     setSideMenuVisible(false);
     router.replace(path);
   };
@@ -217,8 +241,12 @@ export function TopHeader({ showLogo = true }: { showLogo?: boolean } = {}) {
     setIsLoggingOut(true);
     try {
       await logoutUser();
+      setIsLoggedIn(false);
+      setUser(null);
     } finally {
       setMenuVisible(false);
+      setSidebarProfileMenuVisible(false);
+      setSideMenuVisible(false);
       setIsLoggingOut(false);
       setShowLogoutPopup(false);
       router.replace("/auth/login");
@@ -267,10 +295,9 @@ export function TopHeader({ showLogo = true }: { showLogo?: boolean } = {}) {
           </Pressable>
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel={isLoggedIn ? "Open profile" : "Open login"}
+            accessibilityLabel="Open account menu"
             className="h-9 w-9 items-center justify-center overflow-hidden rounded-full bg-[#ADBEA3]"
-            onPress={() => router.push(isLoggedIn ? "/profile" : "/auth/login")}
-            onLongPress={() => setMenuVisible(true)}
+            onPress={() => setMenuVisible(true)}
           >
             <ProfileAvatar
               imageUri={profileImageUri}
@@ -364,13 +391,13 @@ export function TopHeader({ showLogo = true }: { showLogo?: boolean } = {}) {
 
       <Modal
         animationType="none"
-        onRequestClose={() => setSideMenuVisible(false)}
+        onRequestClose={closeSideMenu}
         transparent
         visible={sideMenuMounted}
       >
         <Pressable
           className="flex-1 flex-row bg-[rgba(0,0,0,0.35)]"
-          onPress={() => setSideMenuVisible(false)}
+          onPress={closeSideMenu}
         >
           <Animated.View
             className="h-full bg-[#264B2A] shadow-2xl"
@@ -409,7 +436,7 @@ export function TopHeader({ showLogo = true }: { showLogo?: boolean } = {}) {
                   <Pressable
                     accessibilityRole="button"
                     accessibilityLabel="Close navigation menu"
-                    onPress={() => setSideMenuVisible(false)}
+                    onPress={closeSideMenu}
                     className="h-10 w-10 items-center justify-center rounded-full border border-white/40 active:bg-white/15"
                   >
                     <Ionicons name="close" size={24} color={Colors.white} />
@@ -417,32 +444,98 @@ export function TopHeader({ showLogo = true }: { showLogo?: boolean } = {}) {
                 </View>
 
                 <ScrollView className="flex-1 px-4 pt-6">
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel={isLoggedIn ? "Open profile" : "Open login"}
-                    className="mb-5 flex-row items-center rounded-2xl bg-[#366039] p-3"
-                    onPress={() => {
-                      setSideMenuVisible(false);
-                      router.push(isLoggedIn ? "/profile" : "/auth/login");
-                    }}
-                  >
-                    <View className="mr-3 h-10 w-10 items-center justify-center overflow-hidden rounded-full bg-[#ADBEA3]">
-                      <ProfileAvatar
-                        imageUri={profileImageUri}
-                        initial={profileInitial}
-                        size={40}
-                        iconColor="#264B2A"
+                  <View className="mb-5">
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel="Open profile menu"
+                      accessibilityState={{
+                        expanded: sidebarProfileMenuVisible,
+                      }}
+                      className="flex-row items-center rounded-2xl bg-[#366039] p-3"
+                      onPress={() =>
+                        setSidebarProfileMenuVisible((visible) => !visible)
+                      }
+                    >
+                      <View className="mr-3 h-10 w-10 items-center justify-center overflow-hidden rounded-full bg-[#ADBEA3]">
+                        <ProfileAvatar
+                          imageUri={profileImageUri}
+                          initial={profileInitial}
+                          size={40}
+                          iconColor="#264B2A"
+                        />
+                      </View>
+                      <Text className="flex-1 text-sm font-semibold text-white">
+                        {isLoggedIn ? displayName : "Log in"}
+                      </Text>
+                      <Ionicons
+                        name={
+                          sidebarProfileMenuVisible
+                            ? "chevron-up"
+                            : "chevron-down"
+                        }
+                        size={18}
+                        color={Colors.primaryLight}
                       />
-                    </View>
-                    <Text className="flex-1 text-sm font-semibold text-white">
-                      {isLoggedIn ? displayName : "Log in"}
-                    </Text>
-                    <Ionicons
-                      name="chevron-forward"
-                      size={18}
-                      color={Colors.primaryLight}
-                    />
-                  </Pressable>
+                    </Pressable>
+                    <Animated.View
+                      pointerEvents={
+                        sidebarProfileMenuVisible ? "auto" : "none"
+                      }
+                      style={{
+                        height: sidebarProfileMenuAnimation.interpolate({
+                          inputRange: [0, 1],
+                          outputRange: [0, 116],
+                        }),
+                        opacity: sidebarProfileMenuAnimation,
+                        overflow: "hidden",
+                        transform: [
+                          {
+                            translateY:
+                              sidebarProfileMenuAnimation.interpolate({
+                                inputRange: [0, 1],
+                                outputRange: [-8, 0],
+                              }),
+                          },
+                        ],
+                      }}
+                    >
+                      <View className="mt-2 rounded-2xl border border-[#447449] bg-[#F4F6F3] p-2">
+                        <Pressable
+                          accessibilityRole="button"
+                          accessibilityLabel="Profile"
+                          className="min-h-11 flex-row items-center rounded-xl px-3 py-3 active:bg-[#E5EAE7]"
+                          onPress={() => {
+                            setSidebarProfileMenuVisible(false);
+                            setSideMenuVisible(false);
+                            router.push(
+                              isLoggedIn ? "/profile" : "/auth/login",
+                            );
+                          }}
+                        >
+                          <UserRound size={19} color={Colors.primary} />
+                          <Text className="ml-3 text-sm font-semibold text-[#263238]">
+                            Profile
+                          </Text>
+                        </Pressable>
+                        <Pressable
+                          accessibilityRole="button"
+                          accessibilityLabel="Logout"
+                          disabled={isLoggingOut}
+                          className="min-h-11 flex-row items-center rounded-xl px-3 py-3 active:bg-[#FDECEC]"
+                          onPress={() => {
+                            setSidebarProfileMenuVisible(false);
+                            setSideMenuVisible(false);
+                            setShowLogoutPopup(true);
+                          }}
+                        >
+                          <LogOut size={19} color={Colors.danger} />
+                          <Text className="ml-3 text-sm font-semibold text-[#E74C4C]">
+                            Logout
+                          </Text>
+                        </Pressable>
+                      </View>
+                    </Animated.View>
+                  </View>
                   {[
                     ["Home", "home-outline", "/tabs"],
                     ["Expenses", "wallet-outline", "/tabs/expenses"],
@@ -534,7 +627,7 @@ export function TopHeader({ showLogo = true }: { showLogo?: boolean } = {}) {
               className="mt-1 flex-row items-center rounded-xl px-3 py-3"
               onPress={() => {
                 setMenuVisible(false);
-                router.push("/tabs/more");
+                router.push(isLoggedIn ? "/profile" : "/auth/login");
               }}
             >
               <Ionicons
@@ -549,7 +642,10 @@ export function TopHeader({ showLogo = true }: { showLogo?: boolean } = {}) {
             <Pressable
               className="flex-row items-center rounded-xl px-3 py-3"
               disabled={isLoggingOut}
-              onPress={() => setShowLogoutPopup(true)}
+              onPress={() => {
+                setMenuVisible(false);
+                setShowLogoutPopup(true);
+              }}
             >
               <Ionicons
                 name="log-out-outline"
