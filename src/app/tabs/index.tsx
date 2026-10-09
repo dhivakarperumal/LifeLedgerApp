@@ -18,6 +18,7 @@ import { TopHeader } from "../../Navigations/TopHeader";
 import api, { API_BASE_URL, getStoredUser } from "../../api";
 import { CenteredPageLoader } from "../../components/CenteredPageLoader";
 import { GradientSafeAreaView as SafeAreaView } from "../../components/GradientSafeAreaView";
+import { parseLocalDate } from "../../components/dateTimeUtils";
 import { Colors } from "../../constants/colors";
 import { HOME_QUOTES, HOME_QUOTE_INDEX_KEY } from "../../constants/homeQuotes";
 
@@ -187,8 +188,8 @@ function formatAxisAmount(value: number) {
 
 function formatDate(dateString?: string) {
   if (!dateString) return "—";
-  const date = new Date(dateString);
-  if (Number.isNaN(date.getTime())) return dateString;
+  const date = parseLocalDate(dateString);
+  if (!date) return dateString;
   return date.toLocaleDateString("en-IN", {
     month: "short",
     day: "numeric",
@@ -203,15 +204,15 @@ function dateKey(date: Date) {
 function eventDateKey(value?: string) {
   if (!value) return "";
   if (/^\d{4}-\d{2}-\d{2}/.test(value)) return value.slice(0, 10);
-  const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? "" : dateKey(date);
+  const date = parseLocalDate(value);
+  return date ? dateKey(date) : "";
 }
 
 function monthDateKey(value?: string) {
   if (!value) return "";
   if (/^\d{4}-\d{2}/.test(value)) return value.slice(0, 7);
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "";
+  const date = parseLocalDate(value);
+  if (!date) return "";
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
 }
 
@@ -509,8 +510,8 @@ export default function Index() {
             }
 
             if (exp.expense_date) {
-              const expDate = new Date(exp.expense_date);
-              if (!isNaN(expDate.getTime())) {
+              const expDate = parseLocalDate(exp.expense_date);
+              if (expDate) {
                 if (
                   expDate.getMonth() === currentMonth &&
                   expDate.getFullYear() === currentYear

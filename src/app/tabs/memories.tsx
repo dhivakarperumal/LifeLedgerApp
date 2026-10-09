@@ -33,6 +33,7 @@ import {
 import { DateTimePickerComponent } from "../../components/DateTimePickerComponent";
 import {
     formatLocalDateTime,
+    parseLocalDate,
     parseLocalDateTimeValue,
 } from "../../components/dateTimeUtils";
 import {
@@ -209,8 +210,8 @@ function getTags(tags?: string[] | string) {
 
 function formatDate(value?: string) {
   if (!value) return "No date";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return value;
+  const date = parseLocalDate(value);
+  if (!date) return value;
   return date.toLocaleDateString("en-IN", {
     day: "2-digit",
     month: "short",
@@ -220,8 +221,8 @@ function formatDate(value?: string) {
 
 function formatDateTime(value?: string) {
   if (!value) return "No date";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return value;
+  const date = parseLocalDateTimeValue(value);
+  if (!date) return value;
   return date.toLocaleString("en-IN", {
     day: "2-digit",
     month: "short",
@@ -400,35 +401,22 @@ export default function Memories() {
   const memoryGroups = useMemo(() => {
     const groups = new Map<string, { label: string; memories: Memory[] }>();
     const sortedMemories = [...filteredMemories].sort((left, right) => {
-      const leftDate = new Date(
-        `${String(left.memory_date || "").slice(0, 10)}T12:00:00`,
-      );
-      const rightDate = new Date(
-        `${String(right.memory_date || "").slice(0, 10)}T12:00:00`,
-      );
-      const leftTime = Number.isNaN(leftDate.getTime())
-        ? 0
-        : leftDate.getTime();
-      const rightTime = Number.isNaN(rightDate.getTime())
-        ? 0
-        : rightDate.getTime();
+      const leftTime = parseLocalDate(left.memory_date)?.getTime() || 0;
+      const rightTime = parseLocalDate(right.memory_date)?.getTime() || 0;
       return rightTime - leftTime;
     });
 
     sortedMemories.forEach((memory) => {
-      const rawDate = String(memory.memory_date || "").slice(0, 10);
-      const date = /^\d{4}-\d{2}-\d{2}$/.test(rawDate)
-        ? new Date(`${rawDate}T12:00:00`)
-        : new Date("");
-      const key = Number.isNaN(date.getTime())
-        ? "undated"
-        : `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
-      const label = Number.isNaN(date.getTime())
-        ? "Undated"
-        : date.toLocaleDateString("en-IN", {
+      const date = parseLocalDate(memory.memory_date);
+      const key = date
+        ? `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`
+        : "undated";
+      const label = date
+        ? date.toLocaleDateString("en-IN", {
             month: "long",
             year: "numeric",
-          });
+          })
+        : "Undated";
       const group = groups.get(key) || { label, memories: [] };
       group.memories.push(memory);
       groups.set(key, group);

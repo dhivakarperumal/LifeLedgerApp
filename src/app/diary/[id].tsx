@@ -18,6 +18,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import api, { API_BASE_URL, getApiErrorMessage, logoutUser } from "../../api";
 import ConfirmPopup from "../../components/ConfirmPopup";
+import { parseLocalDate } from "../../components/dateTimeUtils";
 import { GradientSafeAreaView as SafeAreaView } from "../../components/GradientSafeAreaView";
 import { Colors } from "../../constants/colors";
 
@@ -65,8 +66,8 @@ function booleanValue(value: DiaryDetailsEntry["is_favorite"]) {
 
 function formatDate(value?: string) {
   if (!value) return "—";
-  const date = new Date(value.length === 10 ? `${value}T12:00:00` : value);
-  if (Number.isNaN(date.getTime())) return value;
+  const date = parseLocalDate(value);
+  if (!date) return value;
   return date.toLocaleDateString("en-IN", {
     month: "short",
     day: "numeric",

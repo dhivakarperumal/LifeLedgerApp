@@ -216,8 +216,8 @@ function plainContent(content?: string) {
 
 function formatDate(value?: string) {
   if (!value) return "No date";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return value;
+  const date = parseDateKey(value.slice(0, 10));
+  if (!date) return value;
   return date.toLocaleDateString("en-IN", {
     month: "short",
     day: "numeric",
@@ -226,10 +226,8 @@ function formatDate(value?: string) {
 }
 
 function diaryDateParts(value?: string) {
-  const date = value
-    ? parseDateKey(value.slice(0, 10)) || new Date(value)
-    : new Date(Number.NaN);
-  if (Number.isNaN(date.getTime()))
+  const date = value ? parseDateKey(value.slice(0, 10)) : undefined;
+  if (!date)
     return { month: "—", day: "—", weekday: "" };
   return {
     month: date.toLocaleDateString("en-IN", { month: "short" }).toUpperCase(),
@@ -257,8 +255,8 @@ function groupEntriesByMonth(entries: DiaryEntry[]) {
     const dateStr = entry.entry_date
       ? String(entry.entry_date).slice(0, 10)
       : "";
-    const date = parseDateKey(dateStr) ?? new Date(dateStr);
-    const isValid = !Number.isNaN(date.getTime());
+    const date = parseDateKey(dateStr);
+    const isValid = !!date;
     const key = isValid
       ? `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`
       : "unknown";
@@ -509,11 +507,11 @@ export default function Diary() {
           searchMatches
         );
       })
-      .sort(
-        (left, right) =>
-          new Date(right.entry_date || "").getTime() -
-          new Date(left.entry_date || "").getTime(),
-      );
+      .sort((left, right) => {
+        const leftDate = parseDateKey(String(left.entry_date || "").slice(0, 10));
+        const rightDate = parseDateKey(String(right.entry_date || "").slice(0, 10));
+        return (rightDate?.getTime() || 0) - (leftDate?.getTime() || 0);
+      });
   }, [
     entries,
     search,

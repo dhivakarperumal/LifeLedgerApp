@@ -29,6 +29,7 @@ import { DateTimePickerComponent } from "../../components/DateTimePickerComponen
 import {
   formatLocalDate,
   formatLocalTime,
+  parseLocalDate,
   parseLocalDateTime,
 } from "../../components/dateTimeUtils";
 import {
@@ -204,8 +205,8 @@ function formatAmount(value: number | string | undefined) {
 
 function formatDate(dateString?: string) {
   if (!dateString) return "—";
-  const date = new Date(dateString);
-  if (Number.isNaN(date.getTime())) return dateString;
+  const date = parseLocalDate(dateString);
+  if (!date) return dateString;
   return date.toLocaleDateString("en-IN", {
     day: "2-digit",
     month: "short",
@@ -218,8 +219,8 @@ function getExpenseMonth(dateString?: string) {
   const isoDate = dateString.match(/^(\d{4})-(\d{2})/);
   const date = isoDate
     ? new Date(Number(isoDate[1]), Number(isoDate[2]) - 1, 1)
-    : new Date(dateString);
-  if (Number.isNaN(date.getTime())) return { key: "unknown", label: "Date not set" };
+    : parseLocalDate(dateString);
+  if (!date) return { key: "unknown", label: "Date not set" };
   const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
   return {
     key,
@@ -516,8 +517,8 @@ export default function Expenses() {
     return filtered.sort((left, right) => {
       const leftAmount = Number(left.expense_amount ?? left.amount ?? 0);
       const rightAmount = Number(right.expense_amount ?? right.amount ?? 0);
-      const leftDate = new Date(left.expense_date || "").getTime() || 0;
-      const rightDate = new Date(right.expense_date || "").getTime() || 0;
+      const leftDate = parseLocalDate(left.expense_date)?.getTime() || 0;
+      const rightDate = parseLocalDate(right.expense_date)?.getTime() || 0;
       if (sort === "Oldest First") return leftDate - rightDate;
       if (sort === "Amount: High to Low") return rightAmount - leftAmount;
       if (sort === "Amount: Low to High") return leftAmount - rightAmount;
@@ -562,9 +563,10 @@ export default function Expenses() {
       todayExpense: expenses
         .filter((item) => {
           if (!item.expense_date) return false;
-          const date = new Date(item.expense_date);
+          const date = parseLocalDate(item.expense_date);
           const now = new Date();
           return (
+            !!date &&
             date.getFullYear() === now.getFullYear() &&
             date.getMonth() === now.getMonth() &&
             date.getDate() === now.getDate()
@@ -797,8 +799,8 @@ export default function Expenses() {
     const rawDate = expense.expense_date || "";
     const dateMatch = rawDate.match(/^(\d{4}-\d{2}-\d{2})/);
     const date = dateMatch?.[1] ||
-      (rawDate && !Number.isNaN(new Date(rawDate).getTime())
-        ? formatLocalDate(new Date(rawDate))
+      (rawDate && (parseLocalDate(rawDate) || !Number.isNaN(new Date(rawDate).getTime()))
+        ? formatLocalDate(parseLocalDate(rawDate) || new Date(rawDate))
         : getCurrentDate());
     const rawTime = expense.expense_time || expense.time || "";
     const dateTimeMatch = rawDate.match(/T(\d{2}:\d{2})/);

@@ -2,19 +2,20 @@ import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import {
-  Animated,
-  Easing,
-  Image,
-  Modal,
-  Pressable,
-  ScrollView,
-  Text,
-  View,
-  useWindowDimensions,
+    Animated,
+    Easing,
+    Image,
+    Modal,
+    Pressable,
+    ScrollView,
+    Text,
+    View,
+    useWindowDimensions,
 } from "react-native";
 import api, { getStoredUser, logoutUser } from "../api";
-import { GradientSafeAreaView as SafeAreaView } from "../components/GradientSafeAreaView";
 import ConfirmPopup from "../components/ConfirmPopup";
+import { parseLocalDate } from "../components/dateTimeUtils";
+import { GradientSafeAreaView as SafeAreaView } from "../components/GradientSafeAreaView";
 import { Colors } from "../constants/colors";
 
 type UserProfile = {
@@ -33,19 +34,16 @@ type NotificationItem = {
 function notificationDateKey(value?: string) {
   if (!value) return "";
   if (/^\d{4}-\d{2}-\d{2}/.test(value)) return value.slice(0, 10);
-  const parsed = new Date(value);
-  return Number.isNaN(parsed.getTime())
-    ? ""
-    : `${parsed.getFullYear()}-${String(parsed.getMonth() + 1).padStart(2, "0")}-${String(parsed.getDate()).padStart(2, "0")}`;
+  const parsed = parseLocalDate(value);
+  return parsed
+    ? `${parsed.getFullYear()}-${String(parsed.getMonth() + 1).padStart(2, "0")}-${String(parsed.getDate()).padStart(2, "0")}`
+    : "";
 }
 
 function formatNotificationDate(value?: string) {
   if (!value) return "";
-  const normalized = /^\d{4}-\d{2}-\d{2}$/.test(value)
-    ? `${value}T12:00:00`
-    : value;
-  const parsed = new Date(normalized);
-  if (Number.isNaN(parsed.getTime())) return value;
+  const parsed = parseLocalDate(value);
+  if (!parsed) return value;
   return parsed.toLocaleDateString("en-CA");
 }
 

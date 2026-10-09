@@ -29,10 +29,22 @@ export function parseLocalDateTime(dateValue: string, timeValue: string) {
 
 export function parseLocalDateTimeValue(value: string | null | undefined) {
   if (!value) return null;
-  if (value.length <= 10) return parseLocalDate(value);
+  const match =
+    /^(\d{4}-\d{2}-\d{2})(?:[T ](\d{2}):(\d{2})(?::(\d{2})(?:\.(\d+))?)?)?/.exec(
+      value,
+    );
+  if (!match) return null;
 
-  const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? parseLocalDate(value) : date;
+  const date = parseLocalDate(match[1]);
+  if (!date) return null;
+  if (!match[2]) return date;
+
+  const hours = Number(match[2]);
+  const minutes = Number(match[3]);
+  const seconds = Number(match[4] || 0);
+  if (hours > 23 || minutes > 59 || seconds > 59) return null;
+  date.setHours(hours, minutes, seconds, 0);
+  return date;
 }
 
 export function formatLocalTime(date: Date) {

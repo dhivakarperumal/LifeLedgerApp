@@ -30,7 +30,11 @@ import {
     type DateRangeSelection,
 } from "../components/DateRangeFilter";
 import { DateTimePickerComponent } from "../components/DateTimePickerComponent";
-import { formatLocalDate, parseLocalDate } from "../components/dateTimeUtils";
+import {
+    formatLocalDate,
+    parseLocalDate,
+    parseLocalDateTimeValue,
+} from "../components/dateTimeUtils";
 import {
     countActiveFilters,
     DEFAULT_FILTER_STATE,
@@ -146,7 +150,7 @@ function emptyForm(): TransferForm {
     amount: "",
     paymentMethod: "Cash",
     category: "",
-    date: new Date().toISOString().slice(0, 10),
+    date: formatLocalDate(new Date()),
     time: "09:00",
     notes: "",
   };
@@ -169,8 +173,8 @@ function formatAmount(value: number | string | undefined) {
 
 function formatDate(value?: string) {
   if (!value) return "-";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return String(value).split("T")[0];
+  const date = parseLocalDate(value) ?? parseLocalDateTimeValue(value);
+  if (!date) return String(value).split("T")[0];
   return date.toLocaleDateString("en-IN", {
     day: "2-digit",
     month: "short",
@@ -645,8 +649,8 @@ export default function Transfers() {
     return filtered.sort((left, right) => {
       const leftAmount = Number(left.amount || 0);
       const rightAmount = Number(right.amount || 0);
-      const leftDate = new Date(left.transfer_date || "").getTime() || 0;
-      const rightDate = new Date(right.transfer_date || "").getTime() || 0;
+      const leftDate = parseLocalDate(left.transfer_date)?.getTime() || 0;
+      const rightDate = parseLocalDate(right.transfer_date)?.getTime() || 0;
       if (sort === "Oldest First") return leftDate - rightDate;
       if (sort === "Amount: High to Low") return rightAmount - leftAmount;
       if (sort === "Amount: Low to High") return leftAmount - rightAmount;

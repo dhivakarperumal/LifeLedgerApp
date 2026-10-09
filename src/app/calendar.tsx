@@ -24,6 +24,7 @@ import { DateTimePickerComponent } from "../components/DateTimePickerComponent";
 import { FormInput, FormLabel, FormOption } from "../components/FormControls";
 import { GradientSafeAreaView as SafeAreaView } from "../components/GradientSafeAreaView";
 import { createSessionDataCache } from "../components/SessionDataCache";
+import { parseLocalDate, parseLocalDateTimeValue } from "../components/dateTimeUtils";
 import { Colors } from "../constants/colors";
 
 type CalendarEntry = {
@@ -81,10 +82,7 @@ function dateKey(date: Date) {
 }
 
 function parseDateString(value: string): Date | null {
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return null;
-  const [year, month, day] = value.split("-").map(Number);
-  const date = new Date(year, month - 1, day);
-  return Number.isNaN(date.getTime()) ? null : date;
+  return parseLocalDate(value);
 }
 
 function parseTimeString(value: string): Date | null {
@@ -97,9 +95,8 @@ function parseTimeString(value: string): Date | null {
 
 function entryDateKey(value?: string) {
   if (!value) return "";
-  if (/^\d{4}-\d{2}-\d{2}/.test(value)) return value.slice(0, 10);
-  const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? "" : dateKey(date);
+  const date = parseLocalDateTimeValue(value);
+  return date ? dateKey(date) : "";
 }
 
 function getMonthDays(month: Date) {
@@ -122,10 +119,8 @@ function getRows(data: any): CalendarEntry[] {
 
 function formatDate(value?: string) {
   if (!value) return "Date not set";
-  const parsed = /^\d{4}-\d{2}-\d{2}$/.test(value)
-    ? new Date(`${value}T12:00:00`)
-    : new Date(value);
-  if (Number.isNaN(parsed.getTime())) return value;
+  const parsed = parseLocalDate(value) ?? parseLocalDateTimeValue(value);
+  if (!parsed) return value;
   return parsed.toLocaleDateString("en-IN", {
     weekday: "short",
     day: "numeric",

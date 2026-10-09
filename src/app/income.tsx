@@ -32,7 +32,11 @@ import { DateTimePickerComponent } from "../components/DateTimePickerComponent";
 
 import { CenteredPageLoader } from "../components/CenteredPageLoader";
 import ConfirmPopup from "../components/ConfirmPopup";
-import { formatLocalDate, parseLocalDate } from "../components/dateTimeUtils";
+import {
+    formatLocalDate,
+    parseLocalDate,
+    parseLocalDateTimeValue,
+} from "../components/dateTimeUtils";
 import {
     countActiveFilters,
     DEFAULT_FILTER_STATE,
@@ -127,7 +131,7 @@ function createInitialForm(): IncomeForm {
     title: "",
     amount: "",
     category: "",
-    date: new Date().toISOString().slice(0, 10),
+    date: formatLocalDate(new Date()),
     paymentMethod: "Cash",
     notes: "",
     recurring: "No",
@@ -144,8 +148,8 @@ function getRows(data: any, key: string) {
 
 function formatDate(value?: string) {
   if (!value) return "-";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return String(value).split("T")[0];
+  const date = parseLocalDate(value) ?? parseLocalDateTimeValue(value);
+  if (!date) return String(value).split("T")[0];
   return date.toLocaleDateString("en-IN", {
     day: "2-digit",
     month: "short",
@@ -613,8 +617,8 @@ export default function Income() {
     return filtered.sort((left, right) => {
       const leftAmount = Number(left.amount || 0);
       const rightAmount = Number(right.amount || 0);
-      const leftDate = new Date(left.income_date || "").getTime() || 0;
-      const rightDate = new Date(right.income_date || "").getTime() || 0;
+      const leftDate = parseLocalDate(left.income_date)?.getTime() || 0;
+      const rightDate = parseLocalDate(right.income_date)?.getTime() || 0;
       if (sort === "Oldest First") return leftDate - rightDate;
       if (sort === "Amount: High to Low") return rightAmount - leftAmount;
       if (sort === "Amount: Low to High") return leftAmount - rightAmount;
@@ -643,9 +647,9 @@ export default function Income() {
   const now = new Date();
   const monthlyIncome = incomes
     .filter((income) => {
-      const date = new Date(income.income_date || "");
+      const date = parseLocalDate(income.income_date);
       return (
-        !Number.isNaN(date.getTime()) &&
+        !!date &&
         date.getMonth() === now.getMonth() &&
         date.getFullYear() === now.getFullYear()
       );

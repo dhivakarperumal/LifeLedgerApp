@@ -5,24 +5,28 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { VideoView, useVideoPlayer } from "expo-video";
 import { useEffect, useMemo, useState } from "react";
 import {
-    ActivityIndicator,
-    Alert,
-    Image,
-    Linking,
-    Pressable,
-    RefreshControl,
-    ScrollView,
-    Text,
-    View,
+  ActivityIndicator,
+  Alert,
+  Image,
+  Linking,
+  Pressable,
+  RefreshControl,
+  ScrollView,
+  Text,
+  View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import api, {
-    API_BASE_URL,
-    getApiErrorMessage,
-    getStoredToken,
-    logoutUser,
+  API_BASE_URL,
+  getApiErrorMessage,
+  getStoredToken,
+  logoutUser,
 } from "../../api";
 import ConfirmPopup from "../../components/ConfirmPopup";
+import {
+  parseLocalDate,
+  parseLocalDateTimeValue,
+} from "../../components/dateTimeUtils";
 import { GradientSafeAreaView as SafeAreaView } from "../../components/GradientSafeAreaView";
 import { Colors } from "../../constants/colors";
 
@@ -127,8 +131,8 @@ function parseTags(value?: string[] | string) {
 
 function formatDate(value?: string) {
   if (!value) return "No date";
-  const date = new Date(value.length === 10 ? `${value}T12:00:00` : value);
-  if (Number.isNaN(date.getTime())) return value;
+  const date = parseLocalDate(value);
+  if (!date) return value;
   return date.toLocaleDateString("en-IN", {
     month: "short",
     day: "numeric",
@@ -137,6 +141,19 @@ function formatDate(value?: string) {
 }
 
 function formatDateTime(value?: string) {
+  if (!value) return "—";
+  const date = parseLocalDateTimeValue(value);
+  if (!date) return value;
+  return date.toLocaleString("en-IN", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+function formatTimestamp(value?: string) {
   if (!value) return "—";
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value;
@@ -540,12 +557,12 @@ export default function MemoryDetails() {
             <Text style={sectionLabel}>Record details</Text>
             {memory.created_at ? (
               <Text style={smallDetailStyle}>
-                Created: {formatDateTime(memory.created_at)}
+                Created: {formatTimestamp(memory.created_at)}
               </Text>
             ) : null}
             {memory.updated_at ? (
               <Text style={[smallDetailStyle, { marginTop: 6 }]}>
-                Last modified: {formatDateTime(memory.updated_at)}
+                Last modified: {formatTimestamp(memory.updated_at)}
               </Text>
             ) : null}
           </View>

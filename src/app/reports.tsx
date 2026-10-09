@@ -19,15 +19,16 @@ import {
 } from "react-native";
 import Svg, { Path, Rect } from "react-native-svg";
 import api, { getApiErrorMessage, logoutUser } from "../api";
+import { CenteredPageLoader } from "../components/CenteredPageLoader";
 import {
     createDateRangeSelection,
     isDateInRange,
     type DateRangeSelection,
 } from "../components/DateRangeFilter";
 import { GradientSafeAreaView as SafeAreaView } from "../components/GradientSafeAreaView";
-import { CenteredPageLoader } from "../components/CenteredPageLoader";
-import { createSessionDataCache } from "../components/SessionDataCache";
 import { SearchBar } from "../components/SearchBar";
+import { createSessionDataCache } from "../components/SessionDataCache";
+import { formatLocalDate, parseLocalDate } from "../components/dateTimeUtils";
 import {
     countActiveFilters,
     DEFAULT_FILTER_STATE,
@@ -78,10 +79,8 @@ function formatAmount(value: number | string | undefined) {
 
 function formatDate(value?: string) {
   if (!value) return "-";
-  const date = /^\d{4}-\d{2}-\d{2}$/.test(value)
-    ? new Date(`${value}T12:00:00`)
-    : new Date(value);
-  if (Number.isNaN(date.getTime())) return value.split("T")[0];
+  const date = parseLocalDate(value);
+  if (!date) return value.split("T")[0];
   return date.toLocaleDateString("en-IN", {
     day: "2-digit",
     month: "short",
@@ -466,8 +465,8 @@ export default function Reports() {
     const expenseRows = reportType === "transfer" ? [] : expenses;
     const transferRows = reportType === "expense" ? [] : transfers;
     return [...expenseRows, ...transferRows].sort((left, right) => {
-      const leftTime = left._date ? new Date(left._date).getTime() : 0;
-      const rightTime = right._date ? new Date(right._date).getTime() : 0;
+      const leftTime = parseLocalDate(left._date)?.getTime() || 0;
+      const rightTime = parseLocalDate(right._date)?.getTime() || 0;
       return rightTime - leftTime;
     });
   }, [expenses, transfers, reportType]);
@@ -528,8 +527,8 @@ export default function Reports() {
     return filtered.sort((left, right) => {
       const leftAmount = getRecordAmount(left);
       const rightAmount = getRecordAmount(right);
-      const leftDate = new Date(left._date || "").getTime() || 0;
-      const rightDate = new Date(right._date || "").getTime() || 0;
+      const leftDate = parseLocalDate(left._date)?.getTime() || 0;
+      const rightDate = parseLocalDate(right._date)?.getTime() || 0;
       if (sort === "Oldest First") return leftDate - rightDate;
       if (sort === "Amount: High to Low") return rightAmount - leftAmount;
       if (sort === "Amount: Low to High") return leftAmount - rightAmount;
@@ -607,10 +606,8 @@ export default function Reports() {
     visible
       .filter((record) => record._type === "expense" && record._date)
       .forEach((record) => {
-        const date = /^\d{4}-\d{2}-\d{2}$/.test(record._date!)
-          ? new Date(`${record._date}T12:00:00`)
-          : new Date(record._date!);
-        if (Number.isNaN(date.getTime())) return;
+        const date = parseLocalDate(record._date);
+        if (!date) return;
         const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
         totals.set(
           key,
@@ -761,7 +758,7 @@ export default function Reports() {
         @page{margin:24px}
       </style></head><body>
       <h1>Life Ledger Report</h1>
-      <p>Generated ${escapeHtml(formatDate(new Date().toISOString()))} · ${stats.totalRecords} records · ${escapeHtml(dateRange.filter)}</p>
+      <p>Generated ${escapeHtml(formatDate(formatLocalDate(new Date())))} · ${stats.totalRecords} records · ${escapeHtml(dateRange.filter)}</p>
       <div class="summary">
         <div class="metric"><div class="label">Expenses</div><div class="value">₹${stats.totalExpense.toFixed(2)}</div></div>
         <div class="metric"><div class="label">Transfers</div><div class="value">₹${stats.totalTransfer.toFixed(2)}</div></div>

@@ -19,6 +19,7 @@ import {
 } from "react-native";
 import { Colors } from "../constants/colors";
 import { FormLabel } from "./FormControls";
+import { parseLocalDateTimeValue } from "./dateTimeUtils";
 
 export const DATE_RANGE_PRESETS = [
   "All",
@@ -189,7 +190,7 @@ export function isDateInRange(
       : /^\d{4}-\d{2}-\d{2}/.test(value)
         ? value.slice(0, 10)
         : (() => {
-            const date = new Date(value);
+            const date = parseLocalDateTimeValue(value) ?? new Date(value);
             return Number.isNaN(date.getTime()) ? null : dateKey(date);
           })();
   if (!key) return false;
