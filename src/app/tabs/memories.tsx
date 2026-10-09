@@ -1673,7 +1673,9 @@ function MemoryCardAction({
         alignItems: "center",
         justifyContent: "center",
         borderRadius: 10,
-        backgroundColor: `${color}12`,
+        borderWidth: 1,
+        borderColor: `${color}99`,
+        backgroundColor: `${color}26`,
         opacity: pressed ? 0.65 : 1,
       })}
     >

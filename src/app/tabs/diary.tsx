@@ -3,10 +3,13 @@ import {
     AudioModule,
     RecordingPresets,
     setAudioModeAsync,
+    useAudioPlayer,
+    useAudioPlayerStatus,
     useAudioRecorder,
 } from "expo-audio";
 import * as DocumentPicker from "expo-document-picker";
 import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
+import { VideoView, useVideoPlayer } from "expo-video";
 import {
     useCallback,
     useEffect,
@@ -26,11 +29,21 @@ import {
     ScrollView,
     Text,
     View,
+    type GestureResponderEvent,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import api, { API_BASE_URL, getApiErrorMessage, logoutUser } from "../../api";
+import api, {
+    API_BASE_URL,
+    getApiErrorMessage,
+    getStoredToken,
+    logoutUser,
+} from "../../api";
 import { AddButton } from "../../components/AddButton";
 import { AddPageHeader } from "../../components/AddPageHeader";
+import {
+    BottomSheet,
+    BottomSheetContent,
+} from "../../components/BottomSheet";
 import { CenteredPageLoader } from "../../components/CenteredPageLoader";
 import ConfirmPopup from "../../components/ConfirmPopup";
 import {
@@ -76,6 +89,12 @@ type DiaryEntry = {
   attachments?: (string | Record<string, any>)[];
   media_files?: (string | Record<string, any>)[];
   attachment_count?: number;
+  created_at?: string;
+  updated_at?: string;
+  image_path?: string;
+  video_path?: string;
+  audio_path?: string;
+  file_path?: string;
 };
 
 type DiaryCategory = {
@@ -251,6 +270,50 @@ function formatEntryTime(value?: string) {
   });
 }
 
+function getDiaryMediaUrl(file: string | Record<string, any>) {
+  const value =
+    typeof file === "string"
+      ? file
+      : String(file.file_url || file.url || file.src || file.path || "");
+  if (!value) return "";
+  if (/^(https?:|file:|content:|data:)/i.test(value)) return value;
+  const baseUrl = API_BASE_URL.replace(/\/api\/?$/, "");
+  return `${baseUrl}${value.startsWith("/") ? value : `/${value}`}`;
+}
+
+function getDiaryAttachments(entry: DiaryEntry) {
+  const items: (string | Record<string, any>)[] = [
+    ...(Array.isArray(entry.attachments) ? entry.attachments : []),
+    ...(Array.isArray(entry.media_files) ? entry.media_files : []),
+  ];
+  items.push(
+    ...[entry.image_path, entry.video_path, entry.audio_path, entry.file_path]
+      .filter((value): value is string => Boolean(value))
+      .map((value) => value),
+  );
+  const seen = new Set<string>();
+  return items.filter((item, index) => {
+    const url = getDiaryMediaUrl(item);
+    const key = `${url}|${attachmentName(item, index)}`;
+    if (!url || seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+function formatDiaryTimestamp(value?: string) {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return date.toLocaleString("en-IN", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
 // Groups an array of DiaryEntry into [{monthKey, label, entries}] sorted newest first
 function groupEntriesByMonth(entries: DiaryEntry[]) {
   const map = new Map<string, { label: string; entries: DiaryEntry[] }>();
@@ -378,7 +441,13 @@ export default function Diary() {
   const [submitting, setSubmitting] = useState(false);
   const [pendingDeleteEntry, setPendingDeleteEntry] =
     useState<DiaryEntry | null>(null);
+  const [deletingEntryId, setDeletingEntryId] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [selectedEntry, setSelectedEntry] = useState<DiaryEntry | null>(null);
+  const [entryDetails, setEntryDetails] = useState<DiaryEntry | null>(null);
+  const [entryDetailsLoading, setEntryDetailsLoading] = useState(false);
+  const [entryDetailsError, setEntryDetailsError] = useState<string | null>(null);
+  const [entryDetailsRetry, setEntryDetailsRetry] = useState(0);
   const [uploadProgress, setUploadProgress] = useState<number | null>(null);
   const [editingId, setEditingId] = useState<number | string | null>(null);
   const [form, setForm] = useState<DiaryForm>(initialDiaryForm());
@@ -424,6 +493,65 @@ export default function Diary() {
     await logoutUser();
     router.replace("/auth/login");
   }, [router]);
+
+  const openEntryDetails = useCallback((entry: DiaryEntry) => {
+    setSelectedEntry(entry);
+    setEntryDetails(entry);
+    setEntryDetailsError(null);
+    setEntryDetailsLoading(true);
+  }, []);
+
+  useEffect(() => {
+    if (!selectedEntry) return;
+
+    let active = true;
+    const selectedId = String(selectedEntry.id);
+    const loadDetails = async () => {
+      setEntryDetailsLoading(true);
+      setEntryDetailsError(null);
+      try {
+        const response = await api.get(
+          `/diary/${encodeURIComponent(selectedId)}`,
+        );
+        const data = response.data;
+        const rawDetails =
+          data?.entry ??
+          data?.diary ??
+          data?.data?.entry ??
+          data?.data?.diary ??
+          data?.data ??
+          data;
+        const detail = Array.isArray(rawDetails)
+          ? rawDetails.find((item) => String(item?.id) === selectedId)
+          : rawDetails;
+        if (!detail || typeof detail !== "object" || Array.isArray(detail)) {
+          throw new Error("Diary entry details were not returned.");
+        }
+        if (detail.id !== undefined && String(detail.id) !== selectedId) {
+          throw new Error("The server returned a different diary entry.");
+        }
+        if (active) setEntryDetails({ ...selectedEntry, ...detail });
+      } catch (error) {
+        if (!active) return;
+        const status = (error as any)?.status || (error as any)?.response?.status;
+        if (status === 401) {
+          setSelectedEntry(null);
+          await handleUnauthorized();
+          return;
+        }
+        setEntryDetailsError(
+          getApiErrorMessage(error, "Unable to load diary details."),
+        );
+      } finally {
+        if (active) setEntryDetailsLoading(false);
+      }
+    };
+
+    void loadDetails();
+    return () => {
+      active = false;
+    };
+  }, [entryDetailsRetry, handleUnauthorized, selectedEntry]);
 
   const fetchData = useCallback(async () => {
     try {
@@ -801,21 +929,35 @@ export default function Diary() {
   };
 
   const confirmDeleteEntry = async () => {
-    if (!pendingDeleteEntry) return;
+    if (!pendingDeleteEntry || deletingEntryId !== null) return;
     const entry = pendingDeleteEntry;
-    setPendingDeleteEntry(null);
+    const entryId = String(entry.id);
+    setDeletingEntryId(entryId);
     try {
-      await api.delete(`/diary/${entry.id}`);
-      setEntries((current) => current.filter((item) => item.id !== entry.id));
+      await api.delete(`/diary/${encodeURIComponent(entryId)}`);
+      setEntries((current) =>
+        current.filter((item) => String(item.id) !== entryId),
+      );
+      if (String(selectedEntry?.id) === entryId) {
+        setSelectedEntry(null);
+        setEntryDetails(null);
+      }
+      setPendingDeleteEntry(null);
+      setSuccessMessage("Diary entry deleted successfully.");
     } catch (error) {
       const code =
         (error as any)?.status || (error as any)?.response?.status;
-      if (code === 401) await handleUnauthorized();
+      if (code === 401) {
+        setPendingDeleteEntry(null);
+        await handleUnauthorized();
+      }
       else
         Alert.alert(
           "Unable to delete entry",
           getApiErrorMessage(error, "Please try again."),
         );
+    } finally {
+      setDeletingEntryId(null);
     }
   };
 
@@ -856,13 +998,16 @@ export default function Diary() {
       <ConfirmPopup
         visible={pendingDeleteEntry !== null}
         type="delete"
+        loading={deletingEntryId !== null}
         message={
           pendingDeleteEntry
             ? `Delete "${pendingDeleteEntry.title}"?`
             : undefined
         }
         onConfirm={confirmDeleteEntry}
-        onCancel={() => setPendingDeleteEntry(null)}
+        onCancel={() => {
+          if (deletingEntryId === null) setPendingDeleteEntry(null);
+        }}
       />
       <ConfirmPopup
         visible={successMessage !== null}
@@ -1058,9 +1203,6 @@ export default function Diary() {
                       (tag) => tag.trim().toLowerCase() !== moodLabel,
                     );
                     const photoUrl = diaryImageUrl(entry);
-                    const mood = moods.find((item) => item.name === entry.mood);
-                    const moodTone =
-                      diaryTagColors[index % diaryTagColors.length];
                     const attachmentCount =
                       entry.attachment_count ||
                       (entry.attachments?.length || 0) +
@@ -1300,6 +1442,45 @@ export default function Diary() {
                               </Text>
                             ) : null}
                           </View>
+                          <View
+                            style={{
+                              flexDirection: "row",
+                              justifyContent: "flex-end",
+                              gap: 7,
+                              marginTop: 9,
+                            }}
+                          >
+                            <DiaryCardAction
+                              icon="eye-outline"
+                              color={Colors.forest}
+                              label={`View ${entry.title}`}
+                              onPress={(event) => {
+                                event.stopPropagation();
+                                openEntryDetails(entry);
+                              }}
+                            />
+                            <DiaryCardAction
+                              icon="create-outline"
+                              color="#426C92"
+                              label={`Edit ${entry.title}`}
+                              onPress={(event) => {
+                                event.stopPropagation();
+                                router.push({
+                                  pathname: "/diary-form" as any,
+                                  params: { edit: String(entry.id) },
+                                });
+                              }}
+                            />
+                            <DiaryCardAction
+                              icon="trash-outline"
+                              color="#B64C45"
+                              label={`Delete ${entry.title}`}
+                              onPress={(event) => {
+                                event.stopPropagation();
+                                deleteEntry(entry);
+                              }}
+                            />
+                          </View>
                         </View>
 
                         <View
@@ -1311,28 +1492,6 @@ export default function Diary() {
                             alignItems: "stretch",
                           }}
                         >
-                          <View
-                            style={{
-                              alignSelf: "flex-end",
-                              maxWidth: "100%",
-                              marginRight: viewMode === "card" ? 0 : 18,
-                              paddingHorizontal: 9,
-                              paddingVertical: 5,
-                              borderRadius: 16,
-                              backgroundColor: moodTone.background,
-                            }}
-                          >
-                            <Text
-                              numberOfLines={1}
-                              style={{
-                                color: moodTone.color,
-                                fontSize: 11,
-                                fontWeight: "600",
-                              }}
-                            >
-                              {mood?.emoji || "😊"} {entry.mood || "Happy"}
-                            </Text>
-                          </View>
                           <View
                             style={{
                               height: viewMode === "card" ? 88 : 96,
@@ -1368,51 +1527,45 @@ export default function Diary() {
                         <Pressable
                           onPress={(event) => {
                             event.stopPropagation();
-                            Alert.alert(entry.title, "Entry options", [
-                              {
-                                text: "View",
-                                onPress: () =>
-                                  router.push({
-                                    pathname: "/diary/[id]",
-                                    params: { id: String(entry.id) },
-                                  }),
-                              },
-                              {
-                                text: "Edit",
-                                onPress: () =>
-                                  router.push({
-                                    pathname: "/diary-form" as any,
-                                    params: { edit: String(entry.id) },
-                                  }),
-                              },
-                              {
-                                text: asBoolean(entry.is_favorite)
-                                  ? "Remove favorite"
-                                  : "Add favorite",
-                                onPress: () => void toggleFavorite(entry),
-                              },
-                              {
-                                text: "Delete",
-                                style: "destructive",
-                                onPress: () => deleteEntry(entry),
-                              },
-                              { text: "Cancel", style: "cancel" },
-                            ]);
+                            void toggleFavorite(entry);
                           }}
                           accessibilityRole="button"
-                          accessibilityLabel={`Options for ${entry.title}`}
+                          accessibilityLabel={
+                            asBoolean(entry.is_favorite)
+                              ? `Remove ${entry.title} from favorites`
+                              : `Add ${entry.title} to favorites`
+                          }
                           hitSlop={7}
                           style={{
                             position: "absolute",
                             top: 8,
                             right: 5,
-                            padding: 4,
+                            width: 30,
+                            height: 30,
+                            alignItems: "center",
+                            justifyContent: "center",
+                            borderRadius: 15,
+                            borderWidth: 1,
+                            borderColor: asBoolean(entry.is_favorite)
+                              ? "#D9576199"
+                              : "#7B858966",
+                            backgroundColor: asBoolean(entry.is_favorite)
+                              ? "#D9576126"
+                              : "#FFFFFFCC",
                           }}
                         >
                           <Ionicons
-                            name="ellipsis-vertical"
-                            size={18}
-                            color={Colors.textPrimary}
+                            name={
+                              asBoolean(entry.is_favorite)
+                                ? "heart"
+                                : "heart-outline"
+                            }
+                            size={17}
+                            color={
+                              asBoolean(entry.is_favorite)
+                                ? "#D95761"
+                                : Colors.textSecondary
+                            }
                           />
                         </Pressable>
                       </Pressable>
@@ -1437,6 +1590,34 @@ export default function Diary() {
         accessibilityHint="Opens a new diary entry"
         bottomOffset={84}
       />
+
+      <BottomSheet
+        visible={selectedEntry !== null}
+        title={entryDetails?.title || selectedEntry?.title || "Diary entry"}
+        subtitle="DIARY ENTRY DETAILS"
+        height="90%"
+        maxHeight="90%"
+        onClose={() => {
+          setSelectedEntry(null);
+          setEntryDetails(null);
+          setEntryDetailsError(null);
+        }}
+      >
+        {entryDetails ? (
+          <DiaryEntryDetailContent
+            entry={entryDetails}
+            categoryName={
+              categories.find(
+                (category) =>
+                  String(category.id) === String(entryDetails.category_id),
+              )?.name || entryDetails.category_name
+            }
+            loading={entryDetailsLoading}
+            error={entryDetailsError}
+            onRetry={() => setEntryDetailsRetry((current) => current + 1)}
+          />
+        ) : null}
+      </BottomSheet>
 
       {editorVisible && (
         <View className="absolute inset-0 z-50 bg-white" style={{ paddingBottom: insets.bottom }}>
@@ -1732,6 +1913,455 @@ function FormField({
     </View>
   );
 }
+
+function DiaryCardAction({
+  icon,
+  color,
+  label,
+  onPress,
+}: {
+  icon: keyof typeof Ionicons.glyphMap;
+  color: string;
+  label: string;
+  onPress: (event: GestureResponderEvent) => void;
+}) {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      hitSlop={5}
+      onPress={onPress}
+      style={({ pressed }) => ({
+        width: 32,
+        height: 32,
+        alignItems: "center",
+        justifyContent: "center",
+        borderRadius: 10,
+        borderWidth: 1,
+        borderColor: `${color}99`,
+        backgroundColor: `${color}26`,
+        opacity: pressed ? 0.65 : 1,
+      })}
+    >
+      <Ionicons name={icon} size={17} color={color} />
+    </Pressable>
+  );
+}
+
+function DiaryEntryDetailContent({
+  entry,
+  categoryName,
+  loading,
+  error,
+  onRetry,
+}: {
+  entry: DiaryEntry;
+  categoryName?: string;
+  loading: boolean;
+  error: string | null;
+  onRetry: () => void;
+}) {
+  const media = getDiaryAttachments(entry);
+  const tags = parseTags(entry.tags);
+
+  return (
+    <BottomSheetContent style={{ gap: 12 }}>
+      {loading ? (
+        <View style={diaryDetailNoticeStyle}>
+          <ActivityIndicator size="small" color={Colors.forest} />
+          <Text style={{ color: Colors.textSecondary, fontSize: 13 }}>
+            Loading latest entry details…
+          </Text>
+        </View>
+      ) : null}
+      {error ? (
+        <View style={[diaryDetailNoticeStyle, { backgroundColor: "#FFF2EE" }]}>
+          <Text style={{ flex: 1, color: "#9D3D36", fontSize: 13 }}>
+            {error}
+          </Text>
+          <Pressable
+            accessibilityRole="button"
+            onPress={onRetry}
+            style={{
+              paddingHorizontal: 12,
+              paddingVertical: 8,
+              borderRadius: 9,
+              backgroundColor: "#F8DDD8",
+            }}
+          >
+            <Text style={{ color: "#8E332D", fontWeight: "700" }}>Retry</Text>
+          </Pressable>
+        </View>
+      ) : null}
+
+      {categoryName ? (
+        <DiaryDetailField
+          icon="pricetag-outline"
+          label="Category"
+          value={categoryName}
+        />
+      ) : null}
+      {entry.entry_date ? (
+        <DiaryDetailField
+          icon="calendar-outline"
+          label="Date"
+          value={formatDate(entry.entry_date)}
+        />
+      ) : null}
+      {entry.entry_time ? (
+        <DiaryDetailField
+          icon="time-outline"
+          label="Time"
+          value={formatEntryTime(entry.entry_time) || entry.entry_time}
+        />
+      ) : null}
+      {entry.location ? (
+        <DiaryDetailField
+          icon="location-outline"
+          label="Location"
+          value={entry.location}
+        />
+      ) : null}
+      {entry.status ? (
+        <DiaryDetailField
+          icon="document-text-outline"
+          label="Status"
+          value={entry.status}
+        />
+      ) : null}
+      {entry.content?.trim() ? (
+        <DiaryDetailText label="Entry" value={plainContent(entry.content)} />
+      ) : null}
+      {tags.length ? (
+        <DiaryDetailText label="Tags" value={tags.join(" · ")} />
+      ) : null}
+      {entry.is_private !== undefined ||
+      entry.is_locked !== undefined ||
+      entry.is_favorite !== undefined ? (
+        <View style={diaryDetailSectionStyle}>
+          <Text style={diaryDetailLabelStyle}>Preferences</Text>
+          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 7, marginTop: 8 }}>
+            {entry.is_private !== undefined ? (
+              <DiaryPreference
+                icon="eye-off-outline"
+                label={asBoolean(entry.is_private) ? "Private" : "Not private"}
+              />
+            ) : null}
+            {entry.is_locked !== undefined ? (
+              <DiaryPreference
+                icon="lock-closed-outline"
+                label={asBoolean(entry.is_locked) ? "Locked" : "Not locked"}
+              />
+            ) : null}
+            {entry.is_favorite !== undefined ? (
+              <DiaryPreference
+                icon="heart-outline"
+                label={asBoolean(entry.is_favorite) ? "Favorite" : "Not favorite"}
+              />
+            ) : null}
+          </View>
+        </View>
+      ) : null}
+      {media.length ? (
+        <View style={diaryDetailSectionStyle}>
+          <Text style={diaryDetailLabelStyle}>Media & attachments</Text>
+          <View style={{ gap: 12, marginTop: 10 }}>
+            {media.map((file, index) => (
+              <DiaryAttachmentPreview
+                key={`${getDiaryMediaUrl(file)}-${index}`}
+                file={file}
+                index={index}
+              />
+            ))}
+          </View>
+        </View>
+      ) : null}
+      {entry.created_at || entry.updated_at ? (
+        <View style={diaryDetailSectionStyle}>
+          <Text style={diaryDetailLabelStyle}>Record details</Text>
+          {entry.created_at ? (
+            <Text style={[diaryDetailValueStyle, { marginTop: 8 }]}>
+              Created: {formatDiaryTimestamp(entry.created_at)}
+            </Text>
+          ) : null}
+          {entry.updated_at ? (
+            <Text style={[diaryDetailValueStyle, { marginTop: 5 }]}>
+              Updated: {formatDiaryTimestamp(entry.updated_at)}
+            </Text>
+          ) : null}
+        </View>
+      ) : null}
+    </BottomSheetContent>
+  );
+}
+
+function DiaryDetailField({
+  icon,
+  label,
+  value,
+}: {
+  icon: keyof typeof Ionicons.glyphMap;
+  label: string;
+  value: string;
+}) {
+  return (
+    <View style={diaryDetailFieldStyle}>
+      <Ionicons name={icon} size={18} color={Colors.forest} />
+      <View style={{ flex: 1 }}>
+        <Text style={diaryDetailLabelStyle}>{label}</Text>
+        <Text style={[diaryDetailValueStyle, { marginTop: 3 }]}>{value}</Text>
+      </View>
+    </View>
+  );
+}
+
+function DiaryDetailText({ label, value }: { label: string; value: string }) {
+  return (
+    <View style={diaryDetailSectionStyle}>
+      <Text style={diaryDetailLabelStyle}>{label}</Text>
+      <Text style={[diaryDetailValueStyle, { marginTop: 7 }]}>{value}</Text>
+    </View>
+  );
+}
+
+function DiaryPreference({
+  icon,
+  label,
+}: {
+  icon: keyof typeof Ionicons.glyphMap;
+  label: string;
+}) {
+  return (
+    <View
+      style={{
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 5,
+        paddingHorizontal: 9,
+        paddingVertical: 6,
+        borderRadius: 12,
+        backgroundColor: Colors.white,
+      }}
+    >
+      <Ionicons name={icon} size={13} color={Colors.forest} />
+      <Text style={{ color: Colors.textSecondary, fontSize: 12 }}>{label}</Text>
+    </View>
+  );
+}
+
+function DiaryAttachmentPreview({
+  file,
+  index,
+}: {
+  file: string | Record<string, any>;
+  index: number;
+}) {
+  const url = getDiaryMediaUrl(file);
+  const name = attachmentName(file, index);
+  const kind = attachmentKind(file);
+
+  if (kind === "image") {
+    return (
+      <View style={diaryAttachmentPreviewStyle}>
+        <Image
+          source={{ uri: url }}
+          resizeMode="contain"
+          style={{ width: "100%", height: 220 }}
+          accessibilityLabel={name}
+        />
+        <Text numberOfLines={1} style={diaryAttachmentNameStyle}>
+          {name}
+        </Text>
+      </View>
+    );
+  }
+  if (kind === "video") return <DiaryVideoPreview url={url} name={name} />;
+  if (kind === "audio") return <DiaryAudioPreview url={url} name={name} />;
+
+  return (
+    <Pressable
+      accessibilityRole="link"
+      accessibilityLabel={`Open attachment ${name}`}
+      onPress={() =>
+        void Linking.openURL(url).catch(() =>
+          Alert.alert("Unable to open attachment", "No app could open this file."),
+        )
+      }
+      style={diaryAttachmentRowStyle}
+    >
+      <Ionicons
+        name={kind === "zip" ? "archive-outline" : "document-attach-outline"}
+        size={22}
+        color={Colors.forest}
+      />
+      <Text numberOfLines={2} style={{ flex: 1, color: Colors.textPrimary, fontSize: 13 }}>
+        {name}
+      </Text>
+      <Ionicons name="open-outline" size={18} color={Colors.sage} />
+    </Pressable>
+  );
+}
+
+function DiaryVideoPreview({ url, name }: { url: string; name: string }) {
+  const player = useVideoPlayer(null);
+  const [loadError, setLoadError] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    void getAuthenticatedMediaSource(url)
+      .then((source) => {
+        if (active) return player.replaceAsync(source);
+      })
+      .catch(() => {
+        if (active) setLoadError(true);
+      });
+    return () => {
+      active = false;
+    };
+  }, [player, url]);
+
+  return (
+    <View style={[diaryAttachmentPreviewStyle, { backgroundColor: "#101915" }]}>
+      <VideoView
+        player={player}
+        nativeControls
+        contentFit="contain"
+        style={{ width: "100%", height: 220 }}
+      />
+      {loadError || player.status === "error" ? (
+        <Text style={{ padding: 10, color: Colors.white, fontSize: 13 }}>
+          Unable to load video.
+        </Text>
+      ) : null}
+      <Text style={[diaryAttachmentNameStyle, { backgroundColor: Colors.white }]}>
+        {name}
+      </Text>
+    </View>
+  );
+}
+
+function DiaryAudioPreview({ url, name }: { url: string; name: string }) {
+  const player = useAudioPlayer(null);
+  const status = useAudioPlayerStatus(player);
+  const [loadError, setLoadError] = useState(false);
+  const elapsed = `${Math.floor(status.currentTime / 60)}:${String(
+    Math.floor(status.currentTime % 60),
+  ).padStart(2, "0")}`;
+
+  useEffect(() => {
+    let active = true;
+    void getAuthenticatedMediaSource(url)
+      .then((source) => {
+        if (active) player.replace(source);
+      })
+      .catch(() => {
+        if (active) setLoadError(true);
+      });
+    return () => {
+      active = false;
+    };
+  }, [player, url]);
+
+  return (
+    <View style={diaryAttachmentRowStyle}>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={status.playing ? `Pause ${name}` : `Play ${name}`}
+        disabled={!status.isLoaded || Boolean(status.error) || loadError}
+        onPress={() => (status.playing ? player.pause() : player.play())}
+        style={{
+          width: 44,
+          height: 44,
+          alignItems: "center",
+          justifyContent: "center",
+          borderRadius: 22,
+          backgroundColor: Colors.forest,
+          opacity: !status.isLoaded || loadError ? 0.6 : 1,
+        }}
+      >
+        <Ionicons
+          name={status.playing ? "pause" : "play"}
+          size={19}
+          color={Colors.white}
+        />
+      </Pressable>
+      <View style={{ flex: 1 }}>
+        <Text numberOfLines={1} style={{ color: Colors.textPrimary, fontSize: 13, fontWeight: "700" }}>
+          {name}
+        </Text>
+        <Text style={{ color: Colors.sage, fontSize: 12, marginTop: 4 }}>
+          {loadError || status.error ? "Unable to load audio." : elapsed}
+        </Text>
+      </View>
+      <Ionicons name="musical-notes-outline" size={20} color={Colors.sage} />
+    </View>
+  );
+}
+
+async function getAuthenticatedMediaSource(url: string) {
+  const token = await getStoredToken();
+  return {
+    uri: url,
+    ...(token ? { headers: { Authorization: `Bearer ${token}` } } : {}),
+  };
+}
+
+const diaryDetailNoticeStyle = {
+  flexDirection: "row" as const,
+  alignItems: "center" as const,
+  gap: 9,
+  padding: 12,
+  borderRadius: 12,
+  backgroundColor: "#F1F5F2",
+};
+const diaryDetailSectionStyle = {
+  padding: 14,
+  borderRadius: 14,
+  backgroundColor: "#F3F6F4",
+};
+const diaryDetailFieldStyle = {
+  flexDirection: "row" as const,
+  alignItems: "center" as const,
+  gap: 12,
+  minHeight: 58,
+  paddingHorizontal: 14,
+  paddingVertical: 11,
+  borderRadius: 14,
+  backgroundColor: "#F3F6F4",
+};
+const diaryDetailLabelStyle = {
+  color: Colors.sage,
+  fontSize: 11,
+  fontWeight: "800" as const,
+  letterSpacing: 0.6,
+  textTransform: "uppercase" as const,
+};
+const diaryDetailValueStyle = {
+  color: Colors.textPrimary,
+  fontSize: 14,
+  lineHeight: 20,
+};
+const diaryAttachmentRowStyle = {
+  flexDirection: "row" as const,
+  alignItems: "center" as const,
+  gap: 12,
+  minHeight: 68,
+  padding: 12,
+  borderRadius: 12,
+  backgroundColor: "#F3F6F4",
+};
+const diaryAttachmentPreviewStyle = {
+  overflow: "hidden" as const,
+  borderRadius: 12,
+  backgroundColor: "#F3F6F4",
+};
+const diaryAttachmentNameStyle = {
+  paddingHorizontal: 11,
+  paddingVertical: 9,
+  color: Colors.textPrimary,
+  fontSize: 12,
+  fontWeight: "600" as const,
+};
 
 function AttachmentRow({
   name,
