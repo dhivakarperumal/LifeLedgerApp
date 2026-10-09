@@ -28,6 +28,7 @@ type BottomSheetProps = {
   onClose: () => void;
   children: ReactNode;
   footer?: ReactNode;
+  height?: DimensionValue;
   maxHeight?: DimensionValue;
 };
 
@@ -58,6 +59,7 @@ export function BottomSheet({
   onClose,
   children,
   footer,
+  height,
   maxHeight = "88%",
 }: BottomSheetProps) {
   const insets = useSafeAreaInsets();
@@ -84,6 +86,7 @@ export function BottomSheet({
           style={[
             styles.sheet,
             {
+              height,
               maxHeight,
               paddingBottom: Math.max(insets.bottom, 16),
             },

@@ -22,9 +22,10 @@ import {
     SafeAreaView as NativeSafeAreaView,
     useSafeAreaInsets,
 } from "react-native-safe-area-context";
-import api, { getApiErrorMessage, logoutUser } from "../../api";
+import api, { API_BASE_URL, getApiErrorMessage, logoutUser } from "../../api";
 import { AddButton } from "../../components/AddButton";
 import { AddPageHeader } from "../../components/AddPageHeader";
+import { BottomSheet, BottomSheetContent } from "../../components/BottomSheet";
 import ConfirmPopup from "../../components/ConfirmPopup";
 import {
     createDateRangeSelection,
@@ -37,6 +38,7 @@ import {
     formatLocalTime,
     parseLocalDate,
     parseLocalDateTime,
+    parseLocalDateTimeValue,
 } from "../../components/dateTimeUtils";
 import {
     DEFAULT_FILTER_STATE,
@@ -57,6 +59,7 @@ import { Colors } from "../../constants/colors";
 type ExpenseItem = {
   id: number | string;
   title: string;
+  name?: string;
   category?: string;
   expense_amount?: number | string;
   amount?: number | string;
@@ -71,6 +74,29 @@ type ExpenseItem = {
   transfer_id?: number | string;
   transfer_amount?: number | string;
   recurring?: string;
+  attachment?: unknown;
+  attachments?: unknown;
+  attachment_url?: string;
+  receipt?: unknown;
+  receipt_url?: string;
+  receipt_path?: string;
+  receipt_image?: string;
+  image?: unknown;
+  image_url?: string;
+  image_path?: string;
+  expense_image?: string;
+  attachment_path?: string;
+  description?: string;
+  created_at?: string;
+  createdAt?: string;
+  updated_at?: string;
+  updatedAt?: string;
+};
+
+type ExpenseAttachment = {
+  uri: string;
+  name: string;
+  mimeType?: string;
 };
 
 type TransferItem = {
@@ -189,6 +215,24 @@ function getCategoryIcon(category?: string) {
   return categoryIcons[normalized] || categoryIcons.other;
 }
 
+function getExpenseCategoryName(category: unknown) {
+  if (typeof category === "string" && category.trim()) return category.trim();
+  if (!category || typeof category !== "object") return "Other";
+
+  const value = category as Record<string, unknown>;
+  for (const candidate of [
+    value.name,
+    value.category_name,
+    value.categoryName,
+    value.title,
+  ]) {
+    if (typeof candidate === "string" && candidate.trim()) {
+      return candidate.trim();
+    }
+  }
+  return "Other";
+}
+
 function getCurrentDate() {
   const now = new Date();
   // Use local date instead of UTC to avoid timezone-related date mismatches
@@ -219,6 +263,79 @@ function formatDate(dateString?: string) {
     month: "short",
     year: "numeric",
   });
+}
+
+function getExpenseAttachment(expense: ExpenseItem): ExpenseAttachment | null {
+  const candidates = [
+    expense.attachment,
+    expense.attachments,
+    expense.receipt,
+    expense.image,
+    expense.attachment_url,
+    expense.receipt_url,
+    expense.receipt_path,
+    expense.receipt_image,
+    expense.image_url,
+    expense.image_path,
+    expense.expense_image,
+    expense.attachment_path,
+  ];
+  const candidate = candidates
+    .flatMap((value) => (Array.isArray(value) ? value : [value]))
+    .find((value) => {
+      if (typeof value === "string") return Boolean(value.trim());
+      if (!value || typeof value !== "object") return false;
+      const item = value as Record<string, unknown>;
+      return Boolean(
+        item.uri || item.url || item.path || item.file_url || item.file_path,
+      );
+    });
+
+  if (typeof candidate === "string") {
+    const path = candidate.trim();
+    return {
+      uri: getAttachmentUrl(path),
+      name: path.split(/[\\/]/).pop() || "Expense attachment",
+    };
+  }
+  if (!candidate || typeof candidate !== "object") return null;
+
+  const item = candidate as Record<string, unknown>;
+  const path = [
+    item.uri,
+    item.url,
+    item.file_url,
+    item.path,
+    item.file_path,
+  ].find((value): value is string => typeof value === "string" && !!value.trim());
+  if (!path) return null;
+
+  const nameValue = item.name ?? item.file_name ?? item.filename;
+  const mimeTypeValue = item.mime_type ?? item.mimeType ?? item.type;
+  return {
+    uri: getAttachmentUrl(path),
+    name:
+      typeof nameValue === "string"
+        ? nameValue
+        : path.split(/[\\/]/).pop() || "Expense attachment",
+    mimeType: typeof mimeTypeValue === "string" ? mimeTypeValue : undefined,
+  };
+}
+
+function getAttachmentUrl(path: string) {
+  if (/^(https?:|file:|content:)/i.test(path)) return path;
+  return `${API_BASE_URL.replace(/\/api\/?$/, "")}${path.startsWith("/") ? "" : "/"}${path}`;
+}
+
+function formatTimestamp(value?: string) {
+  if (!value) return "";
+  const localDateTime = parseLocalDateTimeValue(value);
+  const date = localDateTime ?? new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return `${formatDate(formatLocalDate(date))} · ${date.toLocaleTimeString("en-IN", {
+    hour: "numeric",
+    minute: "2-digit",
+  })}`;
 }
 
 function getExpenseMonth(dateString?: string) {
@@ -303,6 +420,13 @@ export default function Expenses() {
   const [saving, setSaving] = useState(false);
   const [pendingDeleteExpense, setPendingDeleteExpense] =
     useState<ExpenseItem | null>(null);
+  const [viewingExpense, setViewingExpense] = useState<ExpenseItem | null>(null);
+  const [expenseDetails, setExpenseDetails] = useState<ExpenseItem | null>(null);
+  const [expenseDetailsLoading, setExpenseDetailsLoading] = useState(false);
+  const [expenseDetailsError, setExpenseDetailsError] = useState<string | null>(
+    null,
+  );
+  const [expenseDetailsRequest, setExpenseDetailsRequest] = useState(0);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [manualTransfer, setManualTransfer] = useState(false);
   const [customTransferAmount, setCustomTransferAmount] = useState(false);
@@ -410,6 +534,72 @@ export default function Expenses() {
     await logoutUser();
     router.replace("/auth/login");
   }, [router]);
+
+  useEffect(() => {
+    if (!viewingExpense) return;
+
+    let isActive = true;
+    const selectedId = String(viewingExpense.id);
+
+    const loadExpenseDetails = async () => {
+      setExpenseDetailsLoading(true);
+      setExpenseDetailsError(null);
+      try {
+        const response = await api.get(`/expenses/${encodeURIComponent(selectedId)}`);
+        const responseData = response?.data;
+        const responseDetail =
+          responseData?.expense ??
+          responseData?.data?.expense ??
+          responseData?.expenses ??
+          responseData?.data?.expenses ??
+          responseData?.data ??
+          responseData;
+        const detail = Array.isArray(responseDetail)
+          ? responseDetail.find((item) => String(item?.id) === selectedId)
+          : responseDetail;
+
+        if (!detail || typeof detail !== "object" || Array.isArray(detail)) {
+          throw new Error("Expense details were not returned.");
+        }
+
+        const loadedExpense = detail as Partial<ExpenseItem>;
+        if (
+          loadedExpense.id !== undefined &&
+          String(loadedExpense.id) !== selectedId
+        ) {
+          throw new Error("The server returned details for a different expense.");
+        }
+
+        if (isActive) {
+          setExpenseDetails({
+            ...viewingExpense,
+            ...loadedExpense,
+            category: getExpenseCategoryName(loadedExpense.category),
+            id: viewingExpense.id,
+          });
+        }
+      } catch (error) {
+        if (!isActive) return;
+        const status = (error as { status?: number; response?: { status?: number } })
+          ?.status ?? (error as { response?: { status?: number } })?.response?.status;
+        if (status === 401) {
+          setViewingExpense(null);
+          await handleUnauthorized();
+          return;
+        }
+        setExpenseDetailsError(
+          getApiErrorMessage(error, "Unable to refresh expense details."),
+        );
+      } finally {
+        if (isActive) setExpenseDetailsLoading(false);
+      }
+    };
+
+    void loadExpenseDetails();
+    return () => {
+      isActive = false;
+    };
+  }, [expenseDetailsRequest, handleUnauthorized, viewingExpense]);
 
   const fetchAll = useCallback(async (showRefreshIndicator = false) => {
     try {
@@ -874,6 +1064,13 @@ export default function Expenses() {
     setPendingDeleteExpense(expense);
   };
 
+  const openExpenseDetails = (expense: ExpenseItem) => {
+    setExpenseDetails(expense);
+    setExpenseDetailsError(null);
+    setViewingExpense(expense);
+    setExpenseDetailsRequest((request) => request + 1);
+  };
+
   const confirmDeleteExpense = async () => {
     if (!pendingDeleteExpense) return;
     const expense = pendingDeleteExpense;
@@ -882,6 +1079,9 @@ export default function Expenses() {
       await api.delete(`/expenses/${expense.id}`);
       setExpenses((current) =>
         current.filter((item) => String(item.id) !== String(expense.id)),
+      );
+      setViewingExpense((current) =>
+        current && String(current.id) === String(expense.id) ? null : current,
       );
       setSuccessMessage("Expense removed.");
     } catch (error) {
@@ -920,6 +1120,34 @@ export default function Expenses() {
         message={successMessage ?? ""}
         onConfirm={() => setSuccessMessage(null)}
       />
+      <BottomSheet
+        visible={viewingExpense !== null}
+        title={
+          expenseDetails?.title ||
+          expenseDetails?.name ||
+          viewingExpense?.title ||
+          viewingExpense?.name ||
+          "Expense details"
+        }
+        subtitle="Expense details"
+        height="90%"
+        maxHeight="90%"
+        onClose={() => {
+          setViewingExpense(null);
+          setExpenseDetails(null);
+          setExpenseDetailsError(null);
+        }}
+      >
+        {viewingExpense ? (
+          <ExpenseDetailsContent
+            expense={expenseDetails ?? viewingExpense}
+            loading={expenseDetailsLoading}
+            error={expenseDetailsError}
+            onRetry={() => setExpenseDetailsRequest((request) => request + 1)}
+            onOpenAttachment={openAttachmentPreview}
+          />
+        ) : null}
+      </BottomSheet>
       <View style={{ flex: 1, backgroundColor: "#F2F5EA" }}>
         {/* ── Hero Header ── */}
         <View
@@ -1409,6 +1637,26 @@ export default function Expenses() {
                           gap: 4,
                         }}
                       >
+                        <Pressable
+                          accessibilityRole="button"
+                          accessibilityLabel={`View ${expense.title || "expense"}`}
+                          onPress={() => openExpenseDetails(expense)}
+                          hitSlop={8}
+                          style={{
+                            width: 32,
+                            height: 32,
+                            borderRadius: 10,
+                            backgroundColor: "#EEF5F0",
+                            justifyContent: "center",
+                            alignItems: "center",
+                          }}
+                        >
+                          <Ionicons
+                            name="eye-outline"
+                            size={16}
+                            color={Colors.primary}
+                          />
+                        </Pressable>
                         <Pressable
                           accessibilityRole="button"
                           accessibilityLabel={`Edit ${expense.title || "expense"}`}
@@ -2293,6 +2541,280 @@ function HeroStatCard({
         </Text>
       </View>
     </View>
+  );
+}
+
+function ExpenseDetailsContent({
+  expense,
+  loading,
+  error,
+  onRetry,
+  onOpenAttachment,
+}: {
+  expense: ExpenseItem;
+  loading: boolean;
+  error: string | null;
+  onRetry: () => void;
+  onOpenAttachment: (uri: string) => Promise<void>;
+}) {
+  const rawDate = expense.expense_date || "";
+  const parsedDateTime = parseLocalDateTimeValue(rawDate);
+  const time =
+    expense.expense_time?.slice(0, 5) ||
+    expense.time?.slice(0, 5) ||
+    (parsedDateTime && /[T ]\d{2}:\d{2}/.test(rawDate)
+      ? formatLocalTime(parsedDateTime)
+      : "");
+  const attachment = getExpenseAttachment(expense);
+  const notes = expense.notes?.trim() || expense.description?.trim();
+  const category = getExpenseCategoryName(expense.category);
+  const details = [
+    {
+      label: "Category",
+      value: category,
+      icon: getCategoryIcon(category),
+      iconColor: getCategoryAccent(category).color,
+    },
+    {
+      label: "Amount",
+      value: formatAmount(expense.expense_amount ?? expense.amount),
+      iconColor: "#E11D48",
+    },
+    {
+      label: "Date",
+      value: parsedDateTime
+        ? formatDate(formatLocalDate(parsedDateTime))
+        : formatDate(rawDate),
+      icon: "calendar-outline" as const,
+      iconColor: Colors.primary,
+    },
+    {
+      label: "Time",
+      value: time || "—",
+      icon: "time-outline" as const,
+      iconColor: Colors.primary,
+    },
+    ...(expense.payment_method?.trim()
+      ? [{
+          label: "Payment",
+          value: expense.payment_method.trim(),
+          icon: "card-outline" as const,
+          iconColor: Colors.primary,
+        }]
+      : []),
+    ...(expense.location?.trim()
+      ? [{
+          label: "Location",
+          value: expense.location.trim(),
+          icon: "location-outline" as const,
+          iconColor: Colors.primary,
+          fullWidth: true,
+        }]
+      : []),
+    ...(expense.from?.trim()
+      ? [{
+          label: "From",
+          value: expense.from.trim(),
+          icon: "navigate-outline" as const,
+          iconColor: Colors.primary,
+        }]
+      : []),
+    ...(expense.to?.trim()
+      ? [{
+          label: "To",
+          value: expense.to.trim(),
+          icon: "flag-outline" as const,
+          iconColor: Colors.primary,
+        }]
+      : []),
+    ...(expense.transfer_amount !== undefined &&
+    Number(expense.transfer_amount) > 0
+      ? [{
+          label: "Transfer contribution",
+          value: formatAmount(expense.transfer_amount),
+          icon: "swap-horizontal-outline" as const,
+          iconColor: Colors.primary,
+        }]
+      : []),
+    ...(expense.recurring?.trim()
+      ? [{
+          label: "Recurring",
+          value: expense.recurring.trim(),
+          icon: "repeat-outline" as const,
+          iconColor: Colors.primary,
+        }]
+      : []),
+    ...((expense.created_at || expense.createdAt)
+      ? [{
+          label: "Created",
+          value: formatTimestamp(expense.created_at || expense.createdAt),
+          icon: "add-circle-outline" as const,
+          iconColor: Colors.primary,
+          fullWidth: true,
+        }]
+      : []),
+    ...((expense.updated_at || expense.updatedAt)
+      ? [{
+          label: "Last updated",
+          value: formatTimestamp(expense.updated_at || expense.updatedAt),
+          icon: "refresh-outline" as const,
+          iconColor: Colors.primary,
+          fullWidth: true,
+        }]
+      : []),
+  ];
+
+  return (
+    <BottomSheetContent style={{ flexDirection: "row", flexWrap: "wrap" }}>
+      {loading ? (
+        <View
+          accessibilityLiveRegion="polite"
+          style={{
+            width: "100%",
+            flexDirection: "row",
+            alignItems: "center",
+            gap: 10,
+            paddingVertical: 8,
+          }}
+        >
+          <ActivityIndicator size="small" color={Colors.primary} />
+          <Text style={{ color: "#68736E", fontSize: 13 }}>
+            Refreshing expense details…
+          </Text>
+        </View>
+      ) : null}
+
+      {error ? (
+        <View
+          style={{
+            width: "100%",
+            flexDirection: "row",
+            alignItems: "center",
+            gap: 10,
+            borderRadius: 12,
+            backgroundColor: "#FFF4F2",
+            padding: 12,
+          }}
+        >
+          <Text style={{ flex: 1, color: "#9B3E36", fontSize: 12 }}>
+            {error} Showing the expense information already available.
+          </Text>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Retry loading expense details"
+            onPress={onRetry}
+            hitSlop={8}
+          >
+            <Text style={{ color: Colors.primary, fontWeight: "700" }}>
+              Retry
+            </Text>
+          </Pressable>
+        </View>
+      ) : null}
+
+      {details.map((detail) => (
+        <View
+          key={detail.label}
+          style={{
+            flexGrow: detail.fullWidth ? undefined : 1,
+            flexBasis: detail.fullWidth ? "100%" : "47%",
+            minWidth: detail.fullWidth ? "100%" : "45%",
+            borderRadius: 15,
+            backgroundColor: "#F5F7FA",
+            paddingHorizontal: 14,
+            paddingVertical: 13,
+            gap: 8,
+          }}
+        >
+          <Text
+            style={{
+              color: "#8A9AB1",
+              fontSize: 11,
+              fontWeight: "800",
+              letterSpacing: 0.7,
+              textTransform: "uppercase",
+            }}
+          >
+            {detail.label}
+          </Text>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+            {detail.icon ? (
+              <Ionicons
+                name={detail.icon}
+                size={18}
+                color={detail.iconColor}
+              />
+            ) : null}
+            <Text
+              style={{
+                flex: 1,
+                color: detail.label === "Amount" ? "#E11D48" : "#263238",
+                fontSize: 15,
+                fontWeight: "700",
+              }}
+            >
+              {detail.value}
+            </Text>
+          </View>
+        </View>
+      ))}
+
+      {notes ? (
+        <View
+          style={{
+            width: "100%",
+            borderRadius: 15,
+            backgroundColor: "#F5F7FA",
+            padding: 14,
+            gap: 8,
+          }}
+        >
+          <Text
+            style={{
+              color: "#8A9AB1",
+              fontSize: 11,
+              fontWeight: "800",
+              letterSpacing: 0.7,
+              textTransform: "uppercase",
+            }}
+          >
+            Description / notes
+          </Text>
+          <Text style={{ color: "#293930", fontSize: 14, lineHeight: 20 }}>
+            {notes}
+          </Text>
+        </View>
+      ) : null}
+
+      {attachment ? (
+        <View
+          style={{
+            width: "100%",
+            borderRadius: 15,
+            backgroundColor: "#F5F7FA",
+            padding: 14,
+          }}
+        >
+          <Text
+            style={{
+              color: "#8A9AB1",
+              fontSize: 11,
+              fontWeight: "800",
+              letterSpacing: 0.7,
+              textTransform: "uppercase",
+            }}
+          >
+            Receipt / attachment
+          </Text>
+          <UploadFilePreview
+            uri={attachment.uri}
+            name={attachment.name}
+            mimeType={attachment.mimeType}
+            onOpen={() => void onOpenAttachment(attachment.uri)}
+          />
+        </View>
+      ) : null}
+    </BottomSheetContent>
   );
 }
 

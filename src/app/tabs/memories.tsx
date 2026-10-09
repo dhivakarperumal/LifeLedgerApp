@@ -3,11 +3,14 @@ import {
     AudioModule,
     RecordingPresets,
     setAudioModeAsync,
+    useAudioPlayer,
+    useAudioPlayerStatus,
     useAudioRecorder,
 } from "expo-audio";
 import * as DocumentPicker from "expo-document-picker";
 import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
-import { useCallback, useMemo, useState } from "react";
+import { VideoView, useVideoPlayer } from "expo-video";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
     ActivityIndicator,
     Alert,
@@ -20,13 +23,23 @@ import {
     ScrollView,
     Text,
     View,
+    type GestureResponderEvent,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import api, { API_BASE_URL, getApiErrorMessage, logoutUser } from "../../api";
+import api, {
+    API_BASE_URL,
+    getApiErrorMessage,
+    getStoredToken,
+    logoutUser,
+} from "../../api";
 import { AddButton } from "../../components/AddButton";
 import { AddPageHeader } from "../../components/AddPageHeader";
 import { CenteredPageLoader } from "../../components/CenteredPageLoader";
 import ConfirmPopup from "../../components/ConfirmPopup";
+import {
+    BottomSheet,
+    BottomSheetContent,
+} from "../../components/BottomSheet";
 import {
     createDateRangeSelection,
     isDateInRange,
@@ -54,12 +67,27 @@ import { SearchBar } from "../../components/SearchBar";
 import { UploadFilePreview } from "../../components/UploadFilePreview";
 import { Colors } from "../../constants/colors";
 
+type MemoryAttachment =
+  | string
+  | {
+      id?: number | string;
+      file_url?: string;
+      url?: string;
+      src?: string;
+      path?: string;
+      file_name?: string;
+      name?: string;
+      file_type?: string;
+      type?: string;
+    };
+
 type Memory = {
   id: number | string;
   title: string;
   description?: string;
   category_id?: number | string;
   category_name?: string;
+  category?: string | { name?: string; title?: string };
   memory_date?: string;
   location?: string;
   mood?: string;
@@ -68,8 +96,12 @@ type Memory = {
   is_favorite?: boolean | number | string;
   media_type?: string;
   media_url?: string;
-  media_gallery?: (string | Record<string, any>)[];
+  media_gallery?: MemoryAttachment[];
+  attachments?: MemoryAttachment[];
+  media?: MemoryAttachment[];
   voice_note?: string;
+  created_at?: string;
+  updated_at?: string;
 };
 
 type MemoryCategory = {
@@ -139,7 +171,7 @@ function getList<T>(data: any, keys: string[] = []): T[] {
 
 function getMediaUrl(value?: string) {
   if (!value) return "";
-  if (/^https?:\/\//i.test(value)) return value;
+  if (/^(https?:|file:|content:|data:)/i.test(value)) return value;
   return `${mediaServerUrl}${value.startsWith("/") ? value : `/${value}`}`;
 }
 
@@ -194,6 +226,72 @@ function getMemoryMediaType(memory: Memory) {
     return "";
   });
   return types.find(Boolean) || "all";
+}
+
+function getAttachmentUrl(item: MemoryAttachment) {
+  const value =
+    typeof item === "string"
+      ? item
+      : item.file_url || item.url || item.src || item.path || "";
+  return getMediaUrl(value);
+}
+
+function getAttachmentName(item: MemoryAttachment, index: number) {
+  if (typeof item !== "string") {
+    return item.file_name || item.name || `Attachment ${index + 1}`;
+  }
+  return item.split("/").pop() || `Attachment ${index + 1}`;
+}
+
+function getAttachmentKind(item: MemoryAttachment) {
+  const declaredType =
+    typeof item === "string" ? "" : String(item.file_type || item.type || "");
+  const value = `${declaredType} ${getAttachmentName(item, 0)}`.toLowerCase();
+  if (
+    value.includes("image") ||
+    /\.(png|jpe?g|gif|webp|bmp|svg)(\?|$)/i.test(value)
+  )
+    return "image";
+  if (value.includes("video") || /\.(mp4|webm|mov|m4v|mkv)(\?|$)/i.test(value))
+    return "video";
+  if (value.includes("audio") || /\.(mp3|wav|m4a|aac|ogg)(\?|$)/i.test(value))
+    return "audio";
+  return "file";
+}
+
+function getMemoryAttachments(memory: Memory) {
+  const items: MemoryAttachment[] = [
+    ...(Array.isArray(memory.media_gallery) ? memory.media_gallery : []),
+    ...(Array.isArray(memory.attachments) ? memory.attachments : []),
+    ...(Array.isArray(memory.media) ? memory.media : []),
+  ];
+  if (memory.media_url) {
+    items.unshift({
+      file_url: memory.media_url,
+      file_type: memory.media_type,
+      file_name: memory.title,
+    });
+  }
+  const seen = new Set<string>();
+  return items.filter((item) => {
+    const url = getAttachmentUrl(item);
+    if (!url || seen.has(url)) return false;
+    seen.add(url);
+    return true;
+  });
+}
+
+function formatMemoryTimestamp(value?: string) {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return date.toLocaleString("en-IN", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 }
 
 function getTags(tags?: string[] | string) {
@@ -266,9 +364,18 @@ export default function Memories() {
   const [submitting, setSubmitting] = useState(false);
   const [pendingDeleteMemory, setPendingDeleteMemory] =
     useState<Memory | null>(null);
+  const [deletingMemoryId, setDeletingMemoryId] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [selectedMemory, setSelectedMemory] = useState<Memory | null>(null);
+  const [memoryDetails, setMemoryDetails] = useState<Memory | null>(null);
+  const [memoryDetailsLoading, setMemoryDetailsLoading] = useState(false);
+  const [memoryDetailsError, setMemoryDetailsError] = useState<string | null>(
+    null,
+  );
+  const [memoryDetailsRetry, setMemoryDetailsRetry] = useState(0);
   const [editingId, setEditingId] = useState<number | string | null>(null);
   const [form, setForm] = useState<MemoryForm>(initialForm);
+  const [existingMedia, setExistingMedia] = useState<MemoryAttachment[]>([]);
   const [newMedia, setNewMedia] = useState<LocalMedia[]>([]);
   const [isRecording, setIsRecording] = useState(false);
 
@@ -301,6 +408,65 @@ export default function Memories() {
     await logoutUser();
     router.replace("/auth/login");
   }, [router]);
+
+  const openMemoryDetails = useCallback((memory: Memory) => {
+    setSelectedMemory(memory);
+    setMemoryDetails(memory);
+    setMemoryDetailsError(null);
+    setMemoryDetailsLoading(true);
+  }, []);
+
+  useEffect(() => {
+    if (!selectedMemory) return;
+
+    let active = true;
+    const selectedId = String(selectedMemory.id);
+    const loadDetails = async () => {
+      setMemoryDetailsLoading(true);
+      setMemoryDetailsError(null);
+      try {
+        const response = await api.get(
+          `/memories/${encodeURIComponent(selectedId)}`,
+        );
+        const responseData = response.data;
+        const rawDetail =
+          responseData?.memory ??
+          responseData?.data?.memory ??
+          responseData?.memories ??
+          responseData?.data?.memories ??
+          responseData?.data ??
+          responseData;
+        const detail = Array.isArray(rawDetail)
+          ? rawDetail.find((item) => String(item?.id) === selectedId)
+          : rawDetail;
+        if (!detail || typeof detail !== "object" || Array.isArray(detail)) {
+          throw new Error("Memory details were not returned.");
+        }
+        if (detail.id !== undefined && String(detail.id) !== selectedId) {
+          throw new Error("The server returned a different memory.");
+        }
+        if (active) setMemoryDetails({ ...selectedMemory, ...detail });
+      } catch (error) {
+        if (!active) return;
+        const status = (error as any)?.status || (error as any)?.response?.status;
+        if (status === 401) {
+          setSelectedMemory(null);
+          await handleUnauthorized();
+          return;
+        }
+        setMemoryDetailsError(
+          getApiErrorMessage(error, "Unable to load memory details."),
+        );
+      } finally {
+        if (active) setMemoryDetailsLoading(false);
+      }
+    };
+
+    void loadDetails();
+    return () => {
+      active = false;
+    };
+  }, [handleUnauthorized, memoryDetailsRetry, selectedMemory]);
 
   const fetchData = useCallback(async () => {
     try {
@@ -426,6 +592,7 @@ export default function Memories() {
       ...initialForm,
       category_id: categories[0] ? String(categories[0].id) : "",
     });
+    setExistingMedia([]);
     setNewMedia([]);
     setEditorVisible(true);
   }, [categories]);
@@ -448,6 +615,7 @@ export default function Memories() {
       is_favorite: isFavorite(memory),
       voice_note: memory.voice_note || "",
     });
+    setExistingMedia(getMemoryAttachments(memory));
     setNewMedia([]);
     setEditorVisible(true);
   }, []);
@@ -620,6 +788,7 @@ export default function Memories() {
       }
 
       setNewMedia([]);
+      setExistingMedia([]);
       await fetchData();
       setSuccessMessage(
         editingId ? "Memory updated successfully." : "Memory created successfully.",
@@ -646,24 +815,35 @@ export default function Memories() {
   };
 
   const confirmDeleteMemory = async () => {
-    if (!pendingDeleteMemory) return;
+    if (!pendingDeleteMemory || deletingMemoryId !== null) return;
     const memory = pendingDeleteMemory;
-    setPendingDeleteMemory(null);
+    const memoryId = String(memory.id);
+    setDeletingMemoryId(memoryId);
     try {
-      await api.delete(`/memories/${memory.id}`);
+      await api.delete(`/memories/${encodeURIComponent(memoryId)}`);
       setMemories((current) =>
-        current.filter((item) => item.id !== memory.id),
+        current.filter((item) => String(item.id) !== memoryId),
       );
+      if (String(selectedMemory?.id) === memoryId) {
+        setSelectedMemory(null);
+        setMemoryDetails(null);
+      }
+      setPendingDeleteMemory(null);
       setSuccessMessage("Memory deleted successfully.");
     } catch (error) {
       const status =
         (error as any)?.status || (error as any)?.response?.status;
-      if (status === 401) await handleUnauthorized();
+      if (status === 401) {
+        setPendingDeleteMemory(null);
+        await handleUnauthorized();
+      }
       else
         Alert.alert(
           "Unable to delete memory",
           getApiErrorMessage(error, "Please try again."),
         );
+    } finally {
+      setDeletingMemoryId(null);
     }
   };
 
@@ -704,13 +884,16 @@ export default function Memories() {
       <ConfirmPopup
         visible={pendingDeleteMemory !== null}
         type="delete"
+        loading={deletingMemoryId !== null}
         message={
           pendingDeleteMemory
             ? `Delete "${pendingDeleteMemory.title}"?`
             : undefined
         }
         onConfirm={confirmDeleteMemory}
-        onCancel={() => setPendingDeleteMemory(null)}
+        onCancel={() => {
+          if (deletingMemoryId === null) setPendingDeleteMemory(null);
+        }}
       />
       <ConfirmPopup
         visible={successMessage !== null}
@@ -1022,46 +1205,29 @@ export default function Memories() {
                             <Pressable
                               onPress={(event) => {
                                 event.stopPropagation();
-                                Alert.alert(memory.title, "Memory options", [
-                                  {
-                                    text: "View",
-                                    onPress: () =>
-                                      router.push({
-                                        pathname: "/memories/[id]",
-                                        params: { id: String(memory.id) },
-                                      }),
-                                  },
-                                  {
-                                    text: "Edit",
-                                    onPress: () =>
-                                      router.push({
-                                        pathname: "/memory-form" as any,
-                                        params: { edit: String(memory.id) },
-                                      }),
-                                  },
-                                  {
-                                    text: isFavorite(memory)
-                                      ? "Remove favorite"
-                                      : "Add favorite",
-                                    onPress: () => void toggleFavorite(memory),
-                                  },
-                                  {
-                                    text: "Delete",
-                                    style: "destructive",
-                                    onPress: () => handleDelete(memory),
-                                  },
-                                  { text: "Cancel", style: "cancel" },
-                                ]);
+                                void toggleFavorite(memory);
                               }}
                               accessibilityRole="button"
-                              accessibilityLabel={`Options for ${memory.title}`}
+                              accessibilityLabel={
+                                isFavorite(memory)
+                                  ? `Remove ${memory.title} from favorites`
+                                  : `Add ${memory.title} to favorites`
+                              }
                               hitSlop={7}
-                              style={{ paddingLeft: 5, paddingVertical: 3 }}
+                              style={{ paddingHorizontal: 4, paddingVertical: 3 }}
                             >
                               <Ionicons
-                                name="ellipsis-vertical"
-                                size={19}
-                                color={Colors.textSecondary}
+                                name={
+                                  isFavorite(memory)
+                                    ? "heart"
+                                    : "heart-outline"
+                                }
+                                size={18}
+                                color={
+                                  isFavorite(memory)
+                                    ? "#D95761"
+                                    : Colors.textSecondary
+                                }
                               />
                             </Pressable>
                           </View>
@@ -1181,6 +1347,45 @@ export default function Memories() {
                               </Text>
                             ))}
                           </View>
+                          <View
+                            style={{
+                              flexDirection: "row",
+                              justifyContent: "flex-end",
+                              gap: 8,
+                              marginTop: 9,
+                            }}
+                          >
+                            <MemoryCardAction
+                              icon="eye-outline"
+                              color={Colors.forest}
+                              label={`View ${memory.title}`}
+                              onPress={(event) => {
+                                event.stopPropagation();
+                                openMemoryDetails(memory);
+                              }}
+                            />
+                            <MemoryCardAction
+                              icon="create-outline"
+                              color="#426C92"
+                              label={`Edit ${memory.title}`}
+                              onPress={(event) => {
+                                event.stopPropagation();
+                                router.push({
+                                  pathname: "/memory-form" as any,
+                                  params: { edit: String(memory.id) },
+                                });
+                              }}
+                            />
+                            <MemoryCardAction
+                              icon="trash-outline"
+                              color="#B64C45"
+                              label={`Delete ${memory.title}`}
+                              onPress={(event) => {
+                                event.stopPropagation();
+                                handleDelete(memory);
+                              }}
+                            />
+                          </View>
                         </View>
                       </Pressable>
                     );
@@ -1204,6 +1409,39 @@ export default function Memories() {
         accessibilityHint="Opens the new memory form"
         bottomOffset={84}
       />
+
+      <BottomSheet
+        visible={selectedMemory !== null}
+        title={memoryDetails?.title || selectedMemory?.title || "Memory details"}
+        subtitle="MEMORY DETAILS"
+        height="90%"
+        maxHeight="90%"
+        onClose={() => {
+          setSelectedMemory(null);
+          setMemoryDetails(null);
+          setMemoryDetailsError(null);
+        }}
+      >
+        {memoryDetails ? (
+          <MemoryDetailContent
+            memory={memoryDetails}
+            categoryName={
+              (typeof memoryDetails.category === "string"
+                ? memoryDetails.category
+                : memoryDetails.category?.name ||
+                  memoryDetails.category?.title) ||
+              memoryDetails.category_name ||
+              categories.find(
+                (category) =>
+                  String(category.id) === String(memoryDetails.category_id),
+              )?.name
+            }
+            loading={memoryDetailsLoading}
+            error={memoryDetailsError}
+            onRetry={() => setMemoryDetailsRetry((current) => current + 1)}
+          />
+        ) : null}
+      </BottomSheet>
 
       {editorVisible && (
         <View className="absolute inset-0 z-50 bg-white" style={{ paddingBottom: insets.bottom }}>
@@ -1312,6 +1550,26 @@ export default function Memories() {
               </Pressable>
 
               <FormLabel>Attachments</FormLabel>
+              {editingId && existingMedia.length ? (
+                <View style={{ gap: 8, marginBottom: 8 }}>
+                  <Text
+                    style={{
+                      color: Colors.textSecondary,
+                      fontSize: 12,
+                      fontWeight: "700",
+                    }}
+                  >
+                    Current attachments (kept when saving)
+                  </Text>
+                  {existingMedia.map((item, index) => (
+                    <MemoryAttachmentPreview
+                      key={`${getAttachmentUrl(item)}-${index}`}
+                      item={item}
+                      index={index}
+                    />
+                  ))}
+                </View>
+              ) : null}
               <Pressable
                 onPress={() => void pickMedia()}
                 style={{
@@ -1391,3 +1649,391 @@ export default function Memories() {
     </SafeAreaView>
   );
 }
+
+function MemoryCardAction({
+  icon,
+  color,
+  label,
+  onPress,
+}: {
+  icon: keyof typeof Ionicons.glyphMap;
+  color: string;
+  label: string;
+  onPress: (event: GestureResponderEvent) => void;
+}) {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      hitSlop={5}
+      onPress={onPress}
+      style={({ pressed }) => ({
+        width: 32,
+        height: 32,
+        alignItems: "center",
+        justifyContent: "center",
+        borderRadius: 10,
+        backgroundColor: `${color}12`,
+        opacity: pressed ? 0.65 : 1,
+      })}
+    >
+      <Ionicons name={icon} size={17} color={color} />
+    </Pressable>
+  );
+}
+
+function MemoryDetailContent({
+  memory,
+  categoryName,
+  loading,
+  error,
+  onRetry,
+}: {
+  memory: Memory;
+  categoryName?: string;
+  loading: boolean;
+  error: string | null;
+  onRetry: () => void;
+}) {
+  const attachments = getMemoryAttachments(memory);
+
+  return (
+    <BottomSheetContent style={{ gap: 12 }}>
+      {loading ? (
+        <View
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            gap: 9,
+            padding: 12,
+            borderRadius: 12,
+            backgroundColor: "#F1F5F2",
+          }}
+        >
+          <ActivityIndicator size="small" color={Colors.forest} />
+          <Text style={{ color: Colors.textSecondary, fontSize: 13 }}>
+            Loading latest memory details…
+          </Text>
+        </View>
+      ) : null}
+      {error ? (
+        <View
+          style={{
+            gap: 9,
+            padding: 12,
+            borderRadius: 12,
+            backgroundColor: "#FFF2EE",
+          }}
+        >
+          <Text style={{ color: "#9D3D36", fontSize: 13 }}>{error}</Text>
+          <Pressable
+            accessibilityRole="button"
+            onPress={onRetry}
+            style={{
+              alignSelf: "flex-start",
+              paddingHorizontal: 13,
+              paddingVertical: 8,
+              borderRadius: 9,
+              backgroundColor: "#F8DDD8",
+            }}
+          >
+            <Text style={{ color: "#8E332D", fontWeight: "700" }}>Retry</Text>
+          </Pressable>
+        </View>
+      ) : null}
+
+      {categoryName ? (
+        <MemoryDetailField icon="pricetag-outline" label="Category" value={categoryName} />
+      ) : null}
+      {memory.memory_date ? (
+        <MemoryDetailField
+          icon="calendar-outline"
+          label="Date & time"
+          value={formatDateTime(memory.memory_date)}
+        />
+      ) : null}
+      {memory.location ? (
+        <MemoryDetailField
+          icon="location-outline"
+          label="Location"
+          value={memory.location}
+        />
+      ) : null}
+      {memory.mood ? (
+        <MemoryDetailField icon="happy-outline" label="Mood" value={memory.mood} />
+      ) : null}
+      {memory.description?.trim() ? (
+        <MemoryDetailText label="Description" value={memory.description.trim()} />
+      ) : null}
+      {attachments.length ? (
+        <View style={memoryDetailSectionStyle}>
+          <Text style={memoryDetailLabelStyle}>Media & attachments</Text>
+          <View style={{ gap: 12 }}>
+            {attachments.map((item, index) => (
+              <MemoryAttachmentPreview
+                key={`${getAttachmentUrl(item)}-${index}`}
+                item={item}
+                index={index}
+              />
+            ))}
+          </View>
+        </View>
+      ) : null}
+      {memory.voice_note?.trim() ? (
+        <MemoryDetailText
+          label="Voice note"
+          value={memory.voice_note.trim()}
+        />
+      ) : null}
+      {memory.tags && getTags(memory.tags).length ? (
+        <MemoryDetailText
+          label="Tags"
+          value={getTags(memory.tags).join(" · ")}
+        />
+      ) : null}
+      {memory.created_at || memory.updated_at ? (
+        <View style={memoryDetailSectionStyle}>
+          <Text style={memoryDetailLabelStyle}>Record details</Text>
+          {memory.created_at ? (
+            <Text style={memoryDetailValueStyle}>
+              Created: {formatMemoryTimestamp(memory.created_at)}
+            </Text>
+          ) : null}
+          {memory.updated_at ? (
+            <Text style={[memoryDetailValueStyle, { marginTop: 6 }]}>
+              Updated: {formatMemoryTimestamp(memory.updated_at)}
+            </Text>
+          ) : null}
+        </View>
+      ) : null}
+    </BottomSheetContent>
+  );
+}
+
+function MemoryDetailField({
+  icon,
+  label,
+  value,
+}: {
+  icon: keyof typeof Ionicons.glyphMap;
+  label: string;
+  value: string;
+}) {
+  return (
+    <View
+      style={{
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 12,
+        minHeight: 58,
+        paddingHorizontal: 14,
+        paddingVertical: 11,
+        borderRadius: 14,
+        backgroundColor: "#F3F6F4",
+      }}
+    >
+      <Ionicons name={icon} size={19} color={Colors.forest} />
+      <View style={{ flex: 1 }}>
+        <Text style={memoryDetailLabelStyle}>{label}</Text>
+        <Text style={[memoryDetailValueStyle, { marginTop: 3 }]}>{value}</Text>
+      </View>
+    </View>
+  );
+}
+
+function MemoryDetailText({ label, value }: { label: string; value: string }) {
+  return (
+    <View style={memoryDetailSectionStyle}>
+      <Text style={memoryDetailLabelStyle}>{label}</Text>
+      <Text style={[memoryDetailValueStyle, { marginTop: 7 }]}>{value}</Text>
+    </View>
+  );
+}
+
+function MemoryAttachmentPreview({
+  item,
+  index,
+}: {
+  item: MemoryAttachment;
+  index: number;
+}) {
+  const url = getAttachmentUrl(item);
+  const name = getAttachmentName(item, index);
+  const kind = getAttachmentKind(item);
+
+  if (kind === "image") {
+    return (
+      <View style={{ overflow: "hidden", borderRadius: 12, backgroundColor: "#F3F6F4" }}>
+        <Image
+          source={{ uri: url }}
+          resizeMode="contain"
+          style={{ width: "100%", height: 220 }}
+          accessibilityLabel={name}
+        />
+        <Text numberOfLines={1} style={memoryAttachmentNameStyle}>
+          {name}
+        </Text>
+      </View>
+    );
+  }
+
+  if (kind === "video") return <MemoryVideoPreview url={url} name={name} />;
+  if (kind === "audio") return <MemoryAudioPreview url={url} name={name} />;
+
+  return (
+    <Pressable
+      accessibilityRole="link"
+      accessibilityLabel={`Open attachment ${name}`}
+      onPress={() =>
+        void Linking.openURL(url).catch(() =>
+          Alert.alert("Unable to open attachment", "No app could open this file."),
+        )
+      }
+      style={memoryAttachmentRowStyle}
+    >
+      <Ionicons name="document-attach-outline" size={22} color={Colors.forest} />
+      <Text numberOfLines={2} style={{ flex: 1, color: Colors.textPrimary, fontSize: 13 }}>
+        {name}
+      </Text>
+      <Ionicons name="open-outline" size={18} color={Colors.sage} />
+    </Pressable>
+  );
+}
+
+function MemoryVideoPreview({ url, name }: { url: string; name: string }) {
+  const player = useVideoPlayer(null);
+  const [loadError, setLoadError] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    void getAuthenticatedMediaSource(url)
+      .then((source) => {
+        if (active) return player.replaceAsync(source);
+      })
+      .catch(() => {
+        if (active) setLoadError(true);
+      });
+    return () => {
+      active = false;
+    };
+  }, [player, url]);
+
+  return (
+    <View style={{ overflow: "hidden", borderRadius: 12, backgroundColor: "#101915" }}>
+      <VideoView
+        player={player}
+        nativeControls
+        contentFit="contain"
+        style={{ width: "100%", height: 220 }}
+      />
+      {loadError || player.status === "error" ? (
+        <Text style={{ padding: 10, color: Colors.white, fontSize: 13 }}>
+          Unable to load video.
+        </Text>
+      ) : null}
+      <Text numberOfLines={1} style={[memoryAttachmentNameStyle, { backgroundColor: Colors.white }]}>
+        {name}
+      </Text>
+    </View>
+  );
+}
+
+function MemoryAudioPreview({ url, name }: { url: string; name: string }) {
+  const player = useAudioPlayer(null);
+  const status = useAudioPlayerStatus(player);
+  const [loadError, setLoadError] = useState(false);
+  const elapsed = `${Math.floor(status.currentTime / 60)}:${String(
+    Math.floor(status.currentTime % 60),
+  ).padStart(2, "0")}`;
+
+  useEffect(() => {
+    let active = true;
+    void getAuthenticatedMediaSource(url)
+      .then((source) => {
+        if (active) player.replace(source);
+      })
+      .catch(() => {
+        if (active) setLoadError(true);
+      });
+    return () => {
+      active = false;
+    };
+  }, [player, url]);
+
+  return (
+    <View style={memoryAttachmentRowStyle}>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={status.playing ? `Pause ${name}` : `Play ${name}`}
+        disabled={!status.isLoaded || Boolean(status.error) || loadError}
+        onPress={() => (status.playing ? player.pause() : player.play())}
+        style={{
+          width: 44,
+          height: 44,
+          alignItems: "center",
+          justifyContent: "center",
+          borderRadius: 22,
+          backgroundColor: Colors.forest,
+          opacity: !status.isLoaded || loadError ? 0.6 : 1,
+        }}
+      >
+        <Ionicons
+          name={status.playing ? "pause" : "play"}
+          size={19}
+          color={Colors.white}
+        />
+      </Pressable>
+      <View style={{ flex: 1 }}>
+        <Text numberOfLines={1} style={{ color: Colors.textPrimary, fontSize: 13, fontWeight: "700" }}>
+          {name}
+        </Text>
+        <Text style={{ color: Colors.sage, fontSize: 12, marginTop: 4 }}>
+          {loadError || status.error ? "Unable to load audio." : elapsed}
+        </Text>
+      </View>
+      <Ionicons name="musical-notes-outline" size={20} color={Colors.sage} />
+    </View>
+  );
+}
+
+async function getAuthenticatedMediaSource(url: string) {
+  const token = await getStoredToken();
+  return {
+    uri: url,
+    ...(token ? { headers: { Authorization: `Bearer ${token}` } } : {}),
+  };
+}
+
+const memoryDetailSectionStyle = {
+  padding: 14,
+  borderRadius: 14,
+  backgroundColor: "#F3F6F4",
+};
+const memoryDetailLabelStyle = {
+  color: Colors.sage,
+  fontSize: 11,
+  fontWeight: "800" as const,
+  letterSpacing: 0.6,
+  textTransform: "uppercase" as const,
+};
+const memoryDetailValueStyle = {
+  color: Colors.textPrimary,
+  fontSize: 14,
+  lineHeight: 20,
+};
+const memoryAttachmentRowStyle = {
+  flexDirection: "row" as const,
+  alignItems: "center" as const,
+  gap: 12,
+  minHeight: 68,
+  padding: 12,
+  borderRadius: 12,
+  backgroundColor: "#F3F6F4",
+};
+const memoryAttachmentNameStyle = {
+  paddingHorizontal: 11,
+  paddingVertical: 9,
+  color: Colors.textPrimary,
+  fontSize: 12,
+  fontWeight: "600" as const,
+};
