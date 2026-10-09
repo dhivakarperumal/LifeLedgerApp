@@ -3,26 +3,26 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import { useCallback, useState } from "react";
 import {
-  ActivityIndicator,
-  Alert,
-  KeyboardAvoidingView,
-  Modal,
-  Platform,
-  Pressable,
-  RefreshControl,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
+    ActivityIndicator,
+    Alert,
+    KeyboardAvoidingView,
+    Modal,
+    Platform,
+    Pressable,
+    RefreshControl,
+    ScrollView,
+    StyleSheet,
+    Text,
+    View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import api, { getApiErrorMessage } from "../api";
 import { AddButton } from "../components/AddButton";
+import { CenteredPageLoader } from "../components/CenteredPageLoader";
+import ConfirmPopup from "../components/ConfirmPopup";
 import { DateTimePickerComponent } from "../components/DateTimePickerComponent";
 import { FormInput, FormLabel, FormOption } from "../components/FormControls";
 import { GradientSafeAreaView as SafeAreaView } from "../components/GradientSafeAreaView";
-import { CenteredPageLoader } from "../components/CenteredPageLoader";
-import ConfirmPopup from "../components/ConfirmPopup";
 import { createSessionDataCache } from "../components/SessionDataCache";
 import { Colors } from "../constants/colors";
 
@@ -209,10 +209,14 @@ function EntryCard({
 
 export default function CalendarScreen() {
   const router = useRouter();
-  const { create: rawCreate } = useLocalSearchParams<{
+  const { create: rawCreate, date: rawCreateDate } = useLocalSearchParams<{
     create?: string | string[];
+    date?: string | string[];
   }>();
   const createParam = Array.isArray(rawCreate) ? rawCreate[0] : rawCreate;
+  const createDateParam = Array.isArray(rawCreateDate)
+    ? rawCreateDate[0]
+    : rawCreateDate;
   const insets = useSafeAreaInsets();
   const [events, setEvents] = useState<CalendarEntry[]>(
     () => calendarDataCache.get()?.events ?? [],
@@ -281,11 +285,11 @@ export default function CalendarScreen() {
     }, [fetchCalendar]),
   );
 
-  const openForm = useCallback((type: EntryType) => {
+  const openForm = useCallback((type: EntryType, date = selectedDate) => {
     setForm({
       title: "",
       category: "Personal",
-      date: dateKey(selectedDate),
+      date: dateKey(date),
       time: "09:00",
       priority: "Medium",
       details: "",
@@ -296,9 +300,13 @@ export default function CalendarScreen() {
   useFocusEffect(
     useCallback(() => {
       if (createParam !== "event" && createParam !== "reminder") return;
-      openForm(createParam);
+      const requestedDate = createDateParam
+        ? parseDateString(createDateParam)
+        : null;
+      if (requestedDate) setSelectedDate(requestedDate);
+      openForm(createParam, requestedDate || selectedDate);
       router.setParams({ create: undefined });
-    }, [createParam, openForm, router]),
+    }, [createDateParam, createParam, openForm, router, selectedDate]),
   );
 
   const saveEntry = async () => {
@@ -332,11 +340,13 @@ export default function CalendarScreen() {
           notificationEnabled: true,
         });
       }
-      setModalType(null);
       await fetchCalendar();
-      setSuccessMessage(
-        modalType === "event" ? "Event added successfully." : "Reminder added successfully.",
-      );
+      const message = modalType === "event"
+        ? "Event added successfully."
+        : "Reminder added successfully.";
+      Alert.alert("Saved", message);
+      if (router.canGoBack()) router.back();
+      else setModalType(null);
     } catch (error) {
       Alert.alert("Unable to save", getApiErrorMessage(error));
     } finally {
@@ -666,7 +676,12 @@ export default function CalendarScreen() {
       )}
 
       <AddButton
-        onPress={() => openForm(activeType)}
+        onPress={() =>
+          router.push({
+            pathname: "/calendar",
+            params: { create: activeType, date: dateKey(selectedDate) },
+          })
+        }
         accessibilityLabel={
           activeType === "event" ? "Add event" : "Add reminder"
         }
@@ -820,7 +835,13 @@ export default function CalendarScreen() {
               <Pressable
                 onPress={() => {
                   setDayPopupDate(null);
-                  openForm(activeType);
+                  router.push({
+                    pathname: "/calendar",
+                    params: {
+                      create: activeType,
+                      date: dateKey(dayPopupDate ?? selectedDate),
+                    },
+                  });
                 }}
                 className="mt-3 items-center rounded-2xl bg-[#1A1A2E] py-4"
               >
@@ -833,33 +854,24 @@ export default function CalendarScreen() {
         </Pressable>
       </Modal>
 
-      <Modal
-        visible={modalType !== null}
-        transparent
-        animationType="slide"
-        onRequestClose={() => setModalType(null)}
-      >
-        <View className="flex-1 bg-black/40" style={{ paddingBottom: insets.bottom }}>
+      {modalType !== null && (
+        <View className="absolute inset-0 z-50 bg-[#F9FAFC]" style={{ paddingBottom: insets.bottom }}>
           <KeyboardAvoidingView
             behavior={Platform.OS === "ios" ? "padding" : "height"}
             keyboardVerticalOffset={0}
-            style={{ flex: 1, justifyContent: "flex-end" }}
+            style={{ flex: 1 }}
           >
           <View
-            className="rounded-t-3xl bg-[#F9FAFC] px-5 pb-8 pt-5"
-            style={{ height: "85%", maxHeight: "85%" }}
+            className="flex-1 bg-[#F9FAFC] px-5 pb-5 pt-5"
           >
             <View
               className="mb-4 flex-row items-center justify-between"
               style={{
                 marginHorizontal: -20,
-                marginTop: -20,
                 paddingHorizontal: 20,
                 paddingTop: 20,
                 paddingBottom: 16,
                 backgroundColor: "#FFFFFF",
-                borderTopLeftRadius: 24,
-                borderTopRightRadius: 24,
               }}
             >
               <Text className="text-xl font-extrabold capitalize text-[#264B2A]">
@@ -867,11 +879,14 @@ export default function CalendarScreen() {
               </Text>
               <Pressable
                 accessibilityRole="button"
-                onPress={() => setModalType(null)}
-                accessibilityLabel="Close"
+                onPress={() => {
+                  if (router.canGoBack()) router.back();
+                  else setModalType(null);
+                }}
+                accessibilityLabel="Go back"
                 className="h-9 w-9 items-center justify-center rounded-full bg-[#F2F4F2]"
               >
-                <Ionicons name="close" size={24} color={Colors.primaryDark} />
+                <Ionicons name="arrow-back" size={24} color={Colors.primaryDark} />
               </Pressable>
             </View>
             <ScrollView
@@ -972,6 +987,16 @@ export default function CalendarScreen() {
               </View>
               <Pressable
                 disabled={saving}
+                onPress={() => {
+                  if (router.canGoBack()) router.back();
+                  else setModalType(null);
+                }}
+                className="mb-3 items-center rounded-xl border border-[#DDE3DC] bg-white py-3.5"
+              >
+                <Text className="text-base font-bold text-[#526058]">Cancel</Text>
+              </Pressable>
+              <Pressable
+                disabled={saving}
                 onPress={() => void saveEntry()}
                 className="items-center rounded-xl bg-[#366039] py-3.5"
               >
@@ -985,7 +1010,7 @@ export default function CalendarScreen() {
           </View>
           </KeyboardAvoidingView>
         </View>
-      </Modal>
+      )}
     </SafeAreaView>
   );
 }

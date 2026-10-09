@@ -5,20 +5,20 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { VideoView, useVideoPlayer } from "expo-video";
 import { useEffect, useMemo, useState } from "react";
 import {
-  ActivityIndicator,
-  Alert,
-  Image,
-  Linking,
-  Pressable,
-  RefreshControl,
-  ScrollView,
-  Text,
-  View,
+    ActivityIndicator,
+    Alert,
+    Image,
+    Linking,
+    Pressable,
+    RefreshControl,
+    ScrollView,
+    Text,
+    View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import api, { API_BASE_URL, getApiErrorMessage, logoutUser } from "../../api";
-import { GradientSafeAreaView as SafeAreaView } from "../../components/GradientSafeAreaView";
 import ConfirmPopup from "../../components/ConfirmPopup";
+import { GradientSafeAreaView as SafeAreaView } from "../../components/GradientSafeAreaView";
 import { Colors } from "../../constants/colors";
 
 type DiaryMedia = {
@@ -288,8 +288,8 @@ export default function DiaryDetails() {
 
   const editEntry = () => {
     if (entry) {
-      router.replace({
-        pathname: "/tabs/diary",
+      router.push({
+        pathname: "/diary-form" as any,
         params: { edit: String(entry.id) },
       });
     }

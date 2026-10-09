@@ -1,8 +1,8 @@
 import { Ionicons } from "@expo/vector-icons";
 import * as DocumentPicker from "expo-document-picker";
 import { LinearGradient } from "expo-linear-gradient";
-import { useFocusEffect, useRouter } from "expo-router";
-import { useCallback, useMemo, useState } from "react";
+import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
     ActivityIndicator,
     Alert,
@@ -22,6 +22,8 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Svg, { Path, Rect } from "react-native-svg";
 import api, { API_BASE_URL, getApiErrorMessage, logoutUser } from "../api";
 import { AddButton } from "../components/AddButton";
+import { CenteredPageLoader } from "../components/CenteredPageLoader";
+import ConfirmPopup from "../components/ConfirmPopup";
 import {
     createDateRangeSelection,
     isDateInRange,
@@ -38,11 +40,9 @@ import {
 } from "../components/filters";
 import { FormInput, FormLabel, FormOption } from "../components/FormControls";
 import { GradientSafeAreaView as SafeAreaView } from "../components/GradientSafeAreaView";
-import { CenteredPageLoader } from "../components/CenteredPageLoader";
-import ConfirmPopup from "../components/ConfirmPopup";
-import { createSessionDataCache } from "../components/SessionDataCache";
 import { PopupSelect } from "../components/PopupSelect";
 import { SearchBar } from "../components/SearchBar";
+import { createSessionDataCache } from "../components/SessionDataCache";
 import { Colors } from "../constants/colors";
 
 type TransferRecord = {
@@ -404,6 +404,12 @@ function Metric({
 
 export default function Transfers() {
   const router = useRouter();
+  const { form: rawForm, id: rawEditId } = useLocalSearchParams<{
+    form?: string | string[];
+    id?: string | string[];
+  }>();
+  const formParam = Array.isArray(rawForm) ? rawForm[0] : rawForm;
+  const editId = Array.isArray(rawEditId) ? rawEditId[0] : rawEditId;
   const insets = useSafeAreaInsets();
   const { width: screenWidth } = useWindowDimensions();
   const [transfers, setTransfers] = useState<TransferRecord[]>(
@@ -661,6 +667,10 @@ export default function Transfers() {
   ) => setForm((current) => ({ ...current, [key]: value }));
 
   const closeModal = () => {
+    if (router.canGoBack()) {
+      router.back();
+      return;
+    }
     setModalVisible(false);
     setSelectedIncomeId("");
     setSelectedExpenseId("");
@@ -671,7 +681,7 @@ export default function Transfers() {
     setForm(emptyForm());
   };
 
-  const openAddTransfer = () => {
+  const openAddTransfer = useCallback(() => {
     setSelectedIncomeId("");
     setSelectedExpenseId("");
     setExpensePickerVisible(false);
@@ -680,9 +690,9 @@ export default function Transfers() {
     setReceipt(null);
     setForm(emptyForm());
     setModalVisible(true);
-  };
+  }, []);
 
-  const openEditTransfer = (transfer: TransferRecord) => {
+  const openEditTransfer = useCallback((transfer: TransferRecord) => {
     setSelectedTransfer(null);
     setSelectedExpenseId("");
     setExpensePickerVisible(false);
@@ -704,7 +714,25 @@ export default function Transfers() {
       notes: transfer.notes || "",
     });
     setModalVisible(true);
-  };
+  }, []);
+
+  useEffect(() => {
+    if (formParam === "new") {
+      const timeout = setTimeout(openAddTransfer, 0);
+      router.setParams({ form: undefined });
+      return () => clearTimeout(timeout);
+    }
+    if (formParam !== "edit" || !editId || loading) return;
+    const transfer = transfers.find((item) => String(item.id) === editId);
+    if (!transfer) {
+      Alert.alert("Transfer not found", "This transfer is no longer available.");
+      if (router.canGoBack()) router.back();
+      return;
+    }
+    const timeout = setTimeout(() => openEditTransfer(transfer), 0);
+    router.setParams({ form: undefined, id: undefined });
+    return () => clearTimeout(timeout);
+  }, [editId, formParam, loading, openAddTransfer, openEditTransfer, router, transfers]);
 
   const pickReceipt = async () => {
     try {
@@ -731,6 +759,7 @@ export default function Transfers() {
   };
 
   const submitTransfer = async () => {
+    const isEditing = editingTransferId !== null;
     const title = form.title.trim();
     const category = form.category.trim();
     const amount = Number(form.amount);
@@ -786,13 +815,15 @@ export default function Transfers() {
           headers: { "Content-Type": "multipart/form-data" },
         });
       }
-      closeModal();
       await loadAll();
-      setSuccessMessage(
-        editingTransferId !== null
+      Alert.alert(
+        "Saved",
+        isEditing
           ? "Transfer updated successfully."
           : "Transfer added successfully.",
       );
+      if (router.canGoBack()) router.back();
+      else closeModal();
     } catch (error) {
       if ((error as { status?: number })?.status === 401) {
         await handleUnauthorized();
@@ -1107,7 +1138,12 @@ export default function Transfers() {
                   <Pressable
                     accessibilityRole="button"
                     accessibilityLabel={`Edit ${transfer.title || "transfer"}`}
-                    onPress={() => openEditTransfer(transfer)}
+                    onPress={() =>
+                      router.push({
+                        pathname: "/transfers",
+                        params: { form: "edit", id: String(transfer.id) },
+                      })
+                    }
                     className="h-8 w-8 items-center justify-center rounded-lg bg-[#EEF5F0]"
                   >
                     <Ionicons name="create-outline" size={17} color="#315640" />
@@ -1135,27 +1171,21 @@ export default function Transfers() {
       )}
 
       <AddButton
-        onPress={openAddTransfer}
+        onPress={() => router.push({ pathname: "/transfers", params: { form: "new" } })}
         accessibilityLabel="Add transfer"
         accessibilityHint="Opens the new transfer form"
         bottomOffset={37}
       />
 
-      <Modal
-        animationType="slide"
-        onRequestClose={closeModal}
-        transparent
-        visible={modalVisible}
-      >
-        <View className="flex-1 bg-black/40" style={{ paddingBottom: insets.bottom }}>
+      {modalVisible && (
+        <View className="absolute inset-0 z-50 bg-[#F8F9F6]" style={{ paddingBottom: insets.bottom }}>
           <KeyboardAvoidingView
             behavior={Platform.OS === "ios" ? "padding" : "height"}
             keyboardVerticalOffset={0}
-            style={{ flex: 1, justifyContent: "flex-end" }}
+            style={{ flex: 1 }}
           >
             <View
-              className="rounded-t-[26px] bg-[#F8F9F6] px-5 pb-8 pt-5"
-              style={{ height: "92%", maxHeight: "92%" }}
+              className="flex-1 bg-[#F8F9F6] px-5 pb-5 pt-5"
             >
             <View className="mb-4 flex-row items-center justify-between">
               <View>
@@ -1170,11 +1200,11 @@ export default function Transfers() {
               </View>
               <Pressable
                 accessibilityRole="button"
-                accessibilityLabel="Close transfer form"
+                accessibilityLabel="Go back"
                 className="h-9 w-9 items-center justify-center rounded-full bg-white"
                 onPress={closeModal}
               >
-                <Ionicons name="close" size={20} color="#526058" />
+                <Ionicons name="arrow-back" size={20} color="#526058" />
               </Pressable>
             </View>
 
@@ -1519,7 +1549,7 @@ export default function Transfers() {
             </View>
           </KeyboardAvoidingView>
         </View>
-      </Modal>
+      )}
 
       <Modal
         animationType="slide"

@@ -1,47 +1,46 @@
 import { Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import { LinearGradient } from "expo-linear-gradient";
-import { useFocusEffect, useRouter } from "expo-router";
-import { useCallback, useMemo, useState } from "react";
+import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
-  ActivityIndicator,
-  Alert,
-  Image,
-  KeyboardAvoidingView,
-  Modal,
-  Platform,
-  Pressable,
-  RefreshControl,
-  ScrollView,
-  Text,
-  useWindowDimensions,
-  View,
-  type ViewStyle,
+    ActivityIndicator,
+    Alert,
+    Image,
+    KeyboardAvoidingView,
+    Platform,
+    Pressable,
+    RefreshControl,
+    ScrollView,
+    Text,
+    useWindowDimensions,
+    View,
+    type ViewStyle,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Svg, { Path, Rect } from "react-native-svg";
 import api, {
-  API_BASE_URL,
-  getApiErrorMessage,
-  getStoredUser,
-  logoutUser,
+    API_BASE_URL,
+    getApiErrorMessage,
+    getStoredUser,
+    logoutUser,
 } from "../api";
 import { AddButton } from "../components/AddButton";
+import { CenteredPageLoader } from "../components/CenteredPageLoader";
+import ConfirmPopup from "../components/ConfirmPopup";
 import {
-  countActiveFilters,
-  DEFAULT_FILTER_STATE,
-  type FilterState,
-  type StatusOption,
-  type ViewModeOption,
+    countActiveFilters,
+    DEFAULT_FILTER_STATE,
+    type FilterState,
+    type StatusOption,
+    type ViewModeOption,
 } from "../components/filters";
 import { FormInput, FormLabel, FormOption } from "../components/FormControls";
 import { GradientSafeAreaView as SafeAreaView } from "../components/GradientSafeAreaView";
-import { CenteredPageLoader } from "../components/CenteredPageLoader";
-import ConfirmPopup from "../components/ConfirmPopup";
-import { createSessionDataCache } from "../components/SessionDataCache";
 import { PopupSelect } from "../components/PopupSelect";
 import { SearchBar } from "../components/SearchBar";
+import { createSessionDataCache } from "../components/SessionDataCache";
 import { Colors } from "../constants/colors";
 
 type CategoryType =
@@ -157,6 +156,12 @@ function getTypeColors(type: string) {
 
 export default function Categories() {
   const router = useRouter();
+  const { form: rawForm, id: rawEditId } = useLocalSearchParams<{
+    form?: string | string[];
+    id?: string | string[];
+  }>();
+  const formParam = Array.isArray(rawForm) ? rawForm[0] : rawForm;
+  const editId = Array.isArray(rawEditId) ? rawEditId[0] : rawEditId;
   const insets = useSafeAreaInsets();
   const { width: screenWidth } = useWindowDimensions();
   const statCardWidth: ViewStyle["width"] = "31.8%";
@@ -277,16 +282,16 @@ export default function Categories() {
   ).length;
   const inactiveCount = categories.length - activeCount;
 
-  const openAddModal = () => {
+  const openAddModal = useCallback(() => {
     setEditingCategory(null);
     setForm(initialForm);
     setSelectedImage(null);
     setExistingImage(null);
     setImageRemoved(false);
     setModalVisible(true);
-  };
+  }, []);
 
-  const openEditModal = (category: Category) => {
+  const openEditModal = useCallback((category: Category) => {
     setEditingCategory(category);
     setForm({
       name: category.name || "",
@@ -301,7 +306,36 @@ export default function Categories() {
     setExistingImage(getCategoryImage(category));
     setImageRemoved(false);
     setModalVisible(true);
+  }, []);
+
+  const closeCategoryForm = () => {
+    if (router.canGoBack()) router.back();
+    else setModalVisible(false);
   };
+
+  useEffect(() => {
+    if (formParam === "new") {
+      const timeout = setTimeout(() => {
+        openAddModal();
+        router.setParams({ form: undefined });
+      }, 0);
+      return () => clearTimeout(timeout);
+    }
+    if (formParam !== "edit" || !editId || loading) return;
+    const category = categories.find(
+      (item) => String(item.id ?? item.catId) === editId,
+    );
+    if (!category) {
+      Alert.alert("Category not found", "This category is no longer available.");
+      if (router.canGoBack()) router.back();
+      return;
+    }
+    const timeout = setTimeout(() => {
+      openEditModal(category);
+      router.setParams({ form: undefined, id: undefined });
+    }, 0);
+    return () => clearTimeout(timeout);
+  }, [categories, editId, formParam, loading, openAddModal, openEditModal, router]);
 
   const pickCategoryImage = async () => {
     try {
@@ -409,12 +443,13 @@ export default function Categories() {
           ...current,
         ]);
       }
-      setModalVisible(false);
-      setSuccessMessage(
+      Alert.alert(
+        "Saved",
         editingCategory
           ? "Category updated successfully."
           : "Category added successfully.",
       );
+      closeCategoryForm();
     } catch (error) {
       Alert.alert("Unable to save category", getApiErrorMessage(error));
     } finally {
@@ -687,7 +722,15 @@ export default function Categories() {
                         accessibilityRole="button"
                         accessibilityLabel={`Edit ${category.name}`}
                         className="h-9 w-9 items-center justify-center rounded-full bg-[#EEF3F8]"
-                        onPress={() => openEditModal(category)}
+                        onPress={() =>
+                          router.push({
+                            pathname: "/categories",
+                            params: {
+                              form: "edit",
+                              id: String(category.id ?? category.catId),
+                            },
+                          })
+                        }
                       >
                         <Ionicons
                           name="create-outline"
@@ -718,7 +761,9 @@ export default function Categories() {
       )}
 
       <AddButton
-        onPress={openAddModal}
+        onPress={() =>
+          router.push({ pathname: "/categories", params: { form: "new" } })
+        }
         accessibilityLabel="Add category"
         accessibilityHint="Opens the new category form"
         bottomOffset={37}
@@ -742,21 +787,15 @@ export default function Categories() {
         onConfirm={() => setSuccessMessage(null)}
       />
 
-      <Modal
-        animationType="slide"
-        onRequestClose={() => setModalVisible(false)}
-        transparent
-        visible={modalVisible}
-      >
-        <View className="flex-1 bg-black/40" style={{ paddingBottom: insets.bottom }}>
+      {modalVisible && (
+        <View className="absolute inset-0 z-50 bg-[#F8F9F6]" style={{ paddingBottom: insets.bottom }}>
           <KeyboardAvoidingView
             behavior={Platform.OS === "ios" ? "padding" : "height"}
             keyboardVerticalOffset={0}
-            style={{ flex: 1, justifyContent: "flex-end" }}
+            style={{ flex: 1 }}
           >
           <View
-            className="rounded-t-[26px] bg-[#F8F9F6] px-5 pb-8 pt-5"
-            style={{ height: "90%", maxHeight: "90%" }}
+            className="flex-1 bg-[#F8F9F6] px-5 pb-5 pt-5"
           >
             <View className="mb-5 flex-row items-center justify-between">
               <View>
@@ -771,11 +810,11 @@ export default function Categories() {
               </View>
               <Pressable
                 accessibilityRole="button"
-                accessibilityLabel="Close form"
+                accessibilityLabel="Go back"
                 className="h-9 w-9 items-center justify-center rounded-full bg-white"
-                onPress={() => setModalVisible(false)}
+                onPress={closeCategoryForm}
               >
-                <Ionicons name="close" size={20} color="#526058" />
+                <Ionicons name="arrow-back" size={20} color="#526058" />
               </Pressable>
             </View>
 
@@ -931,7 +970,7 @@ export default function Categories() {
               <Pressable
                 className="flex-1 items-center rounded-xl border border-[#DDE3DC] bg-white py-3.5"
                 disabled={saving}
-                onPress={() => setModalVisible(false)}
+                onPress={closeCategoryForm}
               >
                 <Text className="text-sm font-bold text-[#58645C]">Cancel</Text>
               </Pressable>
@@ -952,7 +991,7 @@ export default function Categories() {
           </View>
             </KeyboardAvoidingView>
         </View>
-      </Modal>
+      )}
     </SafeAreaView>
   );
 }

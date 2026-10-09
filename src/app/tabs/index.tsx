@@ -4,20 +4,20 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
 import {
-  ActivityIndicator,
-  Image,
-  Pressable,
-  RefreshControl,
-  ScrollView,
-  Text,
-  View,
+    ActivityIndicator,
+    Image,
+    Pressable,
+    RefreshControl,
+    ScrollView,
+    Text,
+    View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Svg, { Circle } from "react-native-svg";
 import { TopHeader } from "../../Navigations/TopHeader";
 import api, { API_BASE_URL, getStoredUser } from "../../api";
-import { GradientSafeAreaView as SafeAreaView } from "../../components/GradientSafeAreaView";
 import { CenteredPageLoader } from "../../components/CenteredPageLoader";
+import { GradientSafeAreaView as SafeAreaView } from "../../components/GradientSafeAreaView";
 import { Colors } from "../../constants/colors";
 import { HOME_QUOTES, HOME_QUOTE_INDEX_KEY } from "../../constants/homeQuotes";
 
@@ -1320,7 +1320,7 @@ export default function Index() {
                     accessibilityHint="Opens the form to create a memory"
                     onPress={() =>
                       router.push({
-                        pathname: "/tabs/memories",
+                        pathname: "/memory-form" as any,
                         params: { create: "1" },
                       })
                     }

@@ -13,7 +13,6 @@ import {
     Alert,
     Image,
     KeyboardAvoidingView,
-    Modal,
     Platform,
     Pressable,
     RefreshControl,
@@ -24,6 +23,8 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import api, { API_BASE_URL, getApiErrorMessage, logoutUser } from "../../api";
 import { AddButton } from "../../components/AddButton";
+import { CenteredPageLoader } from "../../components/CenteredPageLoader";
+import ConfirmPopup from "../../components/ConfirmPopup";
 import {
     createDateRangeSelection,
     isDateInRange,
@@ -45,8 +46,6 @@ import {
     FormLabel,
 } from "../../components/FormControls";
 import { GradientSafeAreaView as SafeAreaView } from "../../components/GradientSafeAreaView";
-import { CenteredPageLoader } from "../../components/CenteredPageLoader";
-import ConfirmPopup from "../../components/ConfirmPopup";
 import { PopupSelect } from "../../components/PopupSelect";
 import { SearchBar } from "../../components/SearchBar";
 import { Colors } from "../../constants/colors";
@@ -441,7 +440,7 @@ export default function Memories() {
     }));
   }, [filteredMemories]);
 
-  const openNewMemory = () => {
+  const openNewMemory = useCallback(() => {
     setEditingId(null);
     setForm({
       ...initialForm,
@@ -449,9 +448,9 @@ export default function Memories() {
     });
     setNewMedia([]);
     setEditorVisible(true);
-  };
+  }, [categories]);
 
-  const openEditMemory = (memory: Memory) => {
+  const openEditMemory = useCallback((memory: Memory) => {
     setEditingId(memory.id);
     setForm({
       title: memory.title || "",
@@ -471,7 +470,7 @@ export default function Memories() {
     });
     setNewMedia([]);
     setEditorVisible(true);
-  };
+  }, []);
 
   useFocusEffect(
     useCallback(() => {
@@ -484,10 +483,16 @@ export default function Memories() {
       const target = memories.find(
         (memory) => String(memory.id) === String(editId),
       );
-      if (!target) return;
+      if (!target) {
+        if (!loading) {
+          Alert.alert("Memory not found", "This memory is no longer available.");
+          if (router.canGoBack()) router.back();
+        }
+        return;
+      }
       openEditMemory(target);
       router.setParams({ edit: undefined });
-    }, [createParam, editId, memories, router]),
+    }, [createParam, editId, loading, memories, openEditMemory, openNewMemory, router]),
   );
 
   const pickMedia = async () => {
@@ -641,10 +646,11 @@ export default function Memories() {
         });
       }
 
-      setEditorVisible(false);
       setNewMedia([]);
       await fetchData();
-      setSuccessMessage(editingId ? "Memory updated." : "Memory created.");
+      Alert.alert("Saved", editingId ? "Memory updated." : "Memory created.");
+      if (router.canGoBack()) router.back();
+      else setEditorVisible(false);
     } catch (error) {
       const status = (error as any)?.status || (error as any)?.response?.status;
       if (status === 401) {
@@ -1051,7 +1057,11 @@ export default function Memories() {
                                   },
                                   {
                                     text: "Edit",
-                                    onPress: () => openEditMemory(memory),
+                                    onPress: () =>
+                                      router.push({
+                                        pathname: "/memory-form" as any,
+                                        params: { edit: String(memory.id) },
+                                      }),
                                   },
                                   {
                                     text: isFavorite(memory)
@@ -1208,32 +1218,29 @@ export default function Memories() {
       )}
 
       <AddButton
-        onPress={openNewMemory}
+        onPress={() =>
+          router.push({
+            pathname: "/memory-form" as any,
+            params: { create: "1" },
+          })
+        }
         accessibilityLabel="Add memory"
         accessibilityHint="Opens the new memory form"
         bottomOffset={84}
       />
 
-      <Modal
-        visible={editorVisible}
-        transparent
-        animationType="slide"
-        onRequestClose={() => setEditorVisible(false)}
-      >
-        <View style={{ flex: 1, backgroundColor: "rgba(14,31,26,0.48)" }}>
+      {editorVisible && (
+        <View className="absolute inset-0 z-50 bg-white" style={{ paddingBottom: insets.bottom }}>
           <KeyboardAvoidingView
             behavior={Platform.OS === "ios" ? "padding" : "height"}
-            style={{ flex: 1, justifyContent: "flex-end" }}
+            style={{ flex: 1 }}
           >
           <View
             style={{
-              maxHeight: "92%",
               paddingHorizontal: 18,
               paddingTop: 18,
-              paddingBottom: insets.bottom + 16,
-              height: "92%",
-              borderTopLeftRadius: 24,
-              borderTopRightRadius: 24,
+              paddingBottom: 12,
+              flex: 1,
               backgroundColor: Colors.white,
             }}
           >
@@ -1255,13 +1262,16 @@ export default function Memories() {
                 {editingId ? "Edit memory" : "New memory"}
               </Text>
               <Pressable
-                onPress={() => setEditorVisible(false)}
+                onPress={() => {
+                  if (router.canGoBack()) router.back();
+                  else setEditorVisible(false);
+                }}
                 disabled={submitting}
                 accessibilityRole="button"
-                accessibilityLabel="Close editor"
+                accessibilityLabel="Go back"
                 style={{ padding: 6 }}
               >
-                <Ionicons name="close" size={24} color={Colors.textPrimary} />
+                <Ionicons name="arrow-back" size={24} color={Colors.textPrimary} />
               </Pressable>
             </View>
             <ScrollView
@@ -1474,7 +1484,7 @@ export default function Memories() {
           </View>
           </KeyboardAvoidingView>
         </View>
-      </Modal>
+      )}
     </SafeAreaView>
   );
 }

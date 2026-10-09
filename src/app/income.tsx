@@ -1,49 +1,49 @@
 import { Ionicons } from "@expo/vector-icons";
 import * as DocumentPicker from "expo-document-picker";
 import { LinearGradient } from "expo-linear-gradient";
-import { useFocusEffect, useRouter } from "expo-router";
+import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
-  ActivityIndicator,
-  Alert,
-  KeyboardAvoidingView,
-  Linking,
-  Modal,
-  Platform,
-  Pressable,
-  RefreshControl,
-  ScrollView,
-  StyleSheet,
-  Text,
-  useWindowDimensions,
-  View,
+    ActivityIndicator,
+    Alert,
+    KeyboardAvoidingView,
+    Linking,
+    Modal,
+    Platform,
+    Pressable,
+    RefreshControl,
+    ScrollView,
+    StyleSheet,
+    Text,
+    useWindowDimensions,
+    View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Svg, { Path } from "react-native-svg";
 import api, { API_BASE_URL, getApiErrorMessage, logoutUser } from "../api";
 import { AddButton } from "../components/AddButton";
 import {
-  createDateRangeSelection,
-  isDateInRange,
-  type DateRangeSelection,
+    createDateRangeSelection,
+    isDateInRange,
+    type DateRangeSelection,
 } from "../components/DateRangeFilter";
 import { DateTimePickerComponent } from "../components/DateTimePickerComponent";
 
+import { CenteredPageLoader } from "../components/CenteredPageLoader";
+import ConfirmPopup from "../components/ConfirmPopup";
 import { formatLocalDate, parseLocalDate } from "../components/dateTimeUtils";
 import {
-  countActiveFilters,
-  DEFAULT_FILTER_STATE,
-  type FilterState,
-  type SortOption,
+    countActiveFilters,
+    DEFAULT_FILTER_STATE,
+    type FilterState,
+    type SortOption,
 } from "../components/filters";
 import { FormInput, FormLabel, FormOption } from "../components/FormControls";
 import { GradientSafeAreaView as SafeAreaView } from "../components/GradientSafeAreaView";
-import { CenteredPageLoader } from "../components/CenteredPageLoader";
-import ConfirmPopup from "../components/ConfirmPopup";
-import { createSessionDataCache } from "../components/SessionDataCache";
 import { PopupSelect } from "../components/PopupSelect";
 import { SearchBar } from "../components/SearchBar";
+import { createSessionDataCache } from "../components/SessionDataCache";
 import { Colors } from "../constants/colors";
 
 type IncomeRecord = {
@@ -416,6 +416,12 @@ function Metric({
 
 export default function Income() {
   const router = useRouter();
+  const { form: rawForm, id: rawEditId } = useLocalSearchParams<{
+    form?: string | string[];
+    id?: string | string[];
+  }>();
+  const formParam = Array.isArray(rawForm) ? rawForm[0] : rawForm;
+  const editId = Array.isArray(rawEditId) ? rawEditId[0] : rawEditId;
   const insets = useSafeAreaInsets();
   const { width: screenWidth } = useWindowDimensions();
   const [incomes, setIncomes] = useState<IncomeRecord[]>(
@@ -655,6 +661,10 @@ export default function Income() {
   ) => setForm((current) => ({ ...current, [key]: value }));
 
   const closeEditor = () => {
+    if (router.canGoBack()) {
+      router.back();
+      return;
+    }
     setEditorVisible(false);
     setEditingIncomeId(null);
     setExistingAttachment(null);
@@ -662,15 +672,15 @@ export default function Income() {
     setForm(createInitialForm());
   };
 
-  const openAddIncome = () => {
+  const openAddIncome = useCallback(() => {
     setEditingIncomeId(null);
     setExistingAttachment(null);
     setAttachment(null);
     setForm(createInitialForm());
     setEditorVisible(true);
-  };
+  }, []);
 
-  const openEditIncome = (income: IncomeRecord) => {
+  const openEditIncome = useCallback((income: IncomeRecord) => {
     setEditingIncomeId(income.id);
     setExistingAttachment(income.attachment || null);
     setAttachment(null);
@@ -686,7 +696,37 @@ export default function Income() {
       recurring: income.recurring === "Yes" ? "Yes" : "No",
     });
     setEditorVisible(true);
-  };
+  }, []);
+
+  useEffect(() => {
+    if (formParam === "new") {
+      const timeout = setTimeout(() => {
+        openAddIncome();
+        router.setParams({ form: undefined });
+      }, 0);
+      return () => clearTimeout(timeout);
+    }
+    if (formParam === "budget") {
+      const timeout = setTimeout(() => {
+        setBudgetDraft(String(monthlyBudget));
+        setBudgetVisible(true);
+        router.setParams({ form: undefined });
+      }, 0);
+      return () => clearTimeout(timeout);
+    }
+    if (formParam !== "edit" || !editId || loading) return;
+    const income = incomes.find((item) => String(item.id) === editId);
+    if (!income) {
+      Alert.alert("Income not found", "This income record is no longer available.");
+      if (router.canGoBack()) router.back();
+      return;
+    }
+    const timeout = setTimeout(() => {
+      openEditIncome(income);
+      router.setParams({ form: undefined, id: undefined });
+    }, 0);
+    return () => clearTimeout(timeout);
+  }, [editId, formParam, incomes, loading, monthlyBudget, openAddIncome, openEditIncome, router]);
 
   const pickAttachment = async () => {
     try {
@@ -759,10 +799,11 @@ export default function Income() {
       } else {
         setIncomes((current) => [savedIncome, ...current]);
       }
-      closeEditor();
-      setSuccessMessage(
+      Alert.alert(
+        "Saved",
         editingIncomeId ? "Income updated." : "Income added.",
       );
+      closeEditor();
     } catch (error) {
       const status = (error as { status?: number })?.status;
       if (status === 401) {
@@ -802,8 +843,9 @@ export default function Income() {
     try {
       await api.put("/incomes/monthly-budget", { monthly_budget: value });
       setMonthlyBudget(value);
-      setBudgetVisible(false);
-      setSuccessMessage("Monthly income budget saved.");
+      Alert.alert("Saved", "Monthly income budget saved.");
+      if (router.canGoBack()) router.back();
+      else setBudgetVisible(false);
     } catch (error) {
       const status = (error as { status?: number })?.status;
       if (status === 401) {
@@ -966,8 +1008,7 @@ export default function Income() {
           <Pressable
             accessibilityRole="button"
             onPress={() => {
-              setBudgetDraft(String(monthlyBudget));
-              setBudgetVisible(true);
+              router.push({ pathname: "/income", params: { form: "budget" } });
             }}
             className="flex-row items-center rounded-lg bg-[#EDF3EE] px-3 py-2"
           >
@@ -1107,7 +1148,12 @@ export default function Income() {
                       accessibilityRole="button"
                       accessibilityLabel={`Edit ${income.title}`}
                       className="h-8 w-8 items-center justify-center rounded-full bg-[#EEF3F8]"
-                      onPress={() => openEditIncome(income)}
+                      onPress={() =>
+                        router.push({
+                          pathname: "/income",
+                          params: { form: "edit", id: String(income.id) },
+                        })
+                      }
                     >
                       <Ionicons
                         name="create-outline"
@@ -1138,27 +1184,21 @@ export default function Income() {
       )}
 
       <AddButton
-        onPress={openAddIncome}
+        onPress={() => router.push({ pathname: "/income", params: { form: "new" } })}
         accessibilityLabel="Add income"
         accessibilityHint="Opens the new income form"
         bottomOffset={37}
       />
 
-      <Modal
-        animationType="slide"
-        onRequestClose={closeEditor}
-        transparent
-        visible={editorVisible}
-      >
-        <View className="flex-1 bg-black/40" style={{ paddingBottom: insets.bottom }}>
+      {editorVisible && (
+        <View className="absolute inset-0 z-50 bg-[#F8F9F6]" style={{ paddingBottom: insets.bottom }}>
           <KeyboardAvoidingView
             behavior={Platform.OS === "ios" ? "padding" : "height"}
             keyboardVerticalOffset={0}
-            style={{ flex: 1, justifyContent: "flex-end" }}
+            style={{ flex: 1 }}
           >
             <View
-              className="rounded-t-[26px] bg-[#F8F9F6] px-5 pb-8 pt-5"
-              style={{ height: "92%", maxHeight: "92%" }}
+              className="flex-1 bg-[#F8F9F6] px-5 pb-5 pt-5"
             >
             <View className="mb-4 flex-row items-center justify-between">
               <View>
@@ -1171,11 +1211,11 @@ export default function Income() {
               </View>
               <Pressable
                 accessibilityRole="button"
-                accessibilityLabel="Close income form"
+                accessibilityLabel="Go back"
                 className="h-9 w-9 items-center justify-center rounded-full bg-white"
                 onPress={closeEditor}
               >
-                <Ionicons name="close" size={20} color="#526058" />
+                <Ionicons name="arrow-back" size={20} color="#526058" />
               </Pressable>
             </View>
             <ScrollView
@@ -1360,18 +1400,27 @@ export default function Income() {
             </View>
           </KeyboardAvoidingView>
         </View>
-      </Modal>
+      )}
 
-      <Modal
-        animationType="fade"
-        onRequestClose={() => setBudgetVisible(false)}
-        transparent
-        visible={budgetVisible}
-      >
-        <View className="flex-1 justify-center bg-black/40 px-5">
-          <View className="rounded-2xl bg-[#F8F9F6] p-5">
-            <Text className="text-xl font-bold text-[#25332C]">
-              Monthly budget
+      {budgetVisible && (
+        <View className="absolute inset-0 z-50 bg-[#F8F9F6] px-5 py-5" style={{ paddingBottom: insets.bottom }}>
+          <View className="flex-1">
+            <View className="mb-5 flex-row items-center justify-between">
+              <Text className="text-xl font-bold text-[#25332C]">Monthly budget</Text>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Go back"
+                className="h-9 w-9 items-center justify-center rounded-full bg-white"
+                onPress={() => {
+                  if (router.canGoBack()) router.back();
+                  else setBudgetVisible(false);
+                }}
+              >
+                <Ionicons name="arrow-back" size={20} color="#526058" />
+              </Pressable>
+            </View>
+            <Text className="text-base font-semibold text-[#25332C]">
+              Set your income budget
             </Text>
             <Text className="mb-4 mt-1 text-xs text-[#818B84]">
               Set your income budget for the month
@@ -1389,7 +1438,10 @@ export default function Income() {
               <Pressable
                 className="flex-1 items-center rounded-xl border border-[#DDE3DC] bg-white py-3"
                 disabled={budgetSaving}
-                onPress={() => setBudgetVisible(false)}
+                onPress={() => {
+                  if (router.canGoBack()) router.back();
+                  else setBudgetVisible(false);
+                }}
               >
                 <Text className="text-sm font-bold text-[#58645C]">Cancel</Text>
               </Pressable>
@@ -1409,7 +1461,7 @@ export default function Income() {
             </View>
           </View>
         </View>
-      </Modal>
+      )}
 
       <Modal
         animationType="slide"

@@ -1,47 +1,47 @@
 import { Ionicons } from "@expo/vector-icons";
 import * as DocumentPicker from "expo-document-picker";
-import { useFocusEffect, useNavigation, useRouter } from "expo-router";
-import { useCallback, useLayoutEffect, useMemo, useState } from "react";
+import { useFocusEffect, useLocalSearchParams, useNavigation, useRouter } from "expo-router";
+import { useCallback, useEffect, useEffectEvent, useLayoutEffect, useMemo, useState } from "react";
 import {
-    ActivityIndicator,
-    Alert,
-    KeyboardAvoidingView,
-    LayoutAnimation,
-    Modal,
-    Platform,
-    Pressable,
-    RefreshControl,
-    ScrollView,
-    Text,
-    TextInput,
-    View,
+  ActivityIndicator,
+  Alert,
+  KeyboardAvoidingView,
+  LayoutAnimation,
+  Modal,
+  Platform,
+  Pressable,
+  RefreshControl,
+  ScrollView,
+  Text,
+  TextInput,
+  View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import api, { getApiErrorMessage, logoutUser } from "../../api";
 import { AddButton } from "../../components/AddButton";
+import ConfirmPopup from "../../components/ConfirmPopup";
 import {
-    createDateRangeSelection,
-    isDateInRange,
-    type DateRangeSelection,
+  createDateRangeSelection,
+  isDateInRange,
+  type DateRangeSelection,
 } from "../../components/DateRangeFilter";
 import { DateTimePickerComponent } from "../../components/DateTimePickerComponent";
 import {
-    formatLocalDate,
-    formatLocalTime,
-    parseLocalDateTime,
+  formatLocalDate,
+  formatLocalTime,
+  parseLocalDateTime,
 } from "../../components/dateTimeUtils";
 import {
-    DEFAULT_FILTER_STATE,
-    type FilterState,
-    type SortOption,
-    type ViewModeOption,
+  DEFAULT_FILTER_STATE,
+  type FilterState,
+  type SortOption,
+  type ViewModeOption,
 } from "../../components/filters";
 import {
-    FormField,
-    FormLabel,
+  FormField,
+  FormLabel,
 } from "../../components/FormControls";
 import { GradientSafeAreaView as SafeAreaView } from "../../components/GradientSafeAreaView";
-import ConfirmPopup from "../../components/ConfirmPopup";
 import { PopupSelect } from "../../components/PopupSelect";
 import { SearchBar } from "../../components/SearchBar";
 import { Colors } from "../../constants/colors";
@@ -255,6 +255,12 @@ export default function Expenses() {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation();
   const router = useRouter();
+  const { create: rawCreate, edit: rawEditId } = useLocalSearchParams<{
+    create?: string | string[];
+    edit?: string | string[];
+  }>();
+  const createParam = Array.isArray(rawCreate) ? rawCreate[0] : rawCreate;
+  const editId = Array.isArray(rawEditId) ? rawEditId[0] : rawEditId;
   const [expenses, setExpenses] = useState<ExpenseItem[]>([]);
   const [transfers, setTransfers] = useState<TransferItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -762,14 +768,16 @@ export default function Expenses() {
           savedExpense ? [savedExpense, ...current] : current,
         );
       }
-      setIsModalVisible(false);
       resetForm();
-      void fetchAll();
-      setSuccessMessage(
+      await fetchAll();
+      Alert.alert(
+        "Saved",
         isEditing
           ? "Expense updated successfully."
           : "Expense saved successfully.",
       );
+      if (router.canGoBack()) router.back();
+      else setIsModalVisible(false);
     } catch (error) {
       const status = (error as any)?.status || (error as any)?.response?.status;
       if (status === 401) {
@@ -814,6 +822,35 @@ export default function Expenses() {
     setAttachment(null);
     setIsModalVisible(true);
   };
+
+  const closeExpenseForm = () => {
+    if (router.canGoBack()) router.back();
+    else setIsModalVisible(false);
+    resetForm();
+  };
+
+  const openRequestedExpense = useEffectEvent(() => {
+    if (createParam === "1") {
+      openAddExpense();
+      router.setParams({ create: undefined });
+      return;
+    }
+    if (!editId || loading) return;
+    const expense = expenses.find((item) => String(item.id) === editId);
+    if (!expense) {
+      Alert.alert("Expense not found", "This expense is no longer available.");
+      if (router.canGoBack()) router.back();
+      return;
+    }
+    handleEditExpense(expense);
+    router.setParams({ edit: undefined });
+  });
+
+  useEffect(() => {
+    if (createParam !== "1" && (!editId || loading)) return;
+    const timeout = setTimeout(() => openRequestedExpense(), 0);
+    return () => clearTimeout(timeout);
+  }, [createParam, editId, expenses.length, loading]);
 
   const handleDeleteExpense = (expense: ExpenseItem) => {
     setPendingDeleteExpense(expense);
@@ -1357,7 +1394,12 @@ export default function Expenses() {
                         <Pressable
                           accessibilityRole="button"
                           accessibilityLabel={`Edit ${expense.title || "expense"}`}
-                          onPress={() => handleEditExpense(expense)}
+                          onPress={() =>
+                            router.push({
+                              pathname: "/expense-form" as any,
+                              params: { edit: String(expense.id) },
+                            })
+                          }
                           hitSlop={8}
                           style={{
                             width: 32,
@@ -1401,7 +1443,12 @@ export default function Expenses() {
       </View>
 
       <AddButton
-        onPress={openAddExpense}
+        onPress={() =>
+          router.push({
+            pathname: "/expense-form" as any,
+            params: { create: "1" },
+          })
+        }
         accessibilityLabel="Add expense"
         accessibilityHint="Opens the new expense form"
         bottomOffset={84}
@@ -1552,42 +1599,21 @@ export default function Expenses() {
         </View>
       </Modal>
 
-      {/* ── Add Expense Modal ── */}
-      <Modal
-        visible={isModalVisible}
-        transparent
-        animationType="slide"
-        onRequestClose={() => setIsModalVisible(false)}
-      >
-        <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.5)" }}>
+      {isModalVisible && (
+        <View className="absolute inset-0 z-50 bg-white" style={{ paddingBottom: insets.bottom }}>
           <KeyboardAvoidingView
             behavior={Platform.OS === "ios" ? "padding" : "height"}
-            style={{ flex: 1, justifyContent: "flex-end" }}
+            style={{ flex: 1 }}
           >
           <View
             style={{
               backgroundColor: "#FFFFFF",
-              borderTopLeftRadius: 30,
-              borderTopRightRadius: 30,
               paddingHorizontal: 20,
-              paddingTop: 10,
-              paddingBottom: insets.bottom + 4,
-              height: "92%",
-              maxHeight: "92%",
+              paddingTop: 20,
+              paddingBottom: 12,
+              flex: 1,
             }}
           >
-            {/* Drag handle */}
-            <View
-              style={{
-                width: 40,
-                height: 4,
-                borderRadius: 2,
-                backgroundColor: "#E2E8F0",
-                alignSelf: "center",
-                marginBottom: 16,
-              }}
-            />
-
             {/* Modal header */}
             <View
               style={{
@@ -1608,7 +1634,9 @@ export default function Expenses() {
                 </Text>
               </View>
               <Pressable
-                onPress={() => setIsModalVisible(false)}
+                accessibilityRole="button"
+                accessibilityLabel="Go back"
+                onPress={closeExpenseForm}
                 style={{
                   width: 36,
                   height: 36,
@@ -1618,7 +1646,7 @@ export default function Expenses() {
                   alignItems: "center",
                 }}
               >
-                <Ionicons name="close" size={18} color="#64748B" />
+                <Ionicons name="arrow-back" size={18} color="#64748B" />
               </Pressable>
             </View>
 
@@ -1929,8 +1957,7 @@ export default function Expenses() {
               <View style={{ flexDirection: "row", gap: 10, marginTop: 8 }}>
                 <Pressable
                   onPress={() => {
-                    setIsModalVisible(false);
-                    resetForm();
+                    closeExpenseForm();
                   }}
                   disabled={saving}
                   style={{
@@ -1998,7 +2025,7 @@ export default function Expenses() {
           </View>
           </KeyboardAvoidingView>
         </View>
-      </Modal>
+      )}
 
       {/* ── Filter Bottom Sheet ── */}
       <Modal

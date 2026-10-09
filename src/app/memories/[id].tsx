@@ -22,8 +22,8 @@ import api, {
     getStoredToken,
     logoutUser,
 } from "../../api";
-import { GradientSafeAreaView as SafeAreaView } from "../../components/GradientSafeAreaView";
 import ConfirmPopup from "../../components/ConfirmPopup";
+import { GradientSafeAreaView as SafeAreaView } from "../../components/GradientSafeAreaView";
 import { Colors } from "../../constants/colors";
 
 type MemoryMedia = {
@@ -268,7 +268,7 @@ export default function MemoryDetails() {
   const editMemory = () => {
     if (!memory) return;
     router.push({
-      pathname: "/tabs/memories",
+      pathname: "/memory-form" as any,
       params: { edit: String(memory.id) },
     });
   };

@@ -1,57 +1,56 @@
 import { Ionicons } from "@expo/vector-icons";
 import {
-    AudioModule,
-    RecordingPresets,
-    setAudioModeAsync,
-    useAudioRecorder,
+  AudioModule,
+  RecordingPresets,
+  setAudioModeAsync,
+  useAudioRecorder,
 } from "expo-audio";
 import * as DocumentPicker from "expo-document-picker";
 import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import {
-    useCallback,
-    useEffect,
-    useEffectEvent,
-    useMemo,
-    useState,
+  useCallback,
+  useEffect,
+  useEffectEvent,
+  useMemo,
+  useState,
 } from "react";
 import {
-    ActivityIndicator,
-    Alert,
-    Image,
-    KeyboardAvoidingView,
-    Modal,
-    Platform,
-    Pressable,
-    RefreshControl,
-    ScrollView,
-    Text,
-    View,
+  ActivityIndicator,
+  Alert,
+  Image,
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  RefreshControl,
+  ScrollView,
+  Text,
+  View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import api, { API_BASE_URL, getApiErrorMessage, logoutUser } from "../../api";
 import { AddButton } from "../../components/AddButton";
+import { CenteredPageLoader } from "../../components/CenteredPageLoader";
+import ConfirmPopup from "../../components/ConfirmPopup";
 import {
-    createDateRangeSelection,
-    isDateInRange,
-    type DateRangeSelection,
+  createDateRangeSelection,
+  isDateInRange,
+  type DateRangeSelection,
 } from "../../components/DateRangeFilter";
 import { DateTimePickerComponent } from "../../components/DateTimePickerComponent";
 import {
-    formatLocalDate,
-    formatLocalTime,
-    parseLocalDate,
-    parseLocalDateTime,
+  formatLocalDate,
+  formatLocalTime,
+  parseLocalDate,
+  parseLocalDateTime,
 } from "../../components/dateTimeUtils";
 import {
-    countActiveFilters,
-    DEFAULT_FILTER_STATE,
-    type FilterState,
-    type ViewModeOption,
+  countActiveFilters,
+  DEFAULT_FILTER_STATE,
+  type FilterState,
+  type ViewModeOption,
 } from "../../components/filters";
 import { FormInput, FormLabel } from "../../components/FormControls";
 import { GradientSafeAreaView as SafeAreaView } from "../../components/GradientSafeAreaView";
-import { CenteredPageLoader } from "../../components/CenteredPageLoader";
-import ConfirmPopup from "../../components/ConfirmPopup";
 import { PopupSelect } from "../../components/PopupSelect";
 import { SearchBar } from "../../components/SearchBar";
 import { Colors } from "../../constants/colors";
@@ -356,9 +355,11 @@ function initialDiaryForm(categoryId = ""): DiaryForm {
 export default function Diary() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { edit: editParam } = useLocalSearchParams<{
+  const { create: rawCreate, edit: editParam } = useLocalSearchParams<{
+    create?: string | string[];
     edit?: string | string[];
   }>();
+  const createParam = Array.isArray(rawCreate) ? rawCreate[0] : rawCreate;
   const recorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
   const [entries, setEntries] = useState<DiaryEntry[]>([]);
   const [categories, setCategories] = useState<DiaryCategory[]>([]);
@@ -555,6 +556,11 @@ export default function Diary() {
     setEditorVisible(true);
   };
   const openRequestedEntry = useEffectEvent(() => {
+    if (createParam === "1") {
+      openNewEntry();
+      router.setParams({ create: undefined });
+      return;
+    }
     const requestedId = Array.isArray(editParam) ? editParam[0] : editParam;
     const requestedEntry = entries.find(
       (entry) => String(entry.id) === String(requestedId),
@@ -562,14 +568,17 @@ export default function Diary() {
     if (requestedEntry) {
       openEditEntry(requestedEntry);
       router.setParams({ edit: undefined });
+    } else if (!loading) {
+      Alert.alert("Diary entry not found", "This entry is no longer available.");
+      if (router.canGoBack()) router.back();
     }
   });
 
   useEffect(() => {
-    if (!editParam || !entries.length) return;
+    if (createParam !== "1" && (!editParam || loading)) return;
     const timeout = setTimeout(() => openRequestedEntry(), 0);
     return () => clearTimeout(timeout);
-  }, [editParam, entries.length]);
+  }, [createParam, editParam, loading, entries.length]);
 
   const pickAttachments = async () => {
     try {
@@ -755,17 +764,21 @@ export default function Diary() {
       if (attachments.length && savedId)
         await uploadAttachments(savedId, attachments);
       else if (attachments.length && !savedId) {
-        setSuccessMessage(
+        Alert.alert(
+          "Saved with a warning",
           "The entry was saved, but the server did not return an ID for its attachments.",
         );
       }
-      setEditorVisible(false);
       setAttachments([]);
       await fetchData();
-      if (savedId || !attachments.length)
-        setSuccessMessage(
+      if (savedId || !attachments.length) {
+        Alert.alert(
+          "Saved",
           status === "draft" ? "Diary draft saved." : "Diary entry saved.",
         );
+      }
+      if (router.canGoBack()) router.back();
+      else setEditorVisible(false);
     } catch (error) {
       const code = (error as any)?.status || (error as any)?.response?.status;
       if (code === 401) {
@@ -1365,7 +1378,11 @@ export default function Diary() {
                               },
                               {
                                 text: "Edit",
-                                onPress: () => openEditEntry(entry),
+                                onPress: () =>
+                                  router.push({
+                                    pathname: "/diary-form" as any,
+                                    params: { edit: String(entry.id) },
+                                  }),
                               },
                               {
                                 text: asBoolean(entry.is_favorite)
@@ -1409,32 +1426,29 @@ export default function Diary() {
       )}
 
       <AddButton
-        onPress={openNewEntry}
+        onPress={() =>
+          router.push({
+            pathname: "/diary-form" as any,
+            params: { create: "1" },
+          })
+        }
         accessibilityLabel="Write diary entry"
         accessibilityHint="Opens a new diary entry"
         bottomOffset={84}
       />
 
-      <Modal
-        visible={editorVisible}
-        transparent
-        animationType="slide"
-        onRequestClose={() => !isRecording && setEditorVisible(false)}
-      >
-        <View style={{ flex: 1, backgroundColor: "rgba(14,31,26,0.48)" }}>
+      {editorVisible && (
+        <View className="absolute inset-0 z-50 bg-white" style={{ paddingBottom: insets.bottom }}>
           <KeyboardAvoidingView
             behavior={Platform.OS === "ios" ? "padding" : "height"}
-            style={{ flex: 1, justifyContent: "flex-end" }}
+            style={{ flex: 1 }}
           >
           <View
             style={{
-              maxHeight: "94%",
               paddingHorizontal: 18,
               paddingTop: 17,
-              paddingBottom: insets.bottom + 15,
-              height: "94%",
-              borderTopLeftRadius: 24,
-              borderTopRightRadius: 24,
+              paddingBottom: 12,
+              flex: 1,
               backgroundColor: Colors.white,
             }}
           >
@@ -1456,13 +1470,16 @@ export default function Diary() {
                 {editingId ? "Edit diary entry" : "Write in your diary"}
               </Text>
               <Pressable
-                onPress={() => setEditorVisible(false)}
+                onPress={() => {
+                  if (router.canGoBack()) router.back();
+                  else setEditorVisible(false);
+                }}
                 disabled={submitting || isRecording}
                 accessibilityRole="button"
-                accessibilityLabel="Close editor"
+                accessibilityLabel="Go back"
                 style={{ padding: 6 }}
               >
-                <Ionicons name="close" size={23} color={Colors.textPrimary} />
+                <Ionicons name="arrow-back" size={23} color={Colors.textPrimary} />
               </Pressable>
             </View>
             <ScrollView
@@ -1720,7 +1737,7 @@ export default function Diary() {
           </View>
           </KeyboardAvoidingView>
         </View>
-      </Modal>
+      )}
     </SafeAreaView>
   );
 }
