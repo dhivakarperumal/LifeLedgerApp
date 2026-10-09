@@ -1239,7 +1239,6 @@ export default function Memories() {
                 else setEditorVisible(false);
               }}
               horizontalInset={18}
-              verticalInset={18}
               disabled={submitting}
             />
             <ScrollView

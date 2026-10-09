@@ -8,14 +8,12 @@ export function AddPageHeader({
   subtitle,
   onBack,
   horizontalInset = 20,
-  verticalInset = 2,
   disabled = false,
 }: {
   title: string;
   subtitle?: string;
   onBack: () => void;
   horizontalInset?: number;
-  verticalInset?: number;
   disabled?: boolean;
 }) {
   return (
@@ -27,36 +25,38 @@ export function AddPageHeader({
         marginHorizontal: -horizontalInset,
         marginBottom: 15,
         paddingHorizontal: horizontalInset,
-        paddingTop: verticalInset + 12,
+        paddingTop: 14,
         paddingBottom: 12,
-        flexDirection: "row",
-        alignItems: "center",
-        gap: 12,
+        gap: 4,
       }}
     >
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel="Go back"
-        accessibilityState={{ disabled }}
-        className="h-10 w-10 items-center justify-center rounded-full border border-[#E6EBE7] bg-white"
-        disabled={disabled}
-        onPress={onBack}
-      >
-        <ArrowLeft size={20} color="#25332C" strokeWidth={2.2} />
-      </Pressable>
-      <View className="min-w-0 flex-1">
+      <View className="flex-row items-center gap-3">
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Go back"
+          accessibilityState={{ disabled }}
+          className="h-10 w-10 items-center justify-center rounded-full border border-[#E6EBE7] bg-white"
+          disabled={disabled}
+          onPress={onBack}
+        >
+          <ArrowLeft size={20} color="#25332C" strokeWidth={2.2} />
+        </Pressable>
         <Text
-          className="text-xl font-bold text-white"
+          className="min-w-0 flex-1 text-xl font-bold text-white"
           numberOfLines={1}
         >
           {title}
         </Text>
-        {subtitle ? (
-          <Text className="text-xs text-white/75" numberOfLines={1}>
-            {subtitle}
-          </Text>
-        ) : null}
       </View>
+      {subtitle ? (
+        <Text
+          className="text-xs text-white/75"
+          numberOfLines={1}
+          style={{ marginLeft: 52 }}
+        >
+          {subtitle}
+        </Text>
+      ) : null}
     </LinearGradient>
   );
 }
