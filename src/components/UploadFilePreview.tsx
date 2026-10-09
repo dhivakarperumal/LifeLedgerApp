@@ -16,9 +16,11 @@ export function UploadFilePreview({
   onRemove?: () => void;
   removeLabel?: string;
 }) {
+  const imageExtension = /\.(png|jpe?g|gif|webp)(?:[?#]|$)/i;
   const isImage =
-    mimeType?.startsWith("image/") ||
-    /\.(png|jpe?g|gif|webp)(?:[?#]|$)/i.test(`${name} ${uri}`);
+    mimeType?.toLowerCase().startsWith("image/") ||
+    imageExtension.test(name) ||
+    imageExtension.test(uri);
 
   return (
     <View className="mb-3 flex-row items-center rounded-xl border border-[#DDE5DD] bg-white p-3">
