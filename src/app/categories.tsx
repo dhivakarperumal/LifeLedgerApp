@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import { LinearGradient } from "expo-linear-gradient";
-import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
+import { useFocusEffect, useLocalSearchParams, usePathname, useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
@@ -42,6 +42,7 @@ import { GradientSafeAreaView as SafeAreaView } from "../components/GradientSafe
 import { PopupSelect } from "../components/PopupSelect";
 import { SearchBar } from "../components/SearchBar";
 import { createSessionDataCache } from "../components/SessionDataCache";
+import { useAddPageNavigation } from "../components/useAddPageNavigation";
 import { Colors } from "../constants/colors";
 
 type CategoryType =
@@ -157,6 +158,9 @@ function getTypeColors(type: string) {
 
 export default function Categories() {
   const router = useRouter();
+  const pathname = usePathname();
+  const isNewCategoryRoute = pathname === "/categories/new";
+  const navigateToAddPage = useAddPageNavigation();
   const { form: rawForm, id: rawEditId } = useLocalSearchParams<{
     form?: string | string[];
     id?: string | string[];
@@ -181,7 +185,7 @@ export default function Categories() {
   const [viewMode, setViewMode] = useState<ViewModeOption>(
     DEFAULT_FILTER_STATE.viewMode,
   );
-  const [modalVisible, setModalVisible] = useState(false);
+  const [modalVisible, setModalVisible] = useState(isNewCategoryRoute);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [saving, setSaving] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
@@ -311,10 +315,12 @@ export default function Categories() {
 
   const closeCategoryForm = () => {
     if (router.canGoBack()) router.back();
+    else if (isNewCategoryRoute) router.replace("/categories");
     else setModalVisible(false);
   };
 
   useEffect(() => {
+    if (isNewCategoryRoute) return;
     if (formParam === "new") {
       const timeout = setTimeout(() => {
         openAddModal();
@@ -336,7 +342,7 @@ export default function Categories() {
       router.setParams({ form: undefined, id: undefined });
     }, 0);
     return () => clearTimeout(timeout);
-  }, [categories, editId, formParam, loading, openAddModal, openEditModal, router]);
+  }, [categories, editId, formParam, isNewCategoryRoute, loading, openAddModal, openEditModal, router]);
 
   const pickCategoryImage = async () => {
     try {
@@ -762,9 +768,7 @@ export default function Categories() {
       )}
 
       <AddButton
-        onPress={() =>
-          router.push({ pathname: "/categories", params: { form: "new" } })
-        }
+        onPress={() => navigateToAddPage("/categories/new")}
         accessibilityLabel="Add category"
         accessibilityHint="Opens the new category form"
         bottomOffset={37}

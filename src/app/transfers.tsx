@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import * as DocumentPicker from "expo-document-picker";
 import { LinearGradient } from "expo-linear-gradient";
-import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
+import { useFocusEffect, useLocalSearchParams, usePathname, useRouter } from "expo-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
     ActivityIndicator,
@@ -48,6 +48,7 @@ import { GradientSafeAreaView as SafeAreaView } from "../components/GradientSafe
 import { PopupSelect } from "../components/PopupSelect";
 import { SearchBar } from "../components/SearchBar";
 import { createSessionDataCache } from "../components/SessionDataCache";
+import { useAddPageNavigation } from "../components/useAddPageNavigation";
 import { Colors } from "../constants/colors";
 
 type TransferRecord = {
@@ -409,6 +410,9 @@ function Metric({
 
 export default function Transfers() {
   const router = useRouter();
+  const pathname = usePathname();
+  const isNewTransferRoute = pathname === "/transfers/new";
+  const navigateToAddPage = useAddPageNavigation();
   const { form: rawForm, id: rawEditId } = useLocalSearchParams<{
     form?: string | string[];
     id?: string | string[];
@@ -440,7 +444,7 @@ export default function Transfers() {
   const [form, setForm] = useState<TransferForm>(emptyForm);
   const [receipt, setReceipt] = useState<PickedReceipt | null>(null);
   const [existingReceipt, setExistingReceipt] = useState<string | null>(null);
-  const [modalVisible, setModalVisible] = useState(false);
+  const [modalVisible, setModalVisible] = useState(isNewTransferRoute);
   const [submitting, setSubmitting] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [pendingDelete, setPendingDelete] = useState<TransferRecord | null>(null);
@@ -676,6 +680,10 @@ export default function Transfers() {
       router.back();
       return;
     }
+    if (isNewTransferRoute) {
+      router.replace("/transfers");
+      return;
+    }
     setModalVisible(false);
     setSelectedIncomeId("");
     setSelectedExpenseId("");
@@ -722,6 +730,7 @@ export default function Transfers() {
   }, []);
 
   useEffect(() => {
+    if (isNewTransferRoute) return;
     if (formParam === "new") {
       const timeout = setTimeout(openAddTransfer, 0);
       router.setParams({ form: undefined });
@@ -737,7 +746,7 @@ export default function Transfers() {
     const timeout = setTimeout(() => openEditTransfer(transfer), 0);
     router.setParams({ form: undefined, id: undefined });
     return () => clearTimeout(timeout);
-  }, [editId, formParam, loading, openAddTransfer, openEditTransfer, router, transfers]);
+  }, [editId, formParam, isNewTransferRoute, loading, openAddTransfer, openEditTransfer, router, transfers]);
 
   const pickReceipt = async () => {
     try {
@@ -1176,7 +1185,7 @@ export default function Transfers() {
       )}
 
       <AddButton
-        onPress={() => router.push({ pathname: "/transfers", params: { form: "new" } })}
+        onPress={() => navigateToAddPage("/transfers/new")}
         accessibilityLabel="Add transfer"
         accessibilityHint="Opens the new transfer form"
         bottomOffset={37}

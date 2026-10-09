@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import * as DocumentPicker from "expo-document-picker";
 import { LinearGradient } from "expo-linear-gradient";
-import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
+import { useFocusEffect, useLocalSearchParams, usePathname, useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
@@ -30,6 +30,7 @@ import {
     type DateRangeSelection,
 } from "../components/DateRangeFilter";
 import { DateTimePickerComponent } from "../components/DateTimePickerComponent";
+import { useAddPageNavigation } from "../components/useAddPageNavigation";
 
 import { CenteredPageLoader } from "../components/CenteredPageLoader";
 import ConfirmPopup from "../components/ConfirmPopup";
@@ -421,6 +422,9 @@ function Metric({
 
 export default function Income() {
   const router = useRouter();
+  const pathname = usePathname();
+  const isNewIncomeRoute = pathname === "/income/new";
+  const navigateToAddPage = useAddPageNavigation();
   const { form: rawForm, id: rawEditId } = useLocalSearchParams<{
     form?: string | string[];
     id?: string | string[];
@@ -454,7 +458,7 @@ export default function Income() {
   const [amountMax, setAmountMax] = useState("");
   const [sort, setSort] = useState<SortOption>(DEFAULT_FILTER_STATE.sort);
   const [viewMode, setViewMode] = useState<"list" | "grid">("grid");
-  const [editorVisible, setEditorVisible] = useState(false);
+  const [editorVisible, setEditorVisible] = useState(isNewIncomeRoute);
   const [budgetVisible, setBudgetVisible] = useState(false);
   const [detailsIncome, setDetailsIncome] = useState<IncomeRecord | null>(null);
   const [editingIncomeId, setEditingIncomeId] = useState<
@@ -670,6 +674,10 @@ export default function Income() {
       router.back();
       return;
     }
+    if (isNewIncomeRoute) {
+      router.replace("/income");
+      return;
+    }
     setEditorVisible(false);
     setEditingIncomeId(null);
     setExistingAttachment(null);
@@ -704,6 +712,7 @@ export default function Income() {
   }, []);
 
   useEffect(() => {
+    if (isNewIncomeRoute) return;
     if (formParam === "new") {
       const timeout = setTimeout(() => {
         openAddIncome();
@@ -731,7 +740,7 @@ export default function Income() {
       router.setParams({ form: undefined, id: undefined });
     }, 0);
     return () => clearTimeout(timeout);
-  }, [editId, formParam, incomes, loading, monthlyBudget, openAddIncome, openEditIncome, router]);
+  }, [editId, formParam, incomes, isNewIncomeRoute, loading, monthlyBudget, openAddIncome, openEditIncome, router]);
 
   const pickAttachment = async () => {
     try {
@@ -1189,7 +1198,7 @@ export default function Income() {
       )}
 
       <AddButton
-        onPress={() => router.push({ pathname: "/income", params: { form: "new" } })}
+        onPress={() => navigateToAddPage("/income/new")}
         accessibilityLabel="Add income"
         accessibilityHint="Opens the new income form"
         bottomOffset={37}

@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
-import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
+import { useFocusEffect, useLocalSearchParams, usePathname, useRouter } from "expo-router";
 import { useCallback, useState } from "react";
 import {
     ActivityIndicator,
@@ -26,6 +26,7 @@ import { FormInput, FormLabel, FormOption } from "../components/FormControls";
 import { GradientSafeAreaView as SafeAreaView } from "../components/GradientSafeAreaView";
 import { createSessionDataCache } from "../components/SessionDataCache";
 import { parseLocalDate, parseLocalDateTimeValue } from "../components/dateTimeUtils";
+import { useAddPageNavigation } from "../components/useAddPageNavigation";
 import { Colors } from "../constants/colors";
 
 type CalendarEntry = {
@@ -335,6 +336,9 @@ function EntryCard({
 
 export default function CalendarScreen() {
   const router = useRouter();
+  const pathname = usePathname();
+  const isNewEventRoute = pathname === "/calendar/new-event";
+  const navigateToAddPage = useAddPageNavigation();
   const { create: rawCreate, date: rawCreateDate } = useLocalSearchParams<{
     create?: string | string[];
     date?: string | string[];
@@ -361,7 +365,9 @@ export default function CalendarScreen() {
   const [activeType, setActiveType] = useState<EntryType>("event");
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [calendarMonth, setCalendarMonth] = useState(() => new Date());
-  const [modalType, setModalType] = useState<EntryType | null>(null);
+  const [modalType, setModalType] = useState<EntryType | null>(() =>
+    isNewEventRoute ? "event" : null,
+  );
   const [editingEvent, setEditingEvent] = useState<CalendarEntry | null>(null);
   const [eventCategories, setEventCategories] = useState<EventCategory[]>([]);
   const [eventCategoriesLoading, setEventCategoriesLoading] = useState(false);
@@ -463,6 +469,7 @@ export default function CalendarScreen() {
       return;
     }
     if (router.canGoBack()) router.back();
+    else if (isNewEventRoute) router.replace("/calendar");
     else setModalType(null);
   };
 
@@ -524,6 +531,7 @@ export default function CalendarScreen() {
 
   useFocusEffect(
     useCallback(() => {
+      if (isNewEventRoute) return;
       if (createParam !== "event" && createParam !== "reminder") return;
       const requestedDate = createDateParam
         ? parseDateString(createDateParam)
@@ -531,7 +539,7 @@ export default function CalendarScreen() {
       if (requestedDate) setSelectedDate(requestedDate);
       openForm(createParam, requestedDate || selectedDate);
       router.setParams({ create: undefined });
-    }, [createDateParam, createParam, openForm, router, selectedDate]),
+    }, [createDateParam, createParam, isNewEventRoute, openForm, router, selectedDate]),
   );
 
   const saveEntry = async () => {
@@ -590,6 +598,7 @@ export default function CalendarScreen() {
         setEditingEvent(null);
         setModalType(null);
       } else if (router.canGoBack()) router.back();
+      else if (isNewEventRoute) router.replace("/calendar");
       else setModalType(null);
     } catch (error) {
       Alert.alert("Unable to save", getApiErrorMessage(error));
@@ -926,10 +935,17 @@ export default function CalendarScreen() {
 
       <AddButton
         onPress={() =>
-          router.push({
-            pathname: "/calendar",
-            params: { create: activeType, date: dateKey(selectedDate) },
-          })
+          navigateToAddPage(
+            activeType === "event"
+              ? {
+                  pathname: "/calendar/new-event",
+                  params: { date: dateKey(selectedDate) },
+                }
+              : {
+                  pathname: "/calendar",
+                  params: { create: "reminder", date: dateKey(selectedDate) },
+                },
+          )
         }
         accessibilityLabel={
           activeType === "event" ? "Add event" : "Add reminder"
