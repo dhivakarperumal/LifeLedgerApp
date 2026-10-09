@@ -1,6 +1,7 @@
 import { LinearGradient } from "expo-linear-gradient";
 import { ArrowLeft } from "lucide-react-native";
 import { Pressable, Text, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Colors } from "../constants/colors";
 
 export function AddPageHeader({
@@ -16,6 +17,8 @@ export function AddPageHeader({
   horizontalInset?: number;
   disabled?: boolean;
 }) {
+  const insets = useSafeAreaInsets();
+
   return (
     <LinearGradient
       colors={Colors.greenGradient}
@@ -25,7 +28,7 @@ export function AddPageHeader({
         marginHorizontal: -horizontalInset,
         marginBottom: 15,
         paddingHorizontal: horizontalInset,
-        paddingTop: 14,
+        paddingTop: Math.max(14, insets.top + 8),
         paddingBottom: 12,
         gap: 4,
       }}
