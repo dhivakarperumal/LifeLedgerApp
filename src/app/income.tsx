@@ -464,7 +464,7 @@ export default function Income() {
   const [amountMin, setAmountMin] = useState("");
   const [amountMax, setAmountMax] = useState("");
   const [sort, setSort] = useState<SortOption>(DEFAULT_FILTER_STATE.sort);
-  const [viewMode, setViewMode] = useState<"list" | "grid">("grid");
+  const [viewMode, setViewMode] = useState<"list" | "grid">("list");
   const [editorVisible, setEditorVisible] = useState(isNewIncomeRoute);
   const [budgetVisible, setBudgetVisible] = useState(false);
   const [detailsIncome, setDetailsIncome] = useState<IncomeRecord | null>(null);

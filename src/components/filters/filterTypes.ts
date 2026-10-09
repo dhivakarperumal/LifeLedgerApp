@@ -60,7 +60,7 @@ export const DEFAULT_FILTER_STATE: FilterState = {
   amountMin: "",
   amountMax: "",
   sort: "Newest First",
-  viewMode: "card",
+  viewMode: "table",
   paymentMethod: "",
   custom: {},
 };

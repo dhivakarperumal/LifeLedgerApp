@@ -374,7 +374,7 @@ export default function Reports() {
   const [amountMin, setAmountMin] = useState("");
   const [amountMax, setAmountMax] = useState("");
   const [sort, setSort] = useState<SortOption>(DEFAULT_FILTER_STATE.sort);
-  const [viewMode, setViewMode] = useState<"list" | "grid">("grid");
+  const [viewMode, setViewMode] = useState<"list" | "grid">("list");
   const [exporting, setExporting] = useState<"pdf" | "csv" | null>(null);
 
   const filterValues = useMemo<FilterState>(
