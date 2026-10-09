@@ -103,6 +103,7 @@ export function BottomSheet({
             style={styles.scrollArea}
             contentContainerStyle={[
               styles.scrollContent,
+              { flexGrow: 1 },
               { paddingBottom: Math.max(insets.bottom, 16) + 16 },
             ]}
             showsVerticalScrollIndicator={false}

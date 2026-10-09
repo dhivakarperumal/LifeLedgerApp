@@ -22,6 +22,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Svg, { Path, Rect } from "react-native-svg";
 import api, { API_BASE_URL, getApiErrorMessage, logoutUser } from "../api";
+import { ActionIconButton } from "../components/ActionIconButton";
 import { AddButton } from "../components/AddButton";
 import { AddPageHeader } from "../components/AddPageHeader";
 import { CenteredPageLoader } from "../components/CenteredPageLoader";
@@ -1151,43 +1152,40 @@ export default function Transfers() {
                   </View>
                 </Pressable>
                 <View
-                  className="flex-row justify-end gap-1"
-                  style={{ marginTop: viewMode === "card" ? 8 : 12 }}
+                  className="flex-row justify-end"
+                  style={{
+                    gap: 8,
+                    marginTop: viewMode === "card" ? 8 : 12,
+                  }}
                 >
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel={`View details for ${transfer.title || "transfer"}`}
-                    onPress={() => setSelectedTransfer(transfer)}
-                    className="h-8 w-8 items-center justify-center rounded-lg bg-[#EEF5F0]"
-                  >
-                    <Ionicons name="eye-outline" size={16} color="#315640" />
-                  </Pressable>
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel={`Edit ${transfer.title || "transfer"}`}
-                    onPress={() =>
+                  <ActionIconButton
+                    action="view"
+                    label={`View details for ${transfer.title || "transfer"}`}
+                    onPress={(event) => {
+                      event.stopPropagation();
+                      setSelectedTransfer(transfer);
+                    }}
+                  />
+                  <ActionIconButton
+                    action="edit"
+                    label={`Edit ${transfer.title || "transfer"}`}
+                    onPress={(event) => {
+                      event.stopPropagation();
                       router.push({
                         pathname: "/transfers",
                         params: { form: "edit", id: String(transfer.id) },
-                      })
-                    }
-                    className="h-8 w-8 items-center justify-center rounded-lg bg-[#EEF5F0]"
-                  >
-                    <Ionicons name="create-outline" size={17} color="#315640" />
-                  </Pressable>
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel={`Delete ${transfer.title || "transfer"}`}
+                      });
+                    }}
+                  />
+                  <ActionIconButton
+                    action="delete"
+                    label={`Delete ${transfer.title || "transfer"}`}
                     disabled={deletingId === transfer.id}
-                    onPress={() => deleteTransfer(transfer)}
-                    className="h-8 w-8 items-center justify-center rounded-lg bg-[#FFF1EF]"
-                  >
-                    <Ionicons
-                      name={deletingId === transfer.id ? "hourglass-outline" : "trash-outline"}
-                      size={16}
-                      color="#D94A43"
-                    />
-                  </Pressable>
+                    onPress={(event) => {
+                      event.stopPropagation();
+                      deleteTransfer(transfer);
+                    }}
+                  />
                 </View>
               </View>
             ))}

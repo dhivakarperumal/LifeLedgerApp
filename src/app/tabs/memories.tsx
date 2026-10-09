@@ -23,7 +23,6 @@ import {
     ScrollView,
     Text,
     View,
-    type GestureResponderEvent,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import api, {
@@ -32,6 +31,7 @@ import api, {
     getStoredToken,
     logoutUser,
 } from "../../api";
+import { ActionIconButton } from "../../components/ActionIconButton";
 import { AddButton } from "../../components/AddButton";
 import { AddPageHeader } from "../../components/AddPageHeader";
 import { CenteredPageLoader } from "../../components/CenteredPageLoader";
@@ -167,6 +167,58 @@ function getList<T>(data: any, keys: string[] = []): T[] {
     current = current?.data;
   }
   return [];
+}
+
+function getMemoryPageMetadata(data: any) {
+  let current = data;
+  for (let depth = 0; depth < 4 && current; depth += 1) {
+    const metadata =
+      current.meta || current.pagination || current.pageInfo || current;
+    const currentPage = Number(metadata.current_page ?? metadata.page);
+    const lastPage = Number(
+      metadata.last_page ?? metadata.total_pages ?? metadata.totalPages,
+    );
+    const nextPage =
+      metadata.next_page_url ??
+      metadata.nextPageUrl ??
+      metadata.links?.next;
+    if (
+      Number.isFinite(currentPage) ||
+      Number.isFinite(lastPage) ||
+      nextPage !== undefined
+    ) {
+      return { currentPage, lastPage, hasNext: Boolean(nextPage) };
+    }
+    current = current.data;
+  }
+  return null;
+}
+
+async function fetchAllMemories() {
+  const allMemories: Memory[] = [];
+  let page = 1;
+
+  while (true) {
+    const response = await api.get("/memories", { params: { page } });
+    const pageMemories = getList<Memory>(response.data, ["memories"]);
+    allMemories.push(...pageMemories);
+
+    const metadata = getMemoryPageMetadata(response.data);
+    if (!metadata) break;
+    const currentPage = metadata.currentPage || page;
+    const lastPage = metadata.lastPage;
+    if (currentPage < page) {
+      throw new Error("Could not load the next page of memories.");
+    }
+    const hasNext =
+      Number.isFinite(lastPage) && lastPage > 0
+        ? currentPage < lastPage
+        : metadata.hasNext;
+    if (!hasNext || pageMemories.length === 0) break;
+    page = currentPage + 1;
+  }
+
+  return allMemories;
 }
 
 function getMediaUrl(value?: string) {
@@ -403,6 +455,13 @@ export default function Memories() {
     setViewMode(filters.viewMode);
     setSelectedMediaType(filters.custom?.mediaType || "all");
   };
+  const resetMemoryFilters = useCallback(() => {
+    setSearch("");
+    setDateRange(createDateRangeSelection("All"));
+    setSelectedCategory("all");
+    setSelectedMediaType("all");
+    setViewMode(DEFAULT_FILTER_STATE.viewMode);
+  }, []);
 
   const handleUnauthorized = useCallback(async () => {
     await logoutUser();
@@ -471,12 +530,12 @@ export default function Memories() {
   const fetchData = useCallback(async () => {
     try {
       const [memoriesResult, categoriesResult] = await Promise.allSettled([
-        api.get("/memories"),
+        fetchAllMemories(),
         api.get("/categories"),
       ]);
       if (memoriesResult.status === "rejected") throw memoriesResult.reason;
 
-      setMemories(getList<Memory>(memoriesResult.value.data, ["memories"]));
+      setMemories(memoriesResult.value);
       const categoryRows =
         categoriesResult.status === "fulfilled"
           ? getList<MemoryCategory>(categoriesResult.value.data, ["categories"])
@@ -518,9 +577,10 @@ export default function Memories() {
 
   useFocusEffect(
     useCallback(() => {
+      resetMemoryFilters();
       const timeout = setTimeout(() => void fetchData(), 0);
       return () => clearTimeout(timeout);
-    }, [fetchData]),
+    }, [fetchData, resetMemoryFilters]),
   );
 
   const filteredMemories = useMemo(() => {
@@ -933,7 +993,7 @@ export default function Memories() {
           filterSheet={{
             currentFilters: filterValues,
             onApply: applyMemoryFilters,
-            onReset: () => setSelectedMediaType("all"),
+            onReset: resetMemoryFilters,
             categories: filterCategories,
             sections: ["date", "category", "viewMode"],
             additionalFilters: [
@@ -1355,18 +1415,16 @@ export default function Memories() {
                               marginTop: 9,
                             }}
                           >
-                            <MemoryCardAction
-                              icon="eye-outline"
-                              color={Colors.forest}
+                            <ActionIconButton
+                              action="view"
                               label={`View ${memory.title}`}
                               onPress={(event) => {
                                 event.stopPropagation();
                                 openMemoryDetails(memory);
                               }}
                             />
-                            <MemoryCardAction
-                              icon="create-outline"
-                              color="#426C92"
+                            <ActionIconButton
+                              action="edit"
                               label={`Edit ${memory.title}`}
                               onPress={(event) => {
                                 event.stopPropagation();
@@ -1376,9 +1434,8 @@ export default function Memories() {
                                 });
                               }}
                             />
-                            <MemoryCardAction
-                              icon="trash-outline"
-                              color="#B64C45"
+                            <ActionIconButton
+                              action="delete"
                               label={`Delete ${memory.title}`}
                               onPress={(event) => {
                                 event.stopPropagation();
@@ -1647,40 +1704,6 @@ export default function Memories() {
         </View>
       )}
     </SafeAreaView>
-  );
-}
-
-function MemoryCardAction({
-  icon,
-  color,
-  label,
-  onPress,
-}: {
-  icon: keyof typeof Ionicons.glyphMap;
-  color: string;
-  label: string;
-  onPress: (event: GestureResponderEvent) => void;
-}) {
-  return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={label}
-      hitSlop={5}
-      onPress={onPress}
-      style={({ pressed }) => ({
-        width: 32,
-        height: 32,
-        alignItems: "center",
-        justifyContent: "center",
-        borderRadius: 10,
-        borderWidth: 1,
-        borderColor: `${color}99`,
-        backgroundColor: `${color}26`,
-        opacity: pressed ? 0.65 : 1,
-      })}
-    >
-      <Ionicons name={icon} size={17} color={color} />
-    </Pressable>
   );
 }
 

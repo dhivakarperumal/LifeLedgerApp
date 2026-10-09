@@ -29,7 +29,6 @@ import {
     ScrollView,
     Text,
     View,
-    type GestureResponderEvent,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import api, {
@@ -38,6 +37,7 @@ import api, {
     getStoredToken,
     logoutUser,
 } from "../../api";
+import { ActionIconButton } from "../../components/ActionIconButton";
 import { AddButton } from "../../components/AddButton";
 import { AddPageHeader } from "../../components/AddPageHeader";
 import {
@@ -1442,52 +1442,12 @@ export default function Diary() {
                               </Text>
                             ) : null}
                           </View>
-                          <View
-                            style={{
-                              flexDirection: "row",
-                              justifyContent: "flex-end",
-                              gap: 7,
-                              marginTop: 9,
-                            }}
-                          >
-                            <DiaryCardAction
-                              icon="eye-outline"
-                              color={Colors.forest}
-                              label={`View ${entry.title}`}
-                              onPress={(event) => {
-                                event.stopPropagation();
-                                openEntryDetails(entry);
-                              }}
-                            />
-                            <DiaryCardAction
-                              icon="create-outline"
-                              color="#426C92"
-                              label={`Edit ${entry.title}`}
-                              onPress={(event) => {
-                                event.stopPropagation();
-                                router.push({
-                                  pathname: "/diary-form" as any,
-                                  params: { edit: String(entry.id) },
-                                });
-                              }}
-                            />
-                            <DiaryCardAction
-                              icon="trash-outline"
-                              color="#B64C45"
-                              label={`Delete ${entry.title}`}
-                              onPress={(event) => {
-                                event.stopPropagation();
-                                deleteEntry(entry);
-                              }}
-                            />
-                          </View>
                         </View>
 
                         <View
                           style={{
-                            width: viewMode === "card" ? "100%" : "28%",
-                            minWidth: viewMode === "card" ? undefined : 88,
-                            maxWidth: viewMode === "card" ? undefined : 176,
+                            width: viewMode === "card" ? "100%" : 124,
+                            minWidth: viewMode === "card" ? undefined : 124,
                             gap: 7,
                             alignItems: "stretch",
                           }}
@@ -1521,6 +1481,42 @@ export default function Diary() {
                                 color={Colors.sage}
                               />
                             )}
+                          </View>
+                          <View
+                            style={{
+                              flexDirection: "row",
+                              justifyContent: "flex-end",
+                              gap: 8,
+                              marginTop: 2,
+                            }}
+                          >
+                            <ActionIconButton
+                              action="view"
+                              label={`View ${entry.title}`}
+                              onPress={(event) => {
+                                event.stopPropagation();
+                                openEntryDetails(entry);
+                              }}
+                            />
+                            <ActionIconButton
+                              action="edit"
+                              label={`Edit ${entry.title}`}
+                              onPress={(event) => {
+                                event.stopPropagation();
+                                router.push({
+                                  pathname: "/diary-form" as any,
+                                  params: { edit: String(entry.id) },
+                                });
+                              }}
+                            />
+                            <ActionIconButton
+                              action="delete"
+                              label={`Delete ${entry.title}`}
+                              onPress={(event) => {
+                                event.stopPropagation();
+                                deleteEntry(entry);
+                              }}
+                            />
                           </View>
                         </View>
 
@@ -1911,40 +1907,6 @@ function FormField({
         }}
       />
     </View>
-  );
-}
-
-function DiaryCardAction({
-  icon,
-  color,
-  label,
-  onPress,
-}: {
-  icon: keyof typeof Ionicons.glyphMap;
-  color: string;
-  label: string;
-  onPress: (event: GestureResponderEvent) => void;
-}) {
-  return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={label}
-      hitSlop={5}
-      onPress={onPress}
-      style={({ pressed }) => ({
-        width: 32,
-        height: 32,
-        alignItems: "center",
-        justifyContent: "center",
-        borderRadius: 10,
-        borderWidth: 1,
-        borderColor: `${color}99`,
-        backgroundColor: `${color}26`,
-        opacity: pressed ? 0.65 : 1,
-      })}
-    >
-      <Ionicons name={icon} size={17} color={color} />
-    </Pressable>
   );
 }
 

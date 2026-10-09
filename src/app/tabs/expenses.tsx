@@ -23,6 +23,7 @@ import {
     useSafeAreaInsets,
 } from "react-native-safe-area-context";
 import api, { API_BASE_URL, getApiErrorMessage, logoutUser } from "../../api";
+import { ActionIconButton } from "../../components/ActionIconButton";
 import { AddButton } from "../../components/AddButton";
 import { AddPageHeader } from "../../components/AddPageHeader";
 import { BottomSheet, BottomSheetContent } from "../../components/BottomSheet";
@@ -60,14 +61,19 @@ type ExpenseItem = {
   id: number | string;
   title: string;
   name?: string;
-  category?: string;
+  category?: unknown;
+  category_name?: string;
+  expense_category?: unknown;
   expense_amount?: number | string;
   amount?: number | string;
   expense_date?: string;
+  date?: string;
   expense_time?: string;
   time?: string;
   payment_method?: string;
+  paymentMethod?: string;
   notes?: string;
+  note?: string;
   location?: string;
   from?: string;
   to?: string;
@@ -162,8 +168,8 @@ const categoryAccents: Record<string, { bg: string; color: string }> = {
   Other: { bg: "#F3F4F6", color: "#6B7280" },
 };
 
-function getCategoryAccent(category?: string) {
-  const normalized = category?.trim().toLowerCase() || "other";
+function getCategoryAccent(category?: unknown) {
+  const normalized = getExpenseCategoryName(category).trim().toLowerCase();
   if (normalized.includes("travel")) return categoryAccents.Travel;
   if (normalized.includes("food")) return categoryAccents.Food;
   if (normalized.includes("fuel") || normalized.includes("fule")) {
@@ -198,8 +204,8 @@ const categoryIcons: Record<string, keyof typeof Ionicons.glyphMap> = {
   other: "pricetag-outline",
 };
 
-function getCategoryIcon(category?: string) {
-  const normalized = category?.trim().toLowerCase() || "";
+function getCategoryIcon(category?: unknown) {
+  const normalized = getExpenseCategoryName(category).trim().toLowerCase();
   if (normalized.includes("travel")) return categoryIcons.travel;
   if (normalized.includes("food")) return categoryIcons.food;
   if (normalized.includes("fuel") || normalized.includes("fule")) {
@@ -231,6 +237,46 @@ function getExpenseCategoryName(category: unknown) {
     }
   }
   return "Other";
+}
+
+function getExpenseDetailRecord(responseData: unknown, selectedId: string) {
+  let candidate: unknown = responseData;
+  const wrapperKeys = [
+    "expense",
+    "expenses",
+    "data",
+    "result",
+    "record",
+    "expenseDetails",
+  ];
+
+  for (let depth = 0; depth < 6; depth += 1) {
+    if (Array.isArray(candidate)) {
+      return candidate.find((item) => String(item?.id) === selectedId);
+    }
+    if (!candidate || typeof candidate !== "object") return null;
+
+    const record = candidate as Record<string, unknown>;
+    if (record.id !== undefined) {
+      if (String(record.id) !== selectedId) {
+        throw new Error("The server returned details for a different expense.");
+      }
+      return record;
+    }
+
+    const next = wrapperKeys
+      .map((key) => record[key])
+      .find(
+        (value) =>
+          value !== null &&
+          typeof value === "object" &&
+          (Array.isArray(value) || Object.keys(value).length > 0),
+      );
+    if (next === undefined) return record;
+    candidate = next;
+  }
+
+  return null;
 }
 
 function getCurrentDate() {
@@ -546,35 +592,27 @@ export default function Expenses() {
       setExpenseDetailsError(null);
       try {
         const response = await api.get(`/expenses/${encodeURIComponent(selectedId)}`);
-        const responseData = response?.data;
-        const responseDetail =
-          responseData?.expense ??
-          responseData?.data?.expense ??
-          responseData?.expenses ??
-          responseData?.data?.expenses ??
-          responseData?.data ??
-          responseData;
-        const detail = Array.isArray(responseDetail)
-          ? responseDetail.find((item) => String(item?.id) === selectedId)
-          : responseDetail;
+        const detail = getExpenseDetailRecord(response.data, selectedId);
 
         if (!detail || typeof detail !== "object" || Array.isArray(detail)) {
           throw new Error("Expense details were not returned.");
         }
 
         const loadedExpense = detail as Partial<ExpenseItem>;
-        if (
-          loadedExpense.id !== undefined &&
-          String(loadedExpense.id) !== selectedId
-        ) {
-          throw new Error("The server returned details for a different expense.");
-        }
 
         if (isActive) {
+          const categorySource =
+            loadedExpense.category ??
+            loadedExpense.category_name ??
+            loadedExpense.expense_category ??
+            viewingExpense.category ??
+            viewingExpense.category_name;
           setExpenseDetails({
             ...viewingExpense,
             ...loadedExpense,
-            category: getExpenseCategoryName(loadedExpense.category),
+            category: categorySource
+              ? getExpenseCategoryName(categorySource)
+              : undefined,
             id: viewingExpense.id,
           });
         }
@@ -1002,6 +1040,8 @@ export default function Expenses() {
   };
 
   const handleEditExpense = (expense: ExpenseItem) => {
+    const expenseCategory =
+      expense.category ?? expense.category_name ?? expense.expense_category;
     const rawDate = expense.expense_date || "";
     const dateMatch = rawDate.match(/^(\d{4}-\d{2}-\d{2})/);
     const date = dateMatch?.[1] ||
@@ -1016,7 +1056,9 @@ export default function Expenses() {
       expense_amount: String(expense.expense_amount ?? expense.amount ?? ""),
       transfer_id: String(expense.transfer_id ?? ""),
       transfer_amount: String(expense.transfer_amount ?? ""),
-      category: expense.category || categoryOptions[0] || fallbackCategories[0],
+      category: expenseCategory
+        ? getExpenseCategoryName(expenseCategory)
+        : categoryOptions[0] || fallbackCategories[0],
       from: expense.from || "",
       to: expense.to || "",
       payment_method: expense.payment_method || "Cash",
@@ -1066,6 +1108,7 @@ export default function Expenses() {
 
   const openExpenseDetails = (expense: ExpenseItem) => {
     setExpenseDetails(expense);
+    setExpenseDetailsLoading(true);
     setExpenseDetailsError(null);
     setViewingExpense(expense);
     setExpenseDetailsRequest((request) => request + 1);
@@ -1438,8 +1481,12 @@ export default function Expenses() {
                     }
                   >
               {month.expenses.map((expense, index) => {
-                const accent = getCategoryAccent(expense.category);
-                const categoryIcon = getCategoryIcon(expense.category);
+                const expenseCategory =
+                  expense.category ??
+                  expense.category_name ??
+                  expense.expense_category;
+                const accent = getCategoryAccent(expenseCategory);
+                const categoryIcon = getCategoryIcon(expenseCategory);
 
                 return (
                   <View
@@ -1530,7 +1577,7 @@ export default function Expenses() {
                             }}
                             numberOfLines={1}
                           >
-                            {expense.category || "Other"}
+                            {getExpenseCategoryName(expenseCategory)}
                           </Text>
                         </View>
                         <Text
@@ -1634,66 +1681,36 @@ export default function Expenses() {
                           flexDirection: "row",
                           alignItems: "center",
                           justifyContent: "flex-end",
-                          gap: 4,
+                          gap: 8,
                         }}
                       >
-                        <Pressable
-                          accessibilityRole="button"
-                          accessibilityLabel={`View ${expense.title || "expense"}`}
-                          onPress={() => openExpenseDetails(expense)}
-                          hitSlop={8}
-                          style={{
-                            width: 32,
-                            height: 32,
-                            borderRadius: 10,
-                            backgroundColor: "#EEF5F0",
-                            justifyContent: "center",
-                            alignItems: "center",
-                          }}
-                        >
-                          <Ionicons
-                            name="eye-outline"
-                            size={16}
-                            color={Colors.primary}
-                          />
-                        </Pressable>
-                        <Pressable
-                          accessibilityRole="button"
-                          accessibilityLabel={`Edit ${expense.title || "expense"}`}
-                          onPress={() =>
-                            router.push({
-                              pathname: "/expense-form" as any,
-                              params: { edit: String(expense.id) },
-                            })
-                          }
-                          hitSlop={8}
-                          style={{
-                            width: 32,
-                            height: 32,
-                            borderRadius: 10,
-                            backgroundColor: "#EEF5F0",
-                            justifyContent: "center",
-                            alignItems: "center",
-                          }}
-                        >
-                          <Ionicons name="create-outline" size={16} color={Colors.primary} />
-                        </Pressable>
-                      <Pressable
-                        accessibilityRole="button"
-                        accessibilityLabel={`Delete ${expense.title || "expense"}`}
-                        onPress={() => handleDeleteExpense(expense)}
-                        hitSlop={10}
-                        style={{
-                          width: 32,
-                          height: 32,
-                          borderRadius: 10,
-                          backgroundColor: "#FFF4F2",
-                          justifyContent: "center",
-                          alignItems: "center",
+                      <ActionIconButton
+                        action="view"
+                        label={`View ${expense.title || "expense"}`}
+                        onPress={(event) => {
+                          event.stopPropagation();
+                          openExpenseDetails(expense);
                         }}
-                      >
-                        <Ionicons name="trash-outline" size={15} color="#EF4444" />
-                      </Pressable>
+                      />
+                      <ActionIconButton
+                        action="edit"
+                        label={`Edit ${expense.title || "expense"}`}
+                        onPress={(event) => {
+                          event.stopPropagation();
+                          router.push({
+                            pathname: "/expense-form" as any,
+                            params: { edit: String(expense.id) },
+                          });
+                        }}
+                      />
+                      <ActionIconButton
+                        action="delete"
+                        label={`Delete ${expense.title || "expense"}`}
+                        onPress={(event) => {
+                          event.stopPropagation();
+                          handleDeleteExpense(expense);
+                        }}
+                      />
                       </View>
                     </View>
                   </View>
@@ -2557,61 +2574,82 @@ function ExpenseDetailsContent({
   onRetry: () => void;
   onOpenAttachment: (uri: string) => Promise<void>;
 }) {
-  const rawDate = expense.expense_date || "";
+  const rawDate = expense.expense_date || expense.date || "";
   const parsedDateTime = parseLocalDateTimeValue(rawDate);
   const time =
-    expense.expense_time?.slice(0, 5) ||
-    expense.time?.slice(0, 5) ||
+    (typeof expense.expense_time === "string"
+      ? expense.expense_time.slice(0, 5)
+      : "") ||
+    (typeof expense.time === "string" ? expense.time.slice(0, 5) : "") ||
     (parsedDateTime && /[T ]\d{2}:\d{2}/.test(rawDate)
       ? formatLocalTime(parsedDateTime)
       : "");
   const attachment = getExpenseAttachment(expense);
-  const notes = expense.notes?.trim() || expense.description?.trim();
-  const category = getExpenseCategoryName(expense.category);
+  const notes =
+    (typeof expense.notes === "string" && expense.notes.trim()) ||
+    (typeof expense.note === "string" && expense.note.trim()) ||
+    (typeof expense.description === "string" && expense.description.trim()) ||
+    "";
+  const categorySource =
+    expense.category ?? expense.category_name ?? expense.expense_category;
+  const category = categorySource
+    ? getExpenseCategoryName(categorySource)
+    : "";
+  const rawAmount = expense.expense_amount ?? expense.amount;
+  const amount =
+    rawAmount !== undefined && rawAmount !== null && String(rawAmount).trim()
+      ? formatAmount(rawAmount as number | string)
+      : "";
+  const paymentMethod =
+    (typeof expense.payment_method === "string" &&
+      expense.payment_method.trim()) ||
+    (typeof expense.paymentMethod === "string" &&
+      expense.paymentMethod.trim()) ||
+    "";
   const details = [
-    {
-      label: "Category",
-      value: category,
-      icon: getCategoryIcon(category),
-      iconColor: getCategoryAccent(category).color,
-    },
-    {
-      label: "Amount",
-      value: formatAmount(expense.expense_amount ?? expense.amount),
-      iconColor: "#E11D48",
-    },
-    {
-      label: "Date",
-      value: parsedDateTime
-        ? formatDate(formatLocalDate(parsedDateTime))
-        : formatDate(rawDate),
-      icon: "calendar-outline" as const,
-      iconColor: Colors.primary,
-    },
-    {
-      label: "Time",
-      value: time || "—",
-      icon: "time-outline" as const,
-      iconColor: Colors.primary,
-    },
-    ...(expense.payment_method?.trim()
+    ...(category
       ? [{
-          label: "Payment",
-          value: expense.payment_method.trim(),
+          label: "Category",
+          value: category,
+          icon: getCategoryIcon(category),
+          iconColor: getCategoryAccent(category).color,
+        }]
+      : []),
+    ...(rawDate
+      ? [{
+          label: "Date",
+          value: parsedDateTime
+            ? formatDate(formatLocalDate(parsedDateTime))
+            : formatDate(rawDate),
+          icon: "calendar-outline" as const,
+          iconColor: Colors.primary,
+        }]
+      : []),
+    ...(time
+      ? [{
+          label: "Time",
+          value: time,
+          icon: "time-outline" as const,
+          iconColor: Colors.primary,
+        }]
+      : []),
+    ...(paymentMethod
+      ? [{
+          label: "Payment method",
+          value: paymentMethod,
           icon: "card-outline" as const,
           iconColor: Colors.primary,
         }]
       : []),
-    ...(expense.location?.trim()
+    ...(typeof expense.location === "string" && expense.location.trim()
       ? [{
           label: "Location",
           value: expense.location.trim(),
           icon: "location-outline" as const,
           iconColor: Colors.primary,
-          fullWidth: true,
         }]
       : []),
-    ...(expense.from?.trim()
+    ...(typeof expense.from === "string" && expense.from.trim()
       ? [{
           label: "From",
           value: expense.from.trim(),
@@ -2619,7 +2657,7 @@ function ExpenseDetailsContent({
           iconColor: Colors.primary,
         }]
       : []),
-    ...(expense.to?.trim()
+    ...(typeof expense.to === "string" && expense.to.trim()
       ? [{
           label: "To",
           value: expense.to.trim(),
@@ -2636,7 +2674,7 @@ function ExpenseDetailsContent({
           iconColor: Colors.primary,
         }]
       : []),
-    ...(expense.recurring?.trim()
+    ...(typeof expense.recurring === "string" && expense.recurring.trim()
       ? [{
           label: "Recurring",
           value: expense.recurring.trim(),
@@ -2650,7 +2688,6 @@ function ExpenseDetailsContent({
           value: formatTimestamp(expense.created_at || expense.createdAt),
           icon: "add-circle-outline" as const,
           iconColor: Colors.primary,
-          fullWidth: true,
         }]
       : []),
     ...((expense.updated_at || expense.updatedAt)
@@ -2659,43 +2696,35 @@ function ExpenseDetailsContent({
           value: formatTimestamp(expense.updated_at || expense.updatedAt),
           icon: "refresh-outline" as const,
           iconColor: Colors.primary,
-          fullWidth: true,
         }]
       : []),
   ];
+  const hasAdditionalDetails = Boolean(notes || attachment || details.length);
 
   return (
-    <BottomSheetContent style={{ flexDirection: "row", flexWrap: "wrap" }}>
+    <BottomSheetContent
+      style={{
+        width: "100%",
+        alignSelf: "stretch",
+        flexGrow: 1,
+        flexDirection: "column",
+        backgroundColor: Colors.white,
+      }}
+    >
       {loading ? (
         <View
           accessibilityLiveRegion="polite"
-          style={{
-            width: "100%",
-            flexDirection: "row",
-            alignItems: "center",
-            gap: 10,
-            paddingVertical: 8,
-          }}
+          style={expenseDetailNoticeStyle}
         >
           <ActivityIndicator size="small" color={Colors.primary} />
           <Text style={{ color: "#68736E", fontSize: 13 }}>
-            Refreshing expense details…
+            Loading expense details…
           </Text>
         </View>
       ) : null}
 
       {error ? (
-        <View
-          style={{
-            width: "100%",
-            flexDirection: "row",
-            alignItems: "center",
-            gap: 10,
-            borderRadius: 12,
-            backgroundColor: "#FFF4F2",
-            padding: 12,
-          }}
-        >
+        <View style={[expenseDetailNoticeStyle, { backgroundColor: "#FFF4F2" }]}>
           <Text style={{ flex: 1, color: "#9B3E36", fontSize: 12 }}>
             {error} Showing the expense information already available.
           </Text>
@@ -2712,100 +2741,53 @@ function ExpenseDetailsContent({
         </View>
       ) : null}
 
+      {amount ? (
+        <View style={expenseAmountCardStyle}>
+          <View style={{ flex: 1 }}>
+            <Text style={expenseDetailLabelStyle}>Amount</Text>
+            <Text style={expenseAmountValueStyle}>{amount}</Text>
+          </View>
+          <View style={expenseAmountIconStyle}>
+            <Ionicons name="wallet-outline" size={23} color={Colors.primary} />
+          </View>
+        </View>
+      ) : null}
+
       {details.map((detail) => (
-        <View
-          key={detail.label}
-          style={{
-            flexGrow: detail.fullWidth ? undefined : 1,
-            flexBasis: detail.fullWidth ? "100%" : "47%",
-            minWidth: detail.fullWidth ? "100%" : "45%",
-            borderRadius: 15,
-            backgroundColor: "#F5F7FA",
-            paddingHorizontal: 14,
-            paddingVertical: 13,
-            gap: 8,
-          }}
-        >
-          <Text
-            style={{
-              color: "#8A9AB1",
-              fontSize: 11,
-              fontWeight: "800",
-              letterSpacing: 0.7,
-              textTransform: "uppercase",
-            }}
-          >
-            {detail.label}
-          </Text>
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-            {detail.icon ? (
+        <View key={detail.label} style={expenseDetailRowStyle}>
+          {detail.icon ? (
+            <View
+              style={[
+                expenseDetailIconStyle,
+                { backgroundColor: `${detail.iconColor}18` },
+              ]}
+            >
               <Ionicons
                 name={detail.icon}
                 size={18}
                 color={detail.iconColor}
               />
-            ) : null}
-            <Text
-              style={{
-                flex: 1,
-                color: detail.label === "Amount" ? "#E11D48" : "#263238",
-                fontSize: 15,
-                fontWeight: "700",
-              }}
-            >
-              {detail.value}
-            </Text>
+            </View>
+          ) : null}
+          <View style={{ flex: 1 }}>
+            <Text style={expenseDetailLabelStyle}>{detail.label}</Text>
+            <Text style={expenseDetailValueStyle}>{detail.value}</Text>
           </View>
         </View>
       ))}
 
       {notes ? (
-        <View
-          style={{
-            width: "100%",
-            borderRadius: 15,
-            backgroundColor: "#F5F7FA",
-            padding: 14,
-            gap: 8,
-          }}
-        >
-          <Text
-            style={{
-              color: "#8A9AB1",
-              fontSize: 11,
-              fontWeight: "800",
-              letterSpacing: 0.7,
-              textTransform: "uppercase",
-            }}
-          >
-            Description / notes
-          </Text>
-          <Text style={{ color: "#293930", fontSize: 14, lineHeight: 20 }}>
+        <View style={expenseDetailSectionStyle}>
+          <Text style={expenseDetailLabelStyle}>Description / notes</Text>
+          <Text style={[expenseDetailValueStyle, { marginTop: 7 }]}>
             {notes}
           </Text>
         </View>
       ) : null}
 
       {attachment ? (
-        <View
-          style={{
-            width: "100%",
-            borderRadius: 15,
-            backgroundColor: "#F5F7FA",
-            padding: 14,
-          }}
-        >
-          <Text
-            style={{
-              color: "#8A9AB1",
-              fontSize: 11,
-              fontWeight: "800",
-              letterSpacing: 0.7,
-              textTransform: "uppercase",
-            }}
-          >
-            Receipt / attachment
-          </Text>
+        <View style={expenseDetailSectionStyle}>
+          <Text style={expenseDetailLabelStyle}>Receipt / attachment</Text>
           <UploadFilePreview
             uri={attachment.uri}
             name={attachment.name}
@@ -2814,9 +2796,107 @@ function ExpenseDetailsContent({
           />
         </View>
       ) : null}
+
+      {!hasAdditionalDetails && !loading ? (
+        <View style={expenseEmptyDetailStyle}>
+          <Ionicons
+            name="receipt-outline"
+            size={27}
+            color={Colors.sage}
+          />
+          <Text style={{ color: Colors.textSecondary, fontSize: 14 }}>
+            No additional details available.
+          </Text>
+        </View>
+      ) : null}
     </BottomSheetContent>
   );
 }
+
+const expenseDetailNoticeStyle = {
+  width: "100%" as const,
+  flexDirection: "row" as const,
+  alignItems: "center" as const,
+  gap: 10,
+  padding: 12,
+  borderRadius: 12,
+  backgroundColor: "#F1F5F2",
+};
+const expenseAmountCardStyle = {
+  width: "100%" as const,
+  flexDirection: "row" as const,
+  alignItems: "center" as const,
+  padding: 18,
+  borderRadius: 17,
+  borderWidth: 1,
+  borderColor: "#D8E8DA",
+  backgroundColor: "#EFF7F0",
+};
+const expenseAmountIconStyle = {
+  width: 46,
+  height: 46,
+  alignItems: "center" as const,
+  justifyContent: "center" as const,
+  borderRadius: 15,
+  backgroundColor: Colors.white,
+};
+const expenseAmountValueStyle = {
+  marginTop: 5,
+  color: Colors.primaryDark,
+  fontSize: 27,
+  fontWeight: "800" as const,
+};
+const expenseDetailRowStyle = {
+  width: "100%" as const,
+  flexDirection: "row" as const,
+  alignItems: "center" as const,
+  gap: 12,
+  minHeight: 64,
+  padding: 13,
+  borderRadius: 14,
+  borderWidth: 1,
+  borderColor: "#E4EBE5",
+  backgroundColor: "#FAFCFA",
+};
+const expenseDetailIconStyle = {
+  width: 38,
+  height: 38,
+  alignItems: "center" as const,
+  justifyContent: "center" as const,
+  borderRadius: 12,
+};
+const expenseDetailSectionStyle = {
+  width: "100%" as const,
+  padding: 14,
+  borderRadius: 14,
+  borderWidth: 1,
+  borderColor: "#E4EBE5",
+  backgroundColor: "#FAFCFA",
+};
+const expenseDetailLabelStyle = {
+  color: "#728078",
+  fontSize: 11,
+  fontWeight: "800" as const,
+  letterSpacing: 0.7,
+  textTransform: "uppercase" as const,
+};
+const expenseDetailValueStyle = {
+  marginTop: 4,
+  color: Colors.textPrimary,
+  fontSize: 15,
+  lineHeight: 21,
+  fontWeight: "700" as const,
+};
+const expenseEmptyDetailStyle = {
+  width: "100%" as const,
+  minHeight: 110,
+  alignItems: "center" as const,
+  justifyContent: "center" as const,
+  gap: 8,
+  padding: 18,
+  borderRadius: 14,
+  backgroundColor: "#F5F8F5",
+};
 
 function ModalSectionLabel({ label }: { label: string }) {
   return <FormLabel>{label}</FormLabel>;
