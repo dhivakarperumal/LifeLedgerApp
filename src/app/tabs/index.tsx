@@ -711,8 +711,6 @@ export default function Index() {
               paddingHorizontal: 16,
               paddingTop: 12,
               paddingBottom: 54,
-              borderBottomLeftRadius: 42,
-              borderBottomRightRadius: 42,
             }}
           >
             <View className="h-11">

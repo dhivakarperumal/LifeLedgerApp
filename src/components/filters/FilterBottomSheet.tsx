@@ -1,23 +1,23 @@
 import {
-    Poppins_400Regular,
-    Poppins_500Medium,
-    Poppins_600SemiBold,
-    Poppins_700Bold,
+  Poppins_400Regular,
+  Poppins_500Medium,
+  Poppins_600SemiBold,
+  Poppins_700Bold,
 } from "@expo-google-fonts/poppins";
 import { Ionicons } from "@expo/vector-icons";
 import { useFonts } from "expo-font";
 import { useEffect, useState } from "react";
 import {
-    Animated,
-    Dimensions,
-    Keyboard,
-    KeyboardAvoidingView,
-    Modal,
-    Platform,
-    Pressable,
-    ScrollView,
-    Text,
-    View,
+  Animated,
+  Dimensions,
+  Keyboard,
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  Pressable,
+  ScrollView,
+  Text,
+  View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Colors } from "../../constants/colors";
@@ -28,11 +28,13 @@ import { AmountRangeFilter } from "./AmountRangeFilter";
 import { CategoryFilter, type CategoryOption } from "./CategoryFilter";
 import { ChoiceFilter, type ChoiceFilterGroup } from "./ChoiceFilter";
 import {
-    DEFAULT_FILTER_STATE,
-    type FilterState,
-    type SortOption,
-    type StatusOption,
-    type ViewModeOption,
+  DEFAULT_FILTER_SECTION_KEYS,
+  DEFAULT_FILTER_STATE,
+  type FilterSectionKey,
+  type FilterState,
+  type SortOption,
+  type StatusOption,
+  type ViewModeOption,
 } from "./filterTypes";
 import { SortFilter } from "./SortFilter";
 import { StatusFilter } from "./StatusFilter";
@@ -46,8 +48,7 @@ const poppinsFontMap = {
 
 const { height: SCREEN_HEIGHT } = Dimensions.get("window");
 
-type SectionKey =
-  "date" | "category" | "status" | "amount" | "sort" | "viewMode";
+type SectionKey = FilterSectionKey;
 
 type SectionConfig = {
   key: SectionKey;
@@ -117,15 +118,19 @@ export function FilterBottomSheet({
   // Draft state — cloned from currentFilters each time the sheet opens
   const [draft, setDraft] = useState<FilterState>(() => currentFilters);
 
-  // Collapsed/expanded state for each section
-  const [expanded, setExpanded] = useState<Record<SectionKey, boolean>>({
+  const defaultExpandedState: Record<SectionKey, boolean> = {
     date: true,
     category: initialExpandedSections.includes("category"),
     status: initialExpandedSections.includes("status"),
     amount: initialExpandedSections.includes("amount"),
     sort: initialExpandedSections.includes("sort"),
     viewMode: initialExpandedSections.includes("viewMode"),
-  });
+  };
+
+  // Collapsed/expanded state for each section
+  const [expanded, setExpanded] = useState<Record<SectionKey, boolean>>(
+    defaultExpandedState,
+  );
 
   // Slide-up animation
   const [translateY] = useState(() => new Animated.Value(SCREEN_HEIGHT));
@@ -166,7 +171,13 @@ export function FilterBottomSheet({
     setDraft((prev) => ({ ...prev, ...partial }));
   };
 
-  const visibleSections = SECTIONS.filter((s) => sections.includes(s.key));
+  const resolvedSections =
+    Array.isArray(sections) && sections.length > 0
+      ? Array.from(new Set([...DEFAULT_FILTER_SECTION_KEYS, ...sections]))
+      : [...DEFAULT_FILTER_SECTION_KEYS];
+
+  const visibleSections = SECTIONS.filter((s) => resolvedSections.includes(s.key));
+  const hasAnyFilterContent = visibleSections.length > 0 || additionalFilters.length > 0;
 
   return (
     <Modal
@@ -197,7 +208,10 @@ export function FilterBottomSheet({
                 backgroundColor: Colors.white,
                 borderTopLeftRadius: 28,
                 borderTopRightRadius: 28,
+                width: "100%",
+                height: SCREEN_HEIGHT * 0.82,
                 maxHeight: SCREEN_HEIGHT * 0.9,
+                overflow: "hidden",
                 shadowColor: "#000",
                 shadowOffset: { width: 0, height: -4 },
                 shadowOpacity: 0.12,
@@ -246,7 +260,10 @@ export function FilterBottomSheet({
                   Filters
                 </Text>
                 <Pressable
-                  onPress={onClose}
+                  onPress={(event) => {
+                    event.stopPropagation();
+                    onClose();
+                  }}
                   hitSlop={8}
                   accessibilityLabel="Close filters"
                   style={{
@@ -267,11 +284,39 @@ export function FilterBottomSheet({
                 style={{ flex: 1, minHeight: 0 }}
                 keyboardShouldPersistTaps="handled"
                 showsVerticalScrollIndicator={false}
-                contentContainerStyle={{ padding: 16, paddingBottom: 20 + insets.bottom }}
+                contentContainerStyle={{
+                  flexGrow: 1,
+                  padding: 16,
+                  paddingBottom: 20 + insets.bottom,
+                }}
                 automaticallyAdjustKeyboardInsets
                 keyboardDismissMode="interactive"
                 bounces={true}
               >
+                {!hasAnyFilterContent && (
+                  <View
+                    style={{
+                      paddingVertical: 20,
+                      alignItems: "center",
+                      justifyContent: "center",
+                      borderWidth: 1,
+                      borderColor: Colors.border,
+                      borderRadius: 16,
+                      backgroundColor: "#F8FAF7",
+                    }}
+                  >
+                    <Text
+                      style={{
+                        fontSize: 14,
+                        color: Colors.textSecondary,
+                        fontWeight: "600",
+                      }}
+                    >
+                      No filters available
+                    </Text>
+                  </View>
+                )}
+
                 {visibleSections.map((section) => (
                   <View
                     key={section.key}
@@ -511,7 +556,10 @@ export function FilterBottomSheet({
               >
                 {/* Reset */}
                 <Pressable
-                  onPress={handleReset}
+                  onPress={(event) => {
+                    event.stopPropagation();
+                    handleReset();
+                  }}
                   accessibilityRole="button"
                   style={{
                     flex: 1,
@@ -540,7 +588,10 @@ export function FilterBottomSheet({
 
                 {/* Apply */}
                 <Pressable
-                  onPress={handleApply}
+                  onPress={(event) => {
+                    event.stopPropagation();
+                    handleApply();
+                  }}
                   accessibilityRole="button"
                   style={{
                     flex: 2,

@@ -125,7 +125,10 @@ export function CategoryFilter({
         </Text>
         {value !== "" && (
           <Pressable
-            onPress={() => onChange("")}
+            onPress={(event) => {
+              event.stopPropagation();
+              onChange("");
+            }}
             hitSlop={8}
             accessibilityLabel="Clear category"
           >
