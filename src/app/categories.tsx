@@ -13,6 +13,7 @@ import {
     Pressable,
     RefreshControl,
     ScrollView,
+    StatusBar as NativeStatusBar,
     Text,
     useWindowDimensions,
     View,
@@ -488,10 +489,20 @@ export default function Categories() {
   ) => setForm((current) => ({ ...current, [key]: value }));
 
   return (
-    <SafeAreaView className="flex-1 bg-[#F2F5EA]" edges={["bottom"]}>
+    <SafeAreaView
+      className="flex-1 bg-[#F2F5EA]"
+      edges={isNewCategoryRoute ? ["top", "bottom"] : ["bottom"]}
+    >
       <StatusBar
         style="light"
       />
+      {isNewCategoryRoute ? (
+        <NativeStatusBar
+          barStyle="light-content"
+          backgroundColor={Colors.greenGradient[0]}
+          translucent={false}
+        />
+      ) : null}
       <LinearGradient
         colors={Colors.greenGradient}
         start={{ x: 0, y: 0 }}

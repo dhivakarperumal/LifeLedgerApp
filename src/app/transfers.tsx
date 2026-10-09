@@ -14,6 +14,7 @@ import {
     RefreshControl,
     ScrollView,
     StyleSheet,
+    StatusBar,
     Text,
     useWindowDimensions,
     View,
@@ -888,7 +889,17 @@ export default function Transfers() {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-[#F2F5EA]" edges={["bottom"]}>
+    <SafeAreaView
+      className="flex-1 bg-[#F2F5EA]"
+      edges={isNewTransferRoute ? ["top", "bottom"] : ["bottom"]}
+    >
+      {isNewTransferRoute ? (
+        <StatusBar
+          barStyle="light-content"
+          backgroundColor={Colors.greenGradient[0]}
+          translucent={false}
+        />
+      ) : null}
       <ConfirmPopup
         visible={pendingDelete !== null}
         type="delete"

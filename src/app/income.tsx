@@ -15,6 +15,7 @@ import {
     RefreshControl,
     ScrollView,
     StyleSheet,
+    StatusBar as NativeStatusBar,
     Text,
     useWindowDimensions,
     View,
@@ -896,7 +897,10 @@ export default function Income() {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-[#F2F5EA]" edges={["bottom"]}>
+    <SafeAreaView
+      className="flex-1 bg-[#F2F5EA]"
+      edges={isNewIncomeRoute ? ["top", "bottom"] : ["bottom"]}
+    >
       <ConfirmPopup
         visible={pendingDelete !== null}
         type="delete"
@@ -917,6 +921,13 @@ export default function Income() {
       <StatusBar
         style="light"
       />
+      {isNewIncomeRoute ? (
+        <NativeStatusBar
+          barStyle="light-content"
+          backgroundColor={Colors.greenGradient[0]}
+          translucent={false}
+        />
+      ) : null}
       <LinearGradient
         colors={Colors.greenGradient}
         start={{ x: 0, y: 0 }}

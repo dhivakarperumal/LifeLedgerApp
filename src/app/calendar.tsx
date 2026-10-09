@@ -13,6 +13,7 @@ import {
   RefreshControl,
   ScrollView,
   StyleSheet,
+  StatusBar,
   Text,
   View,
 } from "react-native";
@@ -679,6 +680,13 @@ export default function CalendarScreen() {
         backgroundColor: isNewEventRoute ? Colors.greenGradient[0] : Colors.primary,
       }}
     >
+      {isNewEventRoute ? (
+        <StatusBar
+          barStyle="light-content"
+          backgroundColor={Colors.greenGradient[0]}
+          translucent={false}
+        />
+      ) : null}
       {isNewEventRoute ? null : loading ? (
         <View style={{ flex: 1, backgroundColor: Colors.white }}>
           <CenteredPageLoader message="Loading calendar..." />
