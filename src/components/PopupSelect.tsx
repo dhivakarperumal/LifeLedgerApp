@@ -1,16 +1,17 @@
 import { Ionicons } from "@expo/vector-icons";
+import type { ReactNode } from "react";
 import { useMemo, useState } from "react";
 import {
-    ActivityIndicator,
-    KeyboardAvoidingView,
-    Modal,
-    Platform,
-    Pressable,
-    ScrollView,
-    Text,
-    TextInput,
-    View,
-    useWindowDimensions,
+  ActivityIndicator,
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  Pressable,
+  ScrollView,
+  Text,
+  TextInput,
+  View,
+  useWindowDimensions,
 } from "react-native";
 import { FormLabel } from "./FormControls";
 import { toTitleCase } from "./formLabelUtils";
@@ -21,6 +22,7 @@ export type PopupSelectOption =
       label: string;
       value: string;
       description?: string;
+      icon?: ReactNode;
       disabled?: boolean;
     };
 
@@ -34,6 +36,8 @@ type PopupSelectProps = {
   emptyMessage?: string;
   loading?: boolean;
   error?: string;
+  onOpen?: () => void;
+  onRetry?: () => void;
   required?: boolean;
   disabled?: boolean;
   showLabel?: boolean;
@@ -49,6 +53,8 @@ export function PopupSelect({
   emptyMessage,
   loading = false,
   error,
+  onOpen,
+  onRetry,
   required = false,
   disabled = false,
   showLabel = true,
@@ -67,6 +73,7 @@ export function PopupSelect({
               label: option.label,
               value: option.value,
               description: option.description,
+              icon: option.icon,
               disabled: option.disabled,
             },
       ),
@@ -95,6 +102,7 @@ export function PopupSelect({
 
   const openPicker = () => {
     if (!disabled) {
+      onOpen?.();
       setVisible(true);
     }
   };
@@ -132,12 +140,17 @@ export function PopupSelect({
               : "border-[#E5E7EB]"
         }`}
       >
-        <Text
-          className={`text-sm font-semibold ${selectedOption ? "text-[#25332C]" : "text-[#9AA39D]"}`}
-          numberOfLines={1}
-        >
-          {selectedOption ? selectedOption.label : placeholder}
-        </Text>
+        <View className="min-w-0 flex-1 flex-row items-center">
+          {selectedOption?.icon ? (
+            <View className="mr-3">{selectedOption.icon}</View>
+          ) : null}
+          <Text
+            className={`min-w-0 flex-1 text-sm font-semibold ${selectedOption ? "text-[#25332C]" : "text-[#9AA39D]"}`}
+            numberOfLines={1}
+          >
+            {selectedOption ? selectedOption.label : placeholder}
+          </Text>
+        </View>
         <Ionicons name="chevron-down-outline" size={18} color="#667085" />
       </Pressable>
 
@@ -202,9 +215,18 @@ export function PopupSelect({
               </View>
             ) : filteredOptions.length === 0 ? (
               <View className="items-center justify-center py-8">
-                <Text className="text-sm font-semibold text-[#475569]">
+                <Text className="mb-3 text-center text-sm font-semibold text-[#475569]">
                   {emptyMessage ?? "No options found"}
                 </Text>
+                {onRetry ? (
+                  <Pressable
+                    accessibilityRole="button"
+                    onPress={onRetry}
+                    className="rounded-xl bg-[#366039] px-5 py-3"
+                  >
+                    <Text className="text-sm font-bold text-white">Retry</Text>
+                  </Pressable>
+                ) : null}
               </View>
             ) : (
               <ScrollView
@@ -231,18 +253,23 @@ export function PopupSelect({
                             : "border-[#EEF2F5] bg-white"
                       }`}
                     >
-                      <View className="flex-1">
-                        <FormLabel
-                          inline
-                          color={isSelected ? "#1F3C2F" : "#344054"}
-                        >
-                          {option.label}
-                        </FormLabel>
-                        {option.description ? (
-                          <Text className="mt-1 text-xs text-[#667085]">
-                            {option.description}
-                          </Text>
+                      <View className="min-w-0 flex-1 flex-row items-center">
+                        {option.icon ? (
+                          <View className="mr-3">{option.icon}</View>
                         ) : null}
+                        <View className="min-w-0 flex-1">
+                          <FormLabel
+                            inline
+                            color={isSelected ? "#1F3C2F" : "#344054"}
+                          >
+                            {option.label}
+                          </FormLabel>
+                          {option.description ? (
+                            <Text className="mt-1 text-xs text-[#667085]">
+                              {option.description}
+                            </Text>
+                          ) : null}
+                        </View>
                       </View>
 
                       {isSelected ? (

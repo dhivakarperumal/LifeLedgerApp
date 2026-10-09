@@ -497,6 +497,7 @@ export default function Categories() {
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={{
+          display: isNewCategoryRoute ? "none" : "flex",
           flexDirection: "row",
           alignItems: "center",
           justifyContent: "flex-start",
@@ -521,7 +522,7 @@ export default function Categories() {
         </View>
       </LinearGradient>
 
-      {loading ? (
+      {isNewCategoryRoute ? null : loading ? (
         <CenteredPageLoader message="Loading categories..." />
       ) : (
       <ScrollView
@@ -767,12 +768,14 @@ export default function Categories() {
       </ScrollView>
       )}
 
-      <AddButton
-        onPress={() => navigateToAddPage("/categories/new")}
-        accessibilityLabel="Add category"
-        accessibilityHint="Opens the new category form"
-        bottomOffset={37}
-      />
+      {!isNewCategoryRoute && (
+        <AddButton
+          onPress={() => navigateToAddPage("/categories/new")}
+          accessibilityLabel="Add category"
+          accessibilityHint="Opens the new category form"
+          bottomOffset={37}
+        />
+      )}
 
       <ConfirmPopup
         visible={pendingDelete !== null}
@@ -793,7 +796,10 @@ export default function Categories() {
       />
 
       {modalVisible && (
-        <View className="absolute inset-0 z-50 bg-[#F8F9F6]" style={{ paddingBottom: insets.bottom }}>
+        <View
+          className={isNewCategoryRoute ? "flex-1 bg-[#F8F9F6]" : "absolute inset-0 z-50 bg-[#F8F9F6]"}
+          style={{ paddingBottom: insets.bottom }}
+        >
           <KeyboardAvoidingView
             behavior={Platform.OS === "ios" ? "padding" : "height"}
             keyboardVerticalOffset={0}

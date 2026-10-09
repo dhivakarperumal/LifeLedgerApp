@@ -907,6 +907,7 @@ export default function Income() {
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={{
+          display: isNewIncomeRoute ? "none" : "flex",
           flexDirection: "row",
           alignItems: "center",
           justifyContent: "flex-start",
@@ -933,7 +934,7 @@ export default function Income() {
         </View>
       </LinearGradient>
 
-      {loading ? (
+      {isNewIncomeRoute ? null : loading ? (
         <CenteredPageLoader message="Loading income..." />
       ) : (
       <ScrollView
@@ -1197,15 +1198,20 @@ export default function Income() {
       </ScrollView>
       )}
 
-      <AddButton
-        onPress={() => navigateToAddPage("/income/new")}
-        accessibilityLabel="Add income"
-        accessibilityHint="Opens the new income form"
-        bottomOffset={37}
-      />
+      {!isNewIncomeRoute && (
+        <AddButton
+          onPress={() => navigateToAddPage("/income/new")}
+          accessibilityLabel="Add income"
+          accessibilityHint="Opens the new income form"
+          bottomOffset={37}
+        />
+      )}
 
       {editorVisible && (
-        <View className="absolute inset-0 z-50 bg-[#F8F9F6]" style={{ paddingBottom: insets.bottom }}>
+        <View
+          className={isNewIncomeRoute ? "flex-1 bg-[#F8F9F6]" : "absolute inset-0 z-50 bg-[#F8F9F6]"}
+          style={{ paddingBottom: insets.bottom }}
+        >
           <KeyboardAvoidingView
             behavior={Platform.OS === "ios" ? "padding" : "height"}
             keyboardVerticalOffset={0}

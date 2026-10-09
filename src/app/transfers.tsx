@@ -907,6 +907,7 @@ export default function Transfers() {
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={{
+          display: isNewTransferRoute ? "none" : "flex",
           flexDirection: "row",
           alignItems: "center",
           justifyContent: "flex-start",
@@ -929,7 +930,7 @@ export default function Transfers() {
         <Text className="ml-3 text-lg font-bold text-white">Transfers</Text>
       </LinearGradient>
 
-      {loading ? (
+      {isNewTransferRoute ? null : loading ? (
         <CenteredPageLoader message="Loading transfers..." />
       ) : (
       <ScrollView
@@ -1184,15 +1185,20 @@ export default function Transfers() {
       </ScrollView>
       )}
 
-      <AddButton
-        onPress={() => navigateToAddPage("/transfers/new")}
-        accessibilityLabel="Add transfer"
-        accessibilityHint="Opens the new transfer form"
-        bottomOffset={37}
-      />
+      {!isNewTransferRoute && (
+        <AddButton
+          onPress={() => navigateToAddPage("/transfers/new")}
+          accessibilityLabel="Add transfer"
+          accessibilityHint="Opens the new transfer form"
+          bottomOffset={37}
+        />
+      )}
 
       {modalVisible && (
-        <View className="absolute inset-0 z-50 bg-[#F8F9F6]" style={{ paddingBottom: insets.bottom }}>
+        <View
+          className={isNewTransferRoute ? "flex-1 bg-[#F8F9F6]" : "absolute inset-0 z-50 bg-[#F8F9F6]"}
+          style={{ paddingBottom: insets.bottom }}
+        >
           <KeyboardAvoidingView
             behavior={Platform.OS === "ios" ? "padding" : "height"}
             keyboardVerticalOffset={0}

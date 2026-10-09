@@ -19,11 +19,13 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import api, { API_BASE_URL, getApiErrorMessage } from "../api";
 import { AddButton } from "../components/AddButton";
+import { AddPageHeader } from "../components/AddPageHeader";
 import { CenteredPageLoader } from "../components/CenteredPageLoader";
 import ConfirmPopup from "../components/ConfirmPopup";
 import { DateTimePickerComponent } from "../components/DateTimePickerComponent";
 import { FormInput, FormLabel, FormOption } from "../components/FormControls";
 import { GradientSafeAreaView as SafeAreaView } from "../components/GradientSafeAreaView";
+import { PopupSelect } from "../components/PopupSelect";
 import { createSessionDataCache } from "../components/SessionDataCache";
 import { parseLocalDate, parseLocalDateTimeValue } from "../components/dateTimeUtils";
 import { useAddPageNavigation } from "../components/useAddPageNavigation";
@@ -347,6 +349,9 @@ export default function CalendarScreen() {
   const createDateParam = Array.isArray(rawCreateDate)
     ? rawCreateDate[0]
     : rawCreateDate;
+  const initialSelectedDate = createDateParam
+    ? parseDateString(createDateParam) ?? new Date()
+    : new Date();
   const insets = useSafeAreaInsets();
   const [events, setEvents] = useState<CalendarEntry[]>(
     () => calendarDataCache.get()?.events ?? [],
@@ -363,7 +368,7 @@ export default function CalendarScreen() {
     entry: CalendarEntry;
   } | null>(null);
   const [activeType, setActiveType] = useState<EntryType>("event");
-  const [selectedDate, setSelectedDate] = useState(new Date());
+  const [selectedDate, setSelectedDate] = useState(initialSelectedDate);
   const [calendarMonth, setCalendarMonth] = useState(() => new Date());
   const [modalType, setModalType] = useState<EntryType | null>(() =>
     isNewEventRoute ? "event" : null,
@@ -373,13 +378,12 @@ export default function CalendarScreen() {
   const [eventCategoriesLoading, setEventCategoriesLoading] = useState(false);
   const [eventCategoriesLoaded, setEventCategoriesLoaded] = useState(false);
   const [eventCategoriesError, setEventCategoriesError] = useState<string | null>(null);
-  const [categoryPickerVisible, setCategoryPickerVisible] = useState(false);
   const [dayPopupDate, setDayPopupDate] = useState<Date | null>(null);
   const [form, setForm] = useState<EntryForm>({
     title: "",
     category: "",
     categoryId: "",
-    date: dateKey(new Date()),
+    date: dateKey(initialSelectedDate),
     time: "09:00",
     priority: "Medium",
     details: "",
@@ -462,7 +466,6 @@ export default function CalendarScreen() {
   }, [selectedDate]);
 
   const closeEntryForm = () => {
-    setCategoryPickerVisible(false);
     if (editingEvent) {
       setEditingEvent(null);
       setModalType(null);
@@ -471,13 +474,6 @@ export default function CalendarScreen() {
     if (router.canGoBack()) router.back();
     else if (isNewEventRoute) router.replace("/calendar");
     else setModalType(null);
-  };
-
-  const openCategoryPicker = () => {
-    setCategoryPickerVisible(true);
-    if (!eventCategoriesLoaded && !eventCategoriesLoading) {
-      void fetchEventCategories();
-    }
   };
 
   const openEditEvent = useCallback((entry: CalendarEntry) => {
@@ -650,17 +646,15 @@ export default function CalendarScreen() {
         activeType === "event" ? entry.startDate : entry.reminderDate,
       ) === dateKey(selectedDate),
   );
-  const selectedEventCategory = eventCategories.find(
-    (category) => String(category.id) === form.categoryId,
-  );
-
   return (
     <SafeAreaView
       className="flex-1"
       edges={["top"]}
-      style={{ backgroundColor: Colors.primary }}
+      style={{
+        backgroundColor: isNewEventRoute ? Colors.greenGradient[0] : Colors.primary,
+      }}
     >
-      {loading ? (
+      {isNewEventRoute ? null : loading ? (
         <View style={{ flex: 1, backgroundColor: Colors.white }}>
           <CenteredPageLoader message="Loading calendar..." />
         </View>
@@ -933,7 +927,7 @@ export default function CalendarScreen() {
       </ScrollView>
       )}
 
-      <AddButton
+      {!isNewEventRoute && <AddButton
         onPress={() =>
           navigateToAddPage(
             activeType === "event"
@@ -956,7 +950,7 @@ export default function CalendarScreen() {
             : "Opens the new reminder form"
         }
         bottomOffset={37}
-      />
+      />}
 
       <ConfirmPopup
         visible={pendingDelete !== null}
@@ -1103,13 +1097,15 @@ export default function CalendarScreen() {
               <Pressable
                 onPress={() => {
                   setDayPopupDate(null);
-                  router.push({
-                    pathname: "/calendar",
-                    params: {
-                      create: activeType,
-                      date: dateKey(dayPopupDate ?? selectedDate),
-                    },
-                  });
+                  const date = dateKey(dayPopupDate ?? selectedDate);
+                  navigateToAddPage(
+                    activeType === "event"
+                      ? { pathname: "/calendar/new-event", params: { date } }
+                      : {
+                          pathname: "/calendar",
+                          params: { create: "reminder", date },
+                        },
+                  );
                 }}
                 className="mt-3 items-center rounded-2xl bg-[#1A1A2E] py-4"
               >
@@ -1123,39 +1119,30 @@ export default function CalendarScreen() {
       </Modal>
 
       {modalType !== null && (
-        <View className="absolute inset-0 z-50 bg-[#F9FAFC]" style={{ paddingBottom: insets.bottom }}>
+        <View
+          className={isNewEventRoute ? "flex-1 bg-[#F9FAFC]" : "absolute inset-0 z-50 bg-[#F9FAFC]"}
+          style={{ paddingBottom: insets.bottom }}
+        >
           <KeyboardAvoidingView
             behavior={Platform.OS === "ios" ? "padding" : "height"}
             keyboardVerticalOffset={0}
             style={{ flex: 1 }}
           >
           <View
-            className="flex-1 bg-[#F9FAFC] px-5 pb-5 pt-5"
+            className="flex-1 bg-[#F9FAFC] px-5 pb-5"
           >
-            <View
-              className="mb-4 flex-row items-center justify-between"
-              style={{
-                marginHorizontal: -20,
-                paddingHorizontal: 20,
-                paddingTop: 20,
-                paddingBottom: 16,
-                backgroundColor: "#FFFFFF",
-              }}
-            >
-              <Text className="text-xl font-extrabold capitalize text-[#264B2A]">
-                {editingEvent ? "Edit event" : `New ${modalType}`}
-              </Text>
-              <Pressable
-                accessibilityRole="button"
-                onPress={() => {
-                  closeEntryForm();
-                }}
-                accessibilityLabel="Go back"
-                className="h-9 w-9 items-center justify-center rounded-full bg-[#F2F4F2]"
-              >
-                <Ionicons name="arrow-back" size={24} color={Colors.primaryDark} />
-              </Pressable>
-            </View>
+            <AddPageHeader
+              title={
+                editingEvent
+                  ? "Edit Event"
+                  : modalType === "event"
+                    ? "Add New Calendar Event"
+                    : "New Reminder"
+              }
+              onBack={closeEntryForm}
+              horizontalInset={20}
+              disabled={saving}
+            />
             <ScrollView
               style={{ flex: 1, minHeight: 0 }}
               contentContainerStyle={{ paddingBottom: 24 + insets.bottom }}
@@ -1184,43 +1171,40 @@ export default function CalendarScreen() {
 
               {modalType === "event" ? (
                 <View className="mb-4">
-                  <FormLabel>Event Category *</FormLabel>
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel="Select event category"
-                    onPress={openCategoryPicker}
-                    className="min-h-[52px] flex-row items-center justify-between rounded-xl border border-[#AAB8AE] bg-white px-3.5 py-2.5"
-                  >
-                    <View className="min-w-0 flex-1 flex-row items-center">
-                      {selectedEventCategory ? (
-                        <EventCategoryIcon
-                          category={selectedEventCategory}
-                          size={34}
-                        />
-                      ) : (
-                        <View className="h-[34px] w-[34px] items-center justify-center rounded-xl bg-[#ECF2EE]">
-                          <Ionicons
-                            name="pricetag-outline"
-                            size={18}
-                            color={Colors.primary}
-                          />
-                        </View>
-                      )}
-                      <Text
-                        className={`ml-3 min-w-0 flex-1 text-sm font-semibold ${form.category ? "text-[#25332C]" : "text-[#9AA39D]"}`}
-                        numberOfLines={1}
-                      >
-                        {selectedEventCategory?.name ||
-                          form.category ||
-                          "Select event category"}
-                      </Text>
-                    </View>
-                    <Ionicons
-                      name="chevron-down-outline"
-                      size={18}
-                      color="#667085"
-                    />
-                  </Pressable>
+                  <PopupSelect
+                    label="Event Category"
+                    placeholder="Select event category"
+                    options={eventCategories.map((category) => ({
+                      label: category.name,
+                      value: String(category.id),
+                      icon: <EventCategoryIcon category={category} size={34} />,
+                    }))}
+                    value={form.categoryId}
+                    onChange={(categoryId) => {
+                      const category = eventCategories.find(
+                        (item) => String(item.id) === categoryId,
+                      );
+                      if (!category) return;
+                      setForm((current) => ({
+                        ...current,
+                        category: category.name,
+                        categoryId: String(category.id),
+                      }));
+                    }}
+                    onOpen={() => {
+                      if (!eventCategoriesLoaded && !eventCategoriesLoading) {
+                        void fetchEventCategories();
+                      }
+                    }}
+                    onRetry={() => void fetchEventCategories()}
+                    loading={eventCategoriesLoading}
+                    error={eventCategoriesError ?? undefined}
+                    emptyMessage={
+                      eventCategoriesError ??
+                      "No CalendarEvent categories found."
+                    }
+                    required
+                  />
                 </View>
               ) : (
                 <View className="mb-4">
@@ -1328,111 +1312,6 @@ export default function CalendarScreen() {
         </View>
       )}
 
-      <Modal
-        visible={categoryPickerVisible}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setCategoryPickerVisible(false)}
-      >
-        <Pressable
-          className="flex-1 items-center justify-center bg-black/50 px-5"
-          onPress={() => setCategoryPickerVisible(false)}
-        >
-          <Pressable
-            onPress={(event) => event.stopPropagation()}
-            className="w-full overflow-hidden rounded-2xl bg-white p-5"
-            style={{ maxWidth: 480, maxHeight: "82%" }}
-          >
-            <View className="mb-4 flex-row items-center justify-between">
-              <Text className="text-lg font-extrabold text-[#263238]">
-                Event Category
-              </Text>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="Close event categories"
-                onPress={() => setCategoryPickerVisible(false)}
-                className="h-9 w-9 items-center justify-center rounded-full bg-[#F2F4F2]"
-              >
-                <Ionicons name="close" size={19} color="#526058" />
-              </Pressable>
-            </View>
-
-            {eventCategoriesLoading ? (
-              <View className="items-center justify-center py-10">
-                <ActivityIndicator color={Colors.primary} />
-                <Text className="mt-3 text-sm font-medium text-[#7B8589]">
-                  Loading event categories...
-                </Text>
-              </View>
-            ) : eventCategoriesError ? (
-              <View className="items-center justify-center py-8">
-                <Text className="mb-4 text-center text-sm font-medium text-[#B64C45]">
-                  {eventCategoriesError}
-                </Text>
-                <Pressable
-                  accessibilityRole="button"
-                  onPress={() => void fetchEventCategories()}
-                  className="rounded-xl bg-[#366039] px-5 py-3"
-                >
-                  <Text className="text-sm font-bold text-white">Retry</Text>
-                </Pressable>
-              </View>
-            ) : eventCategories.length === 0 ? (
-              <View className="items-center justify-center py-10">
-                <Ionicons
-                  name="pricetag-outline"
-                  size={28}
-                  color={Colors.primary}
-                />
-                <Text className="mt-3 text-center text-sm font-medium text-[#7B8589]">
-                  No CalendarEvent categories found.
-                </Text>
-              </View>
-            ) : (
-              <ScrollView
-                showsVerticalScrollIndicator={false}
-                keyboardShouldPersistTaps="handled"
-              >
-                {eventCategories.map((category) => {
-                  const isSelected =
-                    String(category.id) === form.categoryId;
-                  return (
-                    <Pressable
-                      key={String(category.id)}
-                      accessibilityRole="button"
-                      accessibilityState={{ selected: isSelected }}
-                      onPress={() => {
-                        setForm((current) => ({
-                          ...current,
-                          category: category.name,
-                          categoryId: String(category.id),
-                        }));
-                        setCategoryPickerVisible(false);
-                      }}
-                      className={`mb-2 flex-row items-center rounded-xl border p-3 ${isSelected ? "border-[#8CB99A] bg-[#EEF6F0]" : "border-[#E5EAE7] bg-white"}`}
-                    >
-                      <EventCategoryIcon category={category} />
-                      <Text
-                        className="ml-3 min-w-0 flex-1 text-sm font-semibold text-[#263238]"
-                        numberOfLines={1}
-                      >
-                        {category.name}
-                      </Text>
-                      {isSelected ? (
-                        <Ionicons
-                          name="checkmark-circle"
-                          size={20}
-                          color={Colors.primary}
-                        />
-                      ) : null}
-                    </Pressable>
-                  );
-                })}
-              </ScrollView>
-            )}
-          </Pressable>
-        </Pressable>
-      </Modal>
     </SafeAreaView>
   );
 }
