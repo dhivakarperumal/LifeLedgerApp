@@ -5,6 +5,7 @@ import { useCallback, useState } from "react";
 import {
     ActivityIndicator,
     Alert,
+    Image,
     KeyboardAvoidingView,
     Modal,
     Platform,
@@ -16,7 +17,7 @@ import {
     View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import api, { getApiErrorMessage } from "../api";
+import api, { API_BASE_URL, getApiErrorMessage } from "../api";
 import { AddButton } from "../components/AddButton";
 import { CenteredPageLoader } from "../components/CenteredPageLoader";
 import ConfirmPopup from "../components/ConfirmPopup";
@@ -30,7 +31,10 @@ import { Colors } from "../constants/colors";
 type CalendarEntry = {
   id: number | string;
   title: string;
-  category?: string;
+  category?: string | { id?: number | string; name?: string };
+  category_id?: number | string | null;
+  categoryId?: number | string | null;
+  category_name?: string;
   priority?: string;
   startDate?: string;
   startTime?: string;
@@ -40,6 +44,23 @@ type CalendarEntry = {
   reminderTime?: string;
   notes?: string;
   status?: string;
+};
+
+type EventCategory = {
+  id: number | string;
+  name: string;
+  catType: string;
+  catId?: string;
+  images?: string | string[];
+  image?: string;
+  imageUrl?: string;
+  image_url?: string;
+  icon?: string;
+  iconName?: string;
+  icon_name?: string;
+  iconUrl?: string;
+  icon_url?: string;
+  emoji?: string;
 };
 
 type CalendarData = {
@@ -53,6 +74,7 @@ type EntryType = "event" | "reminder";
 type EntryForm = {
   title: string;
   category: string;
+  categoryId: string;
   date: string;
   time: string;
   priority: string;
@@ -117,6 +139,115 @@ function getRows(data: any): CalendarEntry[] {
   return [];
 }
 
+function getEventCategoryRows(data: unknown): EventCategory[] {
+  let rows: unknown = data;
+  for (let depth = 0; depth < 3; depth += 1) {
+    if (Array.isArray(rows)) break;
+    if (!rows || typeof rows !== "object") return [];
+    const response = rows as Record<string, unknown>;
+    rows = response.categories ?? response.category ?? response.data;
+  }
+  if (!Array.isArray(rows)) return [];
+  return rows.filter(
+    (row): row is EventCategory =>
+      !!row &&
+      typeof row === "object" &&
+      (row as EventCategory).catType === "CalendarEvent" &&
+      (row as EventCategory).id !== undefined &&
+      (row as EventCategory).id !== null &&
+      typeof (row as EventCategory).name === "string",
+  );
+}
+
+function getEntryCategoryName(entry: CalendarEntry, fallback: string) {
+  if (typeof entry.category === "string" && entry.category.trim()) {
+    return entry.category;
+  }
+  if (entry.category && typeof entry.category === "object") {
+    return entry.category.name || fallback;
+  }
+  return entry.category_name || fallback;
+}
+
+function getEntryCategoryId(entry: CalendarEntry) {
+  if (entry.category_id !== undefined && entry.category_id !== null) {
+    return entry.category_id;
+  }
+  if (entry.categoryId !== undefined && entry.categoryId !== null) {
+    return entry.categoryId;
+  }
+  return typeof entry.category === "object" ? entry.category?.id : undefined;
+}
+
+function getCategoryImage(category: EventCategory) {
+  if (Array.isArray(category.images)) {
+    return category.images.find((image) => !!image) || null;
+  }
+  if (typeof category.images === "string" && category.images.trim()) {
+    try {
+      const parsed: unknown = JSON.parse(category.images);
+      if (Array.isArray(parsed)) {
+        return parsed.find((image): image is string => typeof image === "string") || null;
+      }
+    } catch {
+      return category.images;
+    }
+  }
+  const iconUrl = category.icon || "";
+  return (
+    category.image_url ||
+    category.imageUrl ||
+    category.icon_url ||
+    category.iconUrl ||
+    category.image ||
+    (/^(https?:|file:|content:|data:)/i.test(iconUrl) ? iconUrl : null)
+  );
+}
+
+function getCategoryImageUri(uri: string) {
+  if (/^(https?:|file:|content:|data:)/i.test(uri)) return uri;
+  const apiOrigin = API_BASE_URL.replace(/\/api\/?$/i, "");
+  return `${apiOrigin}/${uri.replace(/^\/+/, "")}`;
+}
+
+function EventCategoryIcon({
+  category,
+  size = 40,
+}: {
+  category: EventCategory;
+  size?: number;
+}) {
+  const image = getCategoryImage(category);
+  const iconName = category.iconName || category.icon_name || category.icon;
+  const isIonicon = !!iconName && iconName in Ionicons.glyphMap;
+  const textIcon = category.emoji ||
+    (!image && iconName && !isIonicon && iconName.length <= 8 ? iconName : null);
+
+  return (
+    <View
+      className="items-center justify-center overflow-hidden rounded-xl bg-[#ECF2EE]"
+      style={{ width: size, height: size }}
+    >
+      {image ? (
+        <Image
+          source={{ uri: getCategoryImageUri(image) }}
+          style={{ width: size, height: size }}
+          resizeMode="cover"
+          accessibilityLabel={`${category.name} icon`}
+        />
+      ) : textIcon ? (
+        <Text style={{ fontSize: size * 0.48 }}>{textIcon}</Text>
+      ) : (
+        <Ionicons
+          name={isIonicon ? (iconName as keyof typeof Ionicons.glyphMap) : "pricetag-outline"}
+          size={size * 0.52}
+          color={Colors.primary}
+        />
+      )}
+    </View>
+  );
+}
+
 function formatDate(value?: string) {
   if (!value) return "Date not set";
   const parsed = parseLocalDate(value) ?? parseLocalDateTimeValue(value);
@@ -168,7 +299,7 @@ function EntryCard({
               : entry.startTime || "All day"}
           </Text>
           <Text className="mt-1 text-[10px] font-bold uppercase tracking-[0.6px] text-[#447449]">
-            {entry.category || "Personal"} · {entry.priority || "Medium"}
+            {getEntryCategoryName(entry, "Personal")} · {entry.priority || "Medium"}
             {isReminder && entry.status ? ` · ${entry.status}` : ""}
           </Text>
         </View>
@@ -231,10 +362,17 @@ export default function CalendarScreen() {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [calendarMonth, setCalendarMonth] = useState(() => new Date());
   const [modalType, setModalType] = useState<EntryType | null>(null);
+  const [editingEvent, setEditingEvent] = useState<CalendarEntry | null>(null);
+  const [eventCategories, setEventCategories] = useState<EventCategory[]>([]);
+  const [eventCategoriesLoading, setEventCategoriesLoading] = useState(false);
+  const [eventCategoriesLoaded, setEventCategoriesLoaded] = useState(false);
+  const [eventCategoriesError, setEventCategoriesError] = useState<string | null>(null);
+  const [categoryPickerVisible, setCategoryPickerVisible] = useState(false);
   const [dayPopupDate, setDayPopupDate] = useState<Date | null>(null);
   const [form, setForm] = useState<EntryForm>({
     title: "",
-    category: "Personal",
+    category: "",
+    categoryId: "",
     date: dateKey(new Date()),
     time: "09:00",
     priority: "Medium",
@@ -268,11 +406,34 @@ export default function CalendarScreen() {
   const refreshCalendar = useCallback(async () => {
     setRefreshing(true);
     try {
+      calendarDataCache.clear();
       await fetchCalendar(false);
     } finally {
       setRefreshing(false);
     }
   }, [fetchCalendar]);
+
+  const fetchEventCategories = useCallback(async (): Promise<EventCategory[]> => {
+    setEventCategoriesLoading(true);
+    setEventCategoriesError(null);
+    try {
+      const response = await api.get("/categories", {
+        params: { catType: "CalendarEvent" },
+      });
+      const categories = getEventCategoryRows(response.data);
+      setEventCategories(categories);
+      setEventCategoriesLoaded(true);
+      return categories;
+    } catch (error) {
+      setEventCategoriesError(
+        getApiErrorMessage(error, "Unable to load event categories."),
+      );
+      setEventCategoriesLoaded(false);
+      return [];
+    } finally {
+      setEventCategoriesLoading(false);
+    }
+  }, []);
 
   useFocusEffect(
     useCallback(() => {
@@ -281,9 +442,11 @@ export default function CalendarScreen() {
   );
 
   const openForm = useCallback((type: EntryType, date = selectedDate) => {
+    setEditingEvent(null);
     setForm({
       title: "",
-      category: "Personal",
+      category: type === "reminder" ? "Personal" : "",
+      categoryId: "",
       date: dateKey(date),
       time: "09:00",
       priority: "Medium",
@@ -291,6 +454,73 @@ export default function CalendarScreen() {
     });
     setModalType(type);
   }, [selectedDate]);
+
+  const closeEntryForm = () => {
+    setCategoryPickerVisible(false);
+    if (editingEvent) {
+      setEditingEvent(null);
+      setModalType(null);
+      return;
+    }
+    if (router.canGoBack()) router.back();
+    else setModalType(null);
+  };
+
+  const openCategoryPicker = () => {
+    setCategoryPickerVisible(true);
+    if (!eventCategoriesLoaded && !eventCategoriesLoading) {
+      void fetchEventCategories();
+    }
+  };
+
+  const openEditEvent = useCallback((entry: CalendarEntry) => {
+    const savedCategoryId = getEntryCategoryId(entry);
+    const savedCategoryName = getEntryCategoryName(entry, "");
+    const applySavedCategory = (categories: EventCategory[]) => {
+      const matchingCategory = categories.find(
+        (category) =>
+          (savedCategoryId !== undefined &&
+            String(category.id) === String(savedCategoryId)) ||
+          category.name === savedCategoryName ||
+          category.catId === savedCategoryName,
+      );
+      if (!matchingCategory) return;
+      setForm((current) => ({
+        ...current,
+        category: matchingCategory.name,
+        categoryId: String(matchingCategory.id),
+      }));
+    };
+    const matchingCategory = eventCategories.find(
+      (category) =>
+        (savedCategoryId !== undefined &&
+          String(category.id) === String(savedCategoryId)) ||
+        category.name === savedCategoryName ||
+        category.catId === savedCategoryName,
+    );
+    const eventDate = entry.startDate
+      ? parseDateString(entry.startDate) ?? parseLocalDateTimeValue(entry.startDate)
+      : null;
+
+    setEditingEvent(entry);
+    setForm({
+      title: entry.title || "",
+      category: matchingCategory?.name || savedCategoryName,
+      categoryId: matchingCategory
+        ? String(matchingCategory.id)
+        : savedCategoryId === undefined
+          ? ""
+          : String(savedCategoryId),
+      date: eventDate ? dateKey(eventDate) : dateKey(selectedDate),
+      time: entry.startTime?.slice(0, 5) || "09:00",
+      priority: entry.priority || "Medium",
+      details: entry.description || "",
+    });
+    setModalType("event");
+    if (!eventCategoriesLoaded && !eventCategoriesLoading) {
+      void fetchEventCategories().then(applySavedCategory);
+    }
+  }, [eventCategories, eventCategoriesLoaded, eventCategoriesLoading, fetchEventCategories, selectedDate]);
 
   useFocusEffect(
     useCallback(() => {
@@ -313,17 +543,30 @@ export default function CalendarScreen() {
       return;
     }
 
+    const selectedCategory = eventCategories.find(
+      (category) => String(category.id) === form.categoryId,
+    );
     setSaving(true);
     try {
       if (modalType === "event") {
-        await api.post("/calendar/events", {
+        if (!selectedCategory) {
+          Alert.alert("Select an event category", "Choose a category to continue.");
+          return;
+        }
+        const payload = {
           title: form.title.trim(),
-          category: form.category.trim() || "Personal",
+          category: selectedCategory.name,
+          category_id: selectedCategory.id,
           startDate: form.date,
           startTime: form.time,
           priority: form.priority,
           description: form.details.trim(),
-        });
+        };
+        if (editingEvent) {
+          await api.put(`/calendar/events/${editingEvent.id}`, payload);
+        } else {
+          await api.post("/calendar/events", payload);
+        }
       } else {
         await api.post("/calendar/reminders", {
           title: form.title.trim(),
@@ -335,12 +578,18 @@ export default function CalendarScreen() {
           notificationEnabled: true,
         });
       }
+      calendarDataCache.clear();
       await fetchCalendar();
       const message = modalType === "event"
-        ? "Event added successfully."
+        ? editingEvent
+          ? "Event updated successfully."
+          : "Event added successfully."
         : "Reminder added successfully.";
       Alert.alert("Saved", message);
-      if (router.canGoBack()) router.back();
+      if (editingEvent) {
+        setEditingEvent(null);
+        setModalType(null);
+      } else if (router.canGoBack()) router.back();
       else setModalType(null);
     } catch (error) {
       Alert.alert("Unable to save", getApiErrorMessage(error));
@@ -361,6 +610,7 @@ export default function CalendarScreen() {
       await api.delete(
         `/calendar/${type === "event" ? "events" : "reminders"}/${entry.id}`,
       );
+      calendarDataCache.clear();
       await fetchCalendar();
     } catch (error) {
       Alert.alert("Unable to delete", getApiErrorMessage(error));
@@ -370,6 +620,7 @@ export default function CalendarScreen() {
   const completeReminder = async (reminder: CalendarEntry) => {
     try {
       await api.post(`/calendar/reminders/${reminder.id}/complete`);
+      calendarDataCache.clear();
       await fetchCalendar();
     } catch (error) {
       Alert.alert("Unable to update reminder", getApiErrorMessage(error));
@@ -389,6 +640,9 @@ export default function CalendarScreen() {
       entryDateKey(
         activeType === "event" ? entry.startDate : entry.reminderDate,
       ) === dateKey(selectedDate),
+  );
+  const selectedEventCategory = eventCategories.find(
+    (category) => String(category.id) === form.categoryId,
   );
 
   return (
@@ -619,23 +873,23 @@ export default function CalendarScreen() {
                 key={entry.id}
                 entry={entry}
                 type={activeType}
-                onPress={() =>
+                onPress={() => {
+                  if (activeType === "event") {
+                    openEditEvent(entry);
+                    return;
+                  }
                   Alert.alert(
                     entry.title,
                     [
-                      formatDate(
-                        activeType === "event"
-                          ? entry.startDate
-                          : entry.reminderDate,
-                      ),
+                      formatDate(entry.reminderDate),
                       entry.location,
                       entry.description,
                       entry.notes,
                     ]
                       .filter(Boolean)
                       .join("\n"),
-                  )
-                }
+                  );
+                }}
                 onDelete={() => deleteEntry(activeType, entry)}
                 onComplete={
                   activeType === "reminder"
@@ -776,7 +1030,7 @@ export default function CalendarScreen() {
                             {entry.title}
                           </Text>
                           <Text className="text-[11px] font-bold uppercase tracking-[0.5px] text-[#E91E63]">
-                            {entry.category || (type === "reminder" ? "Reminder" : "Event")}
+                            {getEntryCategoryName(entry, type === "reminder" ? "Reminder" : "Event")}
                           </Text>
                         </View>
                         <View className="rounded-xl border border-[#E5EAE7] bg-white px-3 py-1">
@@ -792,11 +1046,14 @@ export default function CalendarScreen() {
                         <Pressable
                           onPress={() => {
                             setDayPopupDate(null);
-                            // Open edit via alert for now
+                            if (type === "event") {
+                              openEditEvent(entry);
+                              return;
+                            }
                             Alert.alert(
                               entry.title,
                               [
-                                formatDate(type === "event" ? entry.startDate : entry.reminderDate),
+                                formatDate(entry.reminderDate),
                                 entry.location,
                                 entry.description,
                                 entry.notes,
@@ -870,13 +1127,12 @@ export default function CalendarScreen() {
               }}
             >
               <Text className="text-xl font-extrabold capitalize text-[#264B2A]">
-                New {modalType === "event" ? "event" : "reminder"}
+                {editingEvent ? "Edit event" : `New ${modalType}`}
               </Text>
               <Pressable
                 accessibilityRole="button"
                 onPress={() => {
-                  if (router.canGoBack()) router.back();
-                  else setModalType(null);
+                  closeEntryForm();
                 }}
                 accessibilityLabel="Go back"
                 className="h-9 w-9 items-center justify-center rounded-full bg-[#F2F4F2]"
@@ -893,29 +1149,81 @@ export default function CalendarScreen() {
               keyboardDismissMode="interactive"
               bounces={true}
             >
-              {(
-                [
-                  ["title", "Title", "What needs your attention?"],
-                  ["category", "Category", "Personal"],
-                ] as const
-              ).map(([key, label, placeholder]) => (
-                <View key={key} className="mb-4">
-                  <FormLabel>{label}</FormLabel>
+              <View className="mb-4">
+                <FormLabel>Title</FormLabel>
+                <FormInput
+                  accessibilityLabel="Title, required"
+                  autoCapitalize="sentences"
+                  maxLength={100}
+                  value={form.title}
+                  onChangeText={(value) =>
+                    setForm((current) => ({ ...current, title: value }))
+                  }
+                  placeholder="What needs your attention?"
+                  keyboardType="default"
+                  returnKeyType="next"
+                  style={calendarFormStyles.input}
+                />
+              </View>
+
+              {modalType === "event" ? (
+                <View className="mb-4">
+                  <FormLabel>Event Category *</FormLabel>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel="Select event category"
+                    onPress={openCategoryPicker}
+                    className="min-h-[52px] flex-row items-center justify-between rounded-xl border border-[#AAB8AE] bg-white px-3.5 py-2.5"
+                  >
+                    <View className="min-w-0 flex-1 flex-row items-center">
+                      {selectedEventCategory ? (
+                        <EventCategoryIcon
+                          category={selectedEventCategory}
+                          size={34}
+                        />
+                      ) : (
+                        <View className="h-[34px] w-[34px] items-center justify-center rounded-xl bg-[#ECF2EE]">
+                          <Ionicons
+                            name="pricetag-outline"
+                            size={18}
+                            color={Colors.primary}
+                          />
+                        </View>
+                      )}
+                      <Text
+                        className={`ml-3 min-w-0 flex-1 text-sm font-semibold ${form.category ? "text-[#25332C]" : "text-[#9AA39D]"}`}
+                        numberOfLines={1}
+                      >
+                        {selectedEventCategory?.name ||
+                          form.category ||
+                          "Select event category"}
+                      </Text>
+                    </View>
+                    <Ionicons
+                      name="chevron-down-outline"
+                      size={18}
+                      color="#667085"
+                    />
+                  </Pressable>
+                </View>
+              ) : (
+                <View className="mb-4">
+                  <FormLabel>Category</FormLabel>
                   <FormInput
-                    accessibilityLabel={`${label}${key === "title" ? ", required" : ""}`}
+                    accessibilityLabel="Category"
                     autoCapitalize="sentences"
-                    maxLength={key === "title" ? 100 : 60}
-                    value={form[key]}
+                    maxLength={60}
+                    value={form.category}
                     onChangeText={(value) =>
-                      setForm((current) => ({ ...current, [key]: value }))
+                      setForm((current) => ({ ...current, category: value }))
                     }
-                    placeholder={placeholder}
+                    placeholder="Personal"
                     keyboardType="default"
-                    returnKeyType={key === "title" ? "next" : "done"}
+                    returnKeyType="done"
                     style={calendarFormStyles.input}
                   />
                 </View>
-              ))}
+              )}
 
               <View className="flex-row gap-3">
                 <View className="min-w-0 flex-1">
@@ -982,10 +1290,7 @@ export default function CalendarScreen() {
               </View>
               <Pressable
                 disabled={saving}
-                onPress={() => {
-                  if (router.canGoBack()) router.back();
-                  else setModalType(null);
-                }}
+                onPress={closeEntryForm}
                 className="mb-3 items-center rounded-xl border border-[#DDE3DC] bg-white py-3.5"
               >
                 <Text className="text-base font-bold text-[#526058]">Cancel</Text>
@@ -1006,6 +1311,112 @@ export default function CalendarScreen() {
           </KeyboardAvoidingView>
         </View>
       )}
+
+      <Modal
+        visible={categoryPickerVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setCategoryPickerVisible(false)}
+      >
+        <Pressable
+          className="flex-1 items-center justify-center bg-black/50 px-5"
+          onPress={() => setCategoryPickerVisible(false)}
+        >
+          <Pressable
+            onPress={(event) => event.stopPropagation()}
+            className="w-full overflow-hidden rounded-2xl bg-white p-5"
+            style={{ maxWidth: 480, maxHeight: "82%" }}
+          >
+            <View className="mb-4 flex-row items-center justify-between">
+              <Text className="text-lg font-extrabold text-[#263238]">
+                Event Category
+              </Text>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Close event categories"
+                onPress={() => setCategoryPickerVisible(false)}
+                className="h-9 w-9 items-center justify-center rounded-full bg-[#F2F4F2]"
+              >
+                <Ionicons name="close" size={19} color="#526058" />
+              </Pressable>
+            </View>
+
+            {eventCategoriesLoading ? (
+              <View className="items-center justify-center py-10">
+                <ActivityIndicator color={Colors.primary} />
+                <Text className="mt-3 text-sm font-medium text-[#7B8589]">
+                  Loading event categories...
+                </Text>
+              </View>
+            ) : eventCategoriesError ? (
+              <View className="items-center justify-center py-8">
+                <Text className="mb-4 text-center text-sm font-medium text-[#B64C45]">
+                  {eventCategoriesError}
+                </Text>
+                <Pressable
+                  accessibilityRole="button"
+                  onPress={() => void fetchEventCategories()}
+                  className="rounded-xl bg-[#366039] px-5 py-3"
+                >
+                  <Text className="text-sm font-bold text-white">Retry</Text>
+                </Pressable>
+              </View>
+            ) : eventCategories.length === 0 ? (
+              <View className="items-center justify-center py-10">
+                <Ionicons
+                  name="pricetag-outline"
+                  size={28}
+                  color={Colors.primary}
+                />
+                <Text className="mt-3 text-center text-sm font-medium text-[#7B8589]">
+                  No CalendarEvent categories found.
+                </Text>
+              </View>
+            ) : (
+              <ScrollView
+                showsVerticalScrollIndicator={false}
+                keyboardShouldPersistTaps="handled"
+              >
+                {eventCategories.map((category) => {
+                  const isSelected =
+                    String(category.id) === form.categoryId;
+                  return (
+                    <Pressable
+                      key={String(category.id)}
+                      accessibilityRole="button"
+                      accessibilityState={{ selected: isSelected }}
+                      onPress={() => {
+                        setForm((current) => ({
+                          ...current,
+                          category: category.name,
+                          categoryId: String(category.id),
+                        }));
+                        setCategoryPickerVisible(false);
+                      }}
+                      className={`mb-2 flex-row items-center rounded-xl border p-3 ${isSelected ? "border-[#8CB99A] bg-[#EEF6F0]" : "border-[#E5EAE7] bg-white"}`}
+                    >
+                      <EventCategoryIcon category={category} />
+                      <Text
+                        className="ml-3 min-w-0 flex-1 text-sm font-semibold text-[#263238]"
+                        numberOfLines={1}
+                      >
+                        {category.name}
+                      </Text>
+                      {isSelected ? (
+                        <Ionicons
+                          name="checkmark-circle"
+                          size={20}
+                          color={Colors.primary}
+                        />
+                      ) : null}
+                    </Pressable>
+                  );
+                })}
+              </ScrollView>
+            )}
+          </Pressable>
+        </Pressable>
+      </Modal>
     </SafeAreaView>
   );
 }

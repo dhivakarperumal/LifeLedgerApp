@@ -5,6 +5,9 @@ export function createSessionDataCache<T>() {
   return {
     get: () => data,
     hasData: () => data !== undefined,
+    clear: () => {
+      data = undefined;
+    },
     load: (loader: () => Promise<T>) => {
       if (inFlightRequest) return inFlightRequest;
 
