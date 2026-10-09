@@ -1,24 +1,25 @@
 import { Ionicons } from "@expo/vector-icons";
 import {
-  AudioModule,
-  RecordingPresets,
-  setAudioModeAsync,
-  useAudioRecorder,
+    AudioModule,
+    RecordingPresets,
+    setAudioModeAsync,
+    useAudioRecorder,
 } from "expo-audio";
 import * as DocumentPicker from "expo-document-picker";
 import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import { useCallback, useMemo, useState } from "react";
 import {
-  ActivityIndicator,
-  Alert,
-  Image,
-  KeyboardAvoidingView,
-  Platform,
-  Pressable,
-  RefreshControl,
-  ScrollView,
-  Text,
-  View,
+    ActivityIndicator,
+    Alert,
+    Image,
+    KeyboardAvoidingView,
+    Linking,
+    Platform,
+    Pressable,
+    RefreshControl,
+    ScrollView,
+    Text,
+    View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import api, { API_BASE_URL, getApiErrorMessage, logoutUser } from "../../api";
@@ -27,29 +28,30 @@ import { AddPageHeader } from "../../components/AddPageHeader";
 import { CenteredPageLoader } from "../../components/CenteredPageLoader";
 import ConfirmPopup from "../../components/ConfirmPopup";
 import {
-  createDateRangeSelection,
-  isDateInRange,
-  type DateRangeSelection,
+    createDateRangeSelection,
+    isDateInRange,
+    type DateRangeSelection,
 } from "../../components/DateRangeFilter";
 import { DateTimePickerComponent } from "../../components/DateTimePickerComponent";
 import {
-  formatLocalDateTime,
-  parseLocalDate,
-  parseLocalDateTimeValue,
+    formatLocalDateTime,
+    parseLocalDate,
+    parseLocalDateTimeValue,
 } from "../../components/dateTimeUtils";
 import {
-  countActiveFilters,
-  DEFAULT_FILTER_STATE,
-  type FilterState,
-  type ViewModeOption,
+    countActiveFilters,
+    DEFAULT_FILTER_STATE,
+    type FilterState,
+    type ViewModeOption,
 } from "../../components/filters";
 import {
-  FormField,
-  FormLabel,
+    FormField,
+    FormLabel,
 } from "../../components/FormControls";
 import { GradientSafeAreaView as SafeAreaView } from "../../components/GradientSafeAreaView";
 import { PopupSelect } from "../../components/PopupSelect";
 import { SearchBar } from "../../components/SearchBar";
+import { UploadFilePreview } from "../../components/UploadFilePreview";
 import { Colors } from "../../constants/colors";
 
 type Memory = {
@@ -1350,54 +1352,23 @@ export default function Memories() {
                 </Text>
               </Pressable>
               {newMedia.map((file) => (
-                <View
+                <UploadFilePreview
                   key={file.uri}
-                  style={{
-                    flexDirection: "row",
-                    alignItems: "center",
-                    marginTop: 8,
-                    padding: 10,
-                    borderRadius: 10,
-                    backgroundColor: "#F4F6F4",
+                  uri={file.uri}
+                  name={file.name}
+                  mimeType={file.mimeType}
+                  onOpen={() => {
+                    void Linking.openURL(file.uri).catch(() =>
+                      Alert.alert("Unable to open media", "No app could open this file."),
+                    );
                   }}
-                >
-                  <Ionicons
-                    name={
-                      file.mimeType.startsWith("image/")
-                        ? "image-outline"
-                        : file.mimeType.startsWith("video/")
-                          ? "videocam-outline"
-                          : file.mimeType.startsWith("audio/")
-                            ? "musical-notes-outline"
-                            : "document-outline"
-                    }
-                    size={18}
-                    color={Colors.forest}
-                  />
-                  <Text
-                    numberOfLines={1}
-                    style={{
-                      flex: 1,
-                      marginLeft: 8,
-                      color: Colors.textPrimary,
-                      fontSize: 13,
-                    }}
-                  >
-                    {file.name}
-                  </Text>
-                  <Pressable
-                    onPress={() =>
-                      setNewMedia((current) =>
-                        current.filter((item) => item.uri !== file.uri),
-                      )
-                    }
-                    accessibilityRole="button"
-                    accessibilityLabel={`Remove ${file.name}`}
-                    style={{ padding: 4 }}
-                  >
-                    <Ionicons name="close-circle" size={20} color="#B64D4D" />
-                  </Pressable>
-                </View>
+                  onRemove={() =>
+                    setNewMedia((current) =>
+                      current.filter((item) => item.uri !== file.uri),
+                    )
+                  }
+                  removeLabel={`Remove ${file.name}`}
+                />
               ))}
               <Pressable
                 onPress={() => updateForm("is_favorite", !form.is_favorite)}

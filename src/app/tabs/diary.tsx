@@ -1,30 +1,31 @@
 import { Ionicons } from "@expo/vector-icons";
 import {
-  AudioModule,
-  RecordingPresets,
-  setAudioModeAsync,
-  useAudioRecorder,
+    AudioModule,
+    RecordingPresets,
+    setAudioModeAsync,
+    useAudioRecorder,
 } from "expo-audio";
 import * as DocumentPicker from "expo-document-picker";
 import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import {
-  useCallback,
-  useEffect,
-  useEffectEvent,
-  useMemo,
-  useState,
+    useCallback,
+    useEffect,
+    useEffectEvent,
+    useMemo,
+    useState,
 } from "react";
 import {
-  ActivityIndicator,
-  Alert,
-  Image,
-  KeyboardAvoidingView,
-  Platform,
-  Pressable,
-  RefreshControl,
-  ScrollView,
-  Text,
-  View,
+    ActivityIndicator,
+    Alert,
+    Image,
+    KeyboardAvoidingView,
+    Linking,
+    Platform,
+    Pressable,
+    RefreshControl,
+    ScrollView,
+    Text,
+    View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import api, { API_BASE_URL, getApiErrorMessage, logoutUser } from "../../api";
@@ -33,27 +34,28 @@ import { AddPageHeader } from "../../components/AddPageHeader";
 import { CenteredPageLoader } from "../../components/CenteredPageLoader";
 import ConfirmPopup from "../../components/ConfirmPopup";
 import {
-  createDateRangeSelection,
-  isDateInRange,
-  type DateRangeSelection,
+    createDateRangeSelection,
+    isDateInRange,
+    type DateRangeSelection,
 } from "../../components/DateRangeFilter";
 import { DateTimePickerComponent } from "../../components/DateTimePickerComponent";
 import {
-  formatLocalDate,
-  formatLocalTime,
-  parseLocalDate,
-  parseLocalDateTime,
+    formatLocalDate,
+    formatLocalTime,
+    parseLocalDate,
+    parseLocalDateTime,
 } from "../../components/dateTimeUtils";
 import {
-  countActiveFilters,
-  DEFAULT_FILTER_STATE,
-  type FilterState,
-  type ViewModeOption,
+    countActiveFilters,
+    DEFAULT_FILTER_STATE,
+    type FilterState,
+    type ViewModeOption,
 } from "../../components/filters";
 import { FormInput, FormLabel } from "../../components/FormControls";
 import { GradientSafeAreaView as SafeAreaView } from "../../components/GradientSafeAreaView";
 import { PopupSelect } from "../../components/PopupSelect";
 import { SearchBar } from "../../components/SearchBar";
+import { UploadFilePreview } from "../../components/UploadFilePreview";
 import { Colors } from "../../constants/colors";
 
 type DiaryEntry = {
@@ -1642,14 +1644,22 @@ export default function Diary() {
                 />
               ))}
               {attachments.map((file) => (
-                <AttachmentRow
+                <UploadFilePreview
                   key={file.uri}
+                  uri={file.uri}
                   name={file.name}
+                  mimeType={file.mimeType}
+                  onOpen={() => {
+                    void Linking.openURL(file.uri).catch(() =>
+                      Alert.alert("Unable to open attachment", "No app could open this file."),
+                    );
+                  }}
                   onRemove={() =>
                     setAttachments((current) =>
                       current.filter((item) => item.uri !== file.uri),
                     )
                   }
+                  removeLabel={`Remove ${file.name}`}
                 />
               ))}
               {uploadProgress !== null ? (
