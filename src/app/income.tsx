@@ -36,9 +36,9 @@ import { CenteredPageLoader } from "../components/CenteredPageLoader";
 import ConfirmPopup from "../components/ConfirmPopup";
 import {
     formatLocalDate,
-  formatLocalTime,
+    formatLocalTime,
     parseLocalDate,
-  parseLocalDateTime,
+    parseLocalDateTime,
     parseLocalDateTimeValue,
 } from "../components/dateTimeUtils";
 import {
