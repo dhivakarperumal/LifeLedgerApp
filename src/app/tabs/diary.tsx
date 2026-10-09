@@ -29,6 +29,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import api, { API_BASE_URL, getApiErrorMessage, logoutUser } from "../../api";
 import { AddButton } from "../../components/AddButton";
+import { AddPageHeader } from "../../components/AddPageHeader";
 import { CenteredPageLoader } from "../../components/CenteredPageLoader";
 import ConfirmPopup from "../../components/ConfirmPopup";
 import {
@@ -1444,42 +1445,21 @@ export default function Diary() {
           <View
             style={{
               paddingHorizontal: 18,
-              paddingTop: 17,
               paddingBottom: 12,
               flex: 1,
               backgroundColor: Colors.white,
             }}
           >
-            <View
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-                justifyContent: "space-between",
-                marginBottom: 12,
+            <AddPageHeader
+              title={editingId ? "Edit Diary" : "Add New Diary"}
+              onBack={() => {
+                if (router.canGoBack()) router.back();
+                else setEditorVisible(false);
               }}
-            >
-              <Text
-                style={{
-                  color: Colors.forest,
-                  fontSize: 22,
-                  fontWeight: "800",
-                }}
-              >
-                {editingId ? "Edit diary entry" : "Write in your diary"}
-              </Text>
-              <Pressable
-                onPress={() => {
-                  if (router.canGoBack()) router.back();
-                  else setEditorVisible(false);
-                }}
-                disabled={submitting || isRecording}
-                accessibilityRole="button"
-                accessibilityLabel="Go back"
-                style={{ padding: 6 }}
-              >
-                <Ionicons name="arrow-back" size={23} color={Colors.textPrimary} />
-              </Pressable>
-            </View>
+              horizontalInset={18}
+              verticalInset={17}
+              disabled={submitting || isRecording}
+            />
             <ScrollView
               style={{ flex: 1, minHeight: 0 }}
               keyboardShouldPersistTaps="handled"

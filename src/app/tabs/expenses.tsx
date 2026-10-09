@@ -19,6 +19,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import api, { getApiErrorMessage, logoutUser } from "../../api";
 import { AddButton } from "../../components/AddButton";
+import { AddPageHeader } from "../../components/AddPageHeader";
 import ConfirmPopup from "../../components/ConfirmPopup";
 import {
   createDateRangeSelection,
@@ -1611,46 +1612,18 @@ export default function Expenses() {
             style={{
               backgroundColor: "#FFFFFF",
               paddingHorizontal: 20,
-              paddingTop: 20,
               paddingBottom: 12,
               flex: 1,
             }}
           >
-            {/* Modal header */}
-            <View
-              style={{
-                flexDirection: "row",
-                justifyContent: "space-between",
-                alignItems: "center",
-                marginBottom: 20,
-              }}
-            >
-              <View>
-                <Text
-                  style={{ fontSize: 22, fontWeight: "900", color: "#1E293B" }}
-                >
-                  {editingExpenseId === null ? "Add Expense" : "Edit Expense"}
-                </Text>
-                <Text style={{ fontSize: 12, color: "#94A3B8", marginTop: 2 }}>
-                  Fill in the details below
-                </Text>
-              </View>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="Go back"
-                onPress={closeExpenseForm}
-                style={{
-                  width: 36,
-                  height: 36,
-                  borderRadius: 18,
-                  backgroundColor: "#F1F5F9",
-                  justifyContent: "center",
-                  alignItems: "center",
-                }}
-              >
-                <Ionicons name="arrow-back" size={18} color="#64748B" />
-              </Pressable>
-            </View>
+            <AddPageHeader
+              title={
+                editingExpenseId === null
+                  ? "Add New Expense"
+                  : "Edit Expense"
+              }
+              onBack={closeExpenseForm}
+            />
 
             <ScrollView
               style={{ flex: 1, minHeight: 0 }}

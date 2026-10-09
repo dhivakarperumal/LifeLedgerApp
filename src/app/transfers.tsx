@@ -22,6 +22,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Svg, { Path, Rect } from "react-native-svg";
 import api, { API_BASE_URL, getApiErrorMessage, logoutUser } from "../api";
 import { AddButton } from "../components/AddButton";
+import { AddPageHeader } from "../components/AddPageHeader";
 import { CenteredPageLoader } from "../components/CenteredPageLoader";
 import ConfirmPopup from "../components/ConfirmPopup";
 import {
@@ -1189,28 +1190,17 @@ export default function Transfers() {
             style={{ flex: 1 }}
           >
             <View
-              className="flex-1 bg-[#F8F9F6] px-5 pb-5 pt-5"
+              className="flex-1 bg-[#F8F9F6] px-5 pb-5"
             >
-            <View className="mb-4 flex-row items-center justify-between">
-              <View>
-                <Text className="text-xl font-bold text-[#25332C]">
-                  {editingTransferId !== null
-                    ? "Edit transfer"
-                    : "Add transfer"}
-                </Text>
-                <Text className="mt-1 text-xs text-[#818B84]">
-                  Move income into a budget or savings category
-                </Text>
-              </View>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="Go back"
-                className="h-9 w-9 items-center justify-center rounded-full bg-white"
-                onPress={closeModal}
-              >
-                <Ionicons name="arrow-back" size={20} color="#526058" />
-              </Pressable>
-            </View>
+            <AddPageHeader
+              title={
+                editingTransferId !== null
+                  ? "Edit Transfer"
+                  : "Add New Transfer"
+              }
+              subtitle="Move income into a budget or savings category"
+              onBack={closeModal}
+            />
 
             <ScrollView
               style={{ flex: 1, minHeight: 0 }}

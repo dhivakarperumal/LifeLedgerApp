@@ -23,6 +23,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Svg, { Path } from "react-native-svg";
 import api, { API_BASE_URL, getApiErrorMessage, logoutUser } from "../api";
 import { AddButton } from "../components/AddButton";
+import { AddPageHeader } from "../components/AddPageHeader";
 import {
     createDateRangeSelection,
     isDateInRange,
@@ -1202,26 +1203,13 @@ export default function Income() {
             style={{ flex: 1 }}
           >
             <View
-              className="flex-1 bg-[#F8F9F6] px-5 pb-5 pt-5"
+              className="flex-1 bg-[#F8F9F6] px-5 pb-5"
             >
-            <View className="mb-4 flex-row items-center justify-between">
-              <View>
-                <Text className="text-xl font-bold text-[#25332C]">
-                  {editingIncomeId ? "Edit income" : "Add income"}
-                </Text>
-                <Text className="mt-1 text-xs text-[#818B84]">
-                  Record a new income source
-                </Text>
-              </View>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="Go back"
-                className="h-9 w-9 items-center justify-center rounded-full bg-white"
-                onPress={closeEditor}
-              >
-                <Ionicons name="arrow-back" size={20} color="#526058" />
-              </Pressable>
-            </View>
+            <AddPageHeader
+              title={editingIncomeId ? "Edit Income" : "Add New Income"}
+              subtitle="Record a new income source"
+              onBack={closeEditor}
+            />
             <ScrollView
               style={{ flex: 1, minHeight: 0 }}
               contentContainerStyle={{ paddingBottom: 24 + insets.bottom }}

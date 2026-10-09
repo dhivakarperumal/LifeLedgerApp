@@ -27,6 +27,7 @@ import api, {
     logoutUser,
 } from "../api";
 import { AddButton } from "../components/AddButton";
+import { AddPageHeader } from "../components/AddPageHeader";
 import { CenteredPageLoader } from "../components/CenteredPageLoader";
 import ConfirmPopup from "../components/ConfirmPopup";
 import {
@@ -795,28 +796,13 @@ export default function Categories() {
             style={{ flex: 1 }}
           >
           <View
-            className="flex-1 bg-[#F8F9F6] px-5 pb-5 pt-5"
+            className="flex-1 bg-[#F8F9F6] px-5 pb-5"
           >
-            <View className="mb-5 flex-row items-center justify-between">
-              <View>
-                <Text className="text-xl font-bold text-[#25332C]">
-                  {editingCategory ? "Edit category" : "New category"}
-                </Text>
-                {editingCategory && (
-                  <Text className="mt-1 text-xs font-medium text-[#818B84]">
-                    {editingCategory.catId}
-                  </Text>
-                )}
-              </View>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="Go back"
-                className="h-9 w-9 items-center justify-center rounded-full bg-white"
-                onPress={closeCategoryForm}
-              >
-                <Ionicons name="arrow-back" size={20} color="#526058" />
-              </Pressable>
-            </View>
+            <AddPageHeader
+              title={editingCategory ? "Edit Category" : "Add New Category"}
+              subtitle={editingCategory?.catId}
+              onBack={closeCategoryForm}
+            />
 
             <ScrollView
               style={{ flex: 1, minHeight: 0 }}
