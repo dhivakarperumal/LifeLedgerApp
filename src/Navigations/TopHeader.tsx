@@ -9,19 +9,24 @@ import {
     Pressable,
     ScrollView,
     Text,
-    View,
     useWindowDimensions,
+    View,
 } from "react-native";
-import api, { getStoredUser, logoutUser } from "../api";
+import api, { getStoredToken, getStoredUser, logoutUser } from "../api";
 import ConfirmPopup from "../components/ConfirmPopup";
 import { parseLocalDate } from "../components/dateTimeUtils";
 import { GradientSafeAreaView as SafeAreaView } from "../components/GradientSafeAreaView";
+import {
+    getProfileImageUri,
+    getProfileInitial,
+    ProfileAvatar,
+} from "../components/ProfileAvatar";
 import { Colors } from "../constants/colors";
 
 type UserProfile = {
   name?: string;
   email?: string;
-};
+} & import("../components/ProfileAvatar").UserWithProfileImage;
 
 type NotificationItem = {
   id: number | string;
@@ -51,6 +56,7 @@ export function TopHeader({ showLogo = true }: { showLogo?: boolean } = {}) {
   const router = useRouter();
   const { width } = useWindowDimensions();
   const [user, setUser] = useState<UserProfile | null>(null);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [sideMenuVisible, setSideMenuVisible] = useState(false);
   const [sideMenuMounted, setSideMenuMounted] = useState(false);
   const [menuVisible, setMenuVisible] = useState(false);
@@ -63,11 +69,14 @@ export function TopHeader({ showLogo = true }: { showLogo?: boolean } = {}) {
   useEffect(() => {
     let cancelled = false;
 
-    void getStoredUser().then((storedUser) => {
-      if (!cancelled) {
-        setUser(storedUser);
-      }
-    });
+    void Promise.all([getStoredToken(), getStoredUser()]).then(
+      ([token, storedUser]) => {
+        if (!cancelled) {
+          setIsLoggedIn(!!token);
+          setUser(storedUser);
+        }
+      },
+    );
 
     return () => {
       cancelled = true;
@@ -75,7 +84,8 @@ export function TopHeader({ showLogo = true }: { showLogo?: boolean } = {}) {
   }, []);
 
   const displayName = user?.name?.trim() || user?.email?.trim() || "User";
-  const userInitial = displayName.charAt(0).toUpperCase();
+  const profileImageUri = isLoggedIn ? getProfileImageUri(user) : null;
+  const profileInitial = isLoggedIn ? getProfileInitial(user) : null;
 
   useEffect(() => {
     let cancelled = false;
@@ -256,13 +266,18 @@ export function TopHeader({ showLogo = true }: { showLogo?: boolean } = {}) {
             </View>
           </Pressable>
           <Pressable
-            accessibilityLabel="Open profile menu"
-            className="h-9 w-9 items-center justify-center rounded-full bg-[#ADBEA3]"
-            onPress={() => setMenuVisible(true)}
+            accessibilityRole="button"
+            accessibilityLabel={isLoggedIn ? "Open profile" : "Open login"}
+            className="h-9 w-9 items-center justify-center overflow-hidden rounded-full bg-[#ADBEA3]"
+            onPress={() => router.push(isLoggedIn ? "/profile" : "/auth/login")}
+            onLongPress={() => setMenuVisible(true)}
           >
-            <Text className="text-base font-bold text-[#264B2A]">
-              {userInitial}
-            </Text>
+            <ProfileAvatar
+              imageUri={profileImageUri}
+              initial={profileInitial}
+              size={36}
+              iconColor="#264B2A"
+            />
           </Pressable>
         </View>
       </View>
@@ -402,6 +417,32 @@ export function TopHeader({ showLogo = true }: { showLogo?: boolean } = {}) {
                 </View>
 
                 <ScrollView className="flex-1 px-4 pt-6">
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={isLoggedIn ? "Open profile" : "Open login"}
+                    className="mb-5 flex-row items-center rounded-2xl bg-[#366039] p-3"
+                    onPress={() => {
+                      setSideMenuVisible(false);
+                      router.push(isLoggedIn ? "/profile" : "/auth/login");
+                    }}
+                  >
+                    <View className="mr-3 h-10 w-10 items-center justify-center overflow-hidden rounded-full bg-[#ADBEA3]">
+                      <ProfileAvatar
+                        imageUri={profileImageUri}
+                        initial={profileInitial}
+                        size={40}
+                        iconColor="#264B2A"
+                      />
+                    </View>
+                    <Text className="flex-1 text-sm font-semibold text-white">
+                      {isLoggedIn ? displayName : "Log in"}
+                    </Text>
+                    <Ionicons
+                      name="chevron-forward"
+                      size={18}
+                      color={Colors.primaryLight}
+                    />
+                  </Pressable>
                   {[
                     ["Home", "home-outline", "/tabs"],
                     ["Expenses", "wallet-outline", "/tabs/expenses"],

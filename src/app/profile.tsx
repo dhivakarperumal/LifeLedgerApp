@@ -14,14 +14,20 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import api, {
     getApiErrorMessage,
+    getStoredToken,
     getStoredUser,
     logoutUser,
     saveUser,
 } from "../api";
-import { FormInput, FormLabel } from "../components/FormControls";
-import { GradientSafeAreaView as SafeAreaView } from "../components/GradientSafeAreaView";
 import { CenteredPageLoader } from "../components/CenteredPageLoader";
 import ConfirmPopup from "../components/ConfirmPopup";
+import { FormInput, FormLabel } from "../components/FormControls";
+import { GradientSafeAreaView as SafeAreaView } from "../components/GradientSafeAreaView";
+import {
+    getProfileImageUri,
+    getProfileInitial,
+    ProfileAvatar,
+} from "../components/ProfileAvatar";
 import { Colors } from "../constants/colors";
 
 type UserProfile = {
@@ -35,7 +41,7 @@ type UserProfile = {
   phone?: string;
   role?: string;
   status?: string;
-};
+} & import("../components/ProfileAvatar").UserWithProfileImage;
 
 type PasswordKey = "current" | "next" | "confirm";
 type PasswordState = Record<PasswordKey, string>;
@@ -106,6 +112,7 @@ export default function Profile() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const [user, setUser] = useState<UserProfile | null>(null);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [profileForm, setProfileForm] = useState<ProfileFormState>({
     name: "",
     email: "",
@@ -144,9 +151,10 @@ export default function Profile() {
     useCallback(() => {
       let active = true;
       setLoading(true);
-      void getStoredUser()
-        .then((storedUser) => {
+      void Promise.all([getStoredToken(), getStoredUser()])
+        .then(([token, storedUser]) => {
           if (active) {
+            setIsLoggedIn(!!token);
             setUser(storedUser);
             setProfileForm({
               name: getDisplayName(storedUser),
@@ -411,10 +419,13 @@ export default function Profile() {
             />
           </View>
           <View className="mt-6 flex-row items-center">
-            <View className="mr-4 h-16 w-16 items-center justify-center rounded-2xl bg-white">
-              <Text className="text-3xl font-extrabold text-[#315640]">
-                {profileName.charAt(0).toUpperCase()}
-              </Text>
+            <View className="mr-4 h-16 w-16 items-center justify-center overflow-hidden rounded-2xl bg-white">
+              <ProfileAvatar
+                imageUri={isLoggedIn ? getProfileImageUri(user) : null}
+                initial={isLoggedIn ? getProfileInitial(user) : null}
+                size={64}
+                iconColor="#315640"
+              />
             </View>
             <View className="min-w-0 flex-1">
               <Text

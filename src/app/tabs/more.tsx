@@ -1,9 +1,14 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Alert, Pressable, ScrollView, Text, View } from "react-native";
-import { getApiErrorMessage, logoutUser } from "../../api";
+import { getApiErrorMessage, getStoredToken, getStoredUser, logoutUser } from "../../api";
 import ConfirmPopup from "../../components/ConfirmPopup";
+import {
+    getProfileImageUri,
+    getProfileInitial,
+    ProfileAvatar,
+} from "../../components/ProfileAvatar";
 import { Colors } from "../../constants/colors";
 
 type MoreRowItem = {
@@ -124,8 +129,27 @@ function MoreMenuRow({
 
 export default function More() {
   const router = useRouter();
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [profileImageUri, setProfileImageUri] = useState<string | null>(null);
+  const [profileInitial, setProfileInitial] = useState<string | null>(null);
   const [isSigningOut, setIsSigningOut] = useState(false);
   const [showLogoutPopup, setShowLogoutPopup] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    void Promise.all([getStoredToken(), getStoredUser()]).then(
+      ([token, user]) => {
+        if (active) {
+          setIsLoggedIn(!!token);
+          setProfileImageUri(token ? getProfileImageUri(user) : null);
+          setProfileInitial(token ? getProfileInitial(user) : null);
+        }
+      },
+    );
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const handleSignOut = async () => {
     setIsSigningOut(true);
@@ -155,14 +179,19 @@ export default function More() {
     >
       <View className="mb-4 flex-row items-center justify-between">
         <View className="flex-row items-center">
-          <View className="mr-3 h-14 w-14 items-center justify-center rounded-xl bg-[#2F4E39]">
-            <Text
-              className="text-3xl font-extrabold text-white"
-              style={{ fontFamily: "Roboto Condensed, sans-serif" }}
-            >
-              D
-            </Text>
-          </View>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={isLoggedIn ? "Open profile" : "Open login"}
+            onPress={() => router.push(isLoggedIn ? "/profile" : "/auth/login")}
+            className="mr-3 h-14 w-14 items-center justify-center overflow-hidden rounded-xl bg-[#2F4E39]"
+          >
+            <ProfileAvatar
+              imageUri={profileImageUri}
+              initial={profileInitial}
+              size={56}
+              iconColor={Colors.white}
+            />
+          </Pressable>
 
           <View>
             <Text
