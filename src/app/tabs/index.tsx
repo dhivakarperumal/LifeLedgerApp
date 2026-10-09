@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { LinearGradient } from "expo-linear-gradient";
-import { useFocusEffect, useRouter } from "expo-router";
+import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
 import {
     ActivityIndicator,
@@ -17,6 +17,7 @@ import Svg, { Circle } from "react-native-svg";
 import { TopHeader } from "../../Navigations/TopHeader";
 import api, { API_BASE_URL, getStoredUser } from "../../api";
 import { CenteredPageLoader } from "../../components/CenteredPageLoader";
+import ConfirmPopup from "../../components/ConfirmPopup";
 import { GradientSafeAreaView as SafeAreaView } from "../../components/GradientSafeAreaView";
 import { parseLocalDate } from "../../components/dateTimeUtils";
 import { Colors } from "../../constants/colors";
@@ -307,10 +308,18 @@ function EmptyStateCard({ message }: { message: string }) {
 
 export default function Index() {
   const router = useRouter();
+  const params = useLocalSearchParams<{ successMessage?: string | string[] }>();
   const insets = useSafeAreaInsets();
   const [currentTime, setCurrentTime] = useState(() => new Date());
   const [userName, setUserName] = useState("there");
   const [homeQuote, setHomeQuote] = useState<string>(HOME_QUOTES[0]);
+  const successMessage =
+    typeof params.successMessage === "string"
+      ? params.successMessage
+      : Array.isArray(params.successMessage)
+        ? params.successMessage[0] ?? ""
+        : "";
+  const showSuccessPopup = Boolean(successMessage);
 
   // Data states
   const [isLoading, setIsLoading] = useState(!hasLoadedHomeOnce);
@@ -683,6 +692,15 @@ export default function Index() {
       edges={["top"]}
       style={{ flex: 1, backgroundColor: Colors.headerStart }}
     >
+      <ConfirmPopup
+        visible={showSuccessPopup}
+        type="success"
+        message={successMessage || "Success."}
+        onConfirm={() => {
+          setShowSuccessPopup(false);
+          setSuccessMessage("");
+        }}
+      />
       <View style={{ flex: 1, backgroundColor: Colors.contentBackground }}>
         {isLoading ? (
           <CenteredPageLoader message="Loading your overview..." />

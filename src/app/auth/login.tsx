@@ -1,15 +1,16 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useState } from "react";
 import {
-  Alert,
-  Image,
-  Pressable,
-  Text,
-  View,
+    Alert,
+    Image,
+    Pressable,
+    Text,
+    View,
 } from "react-native";
 import { getApiErrorMessage, loginWithIdentifier } from "../../api";
+import ConfirmPopup from "../../components/ConfirmPopup";
 import { FormInput, FormLabel } from "../../components/FormControls";
 import { GradientSafeAreaView as SafeAreaView } from "../../components/GradientSafeAreaView";
 import { KeyboardAwareFormScrollView } from "../../components/KeyboardAwareFormScrollView";
@@ -19,10 +20,19 @@ import { Colors } from "../../constants/colors";
 // ─── Main screen ──────────────────────────────────────────────────────────────
 export default function LoginScreen() {
   const router = useRouter();
+  const params = useLocalSearchParams<{ successMessage?: string | string[] }>();
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const successMessage =
+    typeof params.successMessage === "string"
+      ? params.successMessage
+      : Array.isArray(params.successMessage)
+        ? params.successMessage[0] ?? ""
+        : "";
+  const showSuccessPopup = Boolean(successMessage);
 
   const handleSubmit = async () => {
     if (!identifier.trim() || !password) {
@@ -36,7 +46,10 @@ export default function LoginScreen() {
     setIsSubmitting(true);
     try {
       await loginWithIdentifier(identifier, password);
-      router.replace("/tabs");
+      router.replace({
+        pathname: "/tabs",
+        params: { successMessage: "Logged in successfully." },
+      });
     } catch (error) {
       Alert.alert(
         "Login failed",
@@ -50,6 +63,12 @@ export default function LoginScreen() {
   return (
     <SafeAreaView edges={["top", "bottom"]} className="flex-1 bg-[#F2F5EA]">
       <StatusBar style="dark" />
+      <ConfirmPopup
+        visible={showSuccessPopup}
+        type="success"
+        message={successMessage || "Logged in successfully."}
+        onConfirm={() => router.setParams({ successMessage: undefined })}
+      />
       <KeyboardAwareFormScrollView>
         <View
           className="justify-center bg-[#DFE7C8] px-5"

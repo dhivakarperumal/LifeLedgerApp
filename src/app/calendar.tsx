@@ -608,7 +608,6 @@ export default function CalendarScreen() {
           ? "Event updated successfully."
           : "Event added successfully."
         : "Reminder added successfully.";
-      Alert.alert("Saved", message);
       if (editingEvent) {
         setEditingEvent(null);
         setModalType(null);

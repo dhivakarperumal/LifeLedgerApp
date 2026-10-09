@@ -831,8 +831,7 @@ export default function Transfers() {
         });
       }
       await loadAll();
-      Alert.alert(
-        "Saved",
+      setSuccessMessage(
         isEditing
           ? "Transfer updated successfully."
           : "Transfer added successfully.",
@@ -868,6 +867,7 @@ export default function Transfers() {
         current.filter((item) => item.id !== transfer.id),
       );
       if (selectedTransfer?.id === transfer.id) setSelectedTransfer(null);
+      setSuccessMessage("Transfer deleted successfully.");
     } catch (error) {
       if ((error as { status?: number })?.status === 401) {
         await handleUnauthorized();

@@ -621,7 +621,9 @@ export default function Memories() {
 
       setNewMedia([]);
       await fetchData();
-      Alert.alert("Saved", editingId ? "Memory updated." : "Memory created.");
+      setSuccessMessage(
+        editingId ? "Memory updated successfully." : "Memory created successfully.",
+      );
       if (router.canGoBack()) router.back();
       else setEditorVisible(false);
     } catch (error) {
@@ -652,6 +654,7 @@ export default function Memories() {
       setMemories((current) =>
         current.filter((item) => item.id !== memory.id),
       );
+      setSuccessMessage("Memory deleted successfully.");
     } catch (error) {
       const status =
         (error as any)?.status || (error as any)?.response?.status;

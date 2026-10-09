@@ -152,10 +152,14 @@ export default function More() {
   }, []);
 
   const handleSignOut = async () => {
+    setShowLogoutPopup(false);
     setIsSigningOut(true);
     try {
       await logoutUser();
-      router.replace("/auth/login");
+      router.replace({
+        pathname: "/auth/login",
+        params: { successMessage: "Logged out successfully." },
+      });
     } catch (error) {
       Alert.alert(
         "Sign out failed",

@@ -450,8 +450,7 @@ export default function Categories() {
           ...current,
         ]);
       }
-      Alert.alert(
-        "Saved",
+      setSuccessMessage(
         editingCategory
           ? "Category updated successfully."
           : "Category added successfully.",
@@ -477,6 +476,7 @@ export default function Categories() {
       setCategories((current) =>
         current.filter((item) => item.catId !== category.catId),
       );
+      setSuccessMessage("Category deleted successfully.");
     } catch (error) {
       Alert.alert("Unable to delete category", getApiErrorMessage(error));
     }

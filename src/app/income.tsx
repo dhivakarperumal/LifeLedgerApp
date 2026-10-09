@@ -828,9 +828,8 @@ export default function Income() {
       } else {
         setIncomes((current) => [savedIncome, ...current]);
       }
-      Alert.alert(
-        "Saved",
-        editingIncomeId ? "Income updated." : "Income added.",
+      setSuccessMessage(
+        editingIncomeId ? "Income updated successfully." : "Income added successfully.",
       );
       closeEditor();
     } catch (error) {
@@ -857,6 +856,7 @@ export default function Income() {
       await api.delete(`/incomes/${income.id}`);
       setIncomes((current) => current.filter((item) => item.id !== income.id));
       if (detailsIncome?.id === income.id) setDetailsIncome(null);
+      setSuccessMessage("Income deleted successfully.");
     } catch (error) {
       Alert.alert("Unable to delete income", getApiErrorMessage(error));
     }
@@ -872,7 +872,7 @@ export default function Income() {
     try {
       await api.put("/incomes/monthly-budget", { monthly_budget: value });
       setMonthlyBudget(value);
-      Alert.alert("Saved", "Monthly income budget saved.");
+      setSuccessMessage("Monthly income budget saved.");
       if (router.canGoBack()) router.back();
       else setBudgetVisible(false);
     } catch (error) {
