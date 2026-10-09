@@ -10,10 +10,10 @@ import {
     View,
 } from "react-native";
 import { getApiErrorMessage, registerUser } from "../../api";
+import ConfirmPopup from "../../components/ConfirmPopup";
 import { FormInput, FormLabel } from "../../components/FormControls";
 import { GradientSafeAreaView as SafeAreaView } from "../../components/GradientSafeAreaView";
 import { KeyboardAwareFormScrollView } from "../../components/KeyboardAwareFormScrollView";
-import ConfirmPopup from "../../components/ConfirmPopup";
 import { Colors } from "../../constants/colors";
 
 type FormState = {
@@ -162,7 +162,8 @@ export default function RegisterScreen() {
       <ConfirmPopup
         visible={showSuccessPopup}
         type="success"
-        message="Please log in to continue."
+        title="Registration Successful"
+        message="Your account has been created successfully. Please log in to continue."
         onConfirm={() => router.replace("/auth/login")}
       />
       <KeyboardAwareFormScrollView>
