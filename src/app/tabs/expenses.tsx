@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import * as DocumentPicker from "expo-document-picker";
-import { useFocusEffect, useLocalSearchParams, useNavigation, useRouter } from "expo-router";
+import { useFocusEffect, useLocalSearchParams, useNavigation, usePathname, useRouter } from "expo-router";
 import { useCallback, useEffect, useEffectEvent, useLayoutEffect, useMemo, useState } from "react";
 import {
     ActivityIndicator,
@@ -13,11 +13,15 @@ import {
     Pressable,
     RefreshControl,
     ScrollView,
+    StatusBar,
     Text,
     TextInput,
     View,
 } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import {
+    SafeAreaView as NativeSafeAreaView,
+    useSafeAreaInsets,
+} from "react-native-safe-area-context";
 import api, { getApiErrorMessage, logoutUser } from "../../api";
 import { AddButton } from "../../components/AddButton";
 import { AddPageHeader } from "../../components/AddPageHeader";
@@ -259,6 +263,7 @@ export default function Expenses() {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation();
   const router = useRouter();
+  const isStandaloneExpenseForm = usePathname() === "/expense-form";
   const { create: rawCreate, edit: rawEditId } = useLocalSearchParams<{
     create?: string | string[];
     edit?: string | string[];
@@ -1614,10 +1619,21 @@ export default function Expenses() {
 
       {isModalVisible && (
         <View className="absolute inset-0 z-50 bg-white" style={{ paddingBottom: insets.bottom }}>
-          <KeyboardAvoidingView
-            behavior={Platform.OS === "ios" ? "padding" : "height"}
-            style={{ flex: 1 }}
+          {isStandaloneExpenseForm ? (
+            <StatusBar
+              barStyle="light-content"
+              backgroundColor={Colors.greenGradient[0]}
+              translucent={false}
+            />
+          ) : null}
+          <NativeSafeAreaView
+            edges={isStandaloneExpenseForm ? ["top"] : []}
+            style={{ flex: 1, backgroundColor: Colors.greenGradient[0] }}
           >
+            <KeyboardAvoidingView
+              behavior={Platform.OS === "ios" ? "padding" : "height"}
+              style={{ flex: 1 }}
+            >
           <View
             style={{
               backgroundColor: "#FFFFFF",
@@ -2007,7 +2023,8 @@ export default function Expenses() {
                 </Pressable>
               </View>
           </View>
-          </KeyboardAvoidingView>
+            </KeyboardAvoidingView>
+          </NativeSafeAreaView>
         </View>
       )}
 
