@@ -23,7 +23,7 @@ import { AddPageHeader } from "../components/AddPageHeader";
 import { CenteredPageLoader } from "../components/CenteredPageLoader";
 import ConfirmPopup from "../components/ConfirmPopup";
 import { DateTimePickerComponent } from "../components/DateTimePickerComponent";
-import { FormInput, FormLabel, FormOption } from "../components/FormControls";
+import { FormInput, FormLabel } from "../components/FormControls";
 import { GradientSafeAreaView as SafeAreaView } from "../components/GradientSafeAreaView";
 import { PopupSelect } from "../components/PopupSelect";
 import { createSessionDataCache } from "../components/SessionDataCache";
@@ -1271,30 +1271,15 @@ export default function CalendarScreen() {
                   style={[calendarFormStyles.input, calendarFormStyles.multilineInput]}
                 />
               </View>
-              <FormLabel>Priority</FormLabel>
-              <View className="mb-5 flex-row">
-                {["Low", "Medium", "High"].map((priority) => (
-                  <FormOption
-                    key={priority}
-                    selected={form.priority === priority}
-                    onPress={() =>
-                      setForm((current) => ({ ...current, priority }))
-                    }
-                    className={`mr-2 flex-1 items-center rounded-xl py-2.5 ${form.priority === priority ? "bg-[#ECF2EE]" : "bg-white"}`}
-                  >
-                    <FormLabel inline>
-                      {priority}
-                    </FormLabel>
-                  </FormOption>
-                ))}
-              </View>
-              <Pressable
-                disabled={saving}
-                onPress={closeEntryForm}
-                className="mb-3 items-center rounded-xl border border-[#DDE3DC] bg-white py-3.5"
-              >
-                <Text className="text-base font-bold text-[#526058]">Cancel</Text>
-              </Pressable>
+              <PopupSelect
+                label="Priority"
+                placeholder="Select priority"
+                options={["Low", "Medium", "High"]}
+                value={form.priority}
+                onChange={(priority) =>
+                  setForm((current) => ({ ...current, priority }))
+                }
+              />
               <Pressable
                 disabled={saving}
                 onPress={() => void saveEntry()}
