@@ -211,17 +211,6 @@ function getTags(tags?: string[] | string) {
   return [];
 }
 
-function formatDate(value?: string) {
-  if (!value) return "No date";
-  const date = parseLocalDate(value);
-  if (!date) return value;
-  return date.toLocaleDateString("en-IN", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  });
-}
-
 function formatDateTime(value?: string) {
   if (!value) return "No date";
   const date = parseLocalDateTimeValue(value);
