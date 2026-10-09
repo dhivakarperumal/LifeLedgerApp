@@ -320,6 +320,8 @@ export default function Index() {
         ? params.successMessage[0] ?? ""
         : "";
   const showSuccessPopup = Boolean(successMessage);
+  const dismissSuccessPopup = () =>
+    router.setParams({ successMessage: undefined });
 
   // Data states
   const [isLoading, setIsLoading] = useState(!hasLoadedHomeOnce);
@@ -696,10 +698,8 @@ export default function Index() {
         visible={showSuccessPopup}
         type="success"
         message={successMessage || "Success."}
-        onConfirm={() => {
-          setShowSuccessPopup(false);
-          setSuccessMessage("");
-        }}
+        onConfirm={dismissSuccessPopup}
+        onCancel={dismissSuccessPopup}
       />
       <View style={{ flex: 1, backgroundColor: Colors.contentBackground }}>
         {isLoading ? (
