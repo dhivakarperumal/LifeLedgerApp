@@ -36,7 +36,9 @@ import { CenteredPageLoader } from "../components/CenteredPageLoader";
 import ConfirmPopup from "../components/ConfirmPopup";
 import {
     formatLocalDate,
+  formatLocalTime,
     parseLocalDate,
+  parseLocalDateTime,
     parseLocalDateTimeValue,
 } from "../components/dateTimeUtils";
 import {
@@ -59,6 +61,8 @@ type IncomeRecord = {
   remaining_amount?: number | string;
   category?: string;
   income_date?: string;
+  time?: string;
+  income_time?: string;
   payment_method?: string;
   notes?: string;
   recurring?: string;
@@ -78,6 +82,7 @@ type IncomeForm = {
   amount: string;
   category: string;
   date: string;
+  time: string;
   paymentMethod: string;
   notes: string;
   recurring: "Yes" | "No";
@@ -134,6 +139,7 @@ function createInitialForm(): IncomeForm {
     amount: "",
     category: "",
     date: formatLocalDate(new Date()),
+    time: formatLocalTime(new Date()),
     paymentMethod: "Cash",
     notes: "",
     recurring: "No",
@@ -694,6 +700,9 @@ export default function Income() {
   }, []);
 
   const openEditIncome = useCallback((income: IncomeRecord) => {
+    const incomeDateTime = income.income_date
+      ? parseLocalDateTimeValue(income.income_date)
+      : null;
     setEditingIncomeId(income.id);
     setExistingAttachment(income.attachment || null);
     setAttachment(null);
@@ -704,6 +713,10 @@ export default function Income() {
       date: income.income_date
         ? String(income.income_date).split("T")[0]
         : createInitialForm().date,
+      time:
+        income.time ||
+        income.income_time ||
+        (incomeDateTime ? formatLocalTime(incomeDateTime) : createInitialForm().time),
       paymentMethod: income.payment_method || "Cash",
       notes: income.notes || "",
       recurring: income.recurring === "Yes" ? "Yes" : "No",
@@ -784,6 +797,7 @@ export default function Income() {
       payload.append("amount", String(amount));
       payload.append("category", form.category.trim());
       payload.append("date", form.date);
+      payload.append("time", form.time);
       payload.append("paymentMethod", form.paymentMethod);
       payload.append("notes", form.notes);
       payload.append("recurring", form.recurring);
@@ -1246,32 +1260,42 @@ export default function Income() {
                 onChangeText={(value) => updateForm("title", value)}
               />
 
+              <View>
+                <FormLabel>Amount *</FormLabel>
+                <FormInput
+                  accessibilityLabel="Amount, required"
+                  borderColor="#AAB8AE"
+                  keyboardType="decimal-pad"
+                  placeholder="0.00"
+                  returnKeyType="done"
+                  style={incomeFormStyles.input}
+                  value={form.amount}
+                  onChangeText={(value) => updateForm("amount", value)}
+                />
+              </View>
+
               <View className="flex-row gap-3">
-                <View className="flex-1">
-                  <FormLabel>Amount *</FormLabel>
-                  <FormInput
-                    accessibilityLabel="Amount, required"
-                    borderColor="#AAB8AE"
-                    keyboardType="decimal-pad"
-                    placeholder="0.00"
-                    returnKeyType="done"
-                    style={incomeFormStyles.input}
-                    value={form.amount}
-                    onChangeText={(value) => updateForm("amount", value)}
+                <View className="min-w-0 flex-1">
+                  <DateTimePickerComponent
+                    mode="date"
+                    value={parseLocalDate(form.date)}
+                    onChange={(date) => {
+                      if (date) updateForm("date", formatLocalDate(date));
+                    }}
+                    label="Date"
+                    placeholder="Select date"
                   />
                 </View>
-                <View className="flex-1">
-                  <View>
-                    <DateTimePickerComponent
-                      mode="date"
-                      value={parseLocalDate(form.date)}
-                      onChange={(date) => {
-                        if (date) updateForm("date", formatLocalDate(date));
-                      }}
-                      label="Date"
-                      placeholder="Select date"
-                    />
-                  </View>
+                <View className="min-w-0 flex-1">
+                  <DateTimePickerComponent
+                    mode="time"
+                    value={parseLocalDateTime(form.date, form.time)}
+                    onChange={(time) => {
+                      if (time) updateForm("time", formatLocalTime(time));
+                    }}
+                    label="Time"
+                    placeholder="Select time"
+                  />
                 </View>
               </View>
 
@@ -1289,21 +1313,13 @@ export default function Income() {
                 onChange={(value) => updateForm("category", value)}
               />
 
-              <FormLabel>Payment Method</FormLabel>
-              <View className="mb-4 flex-row flex-wrap gap-2">
-                {paymentMethods.map((method) => (
-                  <FormOption
-                    key={method}
-                    selected={form.paymentMethod === method}
-                    className={`rounded-full px-3 py-2 ${form.paymentMethod === method ? "bg-[#315640]" : "bg-white"}`}
-                    onPress={() => updateForm("paymentMethod", method)}
-                  >
-                    <FormLabel inline color={form.paymentMethod === method ? "#FFFFFF" : "#637068"}>
-                      {method}
-                    </FormLabel>
-                  </FormOption>
-                ))}
-              </View>
+              <PopupSelect
+                label="Payment Method"
+                placeholder="Select payment method"
+                options={paymentMethods}
+                value={form.paymentMethod}
+                onChange={(value) => updateForm("paymentMethod", value)}
+              />
 
               <FormLabel>Recurring Income</FormLabel>
               <View className="mb-4 flex-row gap-2">
