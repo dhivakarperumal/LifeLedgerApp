@@ -87,7 +87,7 @@ export function FormField({
   labelColor,
 }: FormFieldProps) {
   return (
-    <View className="mb-4">
+    <View className="mb-3">
       <FormLabel color={labelColor}>
         {toTitleCase(label)}
       </FormLabel>

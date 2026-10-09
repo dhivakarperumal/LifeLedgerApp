@@ -134,7 +134,7 @@ export function DateTimePickerComponent({
 
   const fields =
     mode === "datetime" ? (
-      <View className="w-full flex-row gap-2">
+      <View className="w-full flex-row gap-3">
         {renderField("date")}
         {renderField("time")}
       </View>
@@ -143,7 +143,7 @@ export function DateTimePickerComponent({
     );
 
   return (
-    <View className="mb-4 w-full">
+    <View className="mb-3 w-full">
       {displayLabel && (
         <FormLabel>{displayLabel}</FormLabel>
       )}
