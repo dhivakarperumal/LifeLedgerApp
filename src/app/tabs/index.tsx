@@ -197,6 +197,17 @@ function formatDate(dateString?: string) {
   });
 }
 
+function formatTimestampDate(value?: string) {
+  if (!value) return "—";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return date.toLocaleDateString("en-IN", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+}
+
 function dateKey(date: Date) {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
 }
@@ -1386,7 +1397,9 @@ export default function Index() {
                             style={{ color: Colors.textSecondary }}
                           >
                             {diary.mood || "No Mood"} ·{" "}
-                            {formatDate(diary.entry_date || diary.created_at)}
+                            {diary.entry_date
+                              ? formatDate(diary.entry_date)
+                              : formatTimestampDate(diary.created_at)}
                           </Text>
                         </View>
                       </View>
