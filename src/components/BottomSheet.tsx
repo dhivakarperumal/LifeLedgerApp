@@ -83,6 +83,14 @@ export function BottomSheet({
         <KeyboardAvoidingView
           behavior={Platform.OS === "ios" ? "padding" : "position"}
           keyboardVerticalOffset={0}
+          contentContainerStyle={[
+            styles.sheet,
+            {
+              height,
+              maxHeight,
+              paddingBottom: Math.max(insets.bottom, 16),
+            },
+          ]}
           style={[
             styles.sheet,
             {

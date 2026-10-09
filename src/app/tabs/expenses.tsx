@@ -14,6 +14,7 @@ import {
     RefreshControl,
     ScrollView,
     StatusBar,
+    StyleSheet,
     Text,
     TextInput,
     View,
@@ -26,7 +27,7 @@ import api, { API_BASE_URL, getApiErrorMessage, logoutUser } from "../../api";
 import { ActionIconButton } from "../../components/ActionIconButton";
 import { AddButton } from "../../components/AddButton";
 import { AddPageHeader } from "../../components/AddPageHeader";
-import { BottomSheet, BottomSheetContent } from "../../components/BottomSheet";
+
 import ConfirmPopup from "../../components/ConfirmPopup";
 import {
     createDateRangeSelection,
@@ -1163,34 +1164,133 @@ export default function Expenses() {
         message={successMessage ?? ""}
         onConfirm={() => setSuccessMessage(null)}
       />
-      <BottomSheet
+      <Modal
         visible={viewingExpense !== null}
-        title={
-          expenseDetails?.title ||
-          expenseDetails?.name ||
-          viewingExpense?.title ||
-          viewingExpense?.name ||
-          "Expense details"
-        }
-        subtitle="Expense details"
-        height="90%"
-        maxHeight="90%"
-        onClose={() => {
+        transparent
+        animationType="fade"
+        statusBarTranslucent
+        onRequestClose={() => {
           setViewingExpense(null);
           setExpenseDetails(null);
           setExpenseDetailsError(null);
         }}
       >
-        {viewingExpense ? (
-          <ExpenseDetailsContent
-            expense={expenseDetails ?? viewingExpense}
-            loading={expenseDetailsLoading}
-            error={expenseDetailsError}
-            onRetry={() => setExpenseDetailsRequest((request) => request + 1)}
-            onOpenAttachment={openAttachmentPreview}
+        <View
+          style={{
+            flex: 1,
+            backgroundColor: "rgba(10, 18, 12, 0.54)",
+            justifyContent: "center",
+            alignItems: "center",
+            paddingHorizontal: 16,
+          }}
+        >
+          {/* Backdrop tap to close */}
+          <Pressable
+            accessible={false}
+            style={StyleSheet.absoluteFill}
+            onPress={() => {
+              setViewingExpense(null);
+              setExpenseDetails(null);
+              setExpenseDetailsError(null);
+            }}
           />
-        ) : null}
-      </BottomSheet>
+          {/* Popup card */}
+          <View
+            style={{
+              width: "100%",
+              maxWidth: 440,
+              maxHeight: "90%",
+              borderRadius: 24,
+              overflow: "hidden",
+              backgroundColor: Colors.white,
+              shadowColor: "#000",
+              shadowOffset: { width: 0, height: 12 },
+              shadowOpacity: 0.2,
+              shadowRadius: 24,
+              elevation: 20,
+            }}
+          >
+            {/* Header */}
+            <View
+              style={{
+                backgroundColor: Colors.primaryDark,
+                paddingHorizontal: 20,
+                paddingVertical: 16,
+                flexDirection: "row",
+                alignItems: "center",
+                gap: 12,
+              }}
+            >
+              <View style={{ flex: 1, minWidth: 0 }}>
+                <Text
+                  numberOfLines={1}
+                  style={{
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: "700",
+                  }}
+                >
+                  {expenseDetails?.title ||
+                    expenseDetails?.name ||
+                    viewingExpense?.title ||
+                    viewingExpense?.name ||
+                    "Expense details"}
+                </Text>
+                <Text
+                  style={{
+                    color: Colors.primaryLight,
+                    fontSize: 12,
+                    marginTop: 2,
+                  }}
+                >
+                  Expense details
+                </Text>
+              </View>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Close"
+                hitSlop={8}
+                onPress={() => {
+                  setViewingExpense(null);
+                  setExpenseDetails(null);
+                  setExpenseDetailsError(null);
+                }}
+                style={({ pressed }) => ({
+                  width: 36,
+                  height: 36,
+                  borderRadius: 18,
+                  backgroundColor: "rgba(255,255,255,0.16)",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  opacity: pressed ? 0.7 : 1,
+                })}
+              >
+                <Ionicons name="close" size={20} color={Colors.white} />
+              </Pressable>
+            </View>
+            {/* Scrollable body */}
+            <ScrollView
+              style={{ flexShrink: 1 }}
+              contentContainerStyle={{ padding: 20, gap: 12 }}
+              showsVerticalScrollIndicator={false}
+              keyboardShouldPersistTaps="handled"
+              bounces={false}
+            >
+              {viewingExpense ? (
+                <ExpenseDetailsContent
+                  expense={expenseDetails ?? viewingExpense}
+                  loading={expenseDetailsLoading}
+                  error={expenseDetailsError}
+                  onRetry={() =>
+                    setExpenseDetailsRequest((request) => request + 1)
+                  }
+                  onOpenAttachment={openAttachmentPreview}
+                />
+              ) : null}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
       <View style={{ flex: 1, backgroundColor: "#F2F5EA" }}>
         {/* ── Hero Header ── */}
         <View
@@ -2702,15 +2802,7 @@ function ExpenseDetailsContent({
   const hasAdditionalDetails = Boolean(notes || attachment || details.length);
 
   return (
-    <BottomSheetContent
-      style={{
-        width: "100%",
-        alignSelf: "stretch",
-        flexGrow: 1,
-        flexDirection: "column",
-        backgroundColor: Colors.white,
-      }}
-    >
+    <View style={{ width: "100%", gap: 12 }}>
       {loading ? (
         <View
           accessibilityLiveRegion="polite"
@@ -2809,7 +2901,7 @@ function ExpenseDetailsContent({
           </Text>
         </View>
       ) : null}
-    </BottomSheetContent>
+    </View>
   );
 }
 

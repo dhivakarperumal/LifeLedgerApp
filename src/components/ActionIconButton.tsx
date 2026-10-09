@@ -63,7 +63,7 @@ export function ActionIconButton({
         justifyContent: "center",
         borderRadius: 10,
         borderWidth: 1.5,
-        borderColor: isDark ? darkBorders[action] : "#E5E7EB",
+        borderColor: isDark ? darkBorders[action] : "#D1D5DB",
         backgroundColor: isDark
           ? darkBackgrounds[action]
           : hovered
