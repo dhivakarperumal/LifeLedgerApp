@@ -1548,37 +1548,20 @@ export default function Diary() {
 
               <View
                 style={{
+                  width: "100%",
                   flexDirection: "row",
-                  flexWrap: "wrap",
-                  gap: 14,
-                  marginBottom: 14,
+                  flexWrap: "nowrap",
+                  gap: 8,
+                  marginBottom: 8,
                 }}
               >
-                <ToggleField
-                  label="Favorite"
-                  checked={form.is_favorite}
-                  onPress={() => updateForm("is_favorite", !form.is_favorite)}
-                  icon="heart-outline"
-                />
-                <ToggleField
-                  label="Private"
-                  checked={form.is_private}
-                  onPress={() => updateForm("is_private", !form.is_private)}
-                  icon="eye-off-outline"
-                />
-                <ToggleField
-                  label="Locked"
-                  checked={form.is_locked}
-                  onPress={() => updateForm("is_locked", !form.is_locked)}
-                  icon="lock-closed-outline"
-                />
-              </View>
-
-              <View style={{ flexDirection: "row", gap: 8, marginBottom: 8 }}>
                 <Pressable
                   onPress={() => void pickAttachments()}
                   style={{
-                    flex: 1,
+                    flexGrow: 1,
+                    flexShrink: 1,
+                    flexBasis: 0,
+                    minWidth: 0,
                     minHeight: 46,
                     alignItems: "center",
                     justifyContent: "center",
@@ -1597,10 +1580,13 @@ export default function Diary() {
                     color={Colors.forest}
                   />
                   <Text
+                    numberOfLines={1}
                     style={{
+                      flexShrink: 1,
                       color: Colors.forest,
                       fontWeight: "700",
                       fontSize: 12,
+                      textAlign: "center",
                     }}
                   >
                     Add attachments
@@ -1609,7 +1595,10 @@ export default function Diary() {
                 <Pressable
                   onPress={() => void toggleRecording()}
                   style={{
-                    flex: 1,
+                    flexGrow: 1,
+                    flexShrink: 1,
+                    flexBasis: 0,
+                    minWidth: 0,
                     minHeight: 46,
                     alignItems: "center",
                     justifyContent: "center",
@@ -1625,10 +1614,13 @@ export default function Diary() {
                     color={Colors.white}
                   />
                   <Text
+                    numberOfLines={1}
                     style={{
+                      flexShrink: 1,
                       color: Colors.white,
                       fontWeight: "700",
                       fontSize: 12,
+                      textAlign: "center",
                     }}
                   >
                     {isRecording ? "Stop recording" : "Record voice"}
@@ -1674,36 +1666,15 @@ export default function Diary() {
 
               <View
                 style={{
-                  flexDirection: "row",
-                  gap: 9,
                   marginTop: 16,
                   marginBottom: 5,
                 }}
               >
                 <Pressable
-                  onPress={() => void saveEntry("draft")}
-                  disabled={submitting || isRecording}
-                  style={{
-                    flex: 1,
-                    height: 48,
-                    alignItems: "center",
-                    justifyContent: "center",
-                    borderRadius: 13,
-                    borderWidth: 1,
-                    borderColor: "#B9C9BF",
-                    backgroundColor: Colors.white,
-                    opacity: submitting || isRecording ? 0.6 : 1,
-                  }}
-                >
-                  <Text style={{ color: Colors.forest, fontWeight: "800" }}>
-                    {submitting ? "Saving..." : "Save draft"}
-                  </Text>
-                </Pressable>
-                <Pressable
                   onPress={() => void saveEntry("published")}
                   disabled={submitting || isRecording}
                   style={{
-                    flex: 1.3,
+                    width: "100%",
                     height: 48,
                     alignItems: "center",
                     justifyContent: "center",
@@ -1759,35 +1730,6 @@ function FormField({
         }}
       />
     </View>
-  );
-}
-
-function ToggleField({
-  label,
-  checked,
-  onPress,
-  icon,
-}: {
-  label: string;
-  checked: boolean;
-  onPress: () => void;
-  icon: keyof typeof Ionicons.glyphMap;
-}) {
-  return (
-    <Pressable
-      onPress={onPress}
-      accessibilityRole="checkbox"
-      accessibilityState={{ checked }}
-      style={{ flexDirection: "row", alignItems: "center", gap: 6 }}
-    >
-      <Ionicons
-        name={checked ? "checkbox" : "square-outline"}
-        size={19}
-        color={Colors.forest}
-      />
-      <Ionicons name={icon} size={15} color={Colors.sage} />
-      <FormLabel inline color={Colors.textPrimary}>{label}</FormLabel>
-    </Pressable>
   );
 }
 

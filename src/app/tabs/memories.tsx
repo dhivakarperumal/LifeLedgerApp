@@ -489,14 +489,7 @@ export default function Memories() {
   const pickMedia = async () => {
     try {
       const result = await DocumentPicker.getDocumentAsync({
-        type: [
-          "image/*",
-          "video/*",
-          "audio/*",
-          "application/pdf",
-          "application/zip",
-          "application/x-rar-compressed",
-        ],
+        type: "*/*",
         multiple: true,
         copyToCacheDirectory: true,
       });
@@ -1311,7 +1304,7 @@ export default function Memories() {
                   justifyContent: "center",
                   gap: 8,
                   minHeight: 46,
-                  marginBottom: 14,
+                  marginBottom: 12,
                   borderRadius: 12,
                   backgroundColor: isRecording ? "#B83E48" : Colors.forest,
                 }}
@@ -1335,6 +1328,7 @@ export default function Memories() {
                   justifyContent: "center",
                   gap: 8,
                   minHeight: 46,
+                  marginBottom: 12,
                   borderRadius: 12,
                   borderWidth: 1,
                   borderStyle: "dashed",
@@ -1370,27 +1364,6 @@ export default function Memories() {
                   removeLabel={`Remove ${file.name}`}
                 />
               ))}
-              <Pressable
-                onPress={() => updateForm("is_favorite", !form.is_favorite)}
-                accessibilityRole="checkbox"
-                accessibilityState={{ checked: form.is_favorite }}
-                style={{
-                  flexDirection: "row",
-                  alignItems: "center",
-                  gap: 9,
-                  marginTop: 16,
-                  marginBottom: 16,
-                }}
-              >
-                <Ionicons
-                  name={form.is_favorite ? "checkbox" : "square-outline"}
-                  size={21}
-                  color={Colors.forest}
-                />
-                <FormLabel inline color={Colors.textPrimary}>
-                  Mark As Favorite
-                </FormLabel>
-              </Pressable>
             </ScrollView>
 
               <Pressable
