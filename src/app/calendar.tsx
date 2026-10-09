@@ -3,18 +3,18 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useFocusEffect, useLocalSearchParams, usePathname, useRouter } from "expo-router";
 import { useCallback, useState } from "react";
 import {
-    ActivityIndicator,
-    Alert,
-    Image,
-    KeyboardAvoidingView,
-    Modal,
-    Platform,
-    Pressable,
-    RefreshControl,
-    ScrollView,
-    StyleSheet,
-    Text,
-    View,
+  ActivityIndicator,
+  Alert,
+  Image,
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  Pressable,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import api, { API_BASE_URL, getApiErrorMessage } from "../api";
@@ -615,6 +615,7 @@ export default function CalendarScreen() {
       } else if (router.canGoBack()) router.back();
       else if (isNewEventRoute) router.replace("/calendar");
       else setModalType(null);
+      setSuccessMessage(message);
     } catch (error) {
       Alert.alert("Unable to save", getApiErrorMessage(error));
     } finally {
@@ -636,6 +637,11 @@ export default function CalendarScreen() {
       );
       calendarDataCache.clear();
       await fetchCalendar();
+      setSuccessMessage(
+        type === "event"
+          ? "Event deleted successfully."
+          : "Reminder deleted successfully.",
+      );
     } catch (error) {
       Alert.alert("Unable to delete", getApiErrorMessage(error));
     }
@@ -646,6 +652,7 @@ export default function CalendarScreen() {
       await api.post(`/calendar/reminders/${reminder.id}/complete`);
       calendarDataCache.clear();
       await fetchCalendar();
+      setSuccessMessage("Reminder marked as complete.");
     } catch (error) {
       Alert.alert("Unable to update reminder", getApiErrorMessage(error));
     }

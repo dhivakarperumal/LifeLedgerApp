@@ -1,12 +1,12 @@
-import { useRef, useState } from "react";
 import type { ReactNode } from "react";
+import { useRef, useState } from "react";
 import {
-  ActivityIndicator,
-  Modal,
-  Pressable,
-  Text,
-  useColorScheme,
-  View,
+    ActivityIndicator,
+    Modal,
+    Pressable,
+    Text,
+    useColorScheme,
+    View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -109,6 +109,8 @@ export default function ConfirmPopup({
     }
   };
 
+  const showCancelButton = type !== "success" && !!(cancelText ?? defaults.cancelText);
+
   const handleCancel = () => {
     if (isBusy) return;
     onCancel?.();
@@ -165,7 +167,7 @@ export default function ConfirmPopup({
             {message ?? defaults.message}
           </Text>
           <View className="mt-7 flex-row gap-3">
-            {type !== "success" && (
+            {showCancelButton && (
               <Pressable
                 accessibilityRole="button"
                 disabled={isBusy}
@@ -186,7 +188,7 @@ export default function ConfirmPopup({
               accessibilityState={{ disabled: isBusy, busy: isBusy }}
               disabled={isBusy}
               onPress={() => void handleConfirm()}
-              className="min-h-12 flex-1 flex-row items-center justify-center rounded-2xl px-4"
+              className={`min-h-12 ${showCancelButton ? "flex-1" : "w-full"} flex-row items-center justify-center rounded-2xl px-4`}
               style={{
                 backgroundColor: isDestructive ? "#C63F3F" : "#367343",
                 opacity: isBusy ? 0.75 : 1,
