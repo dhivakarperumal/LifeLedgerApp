@@ -3,18 +3,19 @@ import * as DocumentPicker from "expo-document-picker";
 import { useFocusEffect, useLocalSearchParams, useNavigation, useRouter } from "expo-router";
 import { useCallback, useEffect, useEffectEvent, useLayoutEffect, useMemo, useState } from "react";
 import {
-  ActivityIndicator,
-  Alert,
-  KeyboardAvoidingView,
-  LayoutAnimation,
-  Modal,
-  Platform,
-  Pressable,
-  RefreshControl,
-  ScrollView,
-  Text,
-  TextInput,
-  View,
+    ActivityIndicator,
+    Alert,
+    KeyboardAvoidingView,
+    LayoutAnimation,
+    Linking,
+    Modal,
+    Platform,
+    Pressable,
+    RefreshControl,
+    ScrollView,
+    Text,
+    TextInput,
+    View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import api, { getApiErrorMessage, logoutUser } from "../../api";
@@ -22,30 +23,31 @@ import { AddButton } from "../../components/AddButton";
 import { AddPageHeader } from "../../components/AddPageHeader";
 import ConfirmPopup from "../../components/ConfirmPopup";
 import {
-  createDateRangeSelection,
-  isDateInRange,
-  type DateRangeSelection,
+    createDateRangeSelection,
+    isDateInRange,
+    type DateRangeSelection,
 } from "../../components/DateRangeFilter";
 import { DateTimePickerComponent } from "../../components/DateTimePickerComponent";
 import {
-  formatLocalDate,
-  formatLocalTime,
-  parseLocalDate,
-  parseLocalDateTime,
+    formatLocalDate,
+    formatLocalTime,
+    parseLocalDate,
+    parseLocalDateTime,
 } from "../../components/dateTimeUtils";
 import {
-  DEFAULT_FILTER_STATE,
-  type FilterState,
-  type SortOption,
-  type ViewModeOption,
+    DEFAULT_FILTER_STATE,
+    type FilterState,
+    type SortOption,
+    type ViewModeOption,
 } from "../../components/filters";
 import {
-  FormField,
-  FormLabel,
+    FormField,
+    FormLabel,
 } from "../../components/FormControls";
 import { GradientSafeAreaView as SafeAreaView } from "../../components/GradientSafeAreaView";
 import { PopupSelect } from "../../components/PopupSelect";
 import { SearchBar } from "../../components/SearchBar";
+import { UploadFilePreview } from "../../components/UploadFilePreview";
 import { Colors } from "../../constants/colors";
 
 type ExpenseItem = {
@@ -646,6 +648,14 @@ export default function Expenses() {
       });
     } catch (error) {
       Alert.alert("Unable to select receipt", getApiErrorMessage(error));
+    }
+  };
+
+  const openAttachmentPreview = async (uri: string) => {
+    try {
+      await Linking.openURL(uri);
+    } catch {
+      Alert.alert("Unable to open receipt", "No app could open this file.");
     }
   };
 
@@ -1880,6 +1890,16 @@ export default function Expenses() {
 
               <View style={{ marginBottom: 12 }}>
                 <ModalSectionLabel label="Attachment / Receipt (Optional)" />
+                {attachment ? (
+                  <UploadFilePreview
+                    uri={attachment.uri}
+                    name={attachment.name}
+                    mimeType={attachment.mimeType}
+                    onOpen={() => void openAttachmentPreview(attachment.uri)}
+                    onRemove={() => setAttachment(null)}
+                    removeLabel="Remove receipt attachment"
+                  />
+                ) : null}
                 <Pressable
                   onPress={() => void pickAttachment()}
                   style={{
@@ -1910,21 +1930,10 @@ export default function Expenses() {
                       textAlign: "center",
                     }}
                   >
-                    {attachment?.name || "Choose an image or PDF receipt"}
+                    {attachment
+                      ? "Replace receipt attachment"
+                      : "Choose an image or PDF receipt"}
                   </Text>
-                  {attachment ? (
-                    <Pressable
-                      accessibilityRole="button"
-                      accessibilityLabel="Remove receipt attachment"
-                      hitSlop={8}
-                      onPress={(event) => {
-                        event.stopPropagation();
-                        setAttachment(null);
-                      }}
-                    >
-                      <Ionicons name="close-circle" size={19} color="#64748B" />
-                    </Pressable>
-                  ) : null}
                 </Pressable>
               </View>
             </ScrollView>

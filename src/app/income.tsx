@@ -52,6 +52,7 @@ import { GradientSafeAreaView as SafeAreaView } from "../components/GradientSafe
 import { PopupSelect } from "../components/PopupSelect";
 import { SearchBar } from "../components/SearchBar";
 import { createSessionDataCache } from "../components/SessionDataCache";
+import { UploadFilePreview } from "../components/UploadFilePreview";
 import { Colors } from "../constants/colors";
 
 type IncomeRecord = {
@@ -1349,25 +1350,22 @@ export default function Income() {
               />
 
               <FormLabel>Attachment / Receipt</FormLabel>
-              {existingAttachment && !attachment && (
-                <Pressable
-                  className="mb-2 flex-row items-center rounded-xl border border-[#DDE5DD] bg-white p-3"
-                  onPress={() => void openAttachment(existingAttachment)}
-                >
-                  <Ionicons
-                    name="document-text-outline"
-                    size={20}
-                    color="#426C92"
-                  />
-                  <Text
-                    className="ml-2 flex-1 text-xs font-semibold text-[#526058]"
-                    numberOfLines={1}
-                  >
-                    Current receipt · tap to open
-                  </Text>
-                  <Ionicons name="open-outline" size={16} color="#7B8580" />
-                </Pressable>
-              )}
+              {attachment ? (
+                <UploadFilePreview
+                  uri={attachment.uri}
+                  name={attachment.name}
+                  mimeType={attachment.mimeType}
+                  onOpen={() => void openAttachment(attachment.uri)}
+                  onRemove={() => setAttachment(null)}
+                  removeLabel="Remove selected attachment"
+                />
+              ) : existingAttachment ? (
+                <UploadFilePreview
+                  uri={getAttachmentUrl(existingAttachment)}
+                  name={existingAttachment.split(/[\\/]/).pop() || "Current receipt"}
+                  onOpen={() => void openAttachment(existingAttachment)}
+                />
+              ) : null}
               <Pressable
                 accessibilityRole="button"
                 onPress={() => void pickAttachment()}
@@ -1382,18 +1380,10 @@ export default function Income() {
                   className="ml-2 flex-1 text-xs font-semibold text-[#59675F]"
                   numberOfLines={1}
                 >
-                  {attachment?.name || "Choose image or PDF"}
+                  {attachment || existingAttachment
+                    ? "Replace attachment"
+                    : "Choose image or PDF"}
                 </Text>
-                {attachment && (
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel="Remove selected attachment"
-                    onPress={() => setAttachment(null)}
-                    className="p-1"
-                  >
-                    <Ionicons name="close-circle" size={19} color="#B64C45" />
-                  </Pressable>
-                )}
               </Pressable>
             </ScrollView>
 

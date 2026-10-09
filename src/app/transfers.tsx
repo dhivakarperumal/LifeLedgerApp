@@ -48,6 +48,7 @@ import { GradientSafeAreaView as SafeAreaView } from "../components/GradientSafe
 import { PopupSelect } from "../components/PopupSelect";
 import { SearchBar } from "../components/SearchBar";
 import { createSessionDataCache } from "../components/SessionDataCache";
+import { UploadFilePreview } from "../components/UploadFilePreview";
 import { useAddPageNavigation } from "../components/useAddPageNavigation";
 import { Colors } from "../constants/colors";
 
@@ -1480,25 +1481,22 @@ export default function Transfers() {
               />
 
               <FormLabel>Receipt</FormLabel>
-              {existingReceipt && !receipt && (
-                <Pressable
-                  className="mb-2 flex-row items-center rounded-xl border border-[#DDE5DD] bg-white p-3"
-                  onPress={() => void openReceipt(existingReceipt)}
-                >
-                  <Ionicons
-                    name="document-text-outline"
-                    size={19}
-                    color="#426C92"
-                  />
-                  <Text
-                    className="ml-2 flex-1 text-xs font-semibold text-[#526058]"
-                    numberOfLines={1}
-                  >
-                    Current receipt · tap to open
-                  </Text>
-                  <Ionicons name="open-outline" size={16} color="#7B8580" />
-                </Pressable>
-              )}
+              {receipt ? (
+                <UploadFilePreview
+                  uri={receipt.uri}
+                  name={receipt.name}
+                  mimeType={receipt.mimeType}
+                  onOpen={() => void openReceipt(receipt.uri)}
+                  onRemove={() => setReceipt(null)}
+                  removeLabel="Remove selected receipt"
+                />
+              ) : existingReceipt ? (
+                <UploadFilePreview
+                  uri={getReceiptUrl(existingReceipt)}
+                  name={existingReceipt.split(/[\\/]/).pop() || "Current receipt"}
+                  onOpen={() => void openReceipt(existingReceipt)}
+                />
+              ) : null}
               <View className="mb-5 flex-row items-center rounded-xl border border-dashed border-[#BEC9BF] bg-white px-4 py-3">
                 <Pressable
                   accessibilityRole="button"
@@ -1514,19 +1512,11 @@ export default function Transfers() {
                     className="ml-2 flex-1 text-xs font-semibold text-[#59675F]"
                     numberOfLines={1}
                   >
-                    {receipt?.name || "Choose image or PDF"}
+                    {receipt || existingReceipt
+                      ? "Replace receipt"
+                      : "Choose image or PDF"}
                   </Text>
                 </Pressable>
-                {receipt && (
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel="Remove selected receipt"
-                    className="ml-2 p-1"
-                    onPress={() => setReceipt(null)}
-                  >
-                    <Ionicons name="close-circle" size={19} color="#B64C45" />
-                  </Pressable>
-                )}
               </View>
             </ScrollView>
 
