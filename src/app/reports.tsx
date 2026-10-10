@@ -1027,7 +1027,7 @@ export default function Reports() {
             onChangeText={setSearch}
             placeholder="Search title, category, notes, amount"
             activeFilterCount={
-              countActiveFilters(filterValues) +
+              countActiveFilters({ ...filterValues, custom: {} }) +
               (paymentFilter === "All" ? 0 : 1)
             }
             filterSheet={{

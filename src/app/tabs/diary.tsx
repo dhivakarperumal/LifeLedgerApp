@@ -1042,7 +1042,7 @@ export default function Diary() {
           onChangeText={setSearch}
           placeholder="Search title, mood, tags..."
           activeFilterCount={
-            countActiveFilters(filterValues) +
+            countActiveFilters({ ...filterValues, custom: {} }) +
             (selectedFilter === "all" ? 0 : 1) +
             (selectedMood === "all" ? 0 : 1)
           }

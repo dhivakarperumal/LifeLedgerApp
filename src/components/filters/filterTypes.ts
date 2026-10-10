@@ -93,7 +93,8 @@ export function countActiveFilters(filters: FilterState): number {
   if (filters.paymentMethod && filters.paymentMethod !== "All") count++;
   if (filters.custom) {
     const customValues = Object.values(filters.custom).filter(
-      (value) => value && value !== "All" && value !== "",
+      (value) =>
+        value.trim() !== "" && value.trim().toLowerCase() !== "all",
     );
     count += customValues.length;
   }

@@ -405,7 +405,7 @@ export default function Memories() {
   const [categories, setCategories] = useState<MemoryCategory[]>([]);
   const [search, setSearch] = useState("");
   const [selectedMediaType, setSelectedMediaType] = useState("all");
-  const [selectedCategory, setSelectedCategory] = useState("all");
+  const [selectedCategory, setSelectedCategory] = useState("0");
   const [viewMode, setViewMode] = useState<ViewModeOption>("table");
   const [dateRange, setDateRange] = useState<DateRangeSelection>(() =>
     createDateRangeSelection("All"),
@@ -435,7 +435,7 @@ export default function Memories() {
     () => ({
       ...DEFAULT_FILTER_STATE,
       dateRange,
-      category: selectedCategory === "all" ? "" : selectedCategory,
+      category: selectedCategory === "0" ? "" : selectedCategory,
       viewMode,
       custom: { mediaType: selectedMediaType },
     }),
@@ -451,14 +451,14 @@ export default function Memories() {
   );
   const applyMemoryFilters = (filters: FilterState) => {
     setDateRange(filters.dateRange);
-    setSelectedCategory(filters.category || "all");
+    setSelectedCategory(filters.category || "0");
     setViewMode(filters.viewMode);
     setSelectedMediaType(filters.custom?.mediaType || "all");
   };
   const resetMemoryFilters = useCallback(() => {
     setSearch("");
     setDateRange(createDateRangeSelection("All"));
-    setSelectedCategory("all");
+    setSelectedCategory("0");
     setSelectedMediaType("all");
     setViewMode(DEFAULT_FILTER_STATE.viewMode);
   }, []);
@@ -587,7 +587,7 @@ export default function Memories() {
     const query = search.trim().toLowerCase();
     return memories.filter((memory) => {
       const categoryMatches =
-        selectedCategory === "all" ||
+        selectedCategory === "0" ||
         String(memory.category_id) === selectedCategory;
       const dateMatches = isDateInRange(memory.memory_date, dateRange);
       const mediaMatches =
@@ -987,7 +987,7 @@ export default function Memories() {
           onChangeText={setSearch}
           placeholder="Search moments, places..."
           activeFilterCount={
-            countActiveFilters(filterValues) +
+            countActiveFilters({ ...filterValues, custom: {} }) +
             (selectedMediaType === "all" ? 0 : 1)
           }
           filterSheet={{

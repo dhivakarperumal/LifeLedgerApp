@@ -598,7 +598,7 @@ export default function Categories() {
           onChangeText={setSearch}
           placeholder="Search name or ID"
           activeFilterCount={
-            countActiveFilters(categoryFilterValues) +
+            countActiveFilters({ ...categoryFilterValues, custom: {} }) +
             (typeFilter === "All" ? 0 : 1)
           }
           filterSheet={{
