@@ -37,10 +37,6 @@ import { AddPageHeader } from "../../components/AddPageHeader";
 import { CenteredPageLoader } from "../../components/CenteredPageLoader";
 import ConfirmPopup from "../../components/ConfirmPopup";
 import {
-    BottomSheet,
-    BottomSheetContent,
-} from "../../components/BottomSheet";
-import {
     createDateRangeSelection,
     isDateInRange,
     type DateRangeSelection,
@@ -333,19 +329,6 @@ function getMemoryAttachments(memory: Memory) {
   });
 }
 
-function formatMemoryTimestamp(value?: string) {
-  if (!value) return "";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return value;
-  return date.toLocaleString("en-IN", {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
-
 function getTags(tags?: string[] | string) {
   if (Array.isArray(tags)) return tags;
   if (typeof tags !== "string") return [];
@@ -418,13 +401,6 @@ export default function Memories() {
     useState<Memory | null>(null);
   const [deletingMemoryId, setDeletingMemoryId] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
-  const [selectedMemory, setSelectedMemory] = useState<Memory | null>(null);
-  const [memoryDetails, setMemoryDetails] = useState<Memory | null>(null);
-  const [memoryDetailsLoading, setMemoryDetailsLoading] = useState(false);
-  const [memoryDetailsError, setMemoryDetailsError] = useState<string | null>(
-    null,
-  );
-  const [memoryDetailsRetry, setMemoryDetailsRetry] = useState(0);
   const [editingId, setEditingId] = useState<number | string | null>(null);
   const [form, setForm] = useState<MemoryForm>(initialForm);
   const [existingMedia, setExistingMedia] = useState<MemoryAttachment[]>([]);
@@ -467,65 +443,6 @@ export default function Memories() {
     await logoutUser();
     router.replace("/auth/login");
   }, [router]);
-
-  const openMemoryDetails = useCallback((memory: Memory) => {
-    setSelectedMemory(memory);
-    setMemoryDetails(memory);
-    setMemoryDetailsError(null);
-    setMemoryDetailsLoading(true);
-  }, []);
-
-  useEffect(() => {
-    if (!selectedMemory) return;
-
-    let active = true;
-    const selectedId = String(selectedMemory.id);
-    const loadDetails = async () => {
-      setMemoryDetailsLoading(true);
-      setMemoryDetailsError(null);
-      try {
-        const response = await api.get(
-          `/memories/${encodeURIComponent(selectedId)}`,
-        );
-        const responseData = response.data;
-        const rawDetail =
-          responseData?.memory ??
-          responseData?.data?.memory ??
-          responseData?.memories ??
-          responseData?.data?.memories ??
-          responseData?.data ??
-          responseData;
-        const detail = Array.isArray(rawDetail)
-          ? rawDetail.find((item) => String(item?.id) === selectedId)
-          : rawDetail;
-        if (!detail || typeof detail !== "object" || Array.isArray(detail)) {
-          throw new Error("Memory details were not returned.");
-        }
-        if (detail.id !== undefined && String(detail.id) !== selectedId) {
-          throw new Error("The server returned a different memory.");
-        }
-        if (active) setMemoryDetails({ ...selectedMemory, ...detail });
-      } catch (error) {
-        if (!active) return;
-        const status = (error as any)?.status || (error as any)?.response?.status;
-        if (status === 401) {
-          setSelectedMemory(null);
-          await handleUnauthorized();
-          return;
-        }
-        setMemoryDetailsError(
-          getApiErrorMessage(error, "Unable to load memory details."),
-        );
-      } finally {
-        if (active) setMemoryDetailsLoading(false);
-      }
-    };
-
-    void loadDetails();
-    return () => {
-      active = false;
-    };
-  }, [handleUnauthorized, memoryDetailsRetry, selectedMemory]);
 
   const fetchData = useCallback(async () => {
     try {
@@ -884,10 +801,6 @@ export default function Memories() {
       setMemories((current) =>
         current.filter((item) => String(item.id) !== memoryId),
       );
-      if (String(selectedMemory?.id) === memoryId) {
-        setSelectedMemory(null);
-        setMemoryDetails(null);
-      }
       setPendingDeleteMemory(null);
       setSuccessMessage("Memory deleted successfully.");
     } catch (error) {
@@ -1420,7 +1333,9 @@ export default function Memories() {
                               label={`View ${memory.title}`}
                               onPress={(event) => {
                                 event.stopPropagation();
-                                openMemoryDetails(memory);
+                                router.push(
+                                  `/memories/${encodeURIComponent(String(memory.id))}` as any,
+                                );
                               }}
                             />
                             <ActionIconButton
@@ -1466,39 +1381,6 @@ export default function Memories() {
         accessibilityHint="Opens the new memory form"
         bottomOffset={84}
       />
-
-      <BottomSheet
-        visible={selectedMemory !== null}
-        title={memoryDetails?.title || selectedMemory?.title || "Memory details"}
-        subtitle="MEMORY DETAILS"
-        height="90%"
-        maxHeight="90%"
-        onClose={() => {
-          setSelectedMemory(null);
-          setMemoryDetails(null);
-          setMemoryDetailsError(null);
-        }}
-      >
-        {memoryDetails ? (
-          <MemoryDetailContent
-            memory={memoryDetails}
-            categoryName={
-              (typeof memoryDetails.category === "string"
-                ? memoryDetails.category
-                : memoryDetails.category?.name ||
-                  memoryDetails.category?.title) ||
-              memoryDetails.category_name ||
-              categories.find(
-                (category) =>
-                  String(category.id) === String(memoryDetails.category_id),
-              )?.name
-            }
-            loading={memoryDetailsLoading}
-            error={memoryDetailsError}
-            onRetry={() => setMemoryDetailsRetry((current) => current + 1)}
-          />
-        ) : null}
-      </BottomSheet>
 
       {editorVisible && (
         <View
@@ -1710,174 +1592,6 @@ export default function Memories() {
   );
 }
 
-function MemoryDetailContent({
-  memory,
-  categoryName,
-  loading,
-  error,
-  onRetry,
-}: {
-  memory: Memory;
-  categoryName?: string;
-  loading: boolean;
-  error: string | null;
-  onRetry: () => void;
-}) {
-  const attachments = getMemoryAttachments(memory);
-
-  return (
-    <BottomSheetContent style={{ gap: 12 }}>
-      {loading ? (
-        <View
-          style={{
-            flexDirection: "row",
-            alignItems: "center",
-            gap: 9,
-            padding: 12,
-            borderRadius: 12,
-            backgroundColor: "#F1F5F2",
-          }}
-        >
-          <ActivityIndicator size="small" color={Colors.forest} />
-          <Text style={{ color: Colors.textSecondary, fontSize: 13 }}>
-            Loading latest memory details…
-          </Text>
-        </View>
-      ) : null}
-      {error ? (
-        <View
-          style={{
-            gap: 9,
-            padding: 12,
-            borderRadius: 12,
-            backgroundColor: "#FFF2EE",
-          }}
-        >
-          <Text style={{ color: "#9D3D36", fontSize: 13 }}>{error}</Text>
-          <Pressable
-            accessibilityRole="button"
-            onPress={onRetry}
-            style={{
-              alignSelf: "flex-start",
-              paddingHorizontal: 13,
-              paddingVertical: 8,
-              borderRadius: 9,
-              backgroundColor: "#F8DDD8",
-            }}
-          >
-            <Text style={{ color: "#8E332D", fontWeight: "700" }}>Retry</Text>
-          </Pressable>
-        </View>
-      ) : null}
-
-      {categoryName ? (
-        <MemoryDetailField icon="pricetag-outline" label="Category" value={categoryName} />
-      ) : null}
-      {memory.memory_date ? (
-        <MemoryDetailField
-          icon="calendar-outline"
-          label="Date & time"
-          value={formatDateTime(memory.memory_date)}
-        />
-      ) : null}
-      {memory.location ? (
-        <MemoryDetailField
-          icon="location-outline"
-          label="Location"
-          value={memory.location}
-        />
-      ) : null}
-      {memory.mood ? (
-        <MemoryDetailField icon="happy-outline" label="Mood" value={memory.mood} />
-      ) : null}
-      {memory.description?.trim() ? (
-        <MemoryDetailText label="Description" value={memory.description.trim()} />
-      ) : null}
-      {attachments.length ? (
-        <View style={memoryDetailSectionStyle}>
-          <Text style={memoryDetailLabelStyle}>Media & attachments</Text>
-          <View style={{ gap: 12 }}>
-            {attachments.map((item, index) => (
-              <MemoryAttachmentPreview
-                key={`${getAttachmentUrl(item)}-${index}`}
-                item={item}
-                index={index}
-              />
-            ))}
-          </View>
-        </View>
-      ) : null}
-      {memory.voice_note?.trim() ? (
-        <MemoryDetailText
-          label="Voice note"
-          value={memory.voice_note.trim()}
-        />
-      ) : null}
-      {memory.tags && getTags(memory.tags).length ? (
-        <MemoryDetailText
-          label="Tags"
-          value={getTags(memory.tags).join(" · ")}
-        />
-      ) : null}
-      {memory.created_at || memory.updated_at ? (
-        <View style={memoryDetailSectionStyle}>
-          <Text style={memoryDetailLabelStyle}>Record details</Text>
-          {memory.created_at ? (
-            <Text style={memoryDetailValueStyle}>
-              Created: {formatMemoryTimestamp(memory.created_at)}
-            </Text>
-          ) : null}
-          {memory.updated_at ? (
-            <Text style={[memoryDetailValueStyle, { marginTop: 6 }]}>
-              Updated: {formatMemoryTimestamp(memory.updated_at)}
-            </Text>
-          ) : null}
-        </View>
-      ) : null}
-    </BottomSheetContent>
-  );
-}
-
-function MemoryDetailField({
-  icon,
-  label,
-  value,
-}: {
-  icon: keyof typeof Ionicons.glyphMap;
-  label: string;
-  value: string;
-}) {
-  return (
-    <View
-      style={{
-        flexDirection: "row",
-        alignItems: "center",
-        gap: 12,
-        minHeight: 58,
-        paddingHorizontal: 14,
-        paddingVertical: 11,
-        borderRadius: 14,
-        backgroundColor: "#F3F6F4",
-      }}
-    >
-      <Ionicons name={icon} size={19} color={Colors.forest} />
-      <View style={{ flex: 1 }}>
-        <Text style={memoryDetailLabelStyle}>{label}</Text>
-        <Text style={[memoryDetailValueStyle, { marginTop: 3 }]}>{value}</Text>
-      </View>
-    </View>
-  );
-}
-
-function MemoryDetailText({ label, value }: { label: string; value: string }) {
-  return (
-    <View style={memoryDetailSectionStyle}>
-      <Text style={memoryDetailLabelStyle}>{label}</Text>
-      <Text style={[memoryDetailValueStyle, { marginTop: 7 }]}>{value}</Text>
-    </View>
-  );
-}
-
 function MemoryAttachmentPreview({
   item,
   index,
@@ -2032,23 +1746,6 @@ async function getAuthenticatedMediaSource(url: string) {
   };
 }
 
-const memoryDetailSectionStyle = {
-  padding: 14,
-  borderRadius: 14,
-  backgroundColor: "#F3F6F4",
-};
-const memoryDetailLabelStyle = {
-  color: Colors.sage,
-  fontSize: 11,
-  fontWeight: "800" as const,
-  letterSpacing: 0.6,
-  textTransform: "uppercase" as const,
-};
-const memoryDetailValueStyle = {
-  color: Colors.textPrimary,
-  fontSize: 14,
-  lineHeight: 20,
-};
 const memoryAttachmentRowStyle = {
   flexDirection: "row" as const,
   alignItems: "center" as const,

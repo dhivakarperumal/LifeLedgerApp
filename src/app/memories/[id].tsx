@@ -24,7 +24,6 @@ import api, {
 } from "../../api";
 import ConfirmPopup from "../../components/ConfirmPopup";
 import {
-  parseLocalDate,
   parseLocalDateTimeValue,
 } from "../../components/dateTimeUtils";
 import { GradientSafeAreaView as SafeAreaView } from "../../components/GradientSafeAreaView";
@@ -46,7 +45,9 @@ type MemoryRecord = {
   id: number | string;
   title: string;
   description?: string;
+  category_id?: number | string;
   category_name?: string;
+  category?: string | { name?: string; title?: string };
   status?: string;
   mood?: string;
   location?: string;
@@ -57,6 +58,8 @@ type MemoryRecord = {
   media_type?: string;
   media_url?: string;
   media_gallery?: (string | MemoryMedia)[];
+  attachments?: (string | MemoryMedia)[];
+  media?: (string | MemoryMedia)[];
   created_at?: string;
   updated_at?: string;
 };
@@ -129,17 +132,6 @@ function parseTags(value?: string[] | string) {
   return [];
 }
 
-function formatDate(value?: string) {
-  if (!value) return "No date";
-  const date = parseLocalDate(value);
-  if (!date) return value;
-  return date.toLocaleDateString("en-IN", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
-}
-
 function formatDateTime(value?: string) {
   if (!value) return "—";
   const date = parseLocalDateTimeValue(value);
@@ -167,7 +159,11 @@ function formatTimestamp(value?: string) {
 }
 
 function getGallery(memory: MemoryRecord) {
-  const items = [...(memory.media_gallery || [])];
+  const items = [
+    ...(memory.media_gallery || []),
+    ...(memory.attachments || []),
+    ...(memory.media || []),
+  ];
   if (memory.media_url) items.unshift(memory.media_url);
   const seen = new Set<string>();
   return items.filter((item) => {
@@ -185,6 +181,7 @@ export default function MemoryDetails() {
   const insets = useSafeAreaInsets();
   const [memory, setMemory] = useState<MemoryRecord | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
   const [showDeletePopup, setShowDeletePopup] = useState(false);
 
@@ -192,14 +189,38 @@ export default function MemoryDetails() {
     let active = true;
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoading(true);
+    setLoadError(null);
+    setMemory(null);
     const fetchMemory = async () => {
       if (!id) {
+        setLoadError("This memory could not be found.");
         setLoading(false);
         return;
       }
       try {
-        const response = await api.get(`/memories/${id}`);
-        if (active) setMemory(response.data?.memory || response.data);
+        const response = await api.get(
+          `/memories/${encodeURIComponent(id)}`,
+        );
+        const responseData = response.data;
+        const rawRecord =
+          responseData?.memory ??
+          responseData?.data?.memory ??
+          responseData?.memories ??
+          responseData?.data?.memories ??
+          responseData?.data ??
+          responseData;
+        const record = Array.isArray(rawRecord)
+          ? rawRecord.find((item) => String(item?.id) === id)
+          : rawRecord;
+        if (
+          !record ||
+          typeof record !== "object" ||
+          Array.isArray(record) ||
+          String(record.id) !== id
+        ) {
+          throw new Error("This memory may have been deleted or is unavailable.");
+        }
+        if (active) setMemory(record);
       } catch (error) {
         const status =
           (error as any)?.status || (error as any)?.response?.status;
@@ -208,18 +229,12 @@ export default function MemoryDetails() {
           if (active) router.replace("/auth/login");
           return;
         }
-        if (active) {
-          Alert.alert(
-            "Unable to load memory",
-            getApiErrorMessage(error, "Please try again."),
-            [
-              {
-                text: "Back to memories",
-                onPress: () => router.replace("/tabs/memories"),
-              },
-            ],
+        if (active)
+          setLoadError(
+            status === 404
+              ? "This memory may have been deleted or is no longer available."
+              : getApiErrorMessage(error, "Unable to load this memory."),
           );
-        }
       } finally {
         if (active) setLoading(false);
       }
@@ -313,9 +328,93 @@ export default function MemoryDetails() {
     );
   }
 
-  if (!memory) return null;
+  if (!memory) {
+    return (
+      <SafeAreaView
+        edges={["top", "bottom"]}
+        style={{ flex: 1, backgroundColor: Colors.contentBackground }}
+      >
+        <LinearGradient
+          colors={Colors.greenGradient}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={{ paddingHorizontal: 16, paddingVertical: 12 }}
+        >
+          <Pressable
+            onPress={goBack}
+            accessibilityRole="button"
+            accessibilityLabel="Back to memories"
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              gap: 6,
+              paddingVertical: 8,
+              paddingRight: 8,
+            }}
+          >
+            <Ionicons name="arrow-back" size={21} color={Colors.white} />
+            <Text style={{ color: Colors.white, fontSize: 15, fontWeight: "700" }}>
+              Memories
+            </Text>
+          </Pressable>
+        </LinearGradient>
+        <View
+          style={{
+            flex: 1,
+            alignItems: "center",
+            justifyContent: "center",
+            paddingHorizontal: 28,
+          }}
+        >
+          <Ionicons name="alert-circle-outline" size={42} color={Colors.sage} />
+          <Text
+            style={{
+              marginTop: 12,
+              color: Colors.textPrimary,
+              fontSize: 18,
+              fontWeight: "800",
+              textAlign: "center",
+            }}
+          >
+            Memory unavailable
+          </Text>
+          <Text
+            style={{
+              marginTop: 6,
+              color: Colors.sage,
+              fontSize: 14,
+              textAlign: "center",
+            }}
+          >
+            {loadError || "This memory could not be found."}
+          </Text>
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => setRefreshKey((current) => current + 1)}
+            style={{
+              marginTop: 18,
+              paddingHorizontal: 16,
+              paddingVertical: 10,
+              borderRadius: 10,
+              backgroundColor: Colors.forest,
+            }}
+          >
+            <Text style={{ color: Colors.white, fontWeight: "700" }}>
+              Try again
+            </Text>
+          </Pressable>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   const favorite = isFavorite(memory.is_favorite);
+  const categoryName =
+    (typeof memory.category === "string"
+      ? memory.category
+      : memory.category?.name || memory.category?.title) ||
+    memory.category_name ||
+    "General";
   const tags = parseTags(memory.tags);
   const primaryItem: string | MemoryMedia | undefined = memory.media_url
     ? { file_url: memory.media_url, file_type: memory.media_type }
@@ -411,7 +510,7 @@ export default function MemoryDetails() {
           <ImageHero
             url={primaryUrl}
             title={memory.title}
-            category={memory.category_name || "General"}
+            category={categoryName}
             status={memory.status || "published"}
           />
         ) : primaryUrl && primaryKind === "video" ? (
@@ -450,7 +549,7 @@ export default function MemoryDetails() {
         {primaryKind !== "image" ? (
           <View style={{ marginBottom: 15 }}>
             <MetaPills
-              category={memory.category_name || "General"}
+              category={categoryName}
               status={memory.status || "published"}
             />
             <Text
