@@ -1593,6 +1593,7 @@ export default function Expenses() {
                     key={String(expense.id)}
                     style={{
                       width: viewMode === "card" ? "48.5%" : "100%",
+                      minHeight: viewMode === "card" ? 220 : undefined,
                       minWidth: 0,
                       backgroundColor: "#FFFFFF",
                       borderRadius: 16,
