@@ -22,6 +22,7 @@ import api, {
   getStoredToken,
   logoutUser,
 } from "../../api";
+import { AttachmentFileActions } from "../../components/AttachmentFileActions";
 import ConfirmPopup from "../../components/ConfirmPopup";
 import {
   parseLocalDateTimeValue,
@@ -114,6 +115,8 @@ function mediaKind(item: string | MemoryMedia, fallback = "") {
     return "video";
   if (value.includes("audio") || /\.(mp3|wav|m4a|aac|ogg)(\?|$)/i.test(value))
     return "audio";
+  if (value.includes("zip") || /\.(zip|rar|7z)(\?|$)/i.test(value))
+    return "archive";
   return "file";
 }
 
@@ -424,6 +427,10 @@ export default function MemoryDetails() {
     ? mediaKind(primaryItem, memory.media_type)
     : "";
   const extraMedia = gallery.filter((item) => mediaUrlOf(item) !== primaryUrl);
+  const visibleAttachments =
+    primaryItem && !["image", "video", "audio"].includes(primaryKind)
+      ? [primaryItem, ...extraMedia]
+      : extraMedia;
 
   return (
     <SafeAreaView
@@ -548,6 +555,12 @@ export default function MemoryDetails() {
             </Text>
           </LinearGradient>
         )}
+        {primaryUrl && (primaryKind === "image" || primaryKind === "video") ? (
+          <AttachmentFileActions
+            url={primaryUrl}
+            name={mediaName(primaryItem || memory.title, 0) || memory.title}
+          />
+        ) : null}
 
         {primaryKind !== "image" ? (
           <View style={{ marginBottom: 15 }}>
@@ -573,7 +586,7 @@ export default function MemoryDetails() {
             flexDirection: "row",
             flexWrap: "wrap",
             gap: 9,
-            marginBottom: 14,
+            marginBottom: 24,
           }}
         >
           {memory.memory_date ? (
@@ -607,11 +620,11 @@ export default function MemoryDetails() {
           </Text>
         </View>
 
-        {extraMedia.length ? (
+        {visibleAttachments.length ? (
           <View style={sectionCardStyle}>
             <Text style={sectionLabel}>Media and attachments</Text>
             <View style={{ gap: 12 }}>
-              {extraMedia.map((item, index) => {
+              {visibleAttachments.map((item, index) => {
                 const url = mediaUrlOf(item);
                 const kind = mediaKind(item);
                 const name = mediaName(item, index);
@@ -883,25 +896,35 @@ function AttachmentPreview({
         <Text numberOfLines={1} style={attachmentNameStyle}>
           {name}
         </Text>
+        <View style={{ paddingHorizontal: 10, paddingBottom: 10 }}>
+          <AttachmentFileActions url={url} name={name} />
+        </View>
       </View>
     );
   if (kind === "video") return <VideoAttachment url={url} name={name} />;
   if (kind === "audio") return <AudioAttachment url={url} name={name} />;
   return (
-    <Pressable
-      onPress={() => void Linking.openURL(url)}
-      accessibilityRole="link"
-      style={attachmentRowStyle}
-    >
-      <Ionicons name="document-text-outline" size={20} color={Colors.forest} />
-      <Text
-        numberOfLines={1}
-        style={{ flex: 1, color: Colors.textPrimary, fontSize: 13 }}
+    <View>
+      <Pressable
+        onPress={() => void Linking.openURL(url)}
+        accessibilityRole="link"
+        style={attachmentRowStyle}
       >
-        {name}
-      </Text>
-      <Ionicons name="open-outline" size={18} color={Colors.sage} />
-    </Pressable>
+        <Ionicons
+          name={kind === "archive" ? "archive-outline" : "document-text-outline"}
+          size={20}
+          color={Colors.forest}
+        />
+        <Text
+          numberOfLines={1}
+          style={{ flex: 1, color: Colors.textPrimary, fontSize: 13 }}
+        >
+          {name}
+        </Text>
+        <Ionicons name="open-outline" size={18} color={Colors.sage} />
+      </Pressable>
+      <AttachmentFileActions url={url} name={name} />
+    </View>
   );
 }
 
@@ -961,6 +984,11 @@ function VideoAttachment({
           {name}
         </Text>
       ) : null}
+      {!hero ? (
+        <View style={{ paddingHorizontal: 10, paddingBottom: 10 }}>
+          <AttachmentFileActions url={url} name={name} />
+        </View>
+      ) : null}
     </View>
   );
 }
@@ -997,50 +1025,57 @@ function AudioAttachment({
 
   return (
     <View
-      style={[
-        attachmentRowStyle,
-        hero
-          ? { minHeight: 150, marginBottom: 15, borderRadius: 17, padding: 18 }
-          : null,
-      ]}
+      style={hero ? { marginBottom: 15 } : undefined}
     >
-      <Pressable
-        onPress={() => (status.playing ? player.pause() : player.play())}
-        disabled={!status.isLoaded || Boolean(status.error) || loadError}
-        accessibilityRole="button"
-        accessibilityLabel={status.playing ? `Pause ${name}` : `Play ${name}`}
-        style={{
-          width: 46,
-          height: 46,
-          alignItems: "center",
-          justifyContent: "center",
-          borderRadius: 23,
-          backgroundColor: Colors.forest,
-        }}
+      <View
+        style={[
+          attachmentRowStyle,
+          hero
+            ? { minHeight: 150, borderRadius: 17, padding: 18 }
+            : null,
+        ]}
       >
-        <Ionicons
-          name={status.playing ? "pause" : "play"}
-          size={19}
-          color={Colors.white}
-        />
-      </Pressable>
-      <View style={{ flex: 1 }}>
-        <Text
-          numberOfLines={1}
-          style={{ color: Colors.textPrimary, fontSize: 14, fontWeight: "700" }}
+        <Pressable
+          onPress={() => (status.playing ? player.pause() : player.play())}
+          disabled={!status.isLoaded || Boolean(status.error) || loadError}
+          accessibilityRole="button"
+          accessibilityLabel={status.playing ? `Pause ${name}` : `Play ${name}`}
+          style={{
+            width: 46,
+            height: 46,
+            alignItems: "center",
+            justifyContent: "center",
+            borderRadius: 23,
+            backgroundColor: Colors.forest,
+          }}
         >
-          {name}
-        </Text>
-        <Text style={{ color: Colors.sage, fontSize: 12, marginTop: 4 }}>
-          {elapsed}
-        </Text>
-        {loadError || status.error ? (
-          <Text style={{ color: Colors.danger, fontSize: 12, marginTop: 4 }}>
-            Unable to load audio.
+          <Ionicons
+            name={status.playing ? "pause" : "play"}
+            size={19}
+            color={Colors.white}
+          />
+        </Pressable>
+        <View style={{ flex: 1 }}>
+          <Text
+            numberOfLines={1}
+            style={{ color: Colors.textPrimary, fontSize: 14, fontWeight: "700" }}
+          >
+            {name}
           </Text>
-        ) : null}
+          <Text style={{ color: Colors.sage, fontSize: 12, marginTop: 4 }}>
+            {elapsed}
+          </Text>
+          {loadError || status.error ? (
+            <Text style={{ color: Colors.danger, fontSize: 12, marginTop: 4 }}>
+              Unable to load audio.
+            </Text>
+          ) : null}
+        </View>
+        <Ionicons name="musical-notes-outline" size={21} color={Colors.sage} />
       </View>
-      <Ionicons name="musical-notes-outline" size={21} color={Colors.sage} />
+      <View style={{ paddingHorizontal: hero ? 0 : 10 }}>
+        <AttachmentFileActions url={url} name={name} />
+      </View>
     </View>
   );
 }

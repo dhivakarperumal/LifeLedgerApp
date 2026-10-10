@@ -17,6 +17,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import api, { API_BASE_URL, getApiErrorMessage, logoutUser } from "../../api";
+import { AttachmentFileActions } from "../../components/AttachmentFileActions";
 import ConfirmPopup from "../../components/ConfirmPopup";
 import { parseLocalDate } from "../../components/dateTimeUtils";
 import { GradientSafeAreaView as SafeAreaView } from "../../components/GradientSafeAreaView";
@@ -151,6 +152,8 @@ function mediaType(item: string | DiaryMedia) {
     return "video";
   if (value.includes("audio") || /\.(mp3|wav|m4a|aac|ogg)(\?|$)/i.test(value))
     return "audio";
+  if (value.includes("zip") || /\.(zip|rar|7z)(\?|$)/i.test(value))
+    return "archive";
   return "file";
 }
 
@@ -704,26 +707,36 @@ function AttachmentPreview({
         <Text numberOfLines={1} style={attachmentNameStyle}>
           {name}
         </Text>
+        <View style={{ paddingHorizontal: 10, paddingBottom: 10 }}>
+          <AttachmentFileActions url={url} name={name} />
+        </View>
       </View>
     );
   }
   if (kind === "video") return <VideoAttachment url={url} name={name} />;
   if (kind === "audio") return <AudioAttachment url={url} name={name} />;
   return (
-    <Pressable
-      onPress={() => void Linking.openURL(url)}
-      accessibilityRole="link"
-      style={attachmentRowStyle}
-    >
-      <Ionicons name="document-text-outline" size={20} color={Colors.forest} />
-      <Text
-        numberOfLines={1}
-        style={{ flex: 1, color: Colors.textPrimary, fontSize: 13 }}
+    <View>
+      <Pressable
+        onPress={() => void Linking.openURL(url)}
+        accessibilityRole="link"
+        style={attachmentRowStyle}
       >
-        {name}
-      </Text>
-      <Ionicons name="open-outline" size={18} color={Colors.sage} />
-    </Pressable>
+        <Ionicons
+          name={kind === "archive" ? "archive-outline" : "document-text-outline"}
+          size={20}
+          color={Colors.forest}
+        />
+        <Text
+          numberOfLines={1}
+          style={{ flex: 1, color: Colors.textPrimary, fontSize: 13 }}
+        >
+          {name}
+        </Text>
+        <Ionicons name="open-outline" size={18} color={Colors.sage} />
+      </Pressable>
+      <AttachmentFileActions url={url} name={name} />
+    </View>
   );
 }
 
@@ -749,6 +762,9 @@ function VideoAttachment({ url, name }: { url: string; name: string }) {
       >
         {name}
       </Text>
+      <View style={{ paddingHorizontal: 10, paddingBottom: 10 }}>
+        <AttachmentFileActions url={url} name={name} />
+      </View>
     </View>
   );
 }
@@ -758,37 +774,40 @@ function AudioAttachment({ url, name }: { url: string; name: string }) {
   const status = useAudioPlayerStatus(player);
   const elapsed = `${Math.floor(status.currentTime / 60)}:${String(Math.floor(status.currentTime % 60)).padStart(2, "0")}`;
   return (
-    <View style={attachmentRowStyle}>
-      <Pressable
-        onPress={() => (status.playing ? player.pause() : player.play())}
-        accessibilityRole="button"
-        accessibilityLabel={status.playing ? `Pause ${name}` : `Play ${name}`}
-        style={{
-          width: 40,
-          height: 40,
-          alignItems: "center",
-          justifyContent: "center",
-          borderRadius: 20,
-          backgroundColor: Colors.forest,
-        }}
-      >
-        <Ionicons
-          name={status.playing ? "pause" : "play"}
-          size={18}
-          color={Colors.white}
-        />
-      </Pressable>
-      <View style={{ flex: 1 }}>
-        <Text
-          numberOfLines={1}
-          style={{ color: Colors.textPrimary, fontSize: 13, fontWeight: "600" }}
+    <View>
+      <View style={attachmentRowStyle}>
+        <Pressable
+          onPress={() => (status.playing ? player.pause() : player.play())}
+          accessibilityRole="button"
+          accessibilityLabel={status.playing ? `Pause ${name}` : `Play ${name}`}
+          style={{
+            width: 40,
+            height: 40,
+            alignItems: "center",
+            justifyContent: "center",
+            borderRadius: 20,
+            backgroundColor: Colors.forest,
+          }}
         >
-          {name}
-        </Text>
-        <Text style={{ marginTop: 3, color: Colors.sage, fontSize: 12 }}>
-          {elapsed}
-        </Text>
+          <Ionicons
+            name={status.playing ? "pause" : "play"}
+            size={18}
+            color={Colors.white}
+          />
+        </Pressable>
+        <View style={{ flex: 1 }}>
+          <Text
+            numberOfLines={1}
+            style={{ color: Colors.textPrimary, fontSize: 13, fontWeight: "600" }}
+          >
+            {name}
+          </Text>
+          <Text style={{ marginTop: 3, color: Colors.sage, fontSize: 12 }}>
+            {elapsed}
+          </Text>
+        </View>
       </View>
+      <AttachmentFileActions url={url} name={name} />
     </View>
   );
 }
