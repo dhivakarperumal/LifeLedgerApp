@@ -450,25 +450,28 @@ export default function MemoryDetails() {
             justifyContent: "space-between",
           }}
         >
-          <Pressable
-            onPress={goBack}
-            accessibilityRole="button"
-            accessibilityLabel="Back to memories"
-            style={{
-              flexDirection: "row",
-              alignItems: "center",
-              gap: 6,
-              paddingVertical: 8,
-              paddingRight: 8,
-            }}
-          >
-            <Ionicons name="arrow-back" size={21} color={Colors.white} />
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+            <Pressable
+              onPress={goBack}
+              accessibilityRole="button"
+              accessibilityLabel="Back to memories"
+              style={{
+                width: 36,
+                height: 36,
+                alignItems: "center",
+                justifyContent: "center",
+                borderRadius: 18,
+                backgroundColor: Colors.white,
+              }}
+            >
+              <Ionicons name="arrow-back" size={19} color={Colors.forest} />
+            </Pressable>
             <Text
               style={{ color: Colors.white, fontSize: 15, fontWeight: "700" }}
             >
               Memories
             </Text>
-          </Pressable>
+          </View>
           <View style={{ flexDirection: "row", gap: 8 }}>
             <HeaderAction
               label={favorite ? "Remove favorite" : "Add favorite"}
