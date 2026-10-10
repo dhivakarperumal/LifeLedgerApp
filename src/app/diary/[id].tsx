@@ -357,13 +357,15 @@ export default function DiaryDetails() {
               flexDirection: "row",
               alignItems: "center",
               gap: 6,
+              paddingHorizontal: 12,
               paddingVertical: 8,
-              paddingRight: 8,
+              borderRadius: 18,
+              backgroundColor: Colors.white,
             }}
           >
-            <Ionicons name="arrow-back" size={21} color={Colors.white} />
+            <Ionicons name="arrow-back" size={19} color={Colors.forest} />
             <Text
-              style={{ color: Colors.white, fontSize: 15, fontWeight: "700" }}
+              style={{ color: Colors.forest, fontSize: 15, fontWeight: "700" }}
             >
               Diary
             </Text>
