@@ -14,7 +14,6 @@ import {
     RefreshControl,
     ScrollView,
     StatusBar,
-    StyleSheet,
     Text,
     TextInput,
     View,
@@ -58,7 +57,7 @@ import { SearchBar } from "../../components/SearchBar";
 import { UploadFilePreview } from "../../components/UploadFilePreview";
 import { Colors } from "../../constants/colors";
 
-type ExpenseItem = {
+export type ExpenseItem = {
   id: number | string;
   title: string;
   name?: string;
@@ -83,7 +82,16 @@ type ExpenseItem = {
   recurring?: string;
   attachment?: unknown;
   attachments?: unknown;
+  files?: unknown;
+  media?: unknown;
+  images?: unknown;
+  videos?: unknown;
+  audio_files?: unknown;
   attachment_url?: string;
+  video?: unknown;
+  video_url?: string;
+  audio?: unknown;
+  audio_url?: string;
   receipt?: unknown;
   receipt_url?: string;
   receipt_path?: string;
@@ -240,7 +248,7 @@ function getExpenseCategoryName(category: unknown) {
   return "Other";
 }
 
-function getExpenseDetailRecord(responseData: unknown, selectedId: string) {
+export function getExpenseDetailRecord(responseData: unknown, selectedId: string) {
   let candidate: unknown = responseData;
   const wrapperKeys = [
     "expense",
@@ -312,10 +320,19 @@ function formatDate(dateString?: string) {
   });
 }
 
-function getExpenseAttachment(expense: ExpenseItem): ExpenseAttachment | null {
+function getExpenseAttachments(expense: ExpenseItem): ExpenseAttachment[] {
   const candidates = [
     expense.attachment,
     expense.attachments,
+    expense.files,
+    expense.media,
+    expense.images,
+    expense.videos,
+    expense.audio_files,
+    expense.video,
+    expense.video_url,
+    expense.audio,
+    expense.audio_url,
     expense.receipt,
     expense.image,
     expense.attachment_url,
@@ -327,46 +344,50 @@ function getExpenseAttachment(expense: ExpenseItem): ExpenseAttachment | null {
     expense.expense_image,
     expense.attachment_path,
   ];
-  const candidate = candidates
+  const attachments = candidates
     .flatMap((value) => (Array.isArray(value) ? value : [value]))
-    .find((value) => {
-      if (typeof value === "string") return Boolean(value.trim());
-      if (!value || typeof value !== "object") return false;
-      const item = value as Record<string, unknown>;
-      return Boolean(
-        item.uri || item.url || item.path || item.file_url || item.file_path,
+    .flatMap((candidate): ExpenseAttachment[] => {
+      if (typeof candidate === "string") {
+        const path = candidate.trim();
+        return path
+          ? [{
+              uri: getAttachmentUrl(path),
+              name: path.split(/[\\/]/).pop() || "Expense attachment",
+            }]
+          : [];
+      }
+      if (!candidate || typeof candidate !== "object") return [];
+
+      const item = candidate as Record<string, unknown>;
+      const path = [
+        item.uri,
+        item.url,
+        item.file_url,
+        item.path,
+        item.file_path,
+      ].find(
+        (value): value is string =>
+          typeof value === "string" && !!value.trim(),
       );
+      if (!path) return [];
+
+      const nameValue = item.name ?? item.file_name ?? item.filename;
+      const mimeTypeValue = item.mime_type ?? item.mimeType ?? item.type;
+      return [{
+        uri: getAttachmentUrl(path),
+        name:
+          typeof nameValue === "string"
+            ? nameValue
+            : path.split(/[\\/]/).pop() || "Expense attachment",
+        mimeType:
+          typeof mimeTypeValue === "string" ? mimeTypeValue : undefined,
+      }];
     });
 
-  if (typeof candidate === "string") {
-    const path = candidate.trim();
-    return {
-      uri: getAttachmentUrl(path),
-      name: path.split(/[\\/]/).pop() || "Expense attachment",
-    };
-  }
-  if (!candidate || typeof candidate !== "object") return null;
-
-  const item = candidate as Record<string, unknown>;
-  const path = [
-    item.uri,
-    item.url,
-    item.file_url,
-    item.path,
-    item.file_path,
-  ].find((value): value is string => typeof value === "string" && !!value.trim());
-  if (!path) return null;
-
-  const nameValue = item.name ?? item.file_name ?? item.filename;
-  const mimeTypeValue = item.mime_type ?? item.mimeType ?? item.type;
-  return {
-    uri: getAttachmentUrl(path),
-    name:
-      typeof nameValue === "string"
-        ? nameValue
-        : path.split(/[\\/]/).pop() || "Expense attachment",
-    mimeType: typeof mimeTypeValue === "string" ? mimeTypeValue : undefined,
-  };
+  return attachments.filter(
+    (attachment, index) =>
+      attachments.findIndex((item) => item.uri === attachment.uri) === index,
+  );
 }
 
 function getAttachmentUrl(path: string) {
@@ -467,13 +488,6 @@ export default function Expenses() {
   const [saving, setSaving] = useState(false);
   const [pendingDeleteExpense, setPendingDeleteExpense] =
     useState<ExpenseItem | null>(null);
-  const [viewingExpense, setViewingExpense] = useState<ExpenseItem | null>(null);
-  const [expenseDetails, setExpenseDetails] = useState<ExpenseItem | null>(null);
-  const [expenseDetailsLoading, setExpenseDetailsLoading] = useState(false);
-  const [expenseDetailsError, setExpenseDetailsError] = useState<string | null>(
-    null,
-  );
-  const [expenseDetailsRequest, setExpenseDetailsRequest] = useState(0);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [manualTransfer, setManualTransfer] = useState(false);
   const [customTransferAmount, setCustomTransferAmount] = useState(false);
@@ -581,64 +595,6 @@ export default function Expenses() {
     await logoutUser();
     router.replace("/auth/login");
   }, [router]);
-
-  useEffect(() => {
-    if (!viewingExpense) return;
-
-    let isActive = true;
-    const selectedId = String(viewingExpense.id);
-
-    const loadExpenseDetails = async () => {
-      setExpenseDetailsLoading(true);
-      setExpenseDetailsError(null);
-      try {
-        const response = await api.get(`/expenses/${encodeURIComponent(selectedId)}`);
-        const detail = getExpenseDetailRecord(response.data, selectedId);
-
-        if (!detail || typeof detail !== "object" || Array.isArray(detail)) {
-          throw new Error("Expense details were not returned.");
-        }
-
-        const loadedExpense = detail as Partial<ExpenseItem>;
-
-        if (isActive) {
-          const categorySource =
-            loadedExpense.category ??
-            loadedExpense.category_name ??
-            loadedExpense.expense_category ??
-            viewingExpense.category ??
-            viewingExpense.category_name;
-          setExpenseDetails({
-            ...viewingExpense,
-            ...loadedExpense,
-            category: categorySource
-              ? getExpenseCategoryName(categorySource)
-              : undefined,
-            id: viewingExpense.id,
-          });
-        }
-      } catch (error) {
-        if (!isActive) return;
-        const status = (error as { status?: number; response?: { status?: number } })
-          ?.status ?? (error as { response?: { status?: number } })?.response?.status;
-        if (status === 401) {
-          setViewingExpense(null);
-          await handleUnauthorized();
-          return;
-        }
-        setExpenseDetailsError(
-          getApiErrorMessage(error, "Unable to refresh expense details."),
-        );
-      } finally {
-        if (isActive) setExpenseDetailsLoading(false);
-      }
-    };
-
-    void loadExpenseDetails();
-    return () => {
-      isActive = false;
-    };
-  }, [expenseDetailsRequest, handleUnauthorized, viewingExpense]);
 
   const fetchAll = useCallback(async (showRefreshIndicator = false) => {
     try {
@@ -1107,14 +1063,6 @@ export default function Expenses() {
     setPendingDeleteExpense(expense);
   };
 
-  const openExpenseDetails = (expense: ExpenseItem) => {
-    setExpenseDetails(expense);
-    setExpenseDetailsLoading(true);
-    setExpenseDetailsError(null);
-    setViewingExpense(expense);
-    setExpenseDetailsRequest((request) => request + 1);
-  };
-
   const confirmDeleteExpense = async () => {
     if (!pendingDeleteExpense) return;
     const expense = pendingDeleteExpense;
@@ -1123,9 +1071,6 @@ export default function Expenses() {
       await api.delete(`/expenses/${expense.id}`);
       setExpenses((current) =>
         current.filter((item) => String(item.id) !== String(expense.id)),
-      );
-      setViewingExpense((current) =>
-        current && String(current.id) === String(expense.id) ? null : current,
       );
       setSuccessMessage("Expense removed.");
     } catch (error) {
@@ -1164,133 +1109,6 @@ export default function Expenses() {
         message={successMessage ?? ""}
         onConfirm={() => setSuccessMessage(null)}
       />
-      <Modal
-        visible={viewingExpense !== null}
-        transparent
-        animationType="fade"
-        statusBarTranslucent
-        onRequestClose={() => {
-          setViewingExpense(null);
-          setExpenseDetails(null);
-          setExpenseDetailsError(null);
-        }}
-      >
-        <View
-          style={{
-            flex: 1,
-            backgroundColor: "rgba(10, 18, 12, 0.54)",
-            justifyContent: "center",
-            alignItems: "center",
-            paddingHorizontal: 16,
-          }}
-        >
-          {/* Backdrop tap to close */}
-          <Pressable
-            accessible={false}
-            style={StyleSheet.absoluteFill}
-            onPress={() => {
-              setViewingExpense(null);
-              setExpenseDetails(null);
-              setExpenseDetailsError(null);
-            }}
-          />
-          {/* Popup card */}
-          <View
-            style={{
-              width: "100%",
-              maxWidth: 440,
-              maxHeight: "90%",
-              borderRadius: 24,
-              overflow: "hidden",
-              backgroundColor: Colors.white,
-              shadowColor: "#000",
-              shadowOffset: { width: 0, height: 12 },
-              shadowOpacity: 0.2,
-              shadowRadius: 24,
-              elevation: 20,
-            }}
-          >
-            {/* Header */}
-            <View
-              style={{
-                backgroundColor: Colors.primaryDark,
-                paddingHorizontal: 20,
-                paddingVertical: 16,
-                flexDirection: "row",
-                alignItems: "center",
-                gap: 12,
-              }}
-            >
-              <View style={{ flex: 1, minWidth: 0 }}>
-                <Text
-                  numberOfLines={1}
-                  style={{
-                    color: Colors.white,
-                    fontSize: 18,
-                    fontWeight: "700",
-                  }}
-                >
-                  {expenseDetails?.title ||
-                    expenseDetails?.name ||
-                    viewingExpense?.title ||
-                    viewingExpense?.name ||
-                    "Expense details"}
-                </Text>
-                <Text
-                  style={{
-                    color: Colors.primaryLight,
-                    fontSize: 12,
-                    marginTop: 2,
-                  }}
-                >
-                  Expense details
-                </Text>
-              </View>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="Close"
-                hitSlop={8}
-                onPress={() => {
-                  setViewingExpense(null);
-                  setExpenseDetails(null);
-                  setExpenseDetailsError(null);
-                }}
-                style={({ pressed }) => ({
-                  width: 36,
-                  height: 36,
-                  borderRadius: 18,
-                  backgroundColor: "rgba(255,255,255,0.16)",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  opacity: pressed ? 0.7 : 1,
-                })}
-              >
-                <Ionicons name="close" size={20} color={Colors.white} />
-              </Pressable>
-            </View>
-            {/* Scrollable body */}
-            <ScrollView
-              style={{ flexShrink: 1 }}
-              contentContainerStyle={{ padding: 20, gap: 12 }}
-              showsVerticalScrollIndicator={false}
-              keyboardShouldPersistTaps="handled"
-              bounces={false}
-            >
-              {viewingExpense ? (
-                <ExpenseDetailsContent
-                  expense={expenseDetails ?? viewingExpense}
-                  loading={expenseDetailsLoading}
-                  error={expenseDetailsError}
-                  onRetry={() =>
-                    setExpenseDetailsRequest((request) => request + 1)
-                  }
-                  onOpenAttachment={openAttachmentPreview}
-                />
-              ) : null}
-            </ScrollView>
-          </View>
-        </View>
-      </Modal>
       <View style={{ flex: 1, backgroundColor: "#F2F5EA" }}>
         {/* ── Hero Header ── */}
         <View
@@ -1593,11 +1411,13 @@ export default function Expenses() {
                     key={String(expense.id)}
                     style={{
                       width: viewMode === "card" ? "48.5%" : "100%",
-                      minHeight: viewMode === "card" ? 220 : undefined,
+                      minHeight: viewMode === "card" ? 260 : undefined,
                       minWidth: 0,
+                      position: viewMode === "card" ? "relative" : undefined,
                       backgroundColor: "#FFFFFF",
                       borderRadius: 16,
                       padding: viewMode === "card" ? 12 : 16,
+                      paddingBottom: viewMode === "card" ? 58 : 16,
                       marginBottom: 10,
                       flexDirection: viewMode === "card" ? "column" : "row",
                       alignItems: viewMode === "card" ? "stretch" : "center",
@@ -1751,22 +1571,14 @@ export default function Expenses() {
                       ) : null}
                     </View>
 
-                    {/* Amount and expense actions */}
-                    <View
-                      style={{
-                        flexDirection: "column",
-                        alignItems: viewMode === "card" ? "stretch" : "flex-end",
-                        marginLeft: viewMode === "card" ? 0 : 10,
-                        marginTop: viewMode === "card" ? 12 : 0,
-                        paddingTop: viewMode === "card" ? 12 : 0,
-                        borderTopWidth: viewMode === "card" ? 1 : 0,
-                        borderTopColor: "#EEF1EE",
-                        gap: 6,
-                      }}
-                    >
+                    {viewMode === "card" ? (
                       <Text
                         style={{
-                          fontSize: viewMode === "card" ? 14 : 15,
+                          position: "absolute",
+                          top: 16,
+                          right: 12,
+                          maxWidth: "58%",
+                          fontSize: 14,
                           fontWeight: "800",
                           color: "#B64C45",
                         }}
@@ -1777,6 +1589,36 @@ export default function Expenses() {
                           expense.expense_amount ?? expense.amount ?? 0,
                         )}
                       </Text>
+                    ) : null}
+
+                    {/* Amount and expense actions */}
+                    <View
+                      style={{
+                        position:
+                          viewMode === "card" ? "absolute" : undefined,
+                        right: viewMode === "card" ? 12 : undefined,
+                        bottom: viewMode === "card" ? 12 : undefined,
+                        flexDirection: "column",
+                        alignItems: "flex-end",
+                        marginLeft: 10,
+                        gap: 6,
+                      }}
+                    >
+                      {viewMode !== "card" ? (
+                        <Text
+                          style={{
+                            fontSize: 15,
+                            fontWeight: "800",
+                            color: "#B64C45",
+                          }}
+                          numberOfLines={1}
+                          adjustsFontSizeToFit
+                        >
+                          {formatAmount(
+                            expense.expense_amount ?? expense.amount ?? 0,
+                          )}
+                        </Text>
+                      ) : null}
                       <View
                         style={{
                           flexDirection: "row",
@@ -1790,7 +1632,10 @@ export default function Expenses() {
                         label={`View ${expense.title || "expense"}`}
                         onPress={(event) => {
                           event.stopPropagation();
-                          openExpenseDetails(expense);
+                          router.push({
+                            pathname: "/expenses/[id]",
+                            params: { id: String(expense.id) },
+                          });
                         }}
                       />
                       <ActionIconButton
@@ -2662,7 +2507,7 @@ function HeroStatCard({
   );
 }
 
-function ExpenseDetailsContent({
+export function ExpenseDetailsContent({
   expense,
   loading,
   error,
@@ -2685,7 +2530,7 @@ function ExpenseDetailsContent({
     (parsedDateTime && /[T ]\d{2}:\d{2}/.test(rawDate)
       ? formatLocalTime(parsedDateTime)
       : "");
-  const attachment = getExpenseAttachment(expense);
+  const attachments = getExpenseAttachments(expense);
   const notes =
     (typeof expense.notes === "string" && expense.notes.trim()) ||
     (typeof expense.note === "string" && expense.note.trim()) ||
@@ -2800,7 +2645,7 @@ function ExpenseDetailsContent({
         }]
       : []),
   ];
-  const hasAdditionalDetails = Boolean(notes || attachment || details.length);
+  const hasAdditionalDetails = Boolean(notes || attachments.length || details.length);
 
   return (
     <View style={{ width: "100%", gap: 12 }}>
@@ -2878,15 +2723,20 @@ function ExpenseDetailsContent({
         </View>
       ) : null}
 
-      {attachment ? (
+      {attachments.length ? (
         <View style={expenseDetailSectionStyle}>
           <Text style={expenseDetailLabelStyle}>Receipt / attachment</Text>
-          <UploadFilePreview
-            uri={attachment.uri}
-            name={attachment.name}
-            mimeType={attachment.mimeType}
-            onOpen={() => void onOpenAttachment(attachment.uri)}
-          />
+          <View style={{ gap: 10, marginTop: 8 }}>
+            {attachments.map((attachment) => (
+              <UploadFilePreview
+                key={attachment.uri}
+                uri={attachment.uri}
+                name={attachment.name}
+                mimeType={attachment.mimeType}
+                onOpen={() => void onOpenAttachment(attachment.uri)}
+              />
+            ))}
+          </View>
         </View>
       ) : null}
 
