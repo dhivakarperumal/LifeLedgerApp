@@ -586,7 +586,7 @@ export default function MemoryDetails() {
             flexDirection: "row",
             flexWrap: "wrap",
             gap: 9,
-            marginBottom: 24,
+            marginBottom: 36,
           }}
         >
           {memory.memory_date ? (
@@ -613,7 +613,7 @@ export default function MemoryDetails() {
           />
         </View>
 
-        <View style={sectionCardStyle}>
+        <View style={[sectionCardStyle, { marginTop: 24 }]}>
           <Text style={sectionLabel}>About this memory</Text>
           <Text selectable style={bodyTextStyle}>
             {memory.description || "No description provided for this memory."}
