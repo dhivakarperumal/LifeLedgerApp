@@ -181,18 +181,20 @@ export default function TodoFormPage() {
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: "#F2F5EA" }}>
+    <View style={{ flex: 1, backgroundColor: Colors.white }}>
       <StatusBar
         barStyle="light-content"
         backgroundColor={Colors.greenGradient[0]}
         translucent={false}
       />
-      <AddPageHeader
-        title={isEditing ? "Edit To Do" : "Add New To Do"}
-        onBack={goBack}
-        horizontalInset={24}
-        disabled={saving}
-      />
+      <View style={{ paddingHorizontal: 24 }}>
+        <AddPageHeader
+          title={isEditing ? "Edit To Do" : "Add New To Do"}
+          onBack={goBack}
+          horizontalInset={24}
+          disabled={saving}
+        />
+      </View>
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={{ flex: 1 }}
@@ -206,7 +208,7 @@ export default function TodoFormPage() {
             alignSelf: "center",
             paddingHorizontal: 16,
             paddingTop: 18,
-            paddingBottom: 24,
+            paddingBottom: Math.max(insets.bottom, 24),
           }}
         >
           <View>
@@ -335,72 +337,76 @@ export default function TodoFormPage() {
                 </Text>
               </View>
             ) : null}
+
+            <View
+              style={{
+                flexDirection: "row",
+                justifyContent: "flex-end",
+                gap: 10,
+                marginTop: 18,
+              }}
+            >
+              <Pressable
+                accessibilityRole="button"
+                disabled={saving}
+                onPress={goBack}
+                style={{
+                  minHeight: 46,
+                  alignItems: "center",
+                  justifyContent: "center",
+                  paddingHorizontal: 17,
+                  borderRadius: 12,
+                  borderWidth: 1,
+                  borderColor: "#DDE2E8",
+                  backgroundColor: Colors.white,
+                }}
+              >
+                <Text
+                  style={{ color: "#637083", fontSize: 13, fontWeight: "800" }}
+                >
+                  Cancel
+                </Text>
+              </Pressable>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityState={{ disabled: saving, busy: saving }}
+                disabled={saving}
+                onPress={() => void saveTask()}
+                style={{
+                  minHeight: 46,
+                  minWidth: 150,
+                  flexDirection: "row",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 7,
+                  paddingHorizontal: 16,
+                  borderRadius: 12,
+                  backgroundColor: Colors.primary,
+                  opacity: saving ? 0.7 : 1,
+                }}
+              >
+                {saving ? (
+                  <ActivityIndicator size="small" color="white" />
+                ) : (
+                  <Ionicons
+                    name={isEditing ? "checkmark" : "add"}
+                    size={18}
+                    color="white"
+                  />
+                )}
+                <Text
+                  style={{ color: "white", fontSize: 13, fontWeight: "900" }}
+                >
+                  {saving
+                    ? "Saving..."
+                    : isEditing
+                      ? "Save changes"
+                      : "Save To Do"}
+                </Text>
+              </Pressable>
+            </View>
           </View>
         </ScrollView>
-
-        <View
-          style={{
-            flexDirection: "row",
-            justifyContent: "flex-end",
-            gap: 10,
-            paddingHorizontal: 16,
-            paddingTop: 12,
-            paddingBottom: Math.max(insets.bottom, 12),
-            borderTopWidth: 1,
-            borderTopColor: "#E5E9EF",
-            backgroundColor: Colors.white,
-          }}
-        >
-          <Pressable
-            accessibilityRole="button"
-            disabled={saving}
-            onPress={goBack}
-            style={{
-              minHeight: 46,
-              alignItems: "center",
-              justifyContent: "center",
-              paddingHorizontal: 17,
-              borderRadius: 12,
-              borderWidth: 1,
-              borderColor: "#DDE2E8",
-            }}
-          >
-            <Text style={{ color: "#637083", fontSize: 13, fontWeight: "800" }}>
-              Cancel
-            </Text>
-          </Pressable>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityState={{ disabled: saving, busy: saving }}
-            disabled={saving}
-            onPress={() => void saveTask()}
-            style={{
-              minHeight: 46,
-              minWidth: 150,
-              flexDirection: "row",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: 7,
-              paddingHorizontal: 16,
-              borderRadius: 12,
-              backgroundColor: Colors.primary,
-              opacity: saving ? 0.7 : 1,
-            }}
-          >
-            {saving ? (
-              <ActivityIndicator size="small" color="white" />
-            ) : (
-              <Ionicons
-                name={isEditing ? "checkmark" : "add"}
-                size={18}
-                color="white"
-              />
-            )}
-            <Text style={{ color: "white", fontSize: 13, fontWeight: "900" }}>
-              {saving ? "Saving..." : isEditing ? "Save changes" : "Save To Do"}
-            </Text>
-          </Pressable>
-        </View>
       </KeyboardAvoidingView>
     </View>
   );

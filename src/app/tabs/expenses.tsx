@@ -24,7 +24,6 @@ import {
 } from "react-native-safe-area-context";
 import api, { API_BASE_URL, getApiErrorMessage, logoutUser } from "../../api";
 import { ActionIconButton } from "../../components/ActionIconButton";
-import { AddButton } from "../../components/AddButton";
 import { AddPageHeader } from "../../components/AddPageHeader";
 
 import ConfirmPopup from "../../components/ConfirmPopup";
@@ -1309,7 +1308,7 @@ export default function Expenses() {
               <Text
                 style={{ fontSize: 13, color: "#94A3B8", textAlign: "center" }}
               >
-                Try a different category or{"\n"}tap + to add a new expense.
+                Try a different category or{"\n"}use the New Expense button below.
               </Text>
             </View>
           ) : (
@@ -1671,17 +1670,54 @@ export default function Expenses() {
         )}
       </View>
 
-      <AddButton
-        onPress={() =>
-          router.push({
-            pathname: "/expense-form" as any,
-            params: { create: "1" },
-          })
-        }
-        accessibilityLabel="Add expense"
-        accessibilityHint="Opens the new expense form"
-        bottomOffset={84}
-      />
+      <View
+        pointerEvents="box-none"
+        style={{
+          position: "absolute",
+          left: 16,
+          right: 16,
+          bottom: insets.bottom + 88,
+          zIndex: 12,
+        }}
+      >
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Add expense"
+          accessibilityHint="Opens the new expense form"
+          onPress={() =>
+            router.push({
+              pathname: "/expense-form" as any,
+              params: { create: "1" },
+            })
+          }
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 8,
+            backgroundColor: Colors.deepForest,
+            borderRadius: 18,
+            paddingVertical: 15,
+            paddingHorizontal: 18,
+            shadowColor: Colors.deepForest,
+            shadowOffset: { width: 0, height: 6 },
+            shadowOpacity: 0.25,
+            shadowRadius: 10,
+            elevation: 8,
+          }}
+        >
+          <Ionicons name="add" size={20} color={Colors.white} />
+          <Text
+            style={{
+              color: Colors.white,
+              fontSize: 15,
+              fontWeight: "700",
+            }}
+          >
+            New Expense
+          </Text>
+        </Pressable>
+      </View>
 
       {/* ── Category Filter Modal ── */}
       <Modal

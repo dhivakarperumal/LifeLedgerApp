@@ -1475,8 +1475,11 @@ export default function Diary() {
 
       {editorVisible && (
         <View
-          className="absolute inset-0 z-50 bg-white"
-          style={{ paddingBottom: insets.bottom }}
+          className="absolute inset-0 z-50"
+          style={{
+            paddingBottom: insets.bottom,
+            backgroundColor: Colors.contentBackground,
+          }}
         >
           <KeyboardAvoidingView
             behavior={Platform.OS === "ios" ? "padding" : "height"}
@@ -1487,7 +1490,7 @@ export default function Diary() {
               paddingHorizontal: 18,
               paddingBottom: 12,
               flex: 1,
-              backgroundColor: Colors.white,
+              backgroundColor: Colors.contentBackground,
             }}
           >
             <AddPageHeader
