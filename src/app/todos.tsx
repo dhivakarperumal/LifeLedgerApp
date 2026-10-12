@@ -1,11 +1,9 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useFocusEffect, useRouter } from "expo-router";
+import { useCallback, useMemo, useState } from "react";
 import {
   ActivityIndicator,
-  KeyboardAvoidingView,
   Modal,
-  Platform,
   Pressable,
   ScrollView,
   Text,
@@ -18,7 +16,6 @@ import api, { getApiErrorMessage } from "../api";
 import { AddButton } from "../components/AddButton";
 import { AddPageHeader } from "../components/AddPageHeader";
 import ConfirmPopup from "../components/ConfirmPopup";
-import { DateTimePickerComponent } from "../components/DateTimePickerComponent";
 import { Colors } from "../constants/colors";
 
 type TaskStatus = "Pending" | "In Progress" | "Completed";
@@ -36,23 +33,6 @@ type TodoTask = {
   updatedAt?: string | null;
 };
 
-type TaskForm = {
-  title: string;
-  description: string;
-  priority: TaskPriority;
-  status: TaskStatus;
-  dueDate: string;
-  reminderAt: string;
-};
-
-const EMPTY_FORM: TaskForm = {
-  title: "",
-  description: "",
-  priority: "Medium",
-  status: "Pending",
-  dueDate: "",
-  reminderAt: "",
-};
 const STATUSES: TaskStatus[] = ["Pending", "In Progress", "Completed"];
 const PRIORITIES: TaskPriority[] = ["High", "Medium", "Low"];
 const DUE_FILTERS = [
@@ -68,10 +48,6 @@ type DueFilter = (typeof DUE_FILTERS)[number];
 
 function dateKey(date: Date) {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
-}
-
-function dateTimeKey(date: Date) {
-  return `${dateKey(date)}T${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
 }
 
 function parseDate(value?: string | null) {
@@ -126,21 +102,6 @@ function Card({
     >
       {children}
     </View>
-  );
-}
-
-function FieldLabel({ children }: { children: React.ReactNode }) {
-  return (
-    <Text
-      style={{
-        marginBottom: 7,
-        color: "#526071",
-        fontSize: 13,
-        fontWeight: "700",
-      }}
-    >
-      {children}
-    </Text>
   );
 }
 
@@ -491,10 +452,6 @@ export default function TodosPage() {
   const { width } = useWindowDimensions();
   const [tasks, setTasks] = useState<TodoTask[]>([]);
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [formVisible, setFormVisible] = useState(false);
-  const [form, setForm] = useState<TaskForm>(EMPTY_FORM);
-  const [editingId, setEditingId] = useState<TodoTask["id"] | null>(null);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<"All" | TaskStatus>("All");
   const [priorityFilter, setPriorityFilter] = useState<"Any priority" | TaskPriority>("Any priority");
@@ -508,7 +465,6 @@ export default function TodosPage() {
   const [errorMessage, setErrorMessage] = useState("");
   const [message, setMessage] = useState("");
   const [taskToDelete, setTaskToDelete] = useState<TodoTask | null>(null);
-  const saveInFlight = useRef(false);
   const today = dateKey(new Date());
 
   const loadTasks = useCallback(async () => {
@@ -527,9 +483,11 @@ export default function TodosPage() {
     }
   }, []);
 
-  useEffect(() => {
-    void Promise.resolve().then(loadTasks);
-  }, [loadTasks]);
+  useFocusEffect(
+    useCallback(() => {
+      void loadTasks();
+    }, [loadTasks]),
+  );
 
   const completedCount = tasks.filter((task) => task.status === "Completed").length;
   const pendingCount = tasks.filter((task) => task.status === "Pending").length;
@@ -569,18 +527,8 @@ export default function TodosPage() {
     + Number(priorityFilter !== "Any priority")
     + Number(dueDateFilter !== "Any due date");
 
-  const resetForm = () => {
-    setForm(EMPTY_FORM);
-    setEditingId(null);
-    setFormVisible(false);
-    setErrorMessage("");
-  };
-
   const openNewTaskForm = () => {
-    setForm(EMPTY_FORM);
-    setEditingId(null);
-    setErrorMessage("");
-    setFormVisible(true);
+    router.push("/todo-form");
   };
 
   const openFilterSheet = () => {
@@ -605,66 +553,21 @@ export default function TodosPage() {
   };
 
   const openEditTaskForm = (task: TodoTask) => {
-    setForm({
-      title: task.title || "",
-      description: task.description || "",
-      priority: task.priority || "Medium",
-      status: task.status || "Pending",
-      dueDate: task.dueDate?.slice(0, 10) || "",
-      reminderAt: task.reminderAt ? task.reminderAt.replace(" ", "T").slice(0, 16) : "",
+    router.push({
+      pathname: "/todo-form",
+      params: {
+        id: String(task.id),
+        title: task.title || "",
+        description: task.description || "",
+        priority: task.priority || "Medium",
+        status: task.status || "Pending",
+        dueDate: task.dueDate?.slice(0, 10) || "",
+        dueTime: task.dueDate?.slice(11, 16) || "",
+        reminderAt: task.reminderAt
+          ? task.reminderAt.replace(" ", "T").slice(0, 16)
+          : "",
+      },
     });
-    setEditingId(task.id);
-    setErrorMessage("");
-    setFormVisible(true);
-  };
-
-  const submitTask = async () => {
-    if (saveInFlight.current) return;
-    if (!form.title.trim()) {
-      setErrorMessage("Enter a task title before saving.");
-      return;
-    }
-
-    saveInFlight.current = true;
-    setSaving(true);
-    setErrorMessage("");
-    try {
-      const payload = {
-        ...form,
-        title: form.title.trim(),
-        description: form.description.trim(),
-        dueDate: form.dueDate || null,
-        reminderAt: form.reminderAt || null,
-      };
-      if (editingId !== null) {
-        const response = await api.put(`/todos/${editingId}`, payload);
-        const updated = response.data?.data as TodoTask | undefined;
-        if (!updated || updated.id === undefined) {
-          throw new Error("The server did not return the updated task.");
-        }
-        setTasks((current) =>
-          current.map((task) => (String(task.id) === String(editingId) ? updated : task)),
-        );
-        setMessage(response.data?.message || "Task updated.");
-      } else {
-        const response = await api.post("/todos", payload);
-        const created = response.data?.data as TodoTask | undefined;
-        if (!created || created.id === undefined) {
-          throw new Error("The server did not return the new task.");
-        }
-        setTasks((current) => [created, ...current]);
-        setPage(1);
-        setMessage(response.data?.message || "Task added.");
-      }
-      setFormVisible(false);
-      setForm(EMPTY_FORM);
-      setEditingId(null);
-    } catch (error) {
-      setErrorMessage(getApiErrorMessage(error, "Unable to save this task."));
-    } finally {
-      saveInFlight.current = false;
-      setSaving(false);
-    }
   };
 
   const changeTaskStatus = async (task: TodoTask) => {
@@ -694,16 +597,10 @@ export default function TodosPage() {
       setTasks((current) => current.filter((task) => String(task.id) !== String(deleting.id)));
       setTaskToDelete(null);
       setMessage(response.data?.message || "Task deleted.");
-      if (String(editingId) === String(deleting.id)) resetForm();
     } catch (error) {
       setTaskToDelete(null);
       setErrorMessage(getApiErrorMessage(error, "Unable to delete this task."));
     }
-  };
-
-  const updateForm = <K extends keyof TaskForm>(key: K, value: TaskForm[K]) => {
-    setForm((current) => ({ ...current, [key]: value }));
-    setErrorMessage("");
   };
 
   const statCards = [
@@ -723,7 +620,7 @@ export default function TodosPage() {
     : pageTasks.map((task) => [task]);
 
   return (
-    <View style={{ flex: 1, backgroundColor: "#F6F7FA" }}>
+    <View style={{ flex: 1, backgroundColor: "#F2F5EA" }}>
       <ScrollView
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
@@ -872,7 +769,7 @@ export default function TodosPage() {
             </Pressable>
         </View>
 
-        {errorMessage && !formVisible ? (
+        {errorMessage ? (
           <View style={noticeStyle}>
             <Text style={noticeText}>{errorMessage}</Text>
             <Pressable
@@ -1212,168 +1109,6 @@ export default function TodosPage() {
         </View>
       </Modal>
 
-      <Modal
-        visible={formVisible}
-        transparent
-        animationType="slide"
-        onRequestClose={() => {
-          if (!saving) resetForm();
-        }}
-        statusBarTranslucent
-      >
-        <KeyboardAvoidingView
-          behavior={Platform.OS === "ios" ? "padding" : undefined}
-          style={{ flex: 1, justifyContent: "center", padding: 14, backgroundColor: "rgba(12,16,25,0.56)" }}
-        >
-          <View style={{ width: "100%", maxWidth: 600, maxHeight: "94%", alignSelf: "center", overflow: "hidden", borderRadius: 22, backgroundColor: "white" }}>
-            <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 18, paddingVertical: 16, backgroundColor: "#350866" }}>
-              <View>
-                <Text style={{ color: "#FCD34D", fontSize: 10, fontWeight: "900", letterSpacing: 1.4 }}>TO-DO LIST</Text>
-                <Text style={{ marginTop: 3, color: "white", fontSize: 18, fontWeight: "900" }}>
-                  {editingId !== null ? "Edit task" : "Add a task"}
-                </Text>
-              </View>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="Close task form"
-                disabled={saving}
-                onPress={resetForm}
-                hitSlop={8}
-                style={{ width: 36, height: 36, alignItems: "center", justifyContent: "center", borderRadius: 12, backgroundColor: "rgba(255,255,255,0.14)" }}
-              >
-                <Ionicons name="close" size={21} color="white" />
-              </Pressable>
-            </View>
-            <ScrollView
-              keyboardShouldPersistTaps="handled"
-              contentContainerStyle={{ padding: 18, paddingBottom: 22 }}
-              showsVerticalScrollIndicator={false}
-            >
-              <FieldLabel>Task title *</FieldLabel>
-              <TextInput
-                value={form.title}
-                onChangeText={(value) => updateForm("title", value)}
-                placeholder="What needs to get done?"
-                placeholderTextColor="#9AA3AF"
-                maxLength={255}
-                autoFocus
-                style={inputStyle}
-              />
-
-              <View style={{ marginTop: 14 }}>
-                <FieldLabel>Description or notes</FieldLabel>
-                <TextInput
-                  value={form.description}
-                  onChangeText={(value) => updateForm("description", value)}
-                  placeholder="Add any helpful details..."
-                  placeholderTextColor="#9AA3AF"
-                  multiline
-                  textAlignVertical="top"
-                  style={[inputStyle, { minHeight: 88, paddingTop: 12 }]}
-                />
-              </View>
-
-              <View style={{ flexDirection: "row", gap: 12, marginTop: 14 }}>
-                <View style={{ flex: 1 }}>
-                  <FieldLabel>Priority</FieldLabel>
-                  <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
-                    {PRIORITIES.map((priority) => (
-                      <ChoiceChip
-                        key={priority}
-                        label={priority}
-                        selected={form.priority === priority}
-                        onPress={() => updateForm("priority", priority)}
-                      />
-                    ))}
-                  </View>
-                </View>
-              </View>
-
-              <View style={{ marginTop: 14 }}>
-                <FieldLabel>Status</FieldLabel>
-                <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 7 }}>
-                  {STATUSES.map((status) => (
-                    <ChoiceChip
-                      key={status}
-                      label={status}
-                      selected={form.status === status}
-                      onPress={() => updateForm("status", status)}
-                    />
-                  ))}
-                </View>
-              </View>
-
-              <View style={{ marginTop: 15 }}>
-                <DateTimePickerComponent
-                  mode="date"
-                  label="Due date"
-                  value={parseDate(form.dueDate)}
-                  placeholder="Select due date"
-                  onChange={(date) => updateForm("dueDate", date ? dateKey(date) : "")}
-                />
-                {form.dueDate ? (
-                  <Pressable
-                    accessibilityRole="button"
-                    onPress={() => updateForm("dueDate", "")}
-                    style={{ alignSelf: "flex-end", marginTop: -5, paddingVertical: 5 }}
-                  >
-                    <Text style={{ color: "#7A5A93", fontSize: 11, fontWeight: "700" }}>Clear due date</Text>
-                  </Pressable>
-                ) : null}
-              </View>
-
-              <View style={{ marginTop: 8 }}>
-                <DateTimePickerComponent
-                  mode="datetime"
-                  label="Reminder"
-                  value={parseDate(form.reminderAt)}
-                  placeholder="Select date and time"
-                  onChange={(date) => updateForm("reminderAt", date ? dateTimeKey(date) : "")}
-                />
-                {form.reminderAt ? (
-                  <Pressable
-                    accessibilityRole="button"
-                    onPress={() => updateForm("reminderAt", "")}
-                    style={{ alignSelf: "flex-end", marginTop: -5, paddingVertical: 5 }}
-                  >
-                    <Text style={{ color: "#7A5A93", fontSize: 11, fontWeight: "700" }}>Clear reminder</Text>
-                  </Pressable>
-                ) : null}
-              </View>
-
-              {errorMessage ? (
-                <View style={[noticeStyle, { marginTop: 6 }]}>
-                  <Text style={noticeText}>{errorMessage}</Text>
-                </View>
-              ) : null}
-
-              <View style={{ flexDirection: "row", justifyContent: "flex-end", gap: 10, marginTop: 18 }}>
-                <Pressable
-                  accessibilityRole="button"
-                  disabled={saving}
-                  onPress={resetForm}
-                  style={{ minHeight: 46, alignItems: "center", justifyContent: "center", paddingHorizontal: 17, borderRadius: 12, borderWidth: 1, borderColor: "#DDE2E8" }}
-                >
-                  <Text style={{ color: "#637083", fontSize: 13, fontWeight: "800" }}>Cancel</Text>
-                </Pressable>
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityState={{ disabled: saving, busy: saving }}
-                  disabled={saving}
-                  onPress={() => void submitTask()}
-                  style={{ minHeight: 46, minWidth: 130, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 7, paddingHorizontal: 16, borderRadius: 12, backgroundColor: "#5B2D87", opacity: saving ? 0.7 : 1 }}
-                >
-                  {saving ? <ActivityIndicator size="small" color="white" /> : <Ionicons name={editingId !== null ? "checkmark" : "add"} size={18} color="white" />}
-                  <Text style={{ color: "white", fontSize: 13, fontWeight: "900" }}>
-                    {saving ? "Saving..." : editingId !== null ? "Save changes" : "Add task"}
-                  </Text>
-                </Pressable>
-              </View>
-            </ScrollView>
-          </View>
-        </KeyboardAvoidingView>
-      </Modal>
-
       <ConfirmPopup
         visible={Boolean(taskToDelete)}
         type="delete"
@@ -1390,17 +1125,6 @@ export default function TodosPage() {
     </View>
   );
 }
-
-const inputStyle = {
-  minHeight: 48,
-  paddingHorizontal: 13,
-  borderRadius: 12,
-  borderWidth: 1,
-  borderColor: "#DDE2E8",
-  color: "#253044",
-  fontSize: 14,
-  backgroundColor: "white",
-};
 
 const filterLabel = {
   marginTop: 10,

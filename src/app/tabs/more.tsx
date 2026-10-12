@@ -246,6 +246,8 @@ export default function More() {
                     ? () => router.push("/transfers")
                     : item.label === "Calendar & Reminders"
                       ? () => router.push("/calendar")
+                      : item.label === "To Do List & Notes"
+                        ? () => router.push("/todos")
                       : item.label === "Analytics & Reports"
                         ? () => router.push("/reports")
                         : undefined
