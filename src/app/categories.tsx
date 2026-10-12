@@ -784,7 +784,7 @@ export default function Categories() {
           onPress={() => navigateToAddPage("/categories/new")}
           accessibilityLabel="Add category"
           accessibilityHint="Opens the new category form"
-          bottomOffset={37}
+          bottomOffset={12}
         />
       )}
 
@@ -823,6 +823,7 @@ export default function Categories() {
               title={editingCategory ? "Edit Category" : "Add New Category"}
               subtitle={editingCategory?.catId}
               onBack={closeCategoryForm}
+              topInsetAlreadyApplied={isNewCategoryRoute}
             />
 
             <ScrollView

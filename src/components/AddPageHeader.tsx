@@ -13,6 +13,7 @@ export function AddPageHeader({
   horizontalInset = 20,
   disabled = false,
   compact = false,
+  topInsetAlreadyApplied = false,
 }: {
   title: string;
   subtitle?: string;
@@ -21,6 +22,7 @@ export function AddPageHeader({
   horizontalInset?: number;
   disabled?: boolean;
   compact?: boolean;
+  topInsetAlreadyApplied?: boolean;
 }) {
   const insets = useSafeAreaInsets();
 
@@ -33,7 +35,11 @@ export function AddPageHeader({
         marginHorizontal: -horizontalInset,
         marginBottom: compact ? 8 : 15,
         paddingHorizontal: horizontalInset,
-        paddingTop: compact ? 12 : Math.max(14, insets.top + 8),
+        paddingTop: compact
+          ? 12
+          : topInsetAlreadyApplied
+            ? 8
+            : Math.max(14, insets.top + 8),
         paddingBottom: compact ? 12 : 12,
         gap: 4,
       }}

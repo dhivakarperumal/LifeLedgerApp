@@ -1175,7 +1175,6 @@ export default function CalendarScreen() {
               onBack={closeEntryForm}
               horizontalInset={20}
               disabled={saving}
-              compact={isNewEventRoute}
             />
             <ScrollView
               style={{ flex: 1, minHeight: 0 }}

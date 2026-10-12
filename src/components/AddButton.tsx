@@ -14,7 +14,7 @@ export function AddButton({
   onPress,
   accessibilityLabel,
   accessibilityHint,
-  bottomOffset = 66,
+  bottomOffset = 76,
 }: AddButtonProps) {
   const insets = useSafeAreaInsets();
 

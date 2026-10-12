@@ -1229,7 +1229,7 @@ export default function Income() {
           onPress={() => navigateToAddPage("/income/new")}
           accessibilityLabel="Add income"
           accessibilityHint="Opens the new income form"
-          bottomOffset={37}
+          bottomOffset={12}
         />
       )}
 
@@ -1249,7 +1249,6 @@ export default function Income() {
             <AddPageHeader
               title={editingIncomeId ? "Edit Income" : "Add New Income"}
               onBack={closeEditor}
-              compact={isNewIncomeRoute}
             />
             <ScrollView
               style={{ flex: 1, minHeight: 0 }}

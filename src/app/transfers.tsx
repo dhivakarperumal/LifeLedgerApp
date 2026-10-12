@@ -1200,7 +1200,7 @@ export default function Transfers() {
           onPress={() => navigateToAddPage("/transfers/new")}
           accessibilityLabel="Add transfer"
           accessibilityHint="Opens the new transfer form"
-          bottomOffset={37}
+          bottomOffset={12}
         />
       )}
 
@@ -1224,7 +1224,6 @@ export default function Transfers() {
                   : "Add New Transfer"
               }
               onBack={closeModal}
-              compact={isNewTransferRoute}
             />
 
             <ScrollView
