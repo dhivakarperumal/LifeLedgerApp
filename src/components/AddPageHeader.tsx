@@ -1,5 +1,6 @@
 import { LinearGradient } from "expo-linear-gradient";
 import { ArrowLeft } from "lucide-react-native";
+import type { ReactNode } from "react";
 import { Pressable, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Colors } from "../constants/colors";
@@ -7,12 +8,14 @@ import { Colors } from "../constants/colors";
 export function AddPageHeader({
   title,
   subtitle,
+  rightContent,
   onBack,
   horizontalInset = 20,
   disabled = false,
 }: {
   title: string;
   subtitle?: string;
+  rightContent?: ReactNode;
   onBack: () => void;
   horizontalInset?: number;
   disabled?: boolean;
@@ -50,6 +53,7 @@ export function AddPageHeader({
         >
           {title}
         </Text>
+        {rightContent}
       </View>
       {subtitle ? (
         <Text

@@ -19,6 +19,7 @@ import { GradientSafeAreaView as SafeAreaView } from "../components/GradientSafe
 import { Colors } from "../constants/colors";
 import {
   PasswordForm,
+  PATTERN_DELIMITER,
   PatternGrid,
   PinKeypad,
 } from "../security/AppLockControls";
@@ -178,10 +179,12 @@ export default function AppLockSettingsPage() {
     if (!setupMethod || busy) return;
     const label = methodDetails[setupMethod].label;
     const patternLength =
-      setupMethod === "pattern" ? value.split(".").filter(Boolean).length : 0;
+      setupMethod === "pattern"
+        ? value.split(PATTERN_DELIMITER).filter(Boolean).length
+        : 0;
     const inputLength = setupMethod === "pattern" ? patternLength : value.length;
     const minimumLength =
-      setupMethod === "pin" ? 4 : setupMethod === "pattern" ? 4 : 12;
+      setupMethod === "pin" ? 4 : setupMethod === "pattern" ? 5 : 12;
     const maximumLength =
       setupMethod === "pin" ? 6 : setupMethod === "pattern" ? 9 : 128;
 
@@ -190,7 +193,7 @@ export default function AppLockSettingsPage() {
         setupMethod === "pin"
           ? "Your PIN must contain 4 to 6 digits."
           : setupMethod === "pattern"
-            ? "Connect at least 4 different dots."
+            ? "Connect at least 5 different dots."
             : "Your password must contain at least 12 characters.",
       );
       setCurrentEntry("");
@@ -341,6 +344,40 @@ export default function AppLockSettingsPage() {
           title="App Lock"
           onBack={goBack}
           horizontalInset={width >= 700 ? 34 : 16}
+          rightContent={
+            <View
+              accessibilityLabel={
+                settings.enabled ? "App Lock is on" : "App Lock is off"
+              }
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                gap: 6,
+                paddingHorizontal: 10,
+                paddingVertical: 7,
+                borderRadius: 999,
+                backgroundColor: "rgba(255,255,255,0.94)",
+              }}
+            >
+              <View
+                style={{
+                  width: 7,
+                  height: 7,
+                  borderRadius: 4,
+                  backgroundColor: settings.enabled ? "#3B8A58" : "#94A3B8",
+                }}
+              />
+              <Text
+                style={{
+                  color: settings.enabled ? "#28623D" : "#64748B",
+                  fontSize: 11,
+                  fontWeight: "700",
+                }}
+              >
+                {settings.enabled ? "ON" : "OFF"}
+              </Text>
+            </View>
+          }
         />
 
         <View
@@ -355,38 +392,6 @@ export default function AppLockSettingsPage() {
           <Text style={[subtitleStyle, { flex: 1, marginTop: 0 }]}>
             Require a verified lock method before opening private Life Ledger data.
           </Text>
-          <View
-            accessibilityLabel={
-              settings.enabled ? "App Lock is on" : "App Lock is off"
-            }
-            style={{
-              flexDirection: "row",
-              alignItems: "center",
-              gap: 8,
-              paddingHorizontal: 12,
-              paddingVertical: 9,
-              borderRadius: 999,
-              backgroundColor: settings.enabled ? "#EAF5E8" : "#EDF1F4",
-            }}
-          >
-            <View
-              style={{
-                width: 8,
-                height: 8,
-                borderRadius: 4,
-                backgroundColor: settings.enabled ? "#3B8A58" : "#94A3B8",
-              }}
-            />
-            <Text
-              style={{
-                color: settings.enabled ? "#28623D" : "#64748B",
-                fontSize: 13,
-                fontWeight: "700",
-              }}
-            >
-              {settings.enabled ? "App Lock is on" : "App Lock is off"}
-            </Text>
-          </View>
         </View>
 
         <SettingsCard style={{ padding: width >= 700 ? 32 : 18 }}>
@@ -424,7 +429,7 @@ export default function AppLockSettingsPage() {
               {
                 key: "pattern",
                 label: "Pattern",
-                description: "Connect at least 4 dots",
+                description: "Connect at least 5 dots",
                 icon: "grid-outline" as const,
               },
               {
@@ -671,35 +676,7 @@ export default function AppLockSettingsPage() {
               ) : null}
             </View>
           </View>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Lock now"
-            disabled={!draftEnabled || !configured || busy}
-            onPress={() => void lock()}
-            style={({ pressed }) => ({
-              alignSelf: "flex-start",
-              flexDirection: "row",
-              alignItems: "center",
-              gap: 9,
-              minHeight: 48,
-              marginTop: 20,
-              paddingHorizontal: 17,
-              borderRadius: 12,
-              borderWidth: 1,
-              borderColor: "#DFE7EF",
-              backgroundColor: Colors.white,
-              opacity: !draftEnabled || !configured || pressed ? 0.5 : 1,
-            })}
-          >
-            <Ionicons
-              name="lock-closed-outline"
-              size={18}
-              color={draftEnabled && configured ? "#64748B" : "#A0ACB9"}
-            />
-            <Text style={{ color: "#64748B", fontSize: 14, fontWeight: "600" }}>
-              Lock now
-            </Text>
-          </Pressable>
+         
         </SettingsCard>
 
         {settings.enabled && !draftEnabled ? (
@@ -709,14 +686,14 @@ export default function AppLockSettingsPage() {
             disabled={busy}
             onPress={() => setConfirmDisable((current) => !current)}
             style={({ pressed }) => ({
+              width: "100%",
               flexDirection: "row",
-              alignItems: "flex-start",
-              gap: 12,
+              alignItems: "center",
+              gap: 14,
               marginTop: 16,
-              marginHorizontal: wideLayout ? 8 : 0,
-              paddingHorizontal: 20,
-              paddingVertical: 18,
-              borderRadius: 15,
+              paddingHorizontal: 16,
+              paddingVertical: 16,
+              borderRadius: 16,
               borderWidth: 1,
               borderColor: "#FCD34D",
               backgroundColor: "#FFFBEB",
@@ -725,11 +702,10 @@ export default function AppLockSettingsPage() {
           >
             <Ionicons
               name={confirmDisable ? "checkbox" : "square-outline"}
-              size={19}
+              size={22}
               color={confirmDisable ? "#A16207" : "#64748B"}
-              style={{ marginTop: 1 }}
             />
-            <View style={{ flex: 1 }}>
+            <View style={{ flex: 1, minWidth: 0 }}>
               <Text style={{ color: "#451A03", fontSize: 15, fontWeight: "700" }}>
                 Confirm disabling App Lock
               </Text>
@@ -757,7 +733,7 @@ export default function AppLockSettingsPage() {
                     : setupMethod === "pin"
                       ? "Choose 4 to 6 digits."
                       : setupMethod === "pattern"
-                        ? "Connect at least 4 dots."
+                        ? "Connect at least 5 dots."
                         : credentialToSave
                           ? "Your new lock method is ready to save."
                           : "Select a method above to set up your credential."}
@@ -800,6 +776,7 @@ export default function AppLockSettingsPage() {
                   <PatternGrid
                     key={`${setupPhase}-${resetKey}`}
                     resetKey={`${setupPhase}-${resetKey}`}
+                    minDots={5}
                     onDrawingChange={setPatternDrawing}
                     onInvalid={setSetupError}
                     onComplete={(pattern) => {
@@ -850,7 +827,7 @@ export default function AppLockSettingsPage() {
 
         <SettingsCard style={{ marginTop: 20, padding: width >= 700 ? 32 : 18 }}>
           <Text style={contentHeadingStyle}>Confirm with your account password</Text>
-          <Text style={subtitleStyle}>
+          <Text style={[subtitleStyle, { marginTop: 8 }]}>
             Required every time you change lock settings or credentials.
           </Text>
           <View style={{ width: wideLayout ? "58%" : "100%", marginTop: 18 }}>
@@ -892,7 +869,7 @@ export default function AppLockSettingsPage() {
               Boolean(setupMethod && setupMethod !== "password")
             }
             onPress={() => void handleSave()}
-            className="mt-3 min-h-12 w-full max-w-[286px] items-center justify-center rounded-lg bg-green-600 px-5 py-3 active:bg-green-700 disabled:opacity-60"
+            className="mt-3 min-h-12 w-full max-w-[420px] items-center justify-center rounded-lg bg-green-600 px-5 py-3 active:bg-green-700 disabled:opacity-60"
           >
             <Text className="text-base font-semibold text-white">
               {busy ? "Saving..." : "Save Security Settings"}

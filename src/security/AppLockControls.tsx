@@ -17,6 +17,8 @@ const controlColors = {
   ink: "#263238",
 };
 
+export const PATTERN_DELIMITER = ",";
+
 const KEYPAD_DIGITS = [
   [
     { key: "1", sub: "" },
@@ -218,12 +220,14 @@ export function PatternGrid({
   onDrawingChange,
   resetKey,
   variant = "default",
+  minDots = 4,
 }: {
   onComplete: (pattern: string) => void;
   onInvalid?: (message: string) => void;
   onDrawingChange?: (drawing: boolean) => void;
   resetKey: string;
   variant?: "default" | "lock";
+  minDots?: number;
 }) {
   const lockStyle = variant === "lock";
   const [size, setSize] = useState(240);
@@ -234,6 +238,7 @@ export function PatternGrid({
   >(null);
   const pathRef = useRef<number[]>([]);
   const lastPointRef = useRef<{ x: number; y: number } | null>(null);
+  const completedRef = useRef(false);
   const sizeRef = useRef(size);
   const callbacksRef = useRef({ onComplete, onInvalid, onDrawingChange });
   const dotSize = 18;
@@ -275,40 +280,45 @@ export function PatternGrid({
       return { dot, progress, distance };
     })
       .filter(({ dot, distance }) =>
-        !pathRef.current.includes(dot) && distance <= spacing * 0.32
+        !pathRef.current.includes(dot) && distance <= spacing * 0.46
       )
       .sort((a, b) => a.progress - b.progress);
 
-    if (crossed.length > 0) {
-      const nextPath = [...pathRef.current, ...crossed.map(({ dot }) => dot)];
+    for (const { dot } of crossed) {
+      const nextPath = [...pathRef.current, dot];
       pathRef.current = nextPath;
       setPath(nextPath);
     }
   }, []);
 
   const updateDrawing = useCallback((x: number, y: number) => {
+    if (completedRef.current) return;
     const point = { x, y };
     const lastPoint = lastPointRef.current;
-    if (lastPoint) addDotsOnSegment(lastPoint, point);
+    addDotsOnSegment(lastPoint ?? point, point);
     lastPointRef.current = point;
     setCurrentPoint(point);
   }, [addDotsOnSegment]);
 
   const finishPattern = useCallback(() => {
+    if (completedRef.current) return;
     const selectedPath = pathRef.current;
-    if (selectedPath.length >= 4) {
-      callbacksRef.current.onComplete(selectedPath.join("."));
+    if (selectedPath.length >= minDots) {
+      callbacksRef.current.onComplete(selectedPath.join(PATTERN_DELIMITER));
     } else if (selectedPath.length > 0) {
-      callbacksRef.current.onInvalid?.("Connect at least 4 different dots.");
+      callbacksRef.current.onInvalid?.(
+        `Connect at least ${minDots} different dots.`,
+      );
     }
     pathRef.current = [];
     lastPointRef.current = null;
     setPath([]);
     setCurrentPoint(null);
     callbacksRef.current.onDrawingChange?.(false);
-  }, []);
+  }, [minDots]);
 
   const cancelPattern = useCallback(() => {
+    if (completedRef.current) return;
     pathRef.current = [];
     lastPointRef.current = null;
     setPath([]);
@@ -324,6 +334,7 @@ export function PatternGrid({
         onMoveShouldSetPanResponderCapture: () => true,
         onPanResponderTerminationRequest: () => false,
         onPanResponderGrant: (event) => {
+          completedRef.current = false;
           pathRef.current = [];
           lastPointRef.current = null;
           setPath([]);
@@ -410,6 +421,7 @@ export function PatternGrid({
         return (
           <View
             key={dot}
+            pointerEvents="none"
             style={{
               width: "33.333%",
               height: "33.333%",
@@ -418,6 +430,7 @@ export function PatternGrid({
             }}
           >
             <View
+              pointerEvents="none"
               style={{
                 width: lockStyle && selectedIndex >= 0 ? 24 : dotSize,
                 height: lockStyle && selectedIndex >= 0 ? 24 : dotSize,
