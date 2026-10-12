@@ -12,6 +12,7 @@ export function AddPageHeader({
   onBack,
   horizontalInset = 20,
   disabled = false,
+  compact = false,
 }: {
   title: string;
   subtitle?: string;
@@ -19,6 +20,7 @@ export function AddPageHeader({
   onBack: () => void;
   horizontalInset?: number;
   disabled?: boolean;
+  compact?: boolean;
 }) {
   const insets = useSafeAreaInsets();
 
@@ -29,10 +31,10 @@ export function AddPageHeader({
       end={{ x: 1, y: 1 }}
       style={{
         marginHorizontal: -horizontalInset,
-        marginBottom: 15,
+        marginBottom: compact ? 8 : 15,
         paddingHorizontal: horizontalInset,
-        paddingTop: Math.max(14, insets.top + 8),
-        paddingBottom: 12,
+        paddingTop: compact ? 12 : Math.max(14, insets.top + 8),
+        paddingBottom: compact ? 12 : 12,
         gap: 4,
       }}
     >
@@ -41,8 +43,9 @@ export function AddPageHeader({
           accessibilityRole="button"
           accessibilityLabel="Go back"
           accessibilityState={{ disabled }}
-          className="h-10 w-10 items-center justify-center rounded-full border border-[#E6EBE7] bg-white"
-          style={{ outlineStyle: "none" }}
+          className={`h-10 w-10 items-center justify-center rounded-full ${
+            compact ? "bg-white" : "border border-[#E6EBE7] bg-white"
+          }`}
           disabled={disabled}
           onPress={onBack}
         >

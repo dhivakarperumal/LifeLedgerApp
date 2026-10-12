@@ -356,21 +356,23 @@ export default function Index() {
     return () => clearInterval(interval);
   }, []);
 
-  useEffect(() => {
-    let isActive = true;
+  useFocusEffect(
+    useCallback(() => {
+      let isActive = true;
 
-    void getStoredUser().then((user: StoredUser | null) => {
-      if (!isActive) return;
+      void getStoredUser().then((user: StoredUser | null) => {
+        if (!isActive) return;
 
-      const name = user?.name?.trim();
-      const emailName = user?.email?.split("@")[0]?.trim();
-      setUserName(name || emailName || "there");
-    });
+        const name = user?.name?.trim();
+        const emailName = user?.email?.split("@")[0]?.trim();
+        setUserName(name || emailName || "there");
+      });
 
-    return () => {
-      isActive = false;
-    };
-  }, []);
+      return () => {
+        isActive = false;
+      };
+    }, []),
+  );
 
   useFocusEffect(
     useCallback(() => {

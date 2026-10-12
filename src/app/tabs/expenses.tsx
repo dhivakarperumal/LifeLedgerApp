@@ -1860,10 +1860,12 @@ export default function Expenses() {
                   : "Edit Expense"
               }
               onBack={closeExpenseForm}
+              compact
             />
 
             <ScrollView
               style={{ flex: 1, minHeight: 0 }}
+              contentContainerStyle={{ paddingBottom: 16 }}
               showsVerticalScrollIndicator={false}
               keyboardShouldPersistTaps="handled"
               automaticallyAdjustKeyboardInsets

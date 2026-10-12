@@ -851,7 +851,7 @@ export default function Memories() {
 
   return (
     <SafeAreaView
-      edges={["top", "bottom"]}
+      edges={["bottom"]}
       style={{ flex: 1, backgroundColor: Colors.contentBackground }}
     >
       <ConfirmPopup
@@ -1385,7 +1385,7 @@ export default function Memories() {
       {editorVisible && (
         <View
           className="absolute inset-0 z-50 bg-white"
-          style={{ paddingTop: insets.top, paddingBottom: insets.bottom }}
+          style={{ paddingBottom: insets.bottom }}
         >
           <KeyboardAvoidingView
             behavior={Platform.OS === "ios" ? "padding" : "height"}
