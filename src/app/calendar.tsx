@@ -982,7 +982,7 @@ export default function CalendarScreen() {
             ? "Opens the new event form"
             : "Opens the new reminder form"
         }
-        bottomOffset={37}
+        bottomOffset={20}
       />}
 
       <ConfirmPopup
@@ -1170,11 +1170,14 @@ export default function CalendarScreen() {
                   ? "Edit Event"
                   : modalType === "event"
                     ? "Add New Calendar Event"
-                    : "New Reminder"
+                    : "Add New Reminder"
               }
               onBack={closeEntryForm}
               horizontalInset={20}
               disabled={saving}
+              topInsetAlreadyApplied={
+                modalType === "reminder" && !editingEvent
+              }
             />
             <ScrollView
               style={{ flex: 1, minHeight: 0 }}

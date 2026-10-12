@@ -784,7 +784,7 @@ export default function Categories() {
           onPress={() => navigateToAddPage("/categories/new")}
           accessibilityLabel="Add category"
           accessibilityHint="Opens the new category form"
-          bottomOffset={12}
+          bottomOffset={2}
         />
       )}
 

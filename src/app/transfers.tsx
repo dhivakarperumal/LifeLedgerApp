@@ -1200,7 +1200,7 @@ export default function Transfers() {
           onPress={() => navigateToAddPage("/transfers/new")}
           accessibilityLabel="Add transfer"
           accessibilityHint="Opens the new transfer form"
-          bottomOffset={12}
+          bottomOffset={2}
         />
       )}
 

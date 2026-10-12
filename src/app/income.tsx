@@ -1229,7 +1229,7 @@ export default function Income() {
           onPress={() => navigateToAddPage("/income/new")}
           accessibilityLabel="Add income"
           accessibilityHint="Opens the new income form"
-          bottomOffset={12}
+          bottomOffset={2}
         />
       )}
 

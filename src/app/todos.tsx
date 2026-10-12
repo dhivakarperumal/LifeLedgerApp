@@ -990,7 +990,7 @@ export default function TodosPage() {
       onPress={openNewTaskForm}
       accessibilityLabel="Create a Pulse"
       accessibilityHint="Opens the new task form"
-      bottomOffset={37}
+      bottomOffset={20}
       />
 
       <Modal
