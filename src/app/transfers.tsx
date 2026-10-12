@@ -1224,6 +1224,7 @@ export default function Transfers() {
                   : "Add New Transfer"
               }
               onBack={closeModal}
+              compact={isNewTransferRoute}
             />
 
             <ScrollView

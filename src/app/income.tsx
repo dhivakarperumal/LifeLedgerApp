@@ -1249,6 +1249,7 @@ export default function Income() {
             <AddPageHeader
               title={editingIncomeId ? "Edit Income" : "Add New Income"}
               onBack={closeEditor}
+              compact={isNewIncomeRoute}
             />
             <ScrollView
               style={{ flex: 1, minHeight: 0 }}
