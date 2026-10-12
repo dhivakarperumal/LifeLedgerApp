@@ -1,5 +1,4 @@
 import { Ionicons } from "@expo/vector-icons";
-import { LinearGradient } from "expo-linear-gradient";
 import { usePathname, useRouter } from "expo-router";
 import {
   createContext,
@@ -762,17 +761,17 @@ function AppLockScreen({
   return (
     <SafeAreaView
       edges={["top", "bottom"]}
-      style={{ flex: 1, backgroundColor: "#F8FAF3" }}
+      style={{ flex: 1, backgroundColor: "#F7F7F5" }}
     >
       <StatusBar barStyle="dark-content" />
-      <LockScreenArtwork />
       <ScrollView
         scrollEnabled={!patternDrawing}
         contentContainerStyle={{
           flexGrow: 1,
           alignItems: "center",
+          justifyContent: "center",
           paddingHorizontal: 20,
-          paddingTop: 26,
+          paddingTop: 18,
           paddingBottom: insets.bottom + 24,
         }}
         keyboardShouldPersistTaps="handled"
@@ -780,65 +779,42 @@ function AppLockScreen({
         <View style={{ width: "100%", maxWidth: 420, alignItems: "center" }}>
           <View
             style={{
-              width: 80,
-              height: 80,
+              width: 112,
+              height: 112,
               alignItems: "center",
               justifyContent: "center",
-              borderRadius: 22,
-              overflow: "hidden",
-              shadowColor: "#173B26",
-              shadowOffset: { width: 0, height: 5 },
-              shadowOpacity: 0.16,
-              shadowRadius: 10,
-              elevation: 4,
+              borderRadius: 56,
+              backgroundColor: "#DDEEDA",
+              shadowColor: "#103B2C",
+              shadowOffset: { width: 0, height: 8 },
+              shadowOpacity: 0.08,
+              shadowRadius: 12,
+              elevation: 2,
             }}
           >
-            <LinearGradient
-              colors={["#247340", "#0B4729"]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={[StyleSheet.absoluteFill, {
+            <View
+              style={{
+                width: 60,
+                height: 60,
+                borderRadius: 18,
+                backgroundColor: "#1C5C3C",
                 alignItems: "center",
                 justifyContent: "center",
-              }]}
+              }}
             >
-              <Ionicons name="wallet" size={37} color="#F4F8E9" />
-              <View style={{ position: "absolute", right: 15, bottom: 14, flexDirection: "row", alignItems: "flex-end", gap: 2 }}>
-                <View style={{ width: 5, height: 9, borderRadius: 2, backgroundColor: "#C9E849" }} />
-                <View style={{ width: 5, height: 14, borderRadius: 2, backgroundColor: "#C9E849" }} />
-                <View style={{ width: 5, height: 19, borderRadius: 2, backgroundColor: "#C9E849" }} />
-              </View>
-            </LinearGradient>
+              <Ionicons name="lock-closed" size={32} color="#F7F7F5" />
+            </View>
           </View>
+
           <Text
             style={{
-              marginTop: 10,
-              color: "#153A2D",
+              marginTop: 18,
+              color: "#183B2D",
               fontSize: 27,
               fontWeight: "800",
-            }}
-          >
-            Life <Text style={{ color: "#85AD16" }}>Ledger</Text>
-          </Text>
-          <Text
-            style={{
-              marginTop: 3,
-              color: "#244537",
-              fontSize: 10,
-              fontWeight: "600",
               textAlign: "center",
-              textTransform: "uppercase",
             }}
           >
-            Your money. A better tomorrow.
-          </Text>
-        </View>
-
-        <View style={{ alignItems: "center", marginTop: 24, marginBottom: 10 }}>
-          <View style={{ width: 38, height: 42, alignItems: "center", justifyContent: "center", marginBottom: 9 }}>
-            <Ionicons name="lock-closed" size={31} color="#12472E" />
-          </View>
-          <Text style={{ color: "#18382C", fontSize: 18, fontWeight: "500", textAlign: "center" }}>
             {settings.method === "pin"
               ? "Enter PIN to unlock"
               : settings.method === "pattern"
@@ -848,7 +824,7 @@ function AppLockScreen({
         </View>
 
         {settings.biometricEnabled && biometricAvailable ? (
-          <View style={{ marginBottom: 12 }}>
+          <View style={{ marginTop: 10, marginBottom: 8 }}>
             <BiometricPrompt
               available={biometricAvailable}
               busy={busy}
@@ -864,6 +840,7 @@ function AppLockScreen({
             maxWidth: 360,
             alignSelf: "center",
             alignItems: "center",
+            marginTop: 8,
           }}
         >
           {settings.method === "pin" ? (
@@ -878,7 +855,7 @@ function AppLockScreen({
                 submitLabel="Unlock"
                 variant="lock"
               />
-              <View style={{ marginTop: 8, width: "100%", maxWidth: 290, alignSelf: "center" }}>
+              <View style={{ marginTop: 18, width: "100%", maxWidth: 310, alignSelf: "center" }}>
                 <PrimaryButton
                   label={unlocking ? "Verifying..." : "Unlock"}
                   disabled={unlocking || credential.length < 4}
@@ -965,33 +942,6 @@ function AppLockScreen({
   );
 }
 
-function LockScreenArtwork() {
-  return (
-    <View pointerEvents="none" style={StyleSheet.absoluteFill}>
-      <View style={{ position: "absolute", left: 28, top: 92, width: 48, height: 48, alignItems: "center", justifyContent: "center", borderRadius: 13, backgroundColor: "#EFF6E7", transform: [{ rotate: "-12deg" }] }}>
-        <Ionicons name="receipt-outline" size={25} color="#8CB98A" />
-      </View>
-      <View style={{ position: "absolute", right: 27, top: 132, width: 45, height: 45, alignItems: "center", justifyContent: "center", borderRadius: 12, backgroundColor: "#EFF6E7", transform: [{ rotate: "12deg" }] }}>
-        <Ionicons name="bar-chart" size={24} color="#72A77A" />
-      </View>
-      <View style={{ position: "absolute", bottom: -105, left: -90, width: "145%", height: 235, borderRadius: 180, backgroundColor: "#D8EDB8" }} />
-      <View style={{ position: "absolute", bottom: -128, left: -75, width: "140%", height: 205, borderRadius: 160, backgroundColor: "#8FC779" }} />
-      <View style={{ position: "absolute", bottom: -148, left: -65, width: "135%", height: 185, borderRadius: 150, backgroundColor: "#397E47" }} />
-      <View style={{ position: "absolute", bottom: -170, left: -50, width: "130%", height: 165, borderRadius: 130, backgroundColor: "#0D4D32" }} />
-      <View style={{ position: "absolute", right: 46, bottom: 30, alignItems: "center" }}>
-        <Ionicons name="leaf" size={47} color="#2F8A43" style={{ transform: [{ rotate: "-28deg" }] }} />
-        <Ionicons name="leaf" size={38} color="#57A84A" style={{ position: "absolute", left: 25, top: 17, transform: [{ rotate: "23deg" }] }} />
-        <View style={{ width: 3, height: 46, marginTop: -7, backgroundColor: "#17613A" }} />
-      </View>
-      <View style={{ position: "absolute", right: 86, bottom: 15, flexDirection: "row", alignItems: "flex-end", gap: 4 }}>
-        <View style={{ width: 24, height: 12, borderRadius: 12, backgroundColor: "#B8D82B" }} />
-        <View style={{ width: 35, height: 30, borderRadius: 8, backgroundColor: "#A6CC22", borderTopWidth: 4, borderTopColor: "#E0EF48" }} />
-        <View style={{ width: 30, height: 22, borderRadius: 8, backgroundColor: "#8AB81C", borderTopWidth: 4, borderTopColor: "#D5E944" }} />
-      </View>
-    </View>
-  );
-}
-
 function PrimaryButton({
   label,
   disabled,
@@ -1008,7 +958,8 @@ function PrimaryButton({
       disabled={disabled}
       onPress={onPress}
       style={({ pressed }) => ({
-        minHeight: 50,
+        width: "100%",
+        minHeight: 56,
         alignItems: "center",
         justifyContent: "center",
         borderRadius: 16,

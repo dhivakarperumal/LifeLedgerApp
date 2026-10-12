@@ -98,6 +98,7 @@ export default function TabsLayout() {
           options={{
             title: "Memories",
             headerRight: () => <FavoriteHeaderButton />,
+            headerStyle: { outline: 0 } as any,
           }}
         />
         <Tabs.Screen
@@ -105,6 +106,7 @@ export default function TabsLayout() {
           options={{
             title: "Diary",
             headerRight: () => <FavoriteHeaderButton />,
+            headerStyle: { outline: 0 } as any,
           }}
         />
         <Tabs.Screen name="more" options={{ title: "More" }} />

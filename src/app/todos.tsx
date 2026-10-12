@@ -209,10 +209,10 @@ function TaskCard({
   return (
     <Card
       style={{
-        flexGrow: grid ? 1 : 0,
-        flexBasis: grid ? "47%" : "100%",
-        minWidth: grid ? 260 : 0,
-        marginBottom: 12,
+        flex: grid ? 1 : undefined,
+        width: grid ? undefined : "100%",
+        minWidth: 0,
+        minHeight: grid ? 248 : undefined,
         overflow: "hidden",
       }}
     >
@@ -228,7 +228,90 @@ function TaskCard({
                 : "#D5A23D",
         }}
       />
-      <View style={{ padding: 15 }}>
+      <View
+        style={{
+          flex: grid ? 1 : undefined,
+          justifyContent: grid ? "space-between" : undefined,
+          padding: grid ? 15 : 12,
+        }}
+      >
+        {!grid ? (
+          <View style={{ gap: 9 }}>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 9 }}>
+              <Pressable
+                accessibilityRole="checkbox"
+                accessibilityLabel={complete ? `Reopen ${task.title}` : `Complete ${task.title}`}
+                accessibilityState={{ checked: complete }}
+                onPress={() => onToggleComplete(task)}
+                hitSlop={5}
+              >
+                <Ionicons
+                  name={complete ? "checkmark-circle" : "ellipse-outline"}
+                  size={23}
+                  color={complete ? "#378B57" : "#AEB6C1"}
+                />
+              </Pressable>
+              <View style={{ flex: 1, minWidth: 0 }}>
+                <Text
+                  numberOfLines={1}
+                  style={{
+                    color: complete ? "#8B95A3" : "#253044",
+                    fontSize: 15,
+                    fontWeight: "800",
+                    textDecorationLine: complete ? "line-through" : "none",
+                  }}
+                >
+                  {task.title}
+                </Text>
+                <Text numberOfLines={2} style={{ marginTop: 3, color: task.description ? "#697586" : "#9AA3AF", fontSize: 11, lineHeight: 15 }}>
+                  {task.description || "No notes added"}
+                </Text>
+              </View>
+              <View style={{ flexDirection: "row", gap: 1 }}>
+                <IconButton
+                  label={`Edit ${task.title}`}
+                  icon="create-outline"
+                  onPress={() => onEdit(task)}
+                  color="#707C8D"
+                />
+                <IconButton
+                  label={`Delete ${task.title}`}
+                  icon="trash-outline"
+                  onPress={() => onDelete(task)}
+                  color="#BA6262"
+                />
+              </View>
+            </View>
+            <View style={{ flexDirection: "row", alignItems: "center", flexWrap: "wrap", gap: 6, paddingLeft: 32 }}>
+              <Tag
+                label={task.priority}
+                background={priorityColor.background}
+                color={priorityColor.text}
+                border={priorityColor.border}
+              />
+              <Tag
+                label={task.status}
+                background={statusColor.background}
+                color={statusColor.text}
+              />
+              <DateInfo
+                icon="calendar-outline"
+                text={task.dueDate ? `Due ${formatDate(task.dueDate)}` : "No due date"}
+              />
+              <DateInfo
+                icon="alarm-outline"
+                text={task.reminderAt ? `Reminder ${formatDateTime(task.reminderAt)}` : "No reminder"}
+              />
+              <Text style={{ color: "#9AA3AF", fontSize: 10 }}>
+                Created {formatDate(task.createdAt)}
+              </Text>
+              <Text style={{ color: "#9AA3AF", fontSize: 10 }}>
+                Updated {formatDate(task.updatedAt)}
+              </Text>
+            </View>
+          </View>
+        ) : (
+          <>
         <View
           style={{
             flexDirection: "row",
@@ -335,6 +418,8 @@ function TaskCard({
             </Text>
           </View>
         </View>
+          </>
+        )}
       </View>
     </Card>
   );
@@ -419,7 +504,6 @@ export default function TodosPage() {
   const [draftPriorityFilter, setDraftPriorityFilter] = useState<"Any priority" | TaskPriority>("Any priority");
   const [draftDueDateFilter, setDraftDueDateFilter] = useState<DueFilter>("Any due date");
   const [viewMode, setViewMode] = useState<"list" | "grid">("list");
-  const [draftViewMode, setDraftViewMode] = useState<"list" | "grid">("list");
   const [page, setPage] = useState(1);
   const [errorMessage, setErrorMessage] = useState("");
   const [message, setMessage] = useState("");
@@ -450,7 +534,6 @@ export default function TodosPage() {
   const completedCount = tasks.filter((task) => task.status === "Completed").length;
   const pendingCount = tasks.filter((task) => task.status === "Pending").length;
   const inProgressCount = tasks.filter((task) => task.status === "In Progress").length;
-  const progress = tasks.length ? Math.round((completedCount / tasks.length) * 100) : 0;
 
   const filteredTasks = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -504,7 +587,6 @@ export default function TodosPage() {
     setDraftStatusFilter(statusFilter);
     setDraftPriorityFilter(priorityFilter);
     setDraftDueDateFilter(dueDateFilter);
-    setDraftViewMode(viewMode);
     setFilterSheetVisible(true);
   };
 
@@ -512,7 +594,6 @@ export default function TodosPage() {
     setStatusFilter(draftStatusFilter);
     setPriorityFilter(draftPriorityFilter);
     setDueDateFilter(draftDueDateFilter);
-    setViewMode(draftViewMode);
     setPage(1);
     setFilterSheetVisible(false);
   };
@@ -521,7 +602,6 @@ export default function TodosPage() {
     setDraftStatusFilter("All");
     setDraftPriorityFilter("Any priority");
     setDraftDueDateFilter("Any due date");
-    setDraftViewMode("list");
   };
 
   const openEditTaskForm = (task: TodoTask) => {
@@ -627,39 +707,20 @@ export default function TodosPage() {
   };
 
   const statCards = [
-    {
-      label: "Total tasks",
-      value: tasks.length,
-      detail: "All tasks in your list",
-      percent: tasks.length ? 100 : 0,
-      color: "#6D3DA0",
-      icon: "list-outline" as const,
-    },
-    {
-      label: "Completed",
-      value: completedCount,
-      detail: `${progress}% completed`,
-      percent: progress,
-      color: "#3678B8",
-      icon: "checkmark-circle-outline" as const,
-    },
-    {
-      label: "Pending",
-      value: pendingCount,
-      detail: `${tasks.length ? Math.round((pendingCount / tasks.length) * 100) : 0}% of tasks`,
-      percent: tasks.length ? Math.round((pendingCount / tasks.length) * 100) : 0,
-      color: "#29936C",
-      icon: "ellipse-outline" as const,
-    },
-    {
-      label: "In progress",
-      value: inProgressCount,
-      detail: `${tasks.length ? Math.round((inProgressCount / tasks.length) * 100) : 0}% of tasks`,
-      percent: tasks.length ? Math.round((inProgressCount / tasks.length) * 100) : 0,
-      color: "#B57B20",
-      icon: "time-outline" as const,
-    },
+    { label: "Total tasks", shortLabel: "All", value: tasks.length, color: "#FFFFFF" },
+    { label: "Completed", shortLabel: "Done", value: completedCount, color: "#D5F4D3" },
+    { label: "Pending", shortLabel: "Wait", value: pendingCount, color: "#E7F0B0" },
+    { label: "In progress", shortLabel: "Prog", value: inProgressCount, color: "#FFE3A1" },
   ];
+  const cardMode = viewMode === "grid";
+  const isGrid = cardMode && width >= 640;
+  const taskRows = isGrid
+    ? pageTasks.reduce<TodoTask[][]>((rows, task, index) => {
+        if (index % 2 === 0) rows.push([task]);
+        else rows[rows.length - 1].push(task);
+        return rows;
+      }, [])
+    : pageTasks.map((task) => [task]);
 
   return (
     <View style={{ flex: 1, backgroundColor: "#F6F7FA" }}>
@@ -681,42 +742,44 @@ export default function TodosPage() {
             else router.replace("/tabs/more");
           }}
           horizontalInset={width >= 700 ? 28 : 16}
-        />
-
-        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 10 }}>
-          {statCards.map((item) => (
+          rightContent={
             <View
-              key={item.label}
+              accessibilityLabel="Task summary"
               style={{
-                flexGrow: 1,
-                flexBasis: width < 700 ? "47%" : "23%",
-                minWidth: width < 360 ? 125 : 145,
-                padding: 13,
-                borderRadius: 18,
-                backgroundColor: item.color,
-                overflow: "hidden",
+                width: 108,
+                flexDirection: "row",
+                flexWrap: "wrap",
+                justifyContent: "flex-end",
+                gap: 3,
               }}
             >
-              <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
-                <View style={{ width: 32, height: 32, borderRadius: 11, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(255,255,255,0.18)" }}>
-                  <Ionicons name={item.icon} size={19} color={Colors.white} />
+              {statCards.map((item) => (
+                <View
+                  key={item.label}
+                  accessibilityLabel={`${item.label}: ${item.value}`}
+                  style={{
+                    minWidth: 51,
+                    minHeight: 20,
+                    flexDirection: "row",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: 3,
+                    paddingHorizontal: 4,
+                    borderRadius: 7,
+                    backgroundColor: "rgba(255,255,255,0.16)",
+                  }}
+                >
+                  <Text style={{ color: item.color, fontSize: 10, fontWeight: "900" }}>
+                    {item.value}
+                  </Text>
+                  <Text style={{ color: "rgba(255,255,255,0.88)", fontSize: 8, fontWeight: "700" }}>
+                    {item.shortLabel}
+                  </Text>
                 </View>
-                <Text style={{ color: "white", fontSize: 10, fontWeight: "800" }}>
-                  {item.percent}%
-                </Text>
-              </View>
-              <Text style={{ marginTop: 12, color: "white", fontSize: 26, fontWeight: "900" }}>
-                {item.value}
-              </Text>
-              <Text style={{ marginTop: 2, color: "white", fontSize: 13, fontWeight: "800" }}>
-                {item.label}
-              </Text>
-              <Text style={{ marginTop: 5, color: "rgba(255,255,255,0.82)", fontSize: 10 }}>
-                {item.detail}
-              </Text>
+              ))}
             </View>
-          ))}
-        </View>
+          }
+        />
 
         <View
           style={{
@@ -864,21 +927,31 @@ export default function TodosPage() {
         ) : (
           <View
             style={{
-              flexDirection: viewMode === "grid" && width >= 700 ? "row" : "column",
-              flexWrap: "wrap",
-              gap: viewMode === "grid" && width >= 700 ? 12 : 0,
+              gap: 10,
               marginTop: 18,
             }}
           >
-            {pageTasks.map((task) => (
-              <TaskCard
-                key={task.id}
-                task={task}
-                grid={viewMode === "grid" && width >= 700}
-                onEdit={openEditTaskForm}
-                onDelete={setTaskToDelete}
-                onToggleComplete={(selected) => void changeTaskStatus(selected)}
-              />
+            {taskRows.map((row) => (
+              <View
+                key={row[0].id}
+                style={{
+                  flexDirection: isGrid ? "row" : "column",
+                  alignItems: "stretch",
+                  gap: 10,
+                }}
+              >
+                {row.map((task) => (
+                  <TaskCard
+                    key={task.id}
+                    task={task}
+                    grid={cardMode}
+                    onEdit={openEditTaskForm}
+                    onDelete={setTaskToDelete}
+                    onToggleComplete={(selected) => void changeTaskStatus(selected)}
+                  />
+                ))}
+                {isGrid && row.length === 1 ? <View style={{ flex: 1 }} /> : null}
+              </View>
             ))}
           </View>
         )}
@@ -1043,16 +1116,19 @@ export default function TodosPage() {
               <View style={{ flexDirection: "row", gap: 10 }}>
                 {([
                   { mode: "list", label: "List view", icon: "list-outline" },
-                  { mode: "grid", label: "Grid view", icon: "grid-outline" },
+                  { mode: "grid", label: "Card view", icon: "grid-outline" },
                 ] as const).map((option) => {
-                  const selected = draftViewMode === option.mode;
+                  const selected = viewMode === option.mode;
                   return (
                     <Pressable
                       key={option.mode}
                       accessibilityRole="radio"
                       accessibilityLabel={option.label}
                       accessibilityState={{ selected }}
-                      onPress={() => setDraftViewMode(option.mode)}
+                      onPress={() => {
+                        setViewMode(option.mode);
+                        setFilterSheetVisible(false);
+                      }}
                       style={{
                         minHeight: 48,
                         flex: 1,
