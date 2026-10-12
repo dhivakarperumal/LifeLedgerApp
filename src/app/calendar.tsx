@@ -1165,13 +1165,7 @@ export default function CalendarScreen() {
             className="flex-1 bg-[#F9FAFC] px-5 pb-5"
           >
             <AddPageHeader
-              title={
-                editingEvent
-                  ? "Edit Event"
-                  : modalType === "event"
-                    ? "Add New Calendar Event"
-                    : "Add New Reminder"
-              }
+              title={editingEvent ? "Edit Event" : "Add New Reminder"}
               onBack={closeEntryForm}
               horizontalInset={20}
               disabled={saving}
