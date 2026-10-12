@@ -5,9 +5,9 @@ import { Alert, Pressable, ScrollView, Text, View } from "react-native";
 import { getApiErrorMessage, getStoredToken, getStoredUser, logoutUser } from "../../api";
 import ConfirmPopup from "../../components/ConfirmPopup";
 import {
-    getProfileImageUri,
-    getProfileInitial,
-    ProfileAvatar,
+  getProfileImageUri,
+  getProfileInitial,
+  ProfileAvatar,
 } from "../../components/ProfileAvatar";
 import { Colors } from "../../constants/colors";
 
@@ -56,6 +56,13 @@ const accountItems: MoreRowItem[] = [
     iconBackground: "#E8F5F1",
   },
   {
+    label: "To Do List & Notes",
+    subtitle: "Tasks, notes & reminders",
+    icon: "checkbox-outline",
+    iconColor: "#6D3DA0",
+    iconBackground: "#F1EBF8",
+  },
+  {
     label: "Analytics & Reports",
     subtitle: "Weekly, monthly & custom reports",
     icon: "bar-chart-outline",
@@ -65,13 +72,7 @@ const accountItems: MoreRowItem[] = [
 ];
 
 const appItems: MoreRowItem[] = [
-  {
-    label: "To Do List & Notes",
-    subtitle: "Tasks, notes & reminders",
-    icon: "checkbox-outline",
-    iconColor: "#6D3DA0",
-    iconBackground: "#F1EBF8",
-  },
+
   {
     label: "App Lock",
     subtitle: "PIN, pattern & biometric privacy",
@@ -220,7 +221,7 @@ export default function More() {
           </View>
         </View>
 
-       
+
       </View>
 
       <Text
