@@ -235,11 +235,30 @@ export default function AppLockSettingsPage() {
       setSetupError("Confirm disabling App Lock before saving.");
       return;
     }
+    if (setupMethod === "password") {
+      if (
+        credential.length < 12 ||
+        credential.length > 128 ||
+        confirmation.length < 12 ||
+        confirmation.length > 128
+      ) {
+        setSetupError("Lock password must be between 12 and 128 characters.");
+        return;
+      }
+      if (credential !== confirmation) {
+        setSetupError("The new lock passwords do not match.");
+        return;
+      }
+    }
     if (!accountPassword.trim()) {
       setSetupError("Enter your account password to confirm these changes.");
       return;
     }
-    if (!configured && !credentialToSave) {
+    if (
+      !configured &&
+      !credentialToSave &&
+      !(setupMethod === "password" && credential === confirmation)
+    ) {
       setSetupError("Create and confirm a lock method before saving App Lock.");
       return;
     }
@@ -262,10 +281,14 @@ export default function AppLockSettingsPage() {
           lockOnHidden: draftLockOnHidden,
           idleTimeoutMinutes: draftIdleTimeout,
         },
-        credentialToSave || undefined,
+        credentialToSave ||
+          (setupMethod === "password" ? credential : undefined),
         accountPassword,
       );
       setCredentialToSave("");
+      setSetupMethod(null);
+      setCredential("");
+      setConfirmation("");
       setAccountPassword("");
       setMessage("Security settings saved.");
     } catch (error) {
@@ -713,12 +736,14 @@ export default function AppLockSettingsPage() {
               <View style={{ flex: 1 }}>
                 <Text style={contentHeadingStyle}>
                   {setupMethod
-                    ? `${setupPhase === "create" ? "Create" : "Confirm"} ${methodDetails[setupMethod].label}`
+                    ? setupMethod === "password"
+                      ? "Set up Password"
+                      : `${setupPhase === "create" ? "Create" : "Confirm"} ${methodDetails[setupMethod].label}`
                     : "Lock method"}
                 </Text>
                 <Text style={subtitleStyle}>
                   {setupMethod === "password"
-                    ? "Use at least 12 characters."
+                    ? "Use 12 to 128 characters."
                     : setupMethod === "pin"
                       ? "Choose 4 to 6 digits."
                       : setupMethod === "pattern"
@@ -771,21 +796,38 @@ export default function AppLockSettingsPage() {
                     }}
                   />
                 ) : (
-                  <View style={{ gap: 12 }}>
-                    <PasswordForm
-                      value={currentEntry}
-                      onChange={setCurrentEntry}
-                      placeholder={
-                        setupPhase === "create"
-                          ? "Create password"
-                          : "Confirm password"
-                      }
-                    />
-                    <PrimaryButton
-                      label="Continue"
-                      disabled={currentEntry.length < 12}
-                      onPress={() => void submitSetup()}
-                    />
+                  <View
+                    style={{
+                      flexDirection: wideLayout ? "row" : "column",
+                      gap: 16,
+                    }}
+                  >
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ color: "#26364B", fontSize: 14, marginBottom: 8 }}>
+                        New lock password
+                      </Text>
+                      <PasswordForm
+                        value={credential}
+                        onChange={(value) => {
+                          setCredential(value);
+                          setSetupError("");
+                        }}
+                        placeholder="New lock password"
+                      />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ color: "#26364B", fontSize: 14, marginBottom: 8 }}>
+                        Confirm lock password
+                      </Text>
+                      <PasswordForm
+                        value={confirmation}
+                        onChange={(value) => {
+                          setConfirmation(value);
+                          setSetupError("");
+                        }}
+                        placeholder="Confirm lock password"
+                      />
+                    </View>
                   </View>
                 )}
               </View>
@@ -835,7 +877,7 @@ export default function AppLockSettingsPage() {
             disabled={
               busy ||
               !serviceAvailable ||
-              Boolean(setupMethod)
+              Boolean(setupMethod && setupMethod !== "password")
             }
             onPress={() => void handleSave()}
             className="mt-3 min-h-12 w-full max-w-[286px] items-center justify-center rounded-lg bg-green-600 px-5 py-3 active:bg-green-700 disabled:opacity-60"
