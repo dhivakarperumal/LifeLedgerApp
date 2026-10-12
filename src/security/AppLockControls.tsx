@@ -1,11 +1,11 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
+  PanResponder,
   Pressable,
   Text,
   TextInput,
   View,
-  type GestureResponderEvent,
 } from "react-native";
 import Svg, { Line } from "react-native-svg";
 import { Colors } from "../constants/colors";
@@ -82,9 +82,9 @@ export function PinKeypad({
         width: keySize,
         height: keySize,
         borderRadius: keySize / 2,
-        backgroundColor: pressed ? "#DCEBCC" : lockStyle ? "#E8F0DF" : "#F4F7F4",
-        borderWidth: lockStyle ? 0 : 1,
-        borderColor: pressed ? "#C8DAC9" : "#E2EBE2",
+        backgroundColor: pressed ? "#DCEBCC" : lockStyle ? "#F5F8EF" : "#F4F7F4",
+        borderWidth: 1,
+        borderColor: pressed ? "#C8DAC9" : lockStyle ? "#C8D6C8" : "#E2EBE2",
         alignItems: "center",
         justifyContent: "center",
         shadowColor: "#000",
@@ -179,7 +179,14 @@ export function PinKeypad({
           );
         })}
       </View>
-      <View style={{ width: "100%", maxWidth: lockStyle ? 252 : 290, alignSelf: "center" }}>
+      <View
+        style={{
+          width: "100%",
+          maxWidth: lockStyle ? 276 : 290,
+          alignSelf: "center",
+          paddingHorizontal: lockStyle ? 8 : 0,
+        }}
+      >
         {KEYPAD_DIGITS.map((row, rowIndex) => (
           <View
             key={rowIndex}
@@ -207,69 +214,146 @@ export function PinKeypad({
 
 export function PatternGrid({
   onComplete,
+  onInvalid,
+  onDrawingChange,
   resetKey,
   variant = "default",
 }: {
   onComplete: (pattern: string) => void;
+  onInvalid?: (message: string) => void;
+  onDrawingChange?: (drawing: boolean) => void;
   resetKey: string;
   variant?: "default" | "lock";
 }) {
   const lockStyle = variant === "lock";
   const [size, setSize] = useState(240);
   const [path, setPath] = useState<number[]>([]);
+  const [currentPoint, setCurrentPoint] = useState<{ x: number; y: number } | null>(null);
+  const [panHandlers, setPanHandlers] = useState<
+    ReturnType<typeof PanResponder.create>["panHandlers"] | null
+  >(null);
   const pathRef = useRef<number[]>([]);
-  const origin = useRef({ x: 0, y: 0 });
-  const gridRef = useRef<View>(null);
+  const lastPointRef = useRef<{ x: number; y: number } | null>(null);
+  const sizeRef = useRef(size);
+  const callbacksRef = useRef({ onComplete, onInvalid, onDrawingChange });
   const dotSize = 18;
 
-  const selectDot = (event: GestureResponderEvent) => {
+  useEffect(() => {
+    sizeRef.current = size;
+  }, [size]);
+
+  useEffect(() => {
+    callbacksRef.current = { onComplete, onInvalid, onDrawingChange };
+  }, [onComplete, onInvalid, onDrawingChange]);
+
+  const addDotsOnSegment = useCallback((from: { x: number; y: number }, to: { x: number; y: number }) => {
     const padding = 10;
-    const gridContentSize = size - padding * 2;
+    const gridContentSize = sizeRef.current - padding * 2;
     const spacing = gridContentSize / 3;
-    const x = event.nativeEvent.pageX - origin.current.x - padding;
-    const y = event.nativeEvent.pageY - origin.current.y - padding;
-    if (x < 0 || y < 0 || x > gridContentSize || y > gridContentSize) return;
-    const column = Math.max(0, Math.min(2, Math.floor(x / spacing)));
-    const row = Math.max(0, Math.min(2, Math.floor(y / spacing)));
-    const centerX = (column + 0.5) * spacing;
-    const centerY = (row + 0.5) * spacing;
-    const distance = Math.hypot(x - centerX, y - centerY);
-    if (distance > spacing * 0.45) return;
+    const dx = to.x - from.x;
+    const dy = to.y - from.y;
+    const segmentLengthSquared = dx * dx + dy * dy;
+    const crossed = Array.from({ length: 9 }, (_, dot) => {
+      const center = {
+        x: padding + ((dot % 3) + 0.5) * spacing,
+        y: padding + (Math.floor(dot / 3) + 0.5) * spacing,
+      };
+      const progress = segmentLengthSquared === 0
+        ? 0
+        : Math.max(
+            0,
+            Math.min(
+              1,
+              ((center.x - from.x) * dx + (center.y - from.y) * dy) /
+                segmentLengthSquared,
+            ),
+          );
+      const distance = Math.hypot(
+        center.x - (from.x + progress * dx),
+        center.y - (from.y + progress * dy),
+      );
+      return { dot, progress, distance };
+    })
+      .filter(({ dot, distance }) =>
+        !pathRef.current.includes(dot) && distance <= spacing * 0.32
+      )
+      .sort((a, b) => a.progress - b.progress);
 
-    const dot = row * 3 + column;
-    if (pathRef.current.includes(dot)) return;
-    const nextPath = [...pathRef.current, dot];
-    pathRef.current = nextPath;
-    setPath(nextPath);
-  };
+    if (crossed.length > 0) {
+      const nextPath = [...pathRef.current, ...crossed.map(({ dot }) => dot)];
+      pathRef.current = nextPath;
+      setPath(nextPath);
+    }
+  }, []);
 
-  const finishPattern = () => {
-    const value = pathRef.current.join(".");
-    if (value) onComplete(value);
+  const updateDrawing = useCallback((x: number, y: number) => {
+    const point = { x, y };
+    const lastPoint = lastPointRef.current;
+    if (lastPoint) addDotsOnSegment(lastPoint, point);
+    lastPointRef.current = point;
+    setCurrentPoint(point);
+  }, [addDotsOnSegment]);
+
+  const finishPattern = useCallback(() => {
+    const selectedPath = pathRef.current;
+    if (selectedPath.length >= 4) {
+      callbacksRef.current.onComplete(selectedPath.join("."));
+    } else if (selectedPath.length > 0) {
+      callbacksRef.current.onInvalid?.("Connect at least 4 different dots.");
+    }
     pathRef.current = [];
+    lastPointRef.current = null;
     setPath([]);
-  };
+    setCurrentPoint(null);
+    callbacksRef.current.onDrawingChange?.(false);
+  }, []);
+
+  const cancelPattern = useCallback(() => {
+    pathRef.current = [];
+    lastPointRef.current = null;
+    setPath([]);
+    setCurrentPoint(null);
+    callbacksRef.current.onDrawingChange?.(false);
+  }, []);
+
+  useEffect(() => {
+    const responder = PanResponder.create({
+        onStartShouldSetPanResponder: () => true,
+        onStartShouldSetPanResponderCapture: () => true,
+        onMoveShouldSetPanResponder: () => true,
+        onMoveShouldSetPanResponderCapture: () => true,
+        onPanResponderTerminationRequest: () => false,
+        onPanResponderGrant: (event) => {
+          pathRef.current = [];
+          lastPointRef.current = null;
+          setPath([]);
+          callbacksRef.current.onDrawingChange?.(true);
+          updateDrawing(event.nativeEvent.locationX, event.nativeEvent.locationY);
+        },
+        onPanResponderMove: (event) => {
+          updateDrawing(event.nativeEvent.locationX, event.nativeEvent.locationY);
+        },
+        onPanResponderRelease: (event) => {
+          updateDrawing(event.nativeEvent.locationX, event.nativeEvent.locationY);
+          finishPattern();
+        },
+        onPanResponderTerminate: cancelPattern,
+    });
+    setPanHandlers(responder.panHandlers);
+  }, [cancelPattern, finishPattern, updateDrawing]);
 
   return (
     <View
       key={resetKey}
-      ref={gridRef}
       onLayout={(event) => {
         const nextSize = Math.min(event.nativeEvent.layout.width, lockStyle ? 300 : 260);
-        if (nextSize > 0) setSize(nextSize);
-        gridRef.current?.measureInWindow((x, y) => {
-          origin.current = { x, y };
-        });
+        if (nextSize > 0) {
+          sizeRef.current = nextSize;
+          setSize(nextSize);
+        }
       }}
-      onStartShouldSetResponder={() => true}
-      onMoveShouldSetResponder={() => true}
-      onResponderGrant={(event) => {
-        pathRef.current = [];
-        setPath([]);
-        selectDot(event);
-      }}
-      onResponderMove={selectDot}
-      onResponderRelease={finishPattern}
+      {...(panHandlers ?? {})}
+      onTouchCancel={cancelPattern}
       style={{
         width: "100%",
         maxWidth: lockStyle ? 300 : 260,
@@ -283,36 +367,44 @@ export function PatternGrid({
         padding: 10,
       }}
     >
-      {lockStyle ? (
-        <Svg
-          pointerEvents="none"
-          width={size}
-          height={size}
-          style={{ position: "absolute", top: 0, left: 0 }}
-        >
-          {path.slice(1).map((dot, index) => {
-            const previousDot = path[index];
-            const centerFor = (selectedDot: number) => ({
-              x: 10 + ((selectedDot % 3) + 0.5) * ((size - 20) / 3),
-              y: 10 + (Math.floor(selectedDot / 3) + 0.5) * ((size - 20) / 3),
-            });
-            const start = centerFor(previousDot);
-            const end = centerFor(dot);
-            return (
-              <Line
-                key={`${previousDot}-${dot}`}
-                x1={start.x}
-                y1={start.y}
-                x2={end.x}
-                y2={end.y}
-                stroke="#77BB10"
-                strokeWidth={4}
-                strokeLinecap="round"
-              />
-            );
-          })}
-        </Svg>
-      ) : null}
+      <Svg
+        pointerEvents="none"
+        width={size}
+        height={size}
+        style={{ position: "absolute", top: 0, left: 0 }}
+      >
+        {path.slice(1).map((dot, index) => {
+          const centerFor = (selectedDot: number) => ({
+            x: 10 + ((selectedDot % 3) + 0.5) * ((size - 20) / 3),
+            y: 10 + (Math.floor(selectedDot / 3) + 0.5) * ((size - 20) / 3),
+          });
+          const start = centerFor(path[index]);
+          const end = centerFor(dot);
+          return (
+            <Line
+              key={`${path[index]}-${dot}`}
+              x1={start.x}
+              y1={start.y}
+              x2={end.x}
+              y2={end.y}
+              stroke={lockStyle ? "#77BB10" : Colors.primary}
+              strokeWidth={4}
+              strokeLinecap="round"
+            />
+          );
+        })}
+        {currentPoint && path.length > 0 ? (
+          <Line
+            x1={10 + ((path[path.length - 1] % 3) + 0.5) * ((size - 20) / 3)}
+            y1={10 + (Math.floor(path[path.length - 1] / 3) + 0.5) * ((size - 20) / 3)}
+            x2={currentPoint.x}
+            y2={currentPoint.y}
+            stroke={lockStyle ? "#77BB10" : Colors.primary}
+            strokeWidth={3}
+            strokeLinecap="round"
+          />
+        ) : null}
+      </Svg>
       {Array.from({ length: 9 }, (_, dot) => {
         const selectedIndex = path.indexOf(dot);
         return (

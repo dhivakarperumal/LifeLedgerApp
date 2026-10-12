@@ -87,6 +87,7 @@ export default function AppLockSettingsPage() {
     serviceAvailable,
     serviceError,
     lock,
+    unlockWithBiometrics,
   } = useAppLock();
   const [draftEnabled, setDraftEnabled] = useState(settings.enabled);
   const [draftMethod, setDraftMethod] = useState(settings.method);
@@ -111,7 +112,11 @@ export default function AppLockSettingsPage() {
   const [busy, setBusy] = useState(false);
   const [resetKey, setResetKey] = useState(0);
   const [timeoutOptionsVisible, setTimeoutOptionsVisible] = useState(false);
+  const [patternDrawing, setPatternDrawing] = useState(false);
   const wideLayout = width >= 700;
+  const selectedMethodCard = draftBiometricEnabled
+    ? "fingerprint"
+    : draftMethod;
 
   const startSetup = (
     method: LockMethod,
@@ -285,12 +290,19 @@ export default function AppLockSettingsPage() {
           (setupMethod === "password" ? credential : undefined),
         accountPassword,
       );
+      let saveMessage = "Security settings saved.";
+      if (draftEnabled && draftBiometricEnabled && biometricAvailable) {
+        const result = await unlockWithBiometrics();
+        saveMessage = result.success
+          ? "Security settings saved. Fingerprint or face unlock is ready."
+          : `Security settings saved. ${result.message}`;
+      }
       setCredentialToSave("");
       setSetupMethod(null);
       setCredential("");
       setConfirmation("");
       setAccountPassword("");
-      setMessage("Security settings saved.");
+      setMessage(saveMessage);
     } catch (error) {
       if ((error as { status?: number })?.status === 401) {
         setAccountPassword("");
@@ -314,6 +326,7 @@ export default function AppLockSettingsPage() {
       style={{ flex: 1, backgroundColor: Colors.contentBackground }}
     >
       <ScrollView
+        scrollEnabled={!patternDrawing}
         contentContainerStyle={{
           width: "100%",
           maxWidth: 1320,
@@ -421,10 +434,7 @@ export default function AppLockSettingsPage() {
                 icon: "lock-closed-outline" as const,
               },
             ].map((method) => {
-              const selected =
-                method.key === "fingerprint"
-                  ? draftBiometricEnabled
-                  : draftMethod === method.key;
+              const selected = selectedMethodCard === method.key;
               const handlePress = () => {
                 if (method.key === "fingerprint") chooseBiometrics();
                 else chooseMethod(method.key as LockMethod);
@@ -790,6 +800,8 @@ export default function AppLockSettingsPage() {
                   <PatternGrid
                     key={`${setupPhase}-${resetKey}`}
                     resetKey={`${setupPhase}-${resetKey}`}
+                    onDrawingChange={setPatternDrawing}
+                    onInvalid={setSetupError}
                     onComplete={(pattern) => {
                       setCurrentEntry(pattern);
                       void submitSetup(pattern);

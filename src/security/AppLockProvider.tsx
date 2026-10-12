@@ -426,11 +426,7 @@ export function AppLockProvider({ children }: { children: ReactNode }) {
   );
 
   const unlockWithBiometrics = useCallback(async () => {
-    if (
-      !settings.biometricEnabled ||
-      !biometricAvailable ||
-      Platform.OS === "web"
-    ) {
+    if (!biometricAvailable || Platform.OS === "web") {
       return {
         success: false,
         message: "Biometrics are unavailable. Use your lock credential.",
@@ -478,7 +474,6 @@ export function AppLockProvider({ children }: { children: ReactNode }) {
     acceptGrant,
     biometricAvailable,
     router,
-    settings.biometricEnabled,
     settings.method,
   ]);
 
@@ -673,6 +668,7 @@ function AppLockScreen({
   const [errorMessage, setErrorMessage] = useState("");
   const [busy, setBusy] = useState(false);
   const [resetKey, setResetKey] = useState(0);
+  const [patternDrawing, setPatternDrawing] = useState(false);
 
   const clearCredential = () => {
     setCredential("");
@@ -771,6 +767,7 @@ function AppLockScreen({
       <StatusBar barStyle="dark-content" />
       <LockScreenArtwork />
       <ScrollView
+        scrollEnabled={!patternDrawing}
         contentContainerStyle={{
           flexGrow: 1,
           alignItems: "center",
@@ -850,7 +847,7 @@ function AppLockScreen({
           </Text>
         </View>
 
-        {settings.biometricEnabled && biometricAvailable && settings.method !== "pin" ? (
+        {settings.biometricEnabled && biometricAvailable ? (
           <View style={{ marginBottom: 12 }}>
             <BiometricPrompt
               available={biometricAvailable}
@@ -880,11 +877,6 @@ function AppLockScreen({
                 minLength={4}
                 submitLabel="Unlock"
                 variant="lock"
-                onBiometric={
-                  settings.biometricEnabled && biometricAvailable
-                    ? () => void submitBiometrics()
-                    : undefined
-                }
               />
               <View style={{ marginTop: 8, width: "100%", maxWidth: 290, alignSelf: "center" }}>
                 <PrimaryButton
@@ -899,6 +891,8 @@ function AppLockScreen({
               key={resetKey}
               resetKey={String(resetKey)}
               variant="lock"
+              onDrawingChange={setPatternDrawing}
+              onInvalid={() => setErrorMessage("Draw at least 4 different dots to unlock.")}
               onComplete={(pattern) => {
                 setCredential(pattern);
                 void submitCredential(pattern);
