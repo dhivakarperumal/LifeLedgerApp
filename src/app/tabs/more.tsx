@@ -66,11 +66,11 @@ const accountItems: MoreRowItem[] = [
 
 const appItems: MoreRowItem[] = [
   {
-    label: "To Do List $ Notes",
-    subtitle: "Privacy & notifications",
-    icon: "settings-outline",
-    iconColor: "#4B5563",
-    iconBackground: "#EEF1F4",
+    label: "To Do List & Notes",
+    subtitle: "Tasks, notes & reminders",
+    icon: "checkbox-outline",
+    iconColor: "#6D3DA0",
+    iconBackground: "#F1EBF8",
   },
   {
     label: "App Lock",
@@ -264,9 +264,11 @@ export default function More() {
           key={item.label}
           item={item}
           onPress={
-            item.label === "App Lock"
-              ? () => router.push("/app-lock")
-              : undefined
+            item.label === "To Do List & Notes"
+              ? () => router.push("/todos")
+              : item.label === "App Lock"
+                ? () => router.push("/app-lock")
+                : undefined
           }
         />
       ))}

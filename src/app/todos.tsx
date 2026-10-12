@@ -1,0 +1,1141 @@
+import { Ionicons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  ActivityIndicator,
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  Pressable,
+  ScrollView,
+  Text,
+  TextInput,
+  View,
+  useWindowDimensions,
+} from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import api, { getApiErrorMessage } from "../api";
+import { AddPageHeader } from "../components/AddPageHeader";
+import ConfirmPopup from "../components/ConfirmPopup";
+import { DateTimePickerComponent } from "../components/DateTimePickerComponent";
+import { Colors } from "../constants/colors";
+
+type TaskStatus = "Pending" | "In Progress" | "Completed";
+type TaskPriority = "High" | "Medium" | "Low";
+
+type TodoTask = {
+  id: number | string;
+  title: string;
+  description?: string | null;
+  priority: TaskPriority;
+  status: TaskStatus;
+  dueDate?: string | null;
+  reminderAt?: string | null;
+  createdAt?: string | null;
+  updatedAt?: string | null;
+};
+
+type TaskForm = {
+  title: string;
+  description: string;
+  priority: TaskPriority;
+  status: TaskStatus;
+  dueDate: string;
+  reminderAt: string;
+};
+
+const EMPTY_FORM: TaskForm = {
+  title: "",
+  description: "",
+  priority: "Medium",
+  status: "Pending",
+  dueDate: "",
+  reminderAt: "",
+};
+const STATUSES: TaskStatus[] = ["Pending", "In Progress", "Completed"];
+const PRIORITIES: TaskPriority[] = ["High", "Medium", "Low"];
+const DUE_FILTERS = [
+  "Any due date",
+  "Overdue",
+  "Due today",
+  "Upcoming",
+  "No due date",
+] as const;
+const PAGE_SIZE = 10;
+
+type DueFilter = (typeof DUE_FILTERS)[number];
+
+function dateKey(date: Date) {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+}
+
+function dateTimeKey(date: Date) {
+  return `${dateKey(date)}T${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
+}
+
+function parseDate(value?: string | null) {
+  if (!value) return null;
+  const normalized = value.trim().replace(" ", "T");
+  const date = new Date(/^\d{4}-\d{2}-\d{2}$/.test(normalized) ? `${normalized}T00:00:00` : normalized);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+function formatDate(value?: string | null) {
+  const date = parseDate(value);
+  return date
+    ? date.toLocaleDateString("en-IN", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      })
+    : "Not set";
+}
+
+function formatDateTime(value?: string | null) {
+  const date = parseDate(value);
+  return date
+    ? date.toLocaleString("en-IN", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      })
+    : "Not set";
+}
+
+function Card({
+  children,
+  style,
+}: {
+  children: React.ReactNode;
+  style?: object;
+}) {
+  return (
+    <View
+      style={[
+        {
+          borderRadius: 18,
+          borderWidth: 1,
+          borderColor: "#E5E9EF",
+          backgroundColor: Colors.white,
+        },
+        style,
+      ]}
+    >
+      {children}
+    </View>
+  );
+}
+
+function FieldLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <Text
+      style={{
+        marginBottom: 7,
+        color: "#526071",
+        fontSize: 13,
+        fontWeight: "700",
+      }}
+    >
+      {children}
+    </Text>
+  );
+}
+
+function ChoiceChip({
+  label,
+  selected,
+  onPress,
+}: {
+  label: string;
+  selected: boolean;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityState={{ selected }}
+      onPress={onPress}
+      style={{
+        minHeight: 34,
+        justifyContent: "center",
+        paddingHorizontal: 12,
+        borderRadius: 999,
+        backgroundColor: selected ? "#EEE8F6" : "#F3F5F7",
+      }}
+    >
+      <Text
+        style={{
+          color: selected ? "#5B2D87" : "#697586",
+          fontSize: 12,
+          fontWeight: "700",
+        }}
+      >
+        {label}
+      </Text>
+    </Pressable>
+  );
+}
+
+function TaskCard({
+  task,
+  grid,
+  onEdit,
+  onDelete,
+  onToggleComplete,
+}: {
+  task: TodoTask;
+  grid: boolean;
+  onEdit: (task: TodoTask) => void;
+  onDelete: (task: TodoTask) => void;
+  onToggleComplete: (task: TodoTask) => void;
+}) {
+  const complete = task.status === "Completed";
+  const priorityColor =
+    task.priority === "High"
+      ? { background: "#FFF0F0", text: "#B84242", border: "#F3D4D4" }
+      : task.priority === "Low"
+        ? { background: "#EAF6EF", text: "#32734A", border: "#D3EBDD" }
+        : { background: "#FFF6E8", text: "#98640D", border: "#F2E3C4" };
+  const statusColor =
+    task.status === "Completed"
+      ? { background: "#EAF6EF", text: "#32734A" }
+      : task.status === "In Progress"
+        ? { background: "#EAF4FC", text: "#316D9A" }
+        : { background: "#F0F2F5", text: "#687386" };
+
+  return (
+    <Card
+      style={{
+        flexGrow: grid ? 1 : 0,
+        flexBasis: grid ? "47%" : "100%",
+        minWidth: grid ? 260 : 0,
+        marginBottom: 12,
+        overflow: "hidden",
+      }}
+    >
+      <View
+        style={{
+          height: 4,
+          backgroundColor: complete
+            ? "#53A976"
+            : task.priority === "High"
+              ? "#D95B5B"
+              : task.priority === "Low"
+                ? "#53A976"
+                : "#D5A23D",
+        }}
+      />
+      <View style={{ padding: 15 }}>
+        <View
+          style={{
+            flexDirection: "row",
+            alignItems: "flex-start",
+            justifyContent: "space-between",
+            gap: 8,
+          }}
+        >
+          <View style={{ flex: 1, flexDirection: "row", flexWrap: "wrap", gap: 7 }}>
+            <Tag
+              label={`${task.priority} priority`}
+              background={priorityColor.background}
+              color={priorityColor.text}
+              border={priorityColor.border}
+            />
+            <Tag
+              label={task.status}
+              background={statusColor.background}
+              color={statusColor.text}
+            />
+          </View>
+          <View style={{ flexDirection: "row", gap: 2 }}>
+            <IconButton
+              label={`Edit ${task.title}`}
+              icon="create-outline"
+              onPress={() => onEdit(task)}
+              color="#707C8D"
+            />
+            <IconButton
+              label={`Delete ${task.title}`}
+              icon="trash-outline"
+              onPress={() => onDelete(task)}
+              color="#BA6262"
+            />
+          </View>
+        </View>
+
+        <View style={{ flexDirection: "row", alignItems: "flex-start", gap: 10, marginTop: 13 }}>
+          <Pressable
+            accessibilityRole="checkbox"
+            accessibilityLabel={complete ? `Reopen ${task.title}` : `Complete ${task.title}`}
+            accessibilityState={{ checked: complete }}
+            onPress={() => onToggleComplete(task)}
+            hitSlop={5}
+            style={{ paddingTop: 1 }}
+          >
+            <Ionicons
+              name={complete ? "checkmark-circle" : "ellipse-outline"}
+              size={23}
+              color={complete ? "#378B57" : "#AEB6C1"}
+            />
+          </Pressable>
+          <View style={{ flex: 1, minWidth: 0 }}>
+            <Text
+              style={{
+                color: complete ? "#8B95A3" : "#253044",
+                fontSize: 16,
+                lineHeight: 22,
+                fontWeight: "800",
+                textDecorationLine: complete ? "line-through" : "none",
+              }}
+            >
+              {task.title}
+            </Text>
+            <Text
+              style={{
+                marginTop: 5,
+                color: task.description ? "#697586" : "#9AA3AF",
+                fontSize: 13,
+                lineHeight: 19,
+                fontStyle: task.description ? "normal" : "italic",
+              }}
+            >
+              {task.description || "No notes added"}
+            </Text>
+          </View>
+        </View>
+
+        <View
+          style={{
+            marginTop: 14,
+            paddingTop: 12,
+            borderTopWidth: 1,
+            borderTopColor: "#EEF0F3",
+            gap: 8,
+          }}
+        >
+          <DateInfo
+            icon="calendar-outline"
+            text={task.dueDate ? `Due ${formatDate(task.dueDate)}` : "No due date"}
+          />
+          {task.reminderAt ? (
+            <DateInfo
+              icon="alarm-outline"
+              text={`Reminder ${formatDateTime(task.reminderAt)}`}
+            />
+          ) : null}
+          <View style={{ flexDirection: "row", justifyContent: "space-between", gap: 8 }}>
+            <Text style={{ color: "#9AA3AF", fontSize: 10 }}>
+              Created {formatDate(task.createdAt)}
+            </Text>
+            <Text style={{ color: "#9AA3AF", fontSize: 10 }}>
+              Updated {formatDate(task.updatedAt)}
+            </Text>
+          </View>
+        </View>
+      </View>
+    </Card>
+  );
+}
+
+function Tag({
+  label,
+  background,
+  color,
+  border,
+}: {
+  label: string;
+  background: string;
+  color: string;
+  border?: string;
+}) {
+  return (
+    <View
+      style={{
+        paddingHorizontal: 9,
+        paddingVertical: 5,
+        borderRadius: 999,
+        backgroundColor: background,
+        borderWidth: border ? 1 : 0,
+        borderColor: border,
+      }}
+    >
+      <Text style={{ color, fontSize: 10, fontWeight: "800" }}>{label}</Text>
+    </View>
+  );
+}
+
+function IconButton({
+  label,
+  icon,
+  color,
+  onPress,
+}: {
+  label: string;
+  icon: keyof typeof Ionicons.glyphMap;
+  color: string;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      onPress={onPress}
+      hitSlop={5}
+      style={{ width: 34, height: 34, alignItems: "center", justifyContent: "center", borderRadius: 10 }}
+    >
+      <Ionicons name={icon} size={18} color={color} />
+    </Pressable>
+  );
+}
+
+function DateInfo({ icon, text }: { icon: keyof typeof Ionicons.glyphMap; text: string }) {
+  return (
+    <View style={{ flexDirection: "row", alignItems: "center", gap: 7 }}>
+      <Ionicons name={icon} size={14} color="#8055A6" />
+      <Text style={{ flex: 1, color: "#697586", fontSize: 11 }}>{text}</Text>
+    </View>
+  );
+}
+
+export default function TodosPage() {
+  const router = useRouter();
+  const insets = useSafeAreaInsets();
+  const { width } = useWindowDimensions();
+  const [tasks, setTasks] = useState<TodoTask[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [formVisible, setFormVisible] = useState(false);
+  const [form, setForm] = useState<TaskForm>(EMPTY_FORM);
+  const [editingId, setEditingId] = useState<TodoTask["id"] | null>(null);
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState<"All" | TaskStatus>("All");
+  const [priorityFilter, setPriorityFilter] = useState<"Any priority" | TaskPriority>("Any priority");
+  const [dueDateFilter, setDueDateFilter] = useState<DueFilter>("Any due date");
+  const [viewMode, setViewMode] = useState<"list" | "grid">("list");
+  const [page, setPage] = useState(1);
+  const [errorMessage, setErrorMessage] = useState("");
+  const [message, setMessage] = useState("");
+  const [taskToDelete, setTaskToDelete] = useState<TodoTask | null>(null);
+  const saveInFlight = useRef(false);
+  const today = dateKey(new Date());
+
+  const loadTasks = useCallback(async () => {
+    try {
+      const response = await api.get("/todos");
+      const result = response.data?.data;
+      if (!Array.isArray(result)) {
+        throw new Error("The server returned an invalid task list.");
+      }
+      setTasks(result);
+      setErrorMessage("");
+    } catch (error) {
+      setErrorMessage(getApiErrorMessage(error, "Unable to load your tasks."));
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void Promise.resolve().then(loadTasks);
+  }, [loadTasks]);
+
+  const completedCount = tasks.filter((task) => task.status === "Completed").length;
+  const pendingCount = tasks.filter((task) => task.status === "Pending").length;
+  const inProgressCount = tasks.filter((task) => task.status === "In Progress").length;
+  const progress = tasks.length ? Math.round((completedCount / tasks.length) * 100) : 0;
+
+  const filteredTasks = useMemo(() => {
+    const query = search.trim().toLowerCase();
+    return tasks.filter((task) => {
+      const matchesSearch =
+        !query ||
+        `${task.title || ""} ${task.description || ""}`.toLowerCase().includes(query);
+      const matchesStatus = statusFilter === "All" || task.status === statusFilter;
+      const matchesPriority =
+        priorityFilter === "Any priority" || task.priority === priorityFilter;
+      const dueDate = task.dueDate?.slice(0, 10) || "";
+      const matchesDueDate =
+        dueDateFilter === "Any due date" ||
+        (dueDateFilter === "Overdue" && !!dueDate && dueDate < today && task.status !== "Completed") ||
+        (dueDateFilter === "Due today" && dueDate === today) ||
+        (dueDateFilter === "Upcoming" && !!dueDate && dueDate > today) ||
+        (dueDateFilter === "No due date" && !dueDate);
+      return matchesSearch && matchesStatus && matchesPriority && matchesDueDate;
+    });
+  }, [dueDateFilter, priorityFilter, search, statusFilter, tasks, today]);
+
+  const orderedTasks = useMemo(
+    () => [
+      ...filteredTasks.filter((task) => task.status !== "Completed"),
+      ...filteredTasks.filter((task) => task.status === "Completed"),
+    ],
+    [filteredTasks],
+  );
+  const totalPages = Math.max(1, Math.ceil(orderedTasks.length / PAGE_SIZE));
+  const safePage = Math.min(page, totalPages);
+  const pageTasks = orderedTasks.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
+
+  const resetForm = () => {
+    setForm(EMPTY_FORM);
+    setEditingId(null);
+    setFormVisible(false);
+    setErrorMessage("");
+  };
+
+  const openNewTaskForm = () => {
+    setForm(EMPTY_FORM);
+    setEditingId(null);
+    setErrorMessage("");
+    setFormVisible(true);
+  };
+
+  const openEditTaskForm = (task: TodoTask) => {
+    setForm({
+      title: task.title || "",
+      description: task.description || "",
+      priority: task.priority || "Medium",
+      status: task.status || "Pending",
+      dueDate: task.dueDate?.slice(0, 10) || "",
+      reminderAt: task.reminderAt ? task.reminderAt.replace(" ", "T").slice(0, 16) : "",
+    });
+    setEditingId(task.id);
+    setErrorMessage("");
+    setFormVisible(true);
+  };
+
+  const submitTask = async () => {
+    if (saveInFlight.current) return;
+    if (!form.title.trim()) {
+      setErrorMessage("Enter a task title before saving.");
+      return;
+    }
+
+    saveInFlight.current = true;
+    setSaving(true);
+    setErrorMessage("");
+    try {
+      const payload = {
+        ...form,
+        title: form.title.trim(),
+        description: form.description.trim(),
+        dueDate: form.dueDate || null,
+        reminderAt: form.reminderAt || null,
+      };
+      if (editingId !== null) {
+        const response = await api.put(`/todos/${editingId}`, payload);
+        const updated = response.data?.data as TodoTask | undefined;
+        if (!updated || updated.id === undefined) {
+          throw new Error("The server did not return the updated task.");
+        }
+        setTasks((current) =>
+          current.map((task) => (String(task.id) === String(editingId) ? updated : task)),
+        );
+        setMessage(response.data?.message || "Task updated.");
+      } else {
+        const response = await api.post("/todos", payload);
+        const created = response.data?.data as TodoTask | undefined;
+        if (!created || created.id === undefined) {
+          throw new Error("The server did not return the new task.");
+        }
+        setTasks((current) => [created, ...current]);
+        setPage(1);
+        setMessage(response.data?.message || "Task added.");
+      }
+      setFormVisible(false);
+      setForm(EMPTY_FORM);
+      setEditingId(null);
+    } catch (error) {
+      setErrorMessage(getApiErrorMessage(error, "Unable to save this task."));
+    } finally {
+      saveInFlight.current = false;
+      setSaving(false);
+    }
+  };
+
+  const changeTaskStatus = async (task: TodoTask) => {
+    const status: TaskStatus = task.status === "Completed" ? "Pending" : "Completed";
+    setErrorMessage("");
+    try {
+      const response = await api.put(`/todos/${task.id}`, { ...task, status });
+      const updated = response.data?.data as TodoTask | undefined;
+      if (!updated || updated.id === undefined) {
+        throw new Error("The server did not return the updated task.");
+      }
+      setTasks((current) =>
+        current.map((item) => (String(item.id) === String(task.id) ? updated : item)),
+      );
+      setMessage(status === "Completed" ? "Task completed." : "Task marked as pending.");
+    } catch (error) {
+      setErrorMessage(getApiErrorMessage(error, "Unable to update task status."));
+    }
+  };
+
+  const deleteTask = async () => {
+    if (!taskToDelete) return;
+    const deleting = taskToDelete;
+    setErrorMessage("");
+    try {
+      const response = await api.delete(`/todos/${deleting.id}`);
+      setTasks((current) => current.filter((task) => String(task.id) !== String(deleting.id)));
+      setTaskToDelete(null);
+      setMessage(response.data?.message || "Task deleted.");
+      if (String(editingId) === String(deleting.id)) resetForm();
+    } catch (error) {
+      setTaskToDelete(null);
+      setErrorMessage(getApiErrorMessage(error, "Unable to delete this task."));
+    }
+  };
+
+  const updateForm = <K extends keyof TaskForm>(key: K, value: TaskForm[K]) => {
+    setForm((current) => ({ ...current, [key]: value }));
+    setErrorMessage("");
+  };
+
+  const statCards = [
+    {
+      label: "Total tasks",
+      value: tasks.length,
+      detail: "All tasks in your list",
+      percent: tasks.length ? 100 : 0,
+      color: "#6D3DA0",
+      icon: "list-outline" as const,
+    },
+    {
+      label: "Completed",
+      value: completedCount,
+      detail: `${progress}% completed`,
+      percent: progress,
+      color: "#3678B8",
+      icon: "checkmark-circle-outline" as const,
+    },
+    {
+      label: "Pending",
+      value: pendingCount,
+      detail: `${tasks.length ? Math.round((pendingCount / tasks.length) * 100) : 0}% of tasks`,
+      percent: tasks.length ? Math.round((pendingCount / tasks.length) * 100) : 0,
+      color: "#29936C",
+      icon: "ellipse-outline" as const,
+    },
+    {
+      label: "In progress",
+      value: inProgressCount,
+      detail: `${tasks.length ? Math.round((inProgressCount / tasks.length) * 100) : 0}% of tasks`,
+      percent: tasks.length ? Math.round((inProgressCount / tasks.length) * 100) : 0,
+      color: "#B57B20",
+      icon: "time-outline" as const,
+    },
+  ];
+
+  return (
+    <View style={{ flex: 1, backgroundColor: "#F6F7FA" }}>
+      <ScrollView
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{
+          width: "100%",
+          maxWidth: 1100,
+          alignSelf: "center",
+          paddingHorizontal: width >= 700 ? 28 : 16,
+          paddingBottom: Math.max(insets.bottom, 16) + 28,
+        }}
+      >
+        <AddPageHeader
+          title="To Do List & Notes"
+          onBack={() => {
+            if (router.canGoBack()) router.back();
+            else router.replace("/tabs/more");
+          }}
+          horizontalInset={width >= 700 ? 28 : 16}
+        />
+
+        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 10 }}>
+          {statCards.map((item) => (
+            <View
+              key={item.label}
+              style={{
+                flexGrow: 1,
+                flexBasis: width < 700 ? "47%" : "23%",
+                minWidth: width < 360 ? 125 : 145,
+                padding: 13,
+                borderRadius: 18,
+                backgroundColor: item.color,
+                overflow: "hidden",
+              }}
+            >
+              <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+                <View style={{ width: 32, height: 32, borderRadius: 11, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(255,255,255,0.18)" }}>
+                  <Ionicons name={item.icon} size={19} color={Colors.white} />
+                </View>
+                <Text style={{ color: "white", fontSize: 10, fontWeight: "800" }}>
+                  {item.percent}%
+                </Text>
+              </View>
+              <Text style={{ marginTop: 12, color: "white", fontSize: 26, fontWeight: "900" }}>
+                {item.value}
+              </Text>
+              <Text style={{ marginTop: 2, color: "white", fontSize: 13, fontWeight: "800" }}>
+                {item.label}
+              </Text>
+              <Text style={{ marginTop: 5, color: "rgba(255,255,255,0.82)", fontSize: 10 }}>
+                {item.detail}
+              </Text>
+            </View>
+          ))}
+        </View>
+
+        <Card style={{ marginTop: 18, padding: 13 }}>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+            <Ionicons name="search-outline" size={19} color="#8791A0" />
+            <TextInput
+              accessibilityLabel="Search tasks"
+              value={search}
+              onChangeText={(value) => {
+                setSearch(value);
+                setPage(1);
+              }}
+              placeholder="Search tasks..."
+              placeholderTextColor="#9AA3AF"
+              returnKeyType="search"
+              style={{ minHeight: 45, flex: 1, color: "#253044", fontSize: 14 }}
+            />
+            {search ? (
+              <Pressable accessibilityLabel="Clear search" onPress={() => setSearch("")} hitSlop={8}>
+                <Ionicons name="close-circle" size={18} color="#9AA3AF" />
+              </Pressable>
+            ) : null}
+          </View>
+
+          <Text style={filterLabel}>Status</Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 7 }}>
+            {(["All", ...STATUSES] as const).map((status) => (
+              <ChoiceChip
+                key={status}
+                label={status}
+                selected={statusFilter === status}
+                onPress={() => {
+                  setStatusFilter(status);
+                  setPage(1);
+                }}
+              />
+            ))}
+          </ScrollView>
+
+          <Text style={filterLabel}>Priority</Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 7 }}>
+            {(["Any priority", ...PRIORITIES] as const).map((priority) => (
+              <ChoiceChip
+                key={priority}
+                label={priority === "Any priority" ? "All priorities" : priority}
+                selected={priorityFilter === priority}
+                onPress={() => {
+                  setPriorityFilter(priority);
+                  setPage(1);
+                }}
+              />
+            ))}
+          </ScrollView>
+
+          <Text style={filterLabel}>Due date</Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 7 }}>
+            {DUE_FILTERS.map((due) => (
+              <ChoiceChip
+                key={due}
+                label={due}
+                selected={dueDateFilter === due}
+                onPress={() => {
+                  setDueDateFilter(due);
+                  setPage(1);
+                }}
+              />
+            ))}
+          </ScrollView>
+
+          <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 8, marginTop: 16 }}>
+            <Text style={{ color: "#687386", fontSize: 12, fontWeight: "700" }}>
+              {filteredTasks.length} {filteredTasks.length === 1 ? "task" : "tasks"}
+            </Text>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+              <View style={{ flexDirection: "row", padding: 3, borderRadius: 12, backgroundColor: "#F0F1F5" }}>
+                <ViewToggle
+                  label="List view"
+                  icon="list-outline"
+                  selected={viewMode === "list"}
+                  onPress={() => setViewMode("list")}
+                />
+                <ViewToggle
+                  label="Grid view"
+                  icon="grid-outline"
+                  selected={viewMode === "grid"}
+                  onPress={() => setViewMode("grid")}
+                />
+              </View>
+              <Pressable
+                accessibilityRole="button"
+                onPress={openNewTaskForm}
+                style={{ minHeight: 42, flexDirection: "row", alignItems: "center", gap: 5, paddingHorizontal: 12, borderRadius: 12, backgroundColor: "#5B2D87" }}
+              >
+                <Ionicons name="add" size={20} color="white" />
+                <Text style={{ color: "white", fontSize: 12, fontWeight: "800" }}>Add task</Text>
+              </Pressable>
+            </View>
+          </View>
+        </Card>
+
+        {errorMessage && !formVisible ? (
+          <View style={noticeStyle}>
+            <Text style={noticeText}>{errorMessage}</Text>
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => {
+                setLoading(true);
+                void loadTasks();
+              }}
+              hitSlop={8}
+            >
+              <Text style={{ color: "#5B2D87", fontSize: 12, fontWeight: "800" }}>Retry</Text>
+            </Pressable>
+          </View>
+        ) : null}
+        {message ? (
+          <Pressable onPress={() => setMessage("")} style={[noticeStyle, { backgroundColor: "#EAF6EF", borderColor: "#D3EBDD" }]}>
+            <Text style={{ flex: 1, color: "#32734A", fontSize: 12, fontWeight: "700" }}>{message}</Text>
+            <Ionicons name="close" size={16} color="#32734A" />
+          </Pressable>
+        ) : null}
+
+        {loading ? (
+          <View style={{ paddingVertical: 48, alignItems: "center", gap: 10 }}>
+            <ActivityIndicator color="#6D3DA0" />
+            <Text style={{ color: "#687386", fontSize: 13 }}>Loading your tasks...</Text>
+          </View>
+        ) : tasks.length === 0 ? (
+          <Card style={{ alignItems: "center", marginTop: 18, paddingHorizontal: 20, paddingVertical: 34 }}>
+            <View style={{ width: 58, height: 58, alignItems: "center", justifyContent: "center", borderRadius: 18, backgroundColor: "#F1EBF8" }}>
+              <Ionicons name="list-outline" size={29} color="#6D3DA0" />
+            </View>
+            <Text style={{ marginTop: 14, color: "#253044", fontSize: 17, fontWeight: "900" }}>Your list is clear</Text>
+            <Text style={{ marginTop: 5, color: "#687386", fontSize: 13, textAlign: "center" }}>
+              Add your first task to get started.
+            </Text>
+            <Pressable
+              accessibilityRole="button"
+              onPress={openNewTaskForm}
+              style={{ marginTop: 16, flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 15, paddingVertical: 11, borderRadius: 12, backgroundColor: "#5B2D87" }}
+            >
+              <Ionicons name="add" size={18} color="white" />
+              <Text style={{ color: "white", fontSize: 13, fontWeight: "800" }}>Add a task</Text>
+            </Pressable>
+          </Card>
+        ) : filteredTasks.length === 0 ? (
+          <Card style={{ alignItems: "center", marginTop: 18, padding: 28 }}>
+            <Ionicons name="filter-outline" size={28} color="#8993A1" />
+            <Text style={{ marginTop: 8, color: "#687386", fontSize: 13, textAlign: "center" }}>
+              No tasks match these search and filter options.
+            </Text>
+          </Card>
+        ) : (
+          <View
+            style={{
+              flexDirection: viewMode === "grid" && width >= 700 ? "row" : "column",
+              flexWrap: "wrap",
+              gap: viewMode === "grid" && width >= 700 ? 12 : 0,
+              marginTop: 18,
+            }}
+          >
+            {pageTasks.map((task) => (
+              <TaskCard
+                key={task.id}
+                task={task}
+                grid={viewMode === "grid" && width >= 700}
+                onEdit={openEditTaskForm}
+                onDelete={setTaskToDelete}
+                onToggleComplete={(selected) => void changeTaskStatus(selected)}
+              />
+            ))}
+          </View>
+        )}
+
+        {!loading && orderedTasks.length > 0 ? (
+          <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 10, marginTop: 5, padding: 12, borderRadius: 14, borderWidth: 1, borderColor: "#E5E9EF", backgroundColor: "white" }}>
+            <Text style={{ flex: 1, color: "#687386", fontSize: 11 }}>
+              Showing {(safePage - 1) * PAGE_SIZE + 1}–{Math.min(safePage * PAGE_SIZE, orderedTasks.length)} of {orderedTasks.length}
+            </Text>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Previous page"
+              disabled={safePage === 1}
+              onPress={() => setPage(Math.max(1, safePage - 1))}
+              style={{ padding: 7, opacity: safePage === 1 ? 0.4 : 1 }}
+            >
+              <Ionicons name="chevron-back" size={20} color="#5B2D87" />
+            </Pressable>
+            <Text style={{ color: "#687386", fontSize: 11, fontWeight: "700" }}>
+              {safePage}/{totalPages}
+            </Text>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Next page"
+              disabled={safePage === totalPages}
+              onPress={() => setPage(Math.min(totalPages, safePage + 1))}
+              style={{ padding: 7, opacity: safePage === totalPages ? 0.4 : 1 }}
+            >
+              <Ionicons name="chevron-forward" size={20} color="#5B2D87" />
+            </Pressable>
+          </View>
+        ) : null}
+      </ScrollView>
+
+      <Modal
+        visible={formVisible}
+        transparent
+        animationType="slide"
+        onRequestClose={() => {
+          if (!saving) resetForm();
+        }}
+        statusBarTranslucent
+      >
+        <KeyboardAvoidingView
+          behavior={Platform.OS === "ios" ? "padding" : undefined}
+          style={{ flex: 1, justifyContent: "center", padding: 14, backgroundColor: "rgba(12,16,25,0.56)" }}
+        >
+          <View style={{ width: "100%", maxWidth: 600, maxHeight: "94%", alignSelf: "center", overflow: "hidden", borderRadius: 22, backgroundColor: "white" }}>
+            <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 18, paddingVertical: 16, backgroundColor: "#350866" }}>
+              <View>
+                <Text style={{ color: "#FCD34D", fontSize: 10, fontWeight: "900", letterSpacing: 1.4 }}>TO-DO LIST</Text>
+                <Text style={{ marginTop: 3, color: "white", fontSize: 18, fontWeight: "900" }}>
+                  {editingId !== null ? "Edit task" : "Add a task"}
+                </Text>
+              </View>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Close task form"
+                disabled={saving}
+                onPress={resetForm}
+                hitSlop={8}
+                style={{ width: 36, height: 36, alignItems: "center", justifyContent: "center", borderRadius: 12, backgroundColor: "rgba(255,255,255,0.14)" }}
+              >
+                <Ionicons name="close" size={21} color="white" />
+              </Pressable>
+            </View>
+            <ScrollView
+              keyboardShouldPersistTaps="handled"
+              contentContainerStyle={{ padding: 18, paddingBottom: 22 }}
+              showsVerticalScrollIndicator={false}
+            >
+              <FieldLabel>Task title *</FieldLabel>
+              <TextInput
+                value={form.title}
+                onChangeText={(value) => updateForm("title", value)}
+                placeholder="What needs to get done?"
+                placeholderTextColor="#9AA3AF"
+                maxLength={255}
+                autoFocus
+                style={inputStyle}
+              />
+
+              <View style={{ marginTop: 14 }}>
+                <FieldLabel>Description or notes</FieldLabel>
+                <TextInput
+                  value={form.description}
+                  onChangeText={(value) => updateForm("description", value)}
+                  placeholder="Add any helpful details..."
+                  placeholderTextColor="#9AA3AF"
+                  multiline
+                  textAlignVertical="top"
+                  style={[inputStyle, { minHeight: 88, paddingTop: 12 }]}
+                />
+              </View>
+
+              <View style={{ flexDirection: "row", gap: 12, marginTop: 14 }}>
+                <View style={{ flex: 1 }}>
+                  <FieldLabel>Priority</FieldLabel>
+                  <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
+                    {PRIORITIES.map((priority) => (
+                      <ChoiceChip
+                        key={priority}
+                        label={priority}
+                        selected={form.priority === priority}
+                        onPress={() => updateForm("priority", priority)}
+                      />
+                    ))}
+                  </View>
+                </View>
+              </View>
+
+              <View style={{ marginTop: 14 }}>
+                <FieldLabel>Status</FieldLabel>
+                <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 7 }}>
+                  {STATUSES.map((status) => (
+                    <ChoiceChip
+                      key={status}
+                      label={status}
+                      selected={form.status === status}
+                      onPress={() => updateForm("status", status)}
+                    />
+                  ))}
+                </View>
+              </View>
+
+              <View style={{ marginTop: 15 }}>
+                <DateTimePickerComponent
+                  mode="date"
+                  label="Due date"
+                  value={parseDate(form.dueDate)}
+                  placeholder="Select due date"
+                  onChange={(date) => updateForm("dueDate", date ? dateKey(date) : "")}
+                />
+                {form.dueDate ? (
+                  <Pressable
+                    accessibilityRole="button"
+                    onPress={() => updateForm("dueDate", "")}
+                    style={{ alignSelf: "flex-end", marginTop: -5, paddingVertical: 5 }}
+                  >
+                    <Text style={{ color: "#7A5A93", fontSize: 11, fontWeight: "700" }}>Clear due date</Text>
+                  </Pressable>
+                ) : null}
+              </View>
+
+              <View style={{ marginTop: 8 }}>
+                <DateTimePickerComponent
+                  mode="datetime"
+                  label="Reminder"
+                  value={parseDate(form.reminderAt)}
+                  placeholder="Select date and time"
+                  onChange={(date) => updateForm("reminderAt", date ? dateTimeKey(date) : "")}
+                />
+                {form.reminderAt ? (
+                  <Pressable
+                    accessibilityRole="button"
+                    onPress={() => updateForm("reminderAt", "")}
+                    style={{ alignSelf: "flex-end", marginTop: -5, paddingVertical: 5 }}
+                  >
+                    <Text style={{ color: "#7A5A93", fontSize: 11, fontWeight: "700" }}>Clear reminder</Text>
+                  </Pressable>
+                ) : null}
+              </View>
+
+              {errorMessage ? (
+                <View style={[noticeStyle, { marginTop: 6 }]}>
+                  <Text style={noticeText}>{errorMessage}</Text>
+                </View>
+              ) : null}
+
+              <View style={{ flexDirection: "row", justifyContent: "flex-end", gap: 10, marginTop: 18 }}>
+                <Pressable
+                  accessibilityRole="button"
+                  disabled={saving}
+                  onPress={resetForm}
+                  style={{ minHeight: 46, alignItems: "center", justifyContent: "center", paddingHorizontal: 17, borderRadius: 12, borderWidth: 1, borderColor: "#DDE2E8" }}
+                >
+                  <Text style={{ color: "#637083", fontSize: 13, fontWeight: "800" }}>Cancel</Text>
+                </Pressable>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityState={{ disabled: saving, busy: saving }}
+                  disabled={saving}
+                  onPress={() => void submitTask()}
+                  style={{ minHeight: 46, minWidth: 130, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 7, paddingHorizontal: 16, borderRadius: 12, backgroundColor: "#5B2D87", opacity: saving ? 0.7 : 1 }}
+                >
+                  {saving ? <ActivityIndicator size="small" color="white" /> : <Ionicons name={editingId !== null ? "checkmark" : "add"} size={18} color="white" />}
+                  <Text style={{ color: "white", fontSize: 13, fontWeight: "900" }}>
+                    {saving ? "Saving..." : editingId !== null ? "Save changes" : "Add task"}
+                  </Text>
+                </Pressable>
+              </View>
+            </ScrollView>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
+
+      <ConfirmPopup
+        visible={Boolean(taskToDelete)}
+        type="delete"
+        title="Delete task?"
+        message={
+          taskToDelete
+            ? `Delete "${taskToDelete.title}"? This action cannot be undone.`
+            : ""
+        }
+        confirmText="Delete"
+        onConfirm={deleteTask}
+        onCancel={() => setTaskToDelete(null)}
+      />
+    </View>
+  );
+}
+
+const inputStyle = {
+  minHeight: 48,
+  paddingHorizontal: 13,
+  borderRadius: 12,
+  borderWidth: 1,
+  borderColor: "#DDE2E8",
+  color: "#253044",
+  fontSize: 14,
+  backgroundColor: "white",
+};
+
+const filterLabel = {
+  marginTop: 10,
+  marginBottom: 7,
+  color: "#8791A0",
+  fontSize: 10,
+  fontWeight: "900" as const,
+  textTransform: "uppercase" as const,
+  letterSpacing: 0.7,
+};
+
+const noticeStyle = {
+  flexDirection: "row" as const,
+  alignItems: "center" as const,
+  justifyContent: "space-between" as const,
+  gap: 10,
+  marginTop: 12,
+  paddingHorizontal: 12,
+  paddingVertical: 11,
+  borderRadius: 12,
+  borderWidth: 1,
+  borderColor: "#F1D3D3",
+  backgroundColor: "#FFF1F1",
+};
+
+const noticeText = {
+  flex: 1,
+  color: "#A13F3F",
+  fontSize: 12,
+  lineHeight: 17,
+  fontWeight: "600" as const,
+};
+
+function ViewToggle({
+  label,
+  icon,
+  selected,
+  onPress,
+}: {
+  label: string;
+  icon: keyof typeof Ionicons.glyphMap;
+  selected: boolean;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      accessibilityState={{ selected }}
+      onPress={onPress}
+      style={{
+        width: 34,
+        height: 34,
+        alignItems: "center",
+        justifyContent: "center",
+        borderRadius: 10,
+        backgroundColor: selected ? "white" : "transparent",
+      }}
+    >
+      <Ionicons name={icon} size={18} color={selected ? "#5B2D87" : "#8993A1"} />
+    </Pressable>
+  );
+}
