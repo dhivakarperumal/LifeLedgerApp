@@ -26,6 +26,7 @@ import {
     ScrollView,
     Text,
     View,
+    useWindowDimensions,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import api, {
@@ -366,6 +367,7 @@ function initialDiaryForm(categoryId = ""): DiaryForm {
 
 export default function Diary() {
   const insets = useSafeAreaInsets();
+  const { width: screenWidth } = useWindowDimensions();
   const router = useRouter();
   const { create: rawCreate, edit: editParam } = useLocalSearchParams<{
     create?: string | string[];
@@ -385,6 +387,7 @@ export default function Diary() {
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [selectedMood, setSelectedMood] = useState("all");
   const [viewMode, setViewMode] = useState<ViewModeOption>("table");
+  const useTwoColumnCards = viewMode === "card" && screenWidth >= 360;
   const [editorVisible, setEditorVisible] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [pendingDeleteEntry, setPendingDeleteEntry] =
@@ -1069,10 +1072,10 @@ export default function Diary() {
                 {/* ── Entries for this month ── */}
                 <View
                   style={{
-                    flexDirection: viewMode === "card" ? "row" : "column",
-                    flexWrap: viewMode === "card" ? "wrap" : "nowrap",
+                    flexDirection: useTwoColumnCards ? "row" : "column",
+                    flexWrap: useTwoColumnCards ? "wrap" : "nowrap",
                     justifyContent:
-                      viewMode === "card" ? "space-between" : undefined,
+                      useTwoColumnCards ? "space-between" : undefined,
                     gap: 10,
                   }}
                 >
@@ -1101,7 +1104,7 @@ export default function Diary() {
                         accessibilityLabel={`View diary entry: ${entry.title}`}
                         style={{
                           position: "relative",
-                          width: viewMode === "card" ? "48%" : "100%",
+                          width: useTwoColumnCards ? "48%" : "100%",
                           minWidth: 0,
                           flexDirection: viewMode === "card" ? "column" : "row",
                           alignItems:

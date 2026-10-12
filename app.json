@@ -11,7 +11,6 @@
       "icon": "./assets/images/logo.png"
     },
     "android": {
-
       "softwareKeyboardLayoutMode": "resize",
       "adaptiveIcon": {
         "backgroundColor": "#001A0A",
@@ -50,6 +49,12 @@
         }
       ],
       [
+        "expo-local-authentication",
+        {
+          "faceIDPermission": "Allow Life Ledger to use Face ID to unlock your private app data."
+        }
+      ],
+      [
         "expo-navigation-bar",
         {
           "enforceContrast": false,
@@ -69,7 +74,8 @@
       "@react-native-community/datetimepicker",
       "expo-video",
       "expo-sharing",
-      "expo-font"
+      "expo-font",
+      "expo-secure-store"
     ],
     "experiments": {
       "typedRoutes": true,

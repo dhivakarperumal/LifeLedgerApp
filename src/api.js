@@ -14,6 +14,7 @@ const api = axios.create({
 });
 
 let cachedToken = null;
+let appLockToken = null;
 
 /* =========================
    TOKEN MANAGEMENT
@@ -45,6 +46,12 @@ export const getStoredToken = async () => {
 
 export const clearTokenCache = () => {
   cachedToken = null;
+};
+
+export const getAppLockToken = () => appLockToken;
+
+export const setAppLockToken = (token) => {
+  appLockToken = token || null;
 };
 
 /* =========================
@@ -99,6 +106,10 @@ api.interceptors.request.use(
       config.headers.Authorization = `Bearer ${token}`;
     }
 
+    if (appLockToken) {
+      config.headers["X-App-Lock-Token"] = appLockToken;
+    }
+
     return config;
   },
   (error) => Promise.reject(error),
@@ -115,7 +126,10 @@ api.interceptors.response.use(
     if (error.response) {
       const status = error.response.status;
 
-      if (status === 401) {
+      const isAppLockUnlock = String(error.config?.url || "").includes(
+        "/app-lock/unlock",
+      );
+      if (status === 401 && !isAppLockUnlock) {
         await logoutUser();
       }
 
@@ -192,6 +206,7 @@ export const logoutUser = async () => {
     await AsyncStorage.multiRemove(["userToken", "userProfile"]);
   } finally {
     clearTokenCache();
+    setAppLockToken(null);
   }
 };
 

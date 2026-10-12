@@ -73,6 +73,13 @@ const appItems: MoreRowItem[] = [
     iconBackground: "#EEF1F4",
   },
   {
+    label: "App Lock",
+    subtitle: "PIN, pattern & biometric privacy",
+    icon: "lock-closed-outline",
+    iconColor: "#366039",
+    iconBackground: "#E8F2E8",
+  },
+  {
     label: "Backup & Export",
     subtitle: "PDF, zip & cloud sync",
     icon: "cloud-upload-outline",
@@ -253,7 +260,15 @@ export default function More() {
       </Text>
 
       {appItems.map((item) => (
-        <MoreMenuRow key={item.label} item={item} />
+        <MoreMenuRow
+          key={item.label}
+          item={item}
+          onPress={
+            item.label === "App Lock"
+              ? () => router.push("/app-lock")
+              : undefined
+          }
+        />
       ))}
 
       <Pressable

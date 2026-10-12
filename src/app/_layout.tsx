@@ -4,6 +4,7 @@ import * as SystemUI from "expo-system-ui";
 import { useEffect } from "react";
 import { Platform, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { AppLockProvider } from "../security/AppLockProvider";
 import "../../global.css";
 
 export default function RootLayout() {
@@ -16,22 +17,24 @@ export default function RootLayout() {
   return (
     <>
       {Platform.OS === "android" && <NavigationBar style="light" />}
-      <View style={{ flex: 1 }}>
-        <Stack screenOptions={{ headerShown: false }} />
-        {Platform.OS === "android" && (
-          <View
-            pointerEvents="none"
-            style={{
-              position: "absolute",
-              right: 0,
-              bottom: 0,
-              left: 0,
-              height: insets.bottom,
-              backgroundColor: "#000000",
-            }}
-          />
-        )}
-      </View>
+      <AppLockProvider>
+        <View style={{ flex: 1 }}>
+          <Stack screenOptions={{ headerShown: false }} />
+          {Platform.OS === "android" && (
+            <View
+              pointerEvents="none"
+              style={{
+                position: "absolute",
+                right: 0,
+                bottom: 0,
+                left: 0,
+                height: insets.bottom,
+                backgroundColor: "#000000",
+              }}
+            />
+          )}
+        </View>
+      </AppLockProvider>
     </>
   );
 }
