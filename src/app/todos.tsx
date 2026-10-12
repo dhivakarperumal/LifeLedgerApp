@@ -15,6 +15,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import api, { getApiErrorMessage } from "../api";
+import { AddButton } from "../components/AddButton";
 import { AddPageHeader } from "../components/AddPageHeader";
 import ConfirmPopup from "../components/ConfirmPopup";
 import { DateTimePickerComponent } from "../components/DateTimePickerComponent";
@@ -413,7 +414,12 @@ export default function TodosPage() {
   const [statusFilter, setStatusFilter] = useState<"All" | TaskStatus>("All");
   const [priorityFilter, setPriorityFilter] = useState<"Any priority" | TaskPriority>("Any priority");
   const [dueDateFilter, setDueDateFilter] = useState<DueFilter>("Any due date");
+  const [filterSheetVisible, setFilterSheetVisible] = useState(false);
+  const [draftStatusFilter, setDraftStatusFilter] = useState<"All" | TaskStatus>("All");
+  const [draftPriorityFilter, setDraftPriorityFilter] = useState<"Any priority" | TaskPriority>("Any priority");
+  const [draftDueDateFilter, setDraftDueDateFilter] = useState<DueFilter>("Any due date");
   const [viewMode, setViewMode] = useState<"list" | "grid">("list");
+  const [draftViewMode, setDraftViewMode] = useState<"list" | "grid">("list");
   const [page, setPage] = useState(1);
   const [errorMessage, setErrorMessage] = useState("");
   const [message, setMessage] = useState("");
@@ -476,6 +482,9 @@ export default function TodosPage() {
   const totalPages = Math.max(1, Math.ceil(orderedTasks.length / PAGE_SIZE));
   const safePage = Math.min(page, totalPages);
   const pageTasks = orderedTasks.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
+  const activeFilterCount = Number(statusFilter !== "All")
+    + Number(priorityFilter !== "Any priority")
+    + Number(dueDateFilter !== "Any due date");
 
   const resetForm = () => {
     setForm(EMPTY_FORM);
@@ -489,6 +498,30 @@ export default function TodosPage() {
     setEditingId(null);
     setErrorMessage("");
     setFormVisible(true);
+  };
+
+  const openFilterSheet = () => {
+    setDraftStatusFilter(statusFilter);
+    setDraftPriorityFilter(priorityFilter);
+    setDraftDueDateFilter(dueDateFilter);
+    setDraftViewMode(viewMode);
+    setFilterSheetVisible(true);
+  };
+
+  const applyFilters = () => {
+    setStatusFilter(draftStatusFilter);
+    setPriorityFilter(draftPriorityFilter);
+    setDueDateFilter(draftDueDateFilter);
+    setViewMode(draftViewMode);
+    setPage(1);
+    setFilterSheetVisible(false);
+  };
+
+  const clearFilters = () => {
+    setDraftStatusFilter("All");
+    setDraftPriorityFilter("Any priority");
+    setDraftDueDateFilter("Any due date");
+    setDraftViewMode("list");
   };
 
   const openEditTaskForm = (task: TodoTask) => {
@@ -638,7 +671,7 @@ export default function TodosPage() {
           maxWidth: 1100,
           alignSelf: "center",
           paddingHorizontal: width >= 700 ? 28 : 16,
-          paddingBottom: Math.max(insets.bottom, 16) + 28,
+          paddingBottom: Math.max(insets.bottom, 16) + 100,
         }}
       >
         <AddPageHeader
@@ -685,9 +718,27 @@ export default function TodosPage() {
           ))}
         </View>
 
-        <Card style={{ marginTop: 18, padding: 13 }}>
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-            <Ionicons name="search-outline" size={19} color="#8791A0" />
+        <View
+          style={{
+            minHeight: 50,
+            flexDirection: "row",
+            alignItems: "center",
+            gap: 9,
+            marginTop: 18,
+            paddingLeft: 13,
+            paddingRight: 5,
+            borderRadius: 26,
+            borderWidth: 1,
+            borderColor: "#E2E7E3",
+            backgroundColor: "white",
+            shadowColor: "#253044",
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: 0.08,
+            shadowRadius: 5,
+            elevation: 2,
+          }}
+        >
+            <Ionicons name="search-outline" size={18} color="#9AA3A0" />
             <TextInput
               accessibilityLabel="Search tasks"
               value={search}
@@ -698,90 +749,65 @@ export default function TodosPage() {
               placeholder="Search tasks..."
               placeholderTextColor="#9AA3AF"
               returnKeyType="search"
-              style={{ minHeight: 45, flex: 1, color: "#253044", fontSize: 14 }}
+              style={{
+                minHeight: 46,
+                flex: 1,
+                paddingVertical: 0,
+                color: "#253044",
+                fontSize: 13,
+              }}
             />
             {search ? (
-              <Pressable accessibilityLabel="Clear search" onPress={() => setSearch("")} hitSlop={8}>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Clear search"
+                onPress={() => {
+                  setSearch("");
+                  setPage(1);
+                }}
+                hitSlop={8}
+                style={{ width: 32, height: 40, alignItems: "center", justifyContent: "center" }}
+              >
                 <Ionicons name="close-circle" size={18} color="#9AA3AF" />
               </Pressable>
             ) : null}
-          </View>
-
-          <Text style={filterLabel}>Status</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 7 }}>
-            {(["All", ...STATUSES] as const).map((status) => (
-              <ChoiceChip
-                key={status}
-                label={status}
-                selected={statusFilter === status}
-                onPress={() => {
-                  setStatusFilter(status);
-                  setPage(1);
-                }}
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={
+                activeFilterCount
+                  ? `Open filters, ${activeFilterCount} active`
+                  : "Open filters"
+              }
+              accessibilityState={{ expanded: filterSheetVisible }}
+              onPress={openFilterSheet}
+              style={{
+                width: 40,
+                height: 40,
+                alignItems: "center",
+                justifyContent: "center",
+                borderRadius: 20,
+              }}
+            >
+              <Ionicons
+                name="options-outline"
+                size={19}
+                color={activeFilterCount ? "#5B2D87" : "#76817E"}
               />
-            ))}
-          </ScrollView>
-
-          <Text style={filterLabel}>Priority</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 7 }}>
-            {(["Any priority", ...PRIORITIES] as const).map((priority) => (
-              <ChoiceChip
-                key={priority}
-                label={priority === "Any priority" ? "All priorities" : priority}
-                selected={priorityFilter === priority}
-                onPress={() => {
-                  setPriorityFilter(priority);
-                  setPage(1);
-                }}
-              />
-            ))}
-          </ScrollView>
-
-          <Text style={filterLabel}>Due date</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 7 }}>
-            {DUE_FILTERS.map((due) => (
-              <ChoiceChip
-                key={due}
-                label={due}
-                selected={dueDateFilter === due}
-                onPress={() => {
-                  setDueDateFilter(due);
-                  setPage(1);
-                }}
-              />
-            ))}
-          </ScrollView>
-
-          <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 8, marginTop: 16 }}>
-            <Text style={{ color: "#687386", fontSize: 12, fontWeight: "700" }}>
-              {filteredTasks.length} {filteredTasks.length === 1 ? "task" : "tasks"}
-            </Text>
-            <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-              <View style={{ flexDirection: "row", padding: 3, borderRadius: 12, backgroundColor: "#F0F1F5" }}>
-                <ViewToggle
-                  label="List view"
-                  icon="list-outline"
-                  selected={viewMode === "list"}
-                  onPress={() => setViewMode("list")}
+              {activeFilterCount > 0 ? (
+                <View
+                  style={{
+                    position: "absolute",
+                    top: 4,
+                    right: 4,
+                    width: 7,
+                    height: 7,
+                    borderRadius: 4,
+                    backgroundColor: "#7B3FB0",
+                  }}
                 />
-                <ViewToggle
-                  label="Grid view"
-                  icon="grid-outline"
-                  selected={viewMode === "grid"}
-                  onPress={() => setViewMode("grid")}
-                />
-              </View>
-              <Pressable
-                accessibilityRole="button"
-                onPress={openNewTaskForm}
-                style={{ minHeight: 42, flexDirection: "row", alignItems: "center", gap: 5, paddingHorizontal: 12, borderRadius: 12, backgroundColor: "#5B2D87" }}
-              >
-                <Ionicons name="add" size={20} color="white" />
-                <Text style={{ color: "white", fontSize: 12, fontWeight: "800" }}>Add task</Text>
-              </Pressable>
-            </View>
-          </View>
-        </Card>
+              ) : null}
+            </Pressable>
+        </View>
 
         {errorMessage && !formVisible ? (
           <View style={noticeStyle}>
@@ -886,6 +912,229 @@ export default function TodosPage() {
           </View>
         ) : null}
       </ScrollView>
+
+      <AddButton
+      onPress={openNewTaskForm}
+      accessibilityLabel="Create a Pulse"
+      accessibilityHint="Opens the new task form"
+      bottomOffset={37}
+      />
+
+      <Modal
+        visible={filterSheetVisible}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setFilterSheetVisible(false)}
+        statusBarTranslucent
+      >
+        <View style={{ flex: 1, justifyContent: "flex-end" }}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Close filters"
+            onPress={() => setFilterSheetVisible(false)}
+            style={{
+              position: "absolute",
+              top: 0,
+              right: 0,
+              bottom: 0,
+              left: 0,
+              backgroundColor: "rgba(12,16,25,0.5)",
+            }}
+          />
+          <View
+            style={{
+              width: "100%",
+              maxHeight: "82%",
+              paddingBottom: Math.max(insets.bottom, 16),
+              borderTopLeftRadius: 24,
+              borderTopRightRadius: 24,
+              backgroundColor: "white",
+            }}
+          >
+            <View style={{ alignItems: "center", paddingTop: 10 }}>
+              <View
+                style={{
+                  width: 38,
+                  height: 4,
+                  borderRadius: 3,
+                  backgroundColor: "#D7DBE2",
+                }}
+              />
+            </View>
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "space-between",
+                paddingHorizontal: 20,
+                paddingTop: 17,
+                paddingBottom: 13,
+                borderBottomWidth: 1,
+                borderBottomColor: "#EEF0F3",
+              }}
+            >
+              <View>
+                <Text style={{ color: "#253044", fontSize: 18, fontWeight: "900" }}>
+                  Filter tasks
+                </Text>
+                <Text style={{ marginTop: 3, color: "#8791A0", fontSize: 12 }}>
+                  Filter tasks or choose how they are displayed.
+                </Text>
+              </View>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Close filters"
+                onPress={() => setFilterSheetVisible(false)}
+                hitSlop={8}
+                style={{
+                  width: 36,
+                  height: 36,
+                  alignItems: "center",
+                  justifyContent: "center",
+                  borderRadius: 12,
+                  backgroundColor: "#F3F5F7",
+                }}
+              >
+                <Ionicons name="close" size={20} color="#687386" />
+              </Pressable>
+            </View>
+
+            <ScrollView
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 6, paddingBottom: 16 }}
+            >
+              <Text style={filterLabel}>Status</Text>
+              <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+                {(["All", ...STATUSES] as const).map((status) => (
+                  <ChoiceChip
+                    key={status}
+                    label={status}
+                    selected={draftStatusFilter === status}
+                    onPress={() => setDraftStatusFilter(status)}
+                  />
+                ))}
+              </View>
+
+              <Text style={filterLabel}>Priority</Text>
+              <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+                {(["Any priority", ...PRIORITIES] as const).map((priority) => (
+                  <ChoiceChip
+                    key={priority}
+                    label={priority === "Any priority" ? "All priorities" : priority}
+                    selected={draftPriorityFilter === priority}
+                    onPress={() => setDraftPriorityFilter(priority)}
+                  />
+                ))}
+              </View>
+
+              <Text style={filterLabel}>Due date</Text>
+              <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+                {DUE_FILTERS.map((due) => (
+                  <ChoiceChip
+                    key={due}
+                    label={due}
+                    selected={draftDueDateFilter === due}
+                    onPress={() => setDraftDueDateFilter(due)}
+                  />
+                ))}
+              </View>
+
+              <Text style={filterLabel}>View mode</Text>
+              <View style={{ flexDirection: "row", gap: 10 }}>
+                {([
+                  { mode: "list", label: "List view", icon: "list-outline" },
+                  { mode: "grid", label: "Grid view", icon: "grid-outline" },
+                ] as const).map((option) => {
+                  const selected = draftViewMode === option.mode;
+                  return (
+                    <Pressable
+                      key={option.mode}
+                      accessibilityRole="radio"
+                      accessibilityLabel={option.label}
+                      accessibilityState={{ selected }}
+                      onPress={() => setDraftViewMode(option.mode)}
+                      style={{
+                        minHeight: 48,
+                        flex: 1,
+                        flexDirection: "row",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        gap: 8,
+                        borderRadius: 13,
+                        borderWidth: 1,
+                        borderColor: selected ? "#7B55A0" : "#E1E5EA",
+                        backgroundColor: selected ? "#F3EEF8" : "white",
+                      }}
+                    >
+                      <Ionicons
+                        name={option.icon}
+                        size={18}
+                        color={selected ? "#5B2D87" : "#7D8795"}
+                      />
+                      <Text
+                        style={{
+                          color: selected ? "#5B2D87" : "#687386",
+                          fontSize: 12,
+                          fontWeight: "800",
+                        }}
+                      >
+                        {option.label}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            </ScrollView>
+
+            <View
+              style={{
+                flexDirection: "row",
+                gap: 10,
+                paddingHorizontal: 20,
+                paddingTop: 12,
+                borderTopWidth: 1,
+                borderTopColor: "#EEF0F3",
+              }}
+            >
+              <Pressable
+                accessibilityRole="button"
+                onPress={clearFilters}
+                style={{
+                  minHeight: 48,
+                  minWidth: 100,
+                  alignItems: "center",
+                  justifyContent: "center",
+                  paddingHorizontal: 16,
+                  borderRadius: 13,
+                  borderWidth: 1,
+                  borderColor: "#DDE2E8",
+                }}
+              >
+                <Text style={{ color: "#687386", fontSize: 13, fontWeight: "800" }}>
+                  Reset
+                </Text>
+              </Pressable>
+              <Pressable
+                accessibilityRole="button"
+                onPress={applyFilters}
+                style={{
+                  minHeight: 48,
+                  flex: 1,
+                  alignItems: "center",
+                  justifyContent: "center",
+                  paddingHorizontal: 16,
+                  borderRadius: 13,
+                  backgroundColor: "#5B2D87",
+                }}
+              >
+                <Text style={{ color: "white", fontSize: 13, fontWeight: "900" }}>
+                  Apply filters
+                </Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
 
       <Modal
         visible={formVisible}
@@ -1108,34 +1357,3 @@ const noticeText = {
   lineHeight: 17,
   fontWeight: "600" as const,
 };
-
-function ViewToggle({
-  label,
-  icon,
-  selected,
-  onPress,
-}: {
-  label: string;
-  icon: keyof typeof Ionicons.glyphMap;
-  selected: boolean;
-  onPress: () => void;
-}) {
-  return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={label}
-      accessibilityState={{ selected }}
-      onPress={onPress}
-      style={{
-        width: 34,
-        height: 34,
-        alignItems: "center",
-        justifyContent: "center",
-        borderRadius: 10,
-        backgroundColor: selected ? "white" : "transparent",
-      }}
-    >
-      <Ionicons name={icon} size={18} color={selected ? "#5B2D87" : "#8993A1"} />
-    </Pressable>
-  );
-}
