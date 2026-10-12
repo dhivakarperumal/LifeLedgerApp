@@ -66,7 +66,7 @@ const accountItems: MoreRowItem[] = [
 
 const appItems: MoreRowItem[] = [
   {
-    label: "Settings",
+    label: "To Do List $ Notes",
     subtitle: "Privacy & notifications",
     icon: "settings-outline",
     iconColor: "#4B5563",

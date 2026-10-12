@@ -395,8 +395,8 @@ export default function AppLockSettingsPage() {
             style={{
               flexDirection: "row",
               flexWrap: "wrap",
-              gap: 12,
-              marginTop: 12,
+              gap: 14,
+              marginTop: 14,
             }}
           >
             {[
@@ -438,7 +438,9 @@ export default function AppLockSettingsPage() {
                   disabled={!serviceAvailable || busy}
                   onPress={handlePress}
                   style={({ pressed }) => ({
-                    width: wideLayout ? "48%" : "100%",
+                    flexGrow: 1,
+                    flexBasis: wideLayout ? "46%" : "100%",
+                    minWidth: 0,
                     minHeight: 82,
                     flexDirection: "row",
                     alignItems: "center",
@@ -446,8 +448,8 @@ export default function AppLockSettingsPage() {
                     paddingHorizontal: 16,
                     paddingVertical: 14,
                     borderRadius: 16,
-                    borderWidth: selected ? 2 : 1,
-                    borderColor: selected ? "#61794F" : "#E1E8F0",
+                    borderWidth: selected ? 2 : 1.5,
+                    borderColor: selected ? "#526B3F" : "#D7E0E8",
                     backgroundColor: selected ? "#F1F5EE" : Colors.white,
                     opacity: pressed ? 0.8 : 1,
                   })}
