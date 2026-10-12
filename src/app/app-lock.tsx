@@ -380,20 +380,6 @@ export default function AppLockSettingsPage() {
           }
         />
 
-        <View
-          style={{
-            flexDirection: wideLayout ? "row" : "column",
-            alignItems: wideLayout ? "center" : "flex-start",
-            justifyContent: "space-between",
-            gap: 12,
-            marginBottom: 18,
-          }}
-        >
-          <Text style={[subtitleStyle, { flex: 1, marginTop: 0 }]}>
-            Require a verified lock method before opening private Life Ledger data.
-          </Text>
-        </View>
-
         <SettingsCard style={{ padding: width >= 700 ? 32 : 18 }}>
           <SettingSwitchRow
             title="Lock protection"
