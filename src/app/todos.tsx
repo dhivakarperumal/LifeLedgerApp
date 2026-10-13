@@ -42,8 +42,6 @@ const DUE_FILTERS = [
   "Upcoming",
   "No due date",
 ] as const;
-const PAGE_SIZE = 10;
-
 type DueFilter = (typeof DUE_FILTERS)[number];
 
 function dateKey(date: Date) {
@@ -461,7 +459,6 @@ export default function TodosPage() {
   const [draftPriorityFilter, setDraftPriorityFilter] = useState<"Any priority" | TaskPriority>("Any priority");
   const [draftDueDateFilter, setDraftDueDateFilter] = useState<DueFilter>("Any due date");
   const [viewMode, setViewMode] = useState<"list" | "grid">("list");
-  const [page, setPage] = useState(1);
   const [errorMessage, setErrorMessage] = useState("");
   const [message, setMessage] = useState("");
   const [taskToDelete, setTaskToDelete] = useState<TodoTask | null>(null);
@@ -520,9 +517,6 @@ export default function TodosPage() {
     ],
     [filteredTasks],
   );
-  const totalPages = Math.max(1, Math.ceil(orderedTasks.length / PAGE_SIZE));
-  const safePage = Math.min(page, totalPages);
-  const pageTasks = orderedTasks.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
   const activeFilterCount = Number(statusFilter !== "All")
     + Number(priorityFilter !== "Any priority")
     + Number(dueDateFilter !== "Any due date");
@@ -542,7 +536,6 @@ export default function TodosPage() {
     setStatusFilter(draftStatusFilter);
     setPriorityFilter(draftPriorityFilter);
     setDueDateFilter(draftDueDateFilter);
-    setPage(1);
     setFilterSheetVisible(false);
   };
 
@@ -612,12 +605,12 @@ export default function TodosPage() {
   const cardMode = viewMode === "grid";
   const isGrid = cardMode && width >= 640;
   const taskRows = isGrid
-    ? pageTasks.reduce<TodoTask[][]>((rows, task, index) => {
+    ? orderedTasks.reduce<TodoTask[][]>((rows, task, index) => {
         if (index % 2 === 0) rows.push([task]);
         else rows[rows.length - 1].push(task);
         return rows;
       }, [])
-    : pageTasks.map((task) => [task]);
+    : orderedTasks.map((task) => [task]);
 
   return (
     <View style={{ flex: 1, backgroundColor: "#F2F5EA" }}>
@@ -702,10 +695,7 @@ export default function TodosPage() {
             <TextInput
               accessibilityLabel="Search tasks"
               value={search}
-              onChangeText={(value) => {
-                setSearch(value);
-                setPage(1);
-              }}
+              onChangeText={setSearch}
               placeholder="Search tasks..."
               placeholderTextColor="#9AA3AF"
               returnKeyType="search"
@@ -721,10 +711,7 @@ export default function TodosPage() {
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel="Clear search"
-                onPress={() => {
-                  setSearch("");
-                  setPage(1);
-                }}
+                onPress={() => setSearch("")}
                 hitSlop={8}
                 style={{ width: 32, height: 40, alignItems: "center", justifyContent: "center" }}
               >
@@ -853,34 +840,6 @@ export default function TodosPage() {
           </View>
         )}
 
-        {!loading && orderedTasks.length > 0 ? (
-          <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 10, marginTop: 5, padding: 12, borderRadius: 14, borderWidth: 1, borderColor: "#E5E9EF", backgroundColor: "white" }}>
-            <Text style={{ flex: 1, color: "#687386", fontSize: 11 }}>
-              Showing {(safePage - 1) * PAGE_SIZE + 1}–{Math.min(safePage * PAGE_SIZE, orderedTasks.length)} of {orderedTasks.length}
-            </Text>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Previous page"
-              disabled={safePage === 1}
-              onPress={() => setPage(Math.max(1, safePage - 1))}
-              style={{ padding: 7, opacity: safePage === 1 ? 0.4 : 1 }}
-            >
-              <Ionicons name="chevron-back" size={20} color="#5B2D87" />
-            </Pressable>
-            <Text style={{ color: "#687386", fontSize: 11, fontWeight: "700" }}>
-              {safePage}/{totalPages}
-            </Text>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Next page"
-              disabled={safePage === totalPages}
-              onPress={() => setPage(Math.min(totalPages, safePage + 1))}
-              style={{ padding: 7, opacity: safePage === totalPages ? 0.4 : 1 }}
-            >
-              <Ionicons name="chevron-forward" size={20} color="#5B2D87" />
-            </Pressable>
-          </View>
-        ) : null}
       </ScrollView>
 
       <AddButton
