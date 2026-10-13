@@ -1556,12 +1556,41 @@ export default function Memories() {
                   removeLabel={`Remove ${file.name}`}
                 />
               ))}
-            </ScrollView>
-
+              <View
+                style={{
+                  flexDirection: "row",
+                  gap: 10,
+                  marginTop: 12,
+                  marginBottom: 8,
+                }}
+              >
+              <Pressable
+                onPress={() => {
+                  if (router.canGoBack()) router.back();
+                  else setEditorVisible(false);
+                }}
+                disabled={submitting || isRecording}
+                style={{
+                  flex: 1,
+                  height: 50,
+                  alignItems: "center",
+                  justifyContent: "center",
+                  borderRadius: 14,
+                  borderWidth: 1,
+                  borderColor: "#CBD5E1",
+                  backgroundColor: Colors.white,
+                  opacity: submitting || isRecording ? 0.65 : 1,
+                }}
+              >
+                <Text style={{ color: "#475569", fontWeight: "700" }}>
+                  Cancel
+                </Text>
+              </Pressable>
               <Pressable
                 onPress={() => void handleSubmit()}
                 disabled={submitting || isRecording}
                 style={{
+                  flex: 1.5,
                   height: 50,
                   alignItems: "center",
                   justifyContent: "center",
@@ -1584,6 +1613,8 @@ export default function Memories() {
                   </Text>
                 )}
               </Pressable>
+              </View>
+            </ScrollView>
           </View>
           </KeyboardAvoidingView>
         </View>

@@ -1478,7 +1478,7 @@ export default function Diary() {
           className="absolute inset-0 z-50"
           style={{
             paddingBottom: insets.bottom,
-            backgroundColor: Colors.contentBackground,
+            backgroundColor: Colors.white,
           }}
         >
           <KeyboardAvoidingView
@@ -1490,7 +1490,7 @@ export default function Diary() {
               paddingHorizontal: 18,
               paddingBottom: 12,
               flex: 1,
-              backgroundColor: Colors.contentBackground,
+              backgroundColor: Colors.white,
             }}
           >
             <AddPageHeader
@@ -1703,19 +1703,41 @@ export default function Diary() {
                 </Text>
               ) : null}
 
-            </ScrollView>
-
               <View
                 style={{
+                  flexDirection: "row",
+                  gap: 10,
                   marginTop: 16,
-                  marginBottom: 5,
+                  marginBottom: 8,
                 }}
               >
+                <Pressable
+                  onPress={() => {
+                    if (router.canGoBack()) router.back();
+                    else setEditorVisible(false);
+                  }}
+                  disabled={submitting || isRecording}
+                  style={{
+                    flex: 1,
+                    height: 48,
+                    alignItems: "center",
+                    justifyContent: "center",
+                    borderRadius: 13,
+                    borderWidth: 1,
+                    borderColor: "#CBD5E1",
+                    backgroundColor: Colors.white,
+                    opacity: submitting || isRecording ? 0.6 : 1,
+                  }}
+                >
+                  <Text style={{ color: "#475569", fontWeight: "700" }}>
+                    Cancel
+                  </Text>
+                </Pressable>
                 <Pressable
                   onPress={() => void saveEntry("published")}
                   disabled={submitting || isRecording}
                   style={{
-                    width: "100%",
+                    flex: 1.5,
                     height: 48,
                     alignItems: "center",
                     justifyContent: "center",
@@ -1733,6 +1755,7 @@ export default function Diary() {
                   )}
                 </Pressable>
               </View>
+            </ScrollView>
           </View>
           </KeyboardAvoidingView>
         </View>
