@@ -1395,13 +1395,11 @@ export default function Income() {
                     ? "Replace attachment"
                     : "Choose image or PDF"}
                 </Text>
-              </Pressable>
-            </ScrollView>
-
-            <View className="flex-row gap-3 pt-3">
-              <Pressable
-                className="flex-1 items-center rounded-xl border border-[#DDE3DC] bg-white py-3.5"
-                disabled={saving}
+                </Pressable>
+                <View className="flex-row gap-3 pt-3 pb-2">
+                <Pressable
+                  className="flex-1 items-center rounded-xl border border-[#DDE3DC] bg-white py-3.5"
+                  disabled={saving}
                 onPress={closeEditor}
               >
                 <Text className="text-sm font-bold text-[#58645C]">Cancel</Text>
@@ -1419,7 +1417,8 @@ export default function Income() {
                   </Text>
                 )}
               </Pressable>
-            </View>
+              </View>
+            </ScrollView>
             </View>
           </KeyboardAvoidingView>
         </View>
