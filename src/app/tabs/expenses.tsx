@@ -489,6 +489,7 @@ export default function Expenses() {
   const [pendingDeleteExpense, setPendingDeleteExpense] =
     useState<ExpenseItem | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [closeFormAfterSuccess, setCloseFormAfterSuccess] = useState(false);
   const [manualTransfer, setManualTransfer] = useState(false);
   const [customTransferAmount, setCustomTransferAmount] = useState(false);
   const [attachment, setAttachment] = useState<PickedAttachment | null>(null);
@@ -971,16 +972,13 @@ export default function Expenses() {
           savedExpense ? [savedExpense, ...current] : current,
         );
       }
-      resetForm();
       await fetchAll();
-      Alert.alert(
-        "Saved",
+      setCloseFormAfterSuccess(true);
+      setSuccessMessage(
         isEditing
           ? "Expense updated successfully."
           : "Expense saved successfully.",
       );
-      if (router.canGoBack()) router.back();
-      else setIsModalVisible(false);
     } catch (error) {
       const status = (error as any)?.status || (error as any)?.response?.status;
       if (status === 401) {
@@ -1107,7 +1105,15 @@ export default function Expenses() {
         visible={successMessage !== null}
         type="success"
         message={successMessage ?? ""}
-        onConfirm={() => setSuccessMessage(null)}
+        onConfirm={() => {
+          setSuccessMessage(null);
+          if (closeFormAfterSuccess) {
+            setCloseFormAfterSuccess(false);
+            resetForm();
+            if (router.canGoBack()) router.back();
+            else setIsModalVisible(false);
+          }
+        }}
       />
       <View style={{ flex: 1, backgroundColor: "#F2F5EA" }}>
         {/* ── Hero Header ── */}
