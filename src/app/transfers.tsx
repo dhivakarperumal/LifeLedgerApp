@@ -1527,9 +1527,7 @@ export default function Transfers() {
                   </Text>
                 </Pressable>
               </View>
-            </ScrollView>
-
-            <View className="flex-row gap-3 pt-3">
+              <View className="flex-row gap-3 pt-3 pb-2">
               <Pressable
                 className="flex-1 items-center rounded-xl border border-[#DDE3DC] bg-white py-3.5"
                 disabled={submitting}
@@ -1552,7 +1550,8 @@ export default function Transfers() {
                   </Text>
                 )}
               </Pressable>
-            </View>
+              </View>
+            </ScrollView>
             </View>
           </KeyboardAvoidingView>
         </View>
