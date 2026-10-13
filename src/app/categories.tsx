@@ -933,27 +933,6 @@ export default function Categories() {
                 onChangeText={(value) => setFormValue("description", value)}
               />
 
-              <FormLabel>Subcategories</FormLabel>
-              <FormInput
-                accessibilityLabel="Subcategories"
-                borderColor="#AAB8AE"
-                multiline
-                placeholder={"Add one subcategory per line\nFor example: Food"}
-                textAlignVertical="top"
-                style={{
-                  minHeight: 88,
-                  marginBottom: 16,
-                  paddingHorizontal: 16,
-                  paddingVertical: 12,
-                  borderRadius: 12,
-                  backgroundColor: "#FFFFFF",
-                  color: "#25332C",
-                  fontSize: 15,
-                }}
-                value={form.subcategory}
-                onChangeText={(value) => setFormValue("subcategory", value)}
-              />
-
               <FormLabel>Status</FormLabel>
               <View className="mb-5 flex-row gap-2">
                 {(["Active", "Inactive"] as const).map((status) => {
