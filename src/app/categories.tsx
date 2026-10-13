@@ -808,7 +808,7 @@ export default function Categories() {
 
       {modalVisible && (
         <View
-          className={isNewCategoryRoute ? "flex-1 bg-[#F8F9F6]" : "absolute inset-0 z-50 bg-[#F8F9F6]"}
+          className={isNewCategoryRoute ? "flex-1 bg-white" : "absolute inset-0 z-50 bg-white"}
           style={{ paddingBottom: insets.bottom }}
         >
           <KeyboardAvoidingView
@@ -817,14 +817,13 @@ export default function Categories() {
             style={{ flex: 1 }}
           >
           <View
-            className="flex-1 bg-[#F8F9F6] px-5 pb-5"
+            className="flex-1 bg-white px-5 pb-5"
           >
             <AddPageHeader
               title={editingCategory ? "Edit Category" : "Add New Category"}
               subtitle={editingCategory?.catId}
               onBack={closeCategoryForm}
               topInsetAlreadyApplied={isNewCategoryRoute}
-              compact
             />
 
             <ScrollView
@@ -973,9 +972,7 @@ export default function Categories() {
                   );
                 })}
               </View>
-            </ScrollView>
-
-            <View className="flex-row gap-3 pt-3">
+              <View className="flex-row gap-3 pt-3 pb-2">
               <Pressable
                 className="flex-1 items-center rounded-xl border border-[#DDE3DC] bg-white py-3.5"
                 disabled={saving}
@@ -996,7 +993,8 @@ export default function Categories() {
                   </Text>
                 )}
               </Pressable>
-            </View>
+              </View>
+            </ScrollView>
           </View>
             </KeyboardAvoidingView>
         </View>
