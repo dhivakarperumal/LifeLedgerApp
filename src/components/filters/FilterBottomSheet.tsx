@@ -109,7 +109,7 @@ export function FilterBottomSheet({
   categories = [],
   multiSelectCategories = false,
   additionalFilters = [],
-  sections = ["date", "category", "status", "amount", "sort", "viewMode"],
+  sections,
   initialExpandedSections = [],
 }: FilterBottomSheetProps) {
   const [fontsLoaded] = useFonts(poppinsFontMap);
@@ -134,6 +134,20 @@ export function FilterBottomSheet({
 
   // Slide-up animation
   const [translateY] = useState(() => new Animated.Value(SCREEN_HEIGHT));
+
+  useEffect(() => {
+    if (visible) {
+      setDraft(currentFilters);
+      setExpanded({
+        date: initialExpandedSections.includes("date"),
+        category: initialExpandedSections.includes("category"),
+        status: initialExpandedSections.includes("status"),
+        amount: initialExpandedSections.includes("amount"),
+        sort: initialExpandedSections.includes("sort"),
+        viewMode: initialExpandedSections.includes("viewMode"),
+      });
+    }
+  }, [visible, currentFilters, initialExpandedSections]);
 
   useEffect(() => {
     if (visible) {
@@ -171,10 +185,9 @@ export function FilterBottomSheet({
     setDraft((prev) => ({ ...prev, ...partial }));
   };
 
-  const resolvedSections =
-    Array.isArray(sections) && sections.length > 0
-      ? Array.from(new Set([...DEFAULT_FILTER_SECTION_KEYS, ...sections]))
-      : [...DEFAULT_FILTER_SECTION_KEYS];
+  const resolvedSections = Array.isArray(sections)
+    ? Array.from(new Set(sections))
+    : [...DEFAULT_FILTER_SECTION_KEYS];
 
   const visibleSections = SECTIONS.filter((s) => resolvedSections.includes(s.key));
   const hasAnyFilterContent = visibleSections.length > 0 || additionalFilters.length > 0;

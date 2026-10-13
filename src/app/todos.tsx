@@ -3,7 +3,6 @@ import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useMemo, useState } from "react";
 import {
   ActivityIndicator,
-  Modal,
   Pressable,
   ScrollView,
   Text,
@@ -16,6 +15,11 @@ import api, { getApiErrorMessage } from "../api";
 import { AddButton } from "../components/AddButton";
 import { AddPageHeader } from "../components/AddPageHeader";
 import ConfirmPopup from "../components/ConfirmPopup";
+import { FilterBottomSheet } from "../components/filters/FilterBottomSheet";
+import {
+  DEFAULT_FILTER_STATE,
+  type FilterState,
+} from "../components/filters/filterTypes";
 import { Colors } from "../constants/colors";
 
 type TaskStatus = "Pending" | "In Progress" | "Completed";
@@ -43,6 +47,29 @@ const DUE_FILTERS = [
   "No due date",
 ] as const;
 type DueFilter = (typeof DUE_FILTERS)[number];
+const TASK_FILTER_GROUPS = [
+  {
+    key: "status",
+    label: "Status",
+    options: [
+      { value: "All", label: "All statuses" },
+      ...STATUSES.map((status) => ({ value: status, label: status })),
+    ],
+  },
+  {
+    key: "priority",
+    label: "Priority",
+    options: [
+      { value: "Any priority", label: "All priorities" },
+      ...PRIORITIES.map((priority) => ({ value: priority, label: priority })),
+    ],
+  },
+  {
+    key: "dueDate",
+    label: "Due date",
+    options: DUE_FILTERS.map((dueDate) => ({ value: dueDate, label: dueDate })),
+  },
+];
 
 function dateKey(date: Date) {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
@@ -103,41 +130,6 @@ function Card({
   );
 }
 
-function ChoiceChip({
-  label,
-  selected,
-  onPress,
-}: {
-  label: string;
-  selected: boolean;
-  onPress: () => void;
-}) {
-  return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityState={{ selected }}
-      onPress={onPress}
-      style={{
-        minHeight: 34,
-        justifyContent: "center",
-        paddingHorizontal: 12,
-        borderRadius: 999,
-        backgroundColor: selected ? "#EEE8F6" : "#F3F5F7",
-      }}
-    >
-      <Text
-        style={{
-          color: selected ? "#5B2D87" : "#697586",
-          fontSize: 12,
-          fontWeight: "700",
-        }}
-      >
-        {label}
-      </Text>
-    </Pressable>
-  );
-}
-
 function TaskCard({
   task,
   grid,
@@ -168,10 +160,9 @@ function TaskCard({
   return (
     <Card
       style={{
-        flex: grid ? 1 : undefined,
-        width: grid ? undefined : "100%",
+        width: grid ? "48%" : "100%",
         minWidth: 0,
-        minHeight: grid ? 248 : undefined,
+        minHeight: grid ? 220 : undefined,
         overflow: "hidden",
       }}
     >
@@ -190,8 +181,7 @@ function TaskCard({
       <View
         style={{
           flex: grid ? 1 : undefined,
-          justifyContent: grid ? "space-between" : undefined,
-          padding: grid ? 15 : 12,
+          padding: grid ? 12 : 12,
         }}
       >
         {!grid ? (
@@ -270,114 +260,129 @@ function TaskCard({
             </View>
           </View>
         ) : (
-          <>
-        <View
-          style={{
-            flexDirection: "row",
-            alignItems: "flex-start",
-            justifyContent: "space-between",
-            gap: 8,
-          }}
-        >
-          <View style={{ flex: 1, flexDirection: "row", flexWrap: "wrap", gap: 7 }}>
-            <Tag
-              label={`${task.priority} priority`}
-              background={priorityColor.background}
-              color={priorityColor.text}
-              border={priorityColor.border}
-            />
-            <Tag
-              label={task.status}
-              background={statusColor.background}
-              color={statusColor.text}
-            />
-          </View>
-          <View style={{ flexDirection: "row", gap: 2 }}>
-            <IconButton
-              label={`Edit ${task.title}`}
-              icon="create-outline"
-              onPress={() => onEdit(task)}
-              color="#707C8D"
-            />
-            <IconButton
-              label={`Delete ${task.title}`}
-              icon="trash-outline"
-              onPress={() => onDelete(task)}
-              color="#BA6262"
-            />
-          </View>
-        </View>
-
-        <View style={{ flexDirection: "row", alignItems: "flex-start", gap: 10, marginTop: 13 }}>
-          <Pressable
-            accessibilityRole="checkbox"
-            accessibilityLabel={complete ? `Reopen ${task.title}` : `Complete ${task.title}`}
-            accessibilityState={{ checked: complete }}
-            onPress={() => onToggleComplete(task)}
-            hitSlop={5}
-            style={{ paddingTop: 1 }}
-          >
-            <Ionicons
-              name={complete ? "checkmark-circle" : "ellipse-outline"}
-              size={23}
-              color={complete ? "#378B57" : "#AEB6C1"}
-            />
-          </Pressable>
-          <View style={{ flex: 1, minWidth: 0 }}>
-            <Text
+          <View style={{ gap: 10 }}>
+            <View
               style={{
-                color: complete ? "#8B95A3" : "#253044",
-                fontSize: 16,
-                lineHeight: 22,
-                fontWeight: "800",
-                textDecorationLine: complete ? "line-through" : "none",
+                flexDirection: "row",
+                flexWrap: "wrap",
+                alignItems: "center",
+                gap: 6,
               }}
             >
-              {task.title}
-            </Text>
-            <Text
+              <Tag
+                label={task.priority}
+                background={priorityColor.background}
+                color={priorityColor.text}
+                border={priorityColor.border}
+              />
+              <Tag
+                label={task.status}
+                background={statusColor.background}
+                color={statusColor.text}
+              />
+            </View>
+
+            <View style={{ flexDirection: "row", alignItems: "flex-start", gap: 8 }}>
+              <Pressable
+                accessibilityRole="checkbox"
+                accessibilityLabel={complete ? `Reopen ${task.title}` : `Complete ${task.title}`}
+                accessibilityState={{ checked: complete }}
+                onPress={() => onToggleComplete(task)}
+                hitSlop={5}
+                style={{ paddingTop: 1 }}
+              >
+                <Ionicons
+                  name={complete ? "checkmark-circle" : "ellipse-outline"}
+                  size={22}
+                  color={complete ? "#378B57" : "#AEB6C1"}
+                />
+              </Pressable>
+              <View style={{ flex: 1, minWidth: 0 }}>
+                <Text
+                  numberOfLines={2}
+                  style={{
+                    color: complete ? "#8B95A3" : "#253044",
+                    fontSize: 15,
+                    lineHeight: 20,
+                    fontWeight: "800",
+                    textDecorationLine: complete ? "line-through" : "none",
+                  }}
+                >
+                  {task.title}
+                </Text>
+                <Text
+                  numberOfLines={3}
+                  style={{
+                    marginTop: 4,
+                    color: task.description ? "#697586" : "#9AA3AF",
+                    fontSize: 12,
+                    lineHeight: 17,
+                    fontStyle: task.description ? "normal" : "italic",
+                  }}
+                >
+                  {task.description || "No notes added"}
+                </Text>
+              </View>
+            </View>
+
+            <View
               style={{
-                marginTop: 5,
-                color: task.description ? "#697586" : "#9AA3AF",
-                fontSize: 13,
-                lineHeight: 19,
-                fontStyle: task.description ? "normal" : "italic",
+                paddingTop: 8,
+                borderTopWidth: 1,
+                borderTopColor: "#EEF0F3",
+                gap: 7,
               }}
             >
-              {task.description || "No notes added"}
-            </Text>
-          </View>
-        </View>
+              <DateInfo
+                icon="calendar-outline"
+                text={task.dueDate ? `Due ${formatDate(task.dueDate)}` : "No due date"}
+              />
+              {task.reminderAt ? (
+                <DateInfo
+                  icon="alarm-outline"
+                  text={`Reminder ${formatDateTime(task.reminderAt)}`}
+                />
+              ) : null}
+              <View
+                style={{
+                  flexDirection: "row",
+                  flexWrap: "wrap",
+                  justifyContent: "space-between",
+                  gap: 4,
+                }}
+              >
+                <Text style={{ color: "#9AA3AF", fontSize: 9 }}>
+                  Created {formatDate(task.createdAt)}
+                </Text>
+                <Text style={{ color: "#9AA3AF", fontSize: 9 }}>
+                  Updated {formatDate(task.updatedAt)}
+                </Text>
+              </View>
+            </View>
 
-        <View
-          style={{
-            marginTop: 14,
-            paddingTop: 12,
-            borderTopWidth: 1,
-            borderTopColor: "#EEF0F3",
-            gap: 8,
-          }}
-        >
-          <DateInfo
-            icon="calendar-outline"
-            text={task.dueDate ? `Due ${formatDate(task.dueDate)}` : "No due date"}
-          />
-          {task.reminderAt ? (
-            <DateInfo
-              icon="alarm-outline"
-              text={`Reminder ${formatDateTime(task.reminderAt)}`}
-            />
-          ) : null}
-          <View style={{ flexDirection: "row", justifyContent: "space-between", gap: 8 }}>
-            <Text style={{ color: "#9AA3AF", fontSize: 10 }}>
-              Created {formatDate(task.createdAt)}
-            </Text>
-            <Text style={{ color: "#9AA3AF", fontSize: 10 }}>
-              Updated {formatDate(task.updatedAt)}
-            </Text>
+            <View
+              style={{
+                flexDirection: "row",
+                justifyContent: "flex-end",
+                borderTopWidth: 1,
+                borderTopColor: "#EEF0F3",
+                paddingTop: 4,
+              }}
+            >
+              <IconButton
+                label={`Edit ${task.title}`}
+                icon="create-outline"
+                onPress={() => onEdit(task)}
+                color="#707C8D"
+              />
+              <IconButton
+                label={`Delete ${task.title}`}
+                icon="trash-outline"
+                onPress={() => onDelete(task)}
+                color="#BA6262"
+              />
+            </View>
           </View>
-        </View>
-          </>
         )}
       </View>
     </Card>
@@ -455,10 +460,7 @@ export default function TodosPage() {
   const [priorityFilter, setPriorityFilter] = useState<"Any priority" | TaskPriority>("Any priority");
   const [dueDateFilter, setDueDateFilter] = useState<DueFilter>("Any due date");
   const [filterSheetVisible, setFilterSheetVisible] = useState(false);
-  const [draftStatusFilter, setDraftStatusFilter] = useState<"All" | TaskStatus>("All");
-  const [draftPriorityFilter, setDraftPriorityFilter] = useState<"Any priority" | TaskPriority>("Any priority");
-  const [draftDueDateFilter, setDraftDueDateFilter] = useState<DueFilter>("Any due date");
-  const [viewMode, setViewMode] = useState<"list" | "grid">("list");
+  const [viewMode, setViewMode] = useState<"table" | "card">("table");
   const [errorMessage, setErrorMessage] = useState("");
   const [message, setMessage] = useState("");
   const [taskToDelete, setTaskToDelete] = useState<TodoTask | null>(null);
@@ -520,29 +522,47 @@ export default function TodosPage() {
   const activeFilterCount = Number(statusFilter !== "All")
     + Number(priorityFilter !== "Any priority")
     + Number(dueDateFilter !== "Any due date");
+  const currentFilters = useMemo<FilterState>(
+    () => ({
+      ...DEFAULT_FILTER_STATE,
+      viewMode,
+      custom: {
+        status: statusFilter,
+        priority: priorityFilter,
+        dueDate: dueDateFilter,
+      },
+    }),
+    [dueDateFilter, priorityFilter, statusFilter, viewMode],
+  );
 
   const openNewTaskForm = () => {
     router.push("/todo-form");
   };
 
-  const openFilterSheet = () => {
-    setDraftStatusFilter(statusFilter);
-    setDraftPriorityFilter(priorityFilter);
-    setDraftDueDateFilter(dueDateFilter);
-    setFilterSheetVisible(true);
-  };
+  const openFilterSheet = () => setFilterSheetVisible(true);
 
-  const applyFilters = () => {
-    setStatusFilter(draftStatusFilter);
-    setPriorityFilter(draftPriorityFilter);
-    setDueDateFilter(draftDueDateFilter);
+  const applyFilters = (filters: FilterState) => {
+    const selectedStatus = filters.custom?.status;
+    const selectedPriority = filters.custom?.priority;
+    const selectedDueDate = filters.custom?.dueDate;
+
+    setStatusFilter(
+      selectedStatus === "All"
+        ? "All"
+        : STATUSES.find((status) => status === selectedStatus) ?? "All",
+    );
+    setPriorityFilter(
+      selectedPriority === "Any priority"
+        ? "Any priority"
+        : PRIORITIES.find((priority) => priority === selectedPriority) ??
+            "Any priority",
+    );
+    setDueDateFilter(
+      DUE_FILTERS.find((dueDate) => dueDate === selectedDueDate) ??
+        "Any due date",
+    );
+    setViewMode(filters.viewMode);
     setFilterSheetVisible(false);
-  };
-
-  const clearFilters = () => {
-    setDraftStatusFilter("All");
-    setDraftPriorityFilter("Any priority");
-    setDraftDueDateFilter("Any due date");
   };
 
   const openEditTaskForm = (task: TodoTask) => {
@@ -602,8 +622,8 @@ export default function TodosPage() {
     { label: "Pending", shortLabel: "Wait", value: pendingCount, color: "#E7F0B0" },
     { label: "In progress", shortLabel: "Prog", value: inProgressCount, color: "#FFE3A1" },
   ];
-  const cardMode = viewMode === "grid";
-  const isGrid = cardMode && width >= 640;
+  const cardMode = viewMode === "card";
+  const isGrid = cardMode;
   const taskRows = isGrid
     ? orderedTasks.reduce<TodoTask[][]>((rows, task, index) => {
         if (index % 2 === 0) rows.push([task]);
@@ -756,6 +776,65 @@ export default function TodosPage() {
             </Pressable>
         </View>
 
+        <View
+          accessibilityRole="radiogroup"
+          accessibilityLabel="Task display mode"
+          style={{
+            flexDirection: "row",
+            gap: 8,
+            marginTop: 10,
+            padding: 4,
+            borderRadius: 14,
+            backgroundColor: "#E9E5EF",
+          }}
+        >
+          {([
+            { mode: "table", label: "Table mode", icon: "list-outline" },
+            { mode: "card", label: "Card mode", icon: "grid-outline" },
+          ] as const).map((option) => {
+            const selected = viewMode === option.mode;
+            return (
+              <Pressable
+                key={option.mode}
+                accessibilityRole="radio"
+                accessibilityLabel={option.label}
+                accessibilityState={{ selected }}
+                onPress={() => setViewMode(option.mode)}
+                style={{
+                  minHeight: 42,
+                  flex: 1,
+                  flexDirection: "row",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 7,
+                  borderRadius: 11,
+                  backgroundColor: selected ? "#FFFFFF" : "transparent",
+                  shadowColor: selected ? "#253044" : "transparent",
+                  shadowOffset: { width: 0, height: 1 },
+                  shadowOpacity: selected ? 0.08 : 0,
+                  shadowRadius: 3,
+                  elevation: selected ? 1 : 0,
+                }}
+              >
+                <Ionicons
+                  name={option.icon}
+                  size={17}
+                  color={selected ? "#5B2D87" : "#687386"}
+                />
+                <Text
+                  style={{
+                    color: selected ? "#5B2D87" : "#687386",
+                    fontSize: 12,
+                    fontWeight: "800",
+                  }}
+                >
+                  {option.label}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </View>
+
         {errorMessage ? (
           <View style={noticeStyle}>
             <Text style={noticeText}>{errorMessage}</Text>
@@ -819,8 +898,10 @@ export default function TodosPage() {
               <View
                 key={row[0].id}
                 style={{
+                  width: "100%",
                   flexDirection: isGrid ? "row" : "column",
-                  alignItems: "stretch",
+                  alignItems: "flex-start",
+                  justifyContent: isGrid ? "space-between" : undefined,
                   gap: 10,
                 }}
               >
@@ -834,7 +915,7 @@ export default function TodosPage() {
                     onToggleComplete={(selected) => void changeTaskStatus(selected)}
                   />
                 ))}
-                {isGrid && row.length === 1 ? <View style={{ flex: 1 }} /> : null}
+                {isGrid && row.length === 1 ? <View style={{ width: "48%" }} /> : null}
               </View>
             ))}
           </View>
@@ -849,224 +930,15 @@ export default function TodosPage() {
       bottomOffset={20}
       />
 
-      <Modal
+      <FilterBottomSheet
         visible={filterSheetVisible}
-        transparent
-        animationType="slide"
-        onRequestClose={() => setFilterSheetVisible(false)}
-        statusBarTranslucent
-      >
-        <View style={{ flex: 1, justifyContent: "flex-end" }}>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Close filters"
-            onPress={() => setFilterSheetVisible(false)}
-            style={{
-              position: "absolute",
-              top: 0,
-              right: 0,
-              bottom: 0,
-              left: 0,
-              backgroundColor: "rgba(12,16,25,0.5)",
-            }}
-          />
-          <View
-            style={{
-              width: "100%",
-              maxHeight: "82%",
-              paddingBottom: Math.max(insets.bottom, 16),
-              borderTopLeftRadius: 24,
-              borderTopRightRadius: 24,
-              backgroundColor: "white",
-            }}
-          >
-            <View style={{ alignItems: "center", paddingTop: 10 }}>
-              <View
-                style={{
-                  width: 38,
-                  height: 4,
-                  borderRadius: 3,
-                  backgroundColor: "#D7DBE2",
-                }}
-              />
-            </View>
-            <View
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-                justifyContent: "space-between",
-                paddingHorizontal: 20,
-                paddingTop: 17,
-                paddingBottom: 13,
-                borderBottomWidth: 1,
-                borderBottomColor: "#EEF0F3",
-              }}
-            >
-              <View>
-                <Text style={{ color: "#253044", fontSize: 18, fontWeight: "900" }}>
-                  Filter tasks
-                </Text>
-                <Text style={{ marginTop: 3, color: "#8791A0", fontSize: 12 }}>
-                  Filter tasks or choose how they are displayed.
-                </Text>
-              </View>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="Close filters"
-                onPress={() => setFilterSheetVisible(false)}
-                hitSlop={8}
-                style={{
-                  width: 36,
-                  height: 36,
-                  alignItems: "center",
-                  justifyContent: "center",
-                  borderRadius: 12,
-                  backgroundColor: "#F3F5F7",
-                }}
-              >
-                <Ionicons name="close" size={20} color="#687386" />
-              </Pressable>
-            </View>
-
-            <ScrollView
-              showsVerticalScrollIndicator={false}
-              contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 6, paddingBottom: 16 }}
-            >
-              <Text style={filterLabel}>Status</Text>
-              <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
-                {(["All", ...STATUSES] as const).map((status) => (
-                  <ChoiceChip
-                    key={status}
-                    label={status}
-                    selected={draftStatusFilter === status}
-                    onPress={() => setDraftStatusFilter(status)}
-                  />
-                ))}
-              </View>
-
-              <Text style={filterLabel}>Priority</Text>
-              <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
-                {(["Any priority", ...PRIORITIES] as const).map((priority) => (
-                  <ChoiceChip
-                    key={priority}
-                    label={priority === "Any priority" ? "All priorities" : priority}
-                    selected={draftPriorityFilter === priority}
-                    onPress={() => setDraftPriorityFilter(priority)}
-                  />
-                ))}
-              </View>
-
-              <Text style={filterLabel}>Due date</Text>
-              <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
-                {DUE_FILTERS.map((due) => (
-                  <ChoiceChip
-                    key={due}
-                    label={due}
-                    selected={draftDueDateFilter === due}
-                    onPress={() => setDraftDueDateFilter(due)}
-                  />
-                ))}
-              </View>
-
-              <Text style={filterLabel}>View mode</Text>
-              <View style={{ flexDirection: "row", gap: 10 }}>
-                {([
-                  { mode: "list", label: "List view", icon: "list-outline" },
-                  { mode: "grid", label: "Card view", icon: "grid-outline" },
-                ] as const).map((option) => {
-                  const selected = viewMode === option.mode;
-                  return (
-                    <Pressable
-                      key={option.mode}
-                      accessibilityRole="radio"
-                      accessibilityLabel={option.label}
-                      accessibilityState={{ selected }}
-                      onPress={() => {
-                        setViewMode(option.mode);
-                        setFilterSheetVisible(false);
-                      }}
-                      style={{
-                        minHeight: 48,
-                        flex: 1,
-                        flexDirection: "row",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        gap: 8,
-                        borderRadius: 13,
-                        borderWidth: 1,
-                        borderColor: selected ? "#7B55A0" : "#E1E5EA",
-                        backgroundColor: selected ? "#F3EEF8" : "white",
-                      }}
-                    >
-                      <Ionicons
-                        name={option.icon}
-                        size={18}
-                        color={selected ? "#5B2D87" : "#7D8795"}
-                      />
-                      <Text
-                        style={{
-                          color: selected ? "#5B2D87" : "#687386",
-                          fontSize: 12,
-                          fontWeight: "800",
-                        }}
-                      >
-                        {option.label}
-                      </Text>
-                    </Pressable>
-                  );
-                })}
-              </View>
-            </ScrollView>
-
-            <View
-              style={{
-                flexDirection: "row",
-                gap: 10,
-                paddingHorizontal: 20,
-                paddingTop: 12,
-                borderTopWidth: 1,
-                borderTopColor: "#EEF0F3",
-              }}
-            >
-              <Pressable
-                accessibilityRole="button"
-                onPress={clearFilters}
-                style={{
-                  minHeight: 48,
-                  minWidth: 100,
-                  alignItems: "center",
-                  justifyContent: "center",
-                  paddingHorizontal: 16,
-                  borderRadius: 13,
-                  borderWidth: 1,
-                  borderColor: "#DDE2E8",
-                }}
-              >
-                <Text style={{ color: "#687386", fontSize: 13, fontWeight: "800" }}>
-                  Reset
-                </Text>
-              </Pressable>
-              <Pressable
-                accessibilityRole="button"
-                onPress={applyFilters}
-                style={{
-                  minHeight: 48,
-                  flex: 1,
-                  alignItems: "center",
-                  justifyContent: "center",
-                  paddingHorizontal: 16,
-                  borderRadius: 13,
-                  backgroundColor: "#5B2D87",
-                }}
-              >
-                <Text style={{ color: "white", fontSize: 13, fontWeight: "900" }}>
-                  Apply filters
-                </Text>
-              </Pressable>
-            </View>
-          </View>
-        </View>
-      </Modal>
+        onClose={() => setFilterSheetVisible(false)}
+        currentFilters={currentFilters}
+        onApply={applyFilters}
+        additionalFilters={TASK_FILTER_GROUPS}
+        sections={["viewMode"]}
+        initialExpandedSections={["viewMode"]}
+      />
 
       <ConfirmPopup
         visible={Boolean(taskToDelete)}
@@ -1084,16 +956,6 @@ export default function TodosPage() {
     </View>
   );
 }
-
-const filterLabel = {
-  marginTop: 10,
-  marginBottom: 7,
-  color: "#8791A0",
-  fontSize: 10,
-  fontWeight: "900" as const,
-  textTransform: "uppercase" as const,
-  letterSpacing: 0.7,
-};
 
 const noticeStyle = {
   flexDirection: "row" as const,
