@@ -401,6 +401,7 @@ export default function Memories() {
     useState<Memory | null>(null);
   const [deletingMemoryId, setDeletingMemoryId] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [closeEditorAfterSuccess, setCloseEditorAfterSuccess] = useState(false);
   const [editingId, setEditingId] = useState<number | string | null>(null);
   const [form, setForm] = useState<MemoryForm>(initialForm);
   const [existingMedia, setExistingMedia] = useState<MemoryAttachment[]>([]);
@@ -770,8 +771,7 @@ export default function Memories() {
       setSuccessMessage(
         editingId ? "Memory updated successfully." : "Memory created successfully.",
       );
-      if (router.canGoBack()) router.back();
-      else setEditorVisible(false);
+      setCloseEditorAfterSuccess(true);
     } catch (error) {
       const status = (error as any)?.status || (error as any)?.response?.status;
       if (status === 401) {
@@ -872,7 +872,14 @@ export default function Memories() {
         visible={successMessage !== null}
         type="success"
         message={successMessage ?? ""}
-        onConfirm={() => setSuccessMessage(null)}
+        onConfirm={() => {
+          setSuccessMessage(null);
+          if (closeEditorAfterSuccess) {
+            setCloseEditorAfterSuccess(false);
+            if (router.canGoBack()) router.back();
+            else setEditorVisible(false);
+          }
+        }}
       />
       {loading ? (
         <CenteredPageLoader message="Loading memories..." />

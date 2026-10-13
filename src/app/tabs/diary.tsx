@@ -394,6 +394,7 @@ export default function Diary() {
     useState<DiaryEntry | null>(null);
   const [deletingEntryId, setDeletingEntryId] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [closeEditorAfterSuccess, setCloseEditorAfterSuccess] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<number | null>(null);
   const [editingId, setEditingId] = useState<number | string | null>(null);
   const [form, setForm] = useState<DiaryForm>(initialDiaryForm());
@@ -779,22 +780,16 @@ export default function Diary() {
 
       if (attachments.length && savedId)
         await uploadAttachments(savedId, attachments);
-      else if (attachments.length && !savedId) {
-        Alert.alert(
-          "Saved with a warning",
-          "The entry was saved, but the server did not return an ID for its attachments.",
-        );
-      }
       setAttachments([]);
       await fetchData();
-      if (savedId || !attachments.length) {
-        Alert.alert(
-          "Saved",
-          status === "draft" ? "Diary draft saved." : "Diary entry saved.",
-        );
-      }
-      if (router.canGoBack()) router.back();
-      else setEditorVisible(false);
+      setSuccessMessage(
+        attachments.length && !savedId
+          ? "Diary entry saved, but the server did not return an ID for its attachments."
+          : status === "draft"
+            ? "Diary draft saved."
+            : "Diary entry saved.",
+      );
+      setCloseEditorAfterSuccess(true);
     } catch (error) {
       const code = (error as any)?.status || (error as any)?.response?.status;
       if (code === 401) {
@@ -896,7 +891,14 @@ export default function Diary() {
         visible={successMessage !== null}
         type="success"
         message={successMessage ?? ""}
-        onConfirm={() => setSuccessMessage(null)}
+        onConfirm={() => {
+          setSuccessMessage(null);
+          if (closeEditorAfterSuccess) {
+            setCloseEditorAfterSuccess(false);
+            if (router.canGoBack()) router.back();
+            else setEditorVisible(false);
+          }
+        }}
       />
       {loading ? (
         <CenteredPageLoader message="Loading diary..." />
