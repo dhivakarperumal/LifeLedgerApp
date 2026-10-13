@@ -23,6 +23,7 @@ import {
     useSafeAreaInsets,
 } from "react-native-safe-area-context";
 import api, { API_BASE_URL, getApiErrorMessage, logoutUser } from "../../api";
+import { AddButton } from "../../components/AddButton";
 import { ActionIconButton } from "../../components/ActionIconButton";
 import { AddPageHeader } from "../../components/AddPageHeader";
 
@@ -1670,54 +1671,17 @@ export default function Expenses() {
         )}
       </View>
 
-      <View
-        pointerEvents="box-none"
-        style={{
-          position: "absolute",
-          left: 16,
-          right: 16,
-          bottom: insets.bottom + 88,
-          zIndex: 12,
-        }}
-      >
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Add expense"
-          accessibilityHint="Opens the new expense form"
-          onPress={() =>
-            router.push({
-              pathname: "/expense-form" as any,
-              params: { create: "1" },
-            })
-          }
-          style={{
-            flexDirection: "row",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: 8,
-            backgroundColor: Colors.deepForest,
-            borderRadius: 18,
-            paddingVertical: 15,
-            paddingHorizontal: 18,
-            shadowColor: Colors.deepForest,
-            shadowOffset: { width: 0, height: 6 },
-            shadowOpacity: 0.25,
-            shadowRadius: 10,
-            elevation: 8,
-          }}
-        >
-          <Ionicons name="add" size={20} color={Colors.white} />
-          <Text
-            style={{
-              color: Colors.white,
-              fontSize: 15,
-              fontWeight: "700",
-            }}
-          >
-            New Expense
-          </Text>
-        </Pressable>
-      </View>
+      <AddButton
+        accessibilityLabel="Add expense"
+        accessibilityHint="Opens the new expense form"
+        bottomOffset={88}
+        onPress={() =>
+          router.push({
+            pathname: "/expense-form" as any,
+            params: { create: "1" },
+          })
+        }
+      />
 
       {/* ── Category Filter Modal ── */}
       <Modal
@@ -1896,7 +1860,6 @@ export default function Expenses() {
                   : "Edit Expense"
               }
               onBack={closeExpenseForm}
-              compact
             />
 
             <ScrollView
@@ -2201,9 +2164,8 @@ export default function Expenses() {
                   </Text>
                 </Pressable>
               </View>
-            </ScrollView>
 
-              <View style={{ flexDirection: "row", gap: 10, marginTop: 8 }}>
+              <View style={{ flexDirection: "row", gap: 10, marginTop: 12 }}>
                 <Pressable
                   onPress={() => {
                     closeExpenseForm();
@@ -2271,6 +2233,8 @@ export default function Expenses() {
                   </Text>
                 </Pressable>
               </View>
+            </ScrollView>
+
           </View>
             </KeyboardAvoidingView>
           </NativeSafeAreaView>

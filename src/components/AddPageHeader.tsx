@@ -36,11 +36,11 @@ export function AddPageHeader({
         marginBottom: compact ? 8 : 15,
         paddingHorizontal: horizontalInset,
         paddingTop: compact
-          ? 12
+          ? 8
           : topInsetAlreadyApplied
             ? 8
             : Math.max(14, insets.top + 8),
-        paddingBottom: compact ? 12 : 12,
+        paddingBottom: compact ? 8 : 12,
         gap: 4,
       }}
     >
@@ -49,7 +49,7 @@ export function AddPageHeader({
           accessibilityRole="button"
           accessibilityLabel="Go back"
           accessibilityState={{ disabled }}
-          className={`h-10 w-10 items-center justify-center rounded-full ${
+          className={`${compact ? "h-8 w-8" : "h-10 w-10"} items-center justify-center rounded-full ${
             compact ? "bg-white" : "border border-[#E6EBE7] bg-white"
           }`}
           disabled={disabled}
@@ -58,7 +58,9 @@ export function AddPageHeader({
           <ArrowLeft size={20} color="#25332C" strokeWidth={2.2} />
         </Pressable>
         <Text
-          className="min-w-0 flex-1 text-xl font-bold text-white"
+          className={`min-w-0 flex-1 font-bold text-white ${
+            compact ? "text-base" : "text-xl"
+          }`}
           numberOfLines={1}
         >
           {title}

@@ -824,6 +824,7 @@ export default function Categories() {
               subtitle={editingCategory?.catId}
               onBack={closeCategoryForm}
               topInsetAlreadyApplied={isNewCategoryRoute}
+              compact
             />
 
             <ScrollView
