@@ -55,6 +55,7 @@ const TASK_FILTER_GROUPS = [
       { value: "All", label: "All statuses" },
       ...STATUSES.map((status) => ({ value: status, label: status })),
     ],
+    presentation: "select" as const,
   },
   {
     key: "priority",
@@ -774,65 +775,6 @@ export default function TodosPage() {
                 />
               ) : null}
             </Pressable>
-        </View>
-
-        <View
-          accessibilityRole="radiogroup"
-          accessibilityLabel="Task display mode"
-          style={{
-            flexDirection: "row",
-            gap: 8,
-            marginTop: 10,
-            padding: 4,
-            borderRadius: 14,
-            backgroundColor: "#E9E5EF",
-          }}
-        >
-          {([
-            { mode: "table", label: "Table mode", icon: "list-outline" },
-            { mode: "card", label: "Card mode", icon: "grid-outline" },
-          ] as const).map((option) => {
-            const selected = viewMode === option.mode;
-            return (
-              <Pressable
-                key={option.mode}
-                accessibilityRole="radio"
-                accessibilityLabel={option.label}
-                accessibilityState={{ selected }}
-                onPress={() => setViewMode(option.mode)}
-                style={{
-                  minHeight: 42,
-                  flex: 1,
-                  flexDirection: "row",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  gap: 7,
-                  borderRadius: 11,
-                  backgroundColor: selected ? "#FFFFFF" : "transparent",
-                  shadowColor: selected ? "#253044" : "transparent",
-                  shadowOffset: { width: 0, height: 1 },
-                  shadowOpacity: selected ? 0.08 : 0,
-                  shadowRadius: 3,
-                  elevation: selected ? 1 : 0,
-                }}
-              >
-                <Ionicons
-                  name={option.icon}
-                  size={17}
-                  color={selected ? "#5B2D87" : "#687386"}
-                />
-                <Text
-                  style={{
-                    color: selected ? "#5B2D87" : "#687386",
-                    fontSize: 12,
-                    fontWeight: "800",
-                  }}
-                >
-                  {option.label}
-                </Text>
-              </Pressable>
-            );
-          })}
         </View>
 
         {errorMessage ? (
