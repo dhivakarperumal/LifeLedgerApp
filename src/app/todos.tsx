@@ -64,11 +64,13 @@ const TASK_FILTER_GROUPS = [
       { value: "Any priority", label: "All priorities" },
       ...PRIORITIES.map((priority) => ({ value: priority, label: priority })),
     ],
+    presentation: "select" as const,
   },
   {
     key: "dueDate",
     label: "Due date",
     options: DUE_FILTERS.map((dueDate) => ({ value: dueDate, label: dueDate })),
+    presentation: "select" as const,
   },
 ];
 
@@ -461,7 +463,9 @@ export default function TodosPage() {
   const [priorityFilter, setPriorityFilter] = useState<"Any priority" | TaskPriority>("Any priority");
   const [dueDateFilter, setDueDateFilter] = useState<DueFilter>("Any due date");
   const [filterSheetVisible, setFilterSheetVisible] = useState(false);
-  const [viewMode, setViewMode] = useState<"table" | "card">("table");
+  const [viewMode, setViewMode] = useState<"table" | "card">(
+    DEFAULT_FILTER_STATE.viewMode,
+  );
   const [errorMessage, setErrorMessage] = useState("");
   const [message, setMessage] = useState("");
   const [taskToDelete, setTaskToDelete] = useState<TodoTask | null>(null);
@@ -877,6 +881,12 @@ export default function TodosPage() {
         onClose={() => setFilterSheetVisible(false)}
         currentFilters={currentFilters}
         onApply={applyFilters}
+        onReset={() => {
+          setStatusFilter("All");
+          setPriorityFilter("Any priority");
+          setDueDateFilter("Any due date");
+          setViewMode(DEFAULT_FILTER_STATE.viewMode);
+        }}
         additionalFilters={TASK_FILTER_GROUPS}
         sections={["viewMode"]}
         initialExpandedSections={["viewMode"]}
