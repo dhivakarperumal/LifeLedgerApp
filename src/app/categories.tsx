@@ -818,6 +818,54 @@ export default function Categories() {
           <View
             className="flex-1 bg-white px-5 pb-5"
           >
+            {isNewCategoryRoute ? (
+              <LinearGradient
+                colors={Colors.greenGradient}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={{
+                  marginHorizontal: -20,
+                  marginBottom: 15,
+                  paddingHorizontal: 20,
+                  paddingTop: 8,
+                  paddingBottom: 12,
+                  flexDirection: "row",
+                  alignItems: "center",
+                  gap: 12,
+                }}
+              >
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Go back"
+                  accessibilityState={{ disabled: saving }}
+                  disabled={saving}
+                  onPress={closeCategoryForm}
+                  style={{
+                    width: 40,
+                    height: 40,
+                    alignItems: "center",
+                    justifyContent: "center",
+                    borderRadius: 20,
+                    borderWidth: 1,
+                    borderColor: "#E6EBE7",
+                    backgroundColor: "#FFFFFF",
+                  }}
+                >
+                  <Ionicons name="arrow-back" size={20} color="#25332C" />
+                </Pressable>
+                <Text
+                  numberOfLines={1}
+                  style={{
+                    flex: 1,
+                    color: "#FFFFFF",
+                    fontSize: 20,
+                    fontWeight: "700",
+                  }}
+                >
+                  {editingCategory ? "Edit Category" : "Add New Category"}
+                </Text>
+              </LinearGradient>
+            ) : null}
             <ScrollView
               style={{ flex: 1, minHeight: 0 }}
               contentContainerStyle={{ paddingBottom: 24 + insets.bottom }}
