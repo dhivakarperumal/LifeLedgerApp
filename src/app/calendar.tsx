@@ -20,7 +20,6 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import api, { API_BASE_URL, getApiErrorMessage } from "../api";
 import { AddButton } from "../components/AddButton";
-import { AddPageHeader } from "../components/AddPageHeader";
 import { CenteredPageLoader } from "../components/CenteredPageLoader";
 import ConfirmPopup from "../components/ConfirmPopup";
 import { DateTimePickerComponent } from "../components/DateTimePickerComponent";
@@ -475,17 +474,6 @@ export default function CalendarScreen() {
     });
     setModalType(type);
   }, [selectedDate]);
-
-  const closeEntryForm = () => {
-    if (editingEvent) {
-      setEditingEvent(null);
-      setModalType(null);
-      return;
-    }
-    if (router.canGoBack()) router.back();
-    else if (isNewEventRoute) router.replace("/calendar");
-    else setModalType(null);
-  };
 
   const openEditEvent = useCallback((entry: CalendarEntry) => {
     const savedCategoryId = getEntryCategoryId(entry);
@@ -1164,15 +1152,6 @@ export default function CalendarScreen() {
           <View
             className="flex-1 bg-[#F9FAFC] px-5 pb-5"
           >
-            <AddPageHeader
-              title={editingEvent ? "Edit Event" : "Add New Reminder"}
-              onBack={closeEntryForm}
-              horizontalInset={20}
-              disabled={saving}
-              topInsetAlreadyApplied={
-                modalType === "reminder" && !editingEvent
-              }
-            />
             <ScrollView
               style={{ flex: 1, minHeight: 0 }}
               contentContainerStyle={{ paddingBottom: 24 + insets.bottom }}

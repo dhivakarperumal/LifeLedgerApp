@@ -1,5 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import * as DocumentPicker from "expo-document-picker";
+import { LinearGradient } from "expo-linear-gradient";
 import { useFocusEffect, useLocalSearchParams, useNavigation, usePathname, useRouter } from "expo-router";
 import { useCallback, useEffect, useEffectEvent, useLayoutEffect, useMemo, useState } from "react";
 import {
@@ -25,7 +26,6 @@ import {
 import api, { API_BASE_URL, getApiErrorMessage, logoutUser } from "../../api";
 import { AddButton } from "../../components/AddButton";
 import { ActionIconButton } from "../../components/ActionIconButton";
-import { AddPageHeader } from "../../components/AddPageHeader";
 
 import ConfirmPopup from "../../components/ConfirmPopup";
 import {
@@ -1859,15 +1859,49 @@ export default function Expenses() {
               flex: 1,
             }}
           >
-            <AddPageHeader
-              title={
-                editingExpenseId === null
-                  ? "Add New Expense"
-                  : "Edit Expense"
-              }
-              onBack={closeExpenseForm}
-            />
-
+            {isStandaloneExpenseForm ? (
+              <LinearGradient
+                colors={Colors.greenGradient}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={{
+                  marginHorizontal: -20,
+                  marginBottom: 15,
+                  paddingHorizontal: 20,
+                  paddingTop: 8,
+                  paddingBottom: 12,
+                  flexDirection: "row",
+                  alignItems: "center",
+                  gap: 12,
+                }}
+              >
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Go back"
+                  accessibilityState={{ disabled: saving }}
+                  disabled={saving}
+                  onPress={closeExpenseForm}
+                  style={{
+                    width: 40,
+                    height: 40,
+                    alignItems: "center",
+                    justifyContent: "center",
+                    borderRadius: 20,
+                    borderWidth: 1,
+                    borderColor: "#E6EBE7",
+                    backgroundColor: "#FFFFFF",
+                  }}
+                >
+                  <Ionicons name="arrow-back" size={20} color="#25332C" />
+                </Pressable>
+                <Text
+                  numberOfLines={1}
+                  style={{ flex: 1, color: "#FFFFFF", fontSize: 20, fontWeight: "700" }}
+                >
+                  {editingExpenseId === null ? "Add New Expense" : "Edit Expense"}
+                </Text>
+              </LinearGradient>
+            ) : null}
             <ScrollView
               style={{ flex: 1, minHeight: 0 }}
               contentContainerStyle={{ paddingBottom: 16 }}

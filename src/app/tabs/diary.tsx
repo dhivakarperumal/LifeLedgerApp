@@ -36,7 +36,6 @@ import api, {
 } from "../../api";
 import { ActionIconButton } from "../../components/ActionIconButton";
 import { AddButton } from "../../components/AddButton";
-import { AddPageHeader } from "../../components/AddPageHeader";
 import { CenteredPageLoader } from "../../components/CenteredPageLoader";
 import ConfirmPopup from "../../components/ConfirmPopup";
 import {
@@ -1495,15 +1494,6 @@ export default function Diary() {
               backgroundColor: Colors.white,
             }}
           >
-            <AddPageHeader
-              title={editingId ? "Edit Diary" : "Add New Diary"}
-              onBack={() => {
-                if (router.canGoBack()) router.back();
-                else setEditorVisible(false);
-              }}
-              horizontalInset={18}
-              disabled={submitting || isRecording}
-            />
             <ScrollView
               style={{ flex: 1, minHeight: 0 }}
               keyboardShouldPersistTaps="handled"

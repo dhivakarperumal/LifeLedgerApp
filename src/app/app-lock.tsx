@@ -14,7 +14,6 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { getApiErrorMessage, getStoredToken } from "../api";
-import { AddPageHeader } from "../components/AddPageHeader";
 import { GradientSafeAreaView as SafeAreaView } from "../components/GradientSafeAreaView";
 import { Colors } from "../constants/colors";
 import {
@@ -87,7 +86,6 @@ export default function AppLockSettingsPage() {
     biometricAvailable,
     serviceAvailable,
     serviceError,
-    lock,
     unlockWithBiometrics,
   } = useAppLock();
   const [draftEnabled, setDraftEnabled] = useState(settings.enabled);
@@ -318,11 +316,6 @@ export default function AppLockSettingsPage() {
     }
   };
 
-  const goBack = () => {
-    if (router.canGoBack()) router.back();
-    else router.replace("/tabs/more");
-  };
-
   return (
     <SafeAreaView
       edges={["bottom"]}
@@ -340,46 +333,6 @@ export default function AppLockSettingsPage() {
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        <AddPageHeader
-          title="App Lock"
-          onBack={goBack}
-          horizontalInset={width >= 700 ? 34 : 16}
-          rightContent={
-            <View
-              accessibilityLabel={
-                settings.enabled ? "App Lock is on" : "App Lock is off"
-              }
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-                gap: 6,
-                paddingHorizontal: 10,
-                paddingVertical: 7,
-                borderRadius: 999,
-                backgroundColor: "rgba(255,255,255,0.94)",
-              }}
-            >
-              <View
-                style={{
-                  width: 7,
-                  height: 7,
-                  borderRadius: 4,
-                  backgroundColor: settings.enabled ? "#3B8A58" : "#94A3B8",
-                }}
-              />
-              <Text
-                style={{
-                  color: settings.enabled ? "#28623D" : "#64748B",
-                  fontSize: 11,
-                  fontWeight: "700",
-                }}
-              >
-                {settings.enabled ? "ON" : "OFF"}
-              </Text>
-            </View>
-          }
-        />
-
         <SettingsCard style={{ padding: width >= 700 ? 32 : 18 }}>
           <SettingSwitchRow
             title="Lock protection"

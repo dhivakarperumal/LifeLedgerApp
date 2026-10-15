@@ -24,7 +24,6 @@ import Svg, { Path, Rect } from "react-native-svg";
 import api, { API_BASE_URL, getApiErrorMessage, logoutUser } from "../api";
 import { ActionIconButton } from "../components/ActionIconButton";
 import { AddButton } from "../components/AddButton";
-import { AddPageHeader } from "../components/AddPageHeader";
 import { CenteredPageLoader } from "../components/CenteredPageLoader";
 import ConfirmPopup from "../components/ConfirmPopup";
 import {
@@ -1217,15 +1216,6 @@ export default function Transfers() {
             <View
               className="flex-1 bg-[#F8F9F6] px-5 pb-5"
             >
-            <AddPageHeader
-              title={
-                editingTransferId !== null
-                  ? "Edit Transfer"
-                  : "Add New Transfer"
-              }
-              onBack={closeModal}
-            />
-
             <ScrollView
               style={{ flex: 1, minHeight: 0 }}
               contentContainerStyle={{ paddingBottom: 24 + insets.bottom }}

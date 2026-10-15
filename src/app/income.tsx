@@ -24,7 +24,6 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Svg, { Path } from "react-native-svg";
 import api, { API_BASE_URL, getApiErrorMessage, logoutUser } from "../api";
 import { AddButton } from "../components/AddButton";
-import { AddPageHeader } from "../components/AddPageHeader";
 import {
     createDateRangeSelection,
     isDateInRange,
@@ -1246,10 +1245,6 @@ export default function Income() {
             <View
               className="flex-1 bg-[#F8F9F6] px-5 pb-5"
             >
-            <AddPageHeader
-              title={editingIncomeId ? "Edit Income" : "Add New Income"}
-              onBack={closeEditor}
-            />
             <ScrollView
               style={{ flex: 1, minHeight: 0 }}
               contentContainerStyle={{ paddingBottom: 24 + insets.bottom }}

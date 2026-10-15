@@ -13,7 +13,6 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import api, { getApiErrorMessage } from "../api";
 import { AddButton } from "../components/AddButton";
-import { AddPageHeader } from "../components/AddPageHeader";
 import ConfirmPopup from "../components/ConfirmPopup";
 import { FilterBottomSheet } from "../components/filters/FilterBottomSheet";
 import {
@@ -493,9 +492,6 @@ export default function TodosPage() {
     }, [loadTasks]),
   );
 
-  const completedCount = tasks.filter((task) => task.status === "Completed").length;
-  const pendingCount = tasks.filter((task) => task.status === "Pending").length;
-  const inProgressCount = tasks.filter((task) => task.status === "In Progress").length;
 
   const filteredTasks = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -621,12 +617,6 @@ export default function TodosPage() {
     }
   };
 
-  const statCards = [
-    { label: "Total tasks", shortLabel: "All", value: tasks.length, color: "#FFFFFF" },
-    { label: "Completed", shortLabel: "Done", value: completedCount, color: "#D5F4D3" },
-    { label: "Pending", shortLabel: "Wait", value: pendingCount, color: "#E7F0B0" },
-    { label: "In progress", shortLabel: "Prog", value: inProgressCount, color: "#FFE3A1" },
-  ];
   const cardMode = viewMode === "card";
   const isGrid = cardMode;
   const taskRows = isGrid
@@ -650,52 +640,6 @@ export default function TodosPage() {
           paddingBottom: Math.max(insets.bottom, 16) + 100,
         }}
       >
-        <AddPageHeader
-          title="To Do List & Notes"
-          onBack={() => {
-            if (router.canGoBack()) router.back();
-            else router.replace("/tabs/more");
-          }}
-          horizontalInset={width >= 700 ? 28 : 16}
-          rightContent={
-            <View
-              accessibilityLabel="Task summary"
-              style={{
-                width: 108,
-                flexDirection: "row",
-                flexWrap: "wrap",
-                justifyContent: "flex-end",
-                gap: 3,
-              }}
-            >
-              {statCards.map((item) => (
-                <View
-                  key={item.label}
-                  accessibilityLabel={`${item.label}: ${item.value}`}
-                  style={{
-                    minWidth: 51,
-                    minHeight: 20,
-                    flexDirection: "row",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    gap: 3,
-                    paddingHorizontal: 4,
-                    borderRadius: 7,
-                    backgroundColor: "rgba(255,255,255,0.16)",
-                  }}
-                >
-                  <Text style={{ color: item.color, fontSize: 10, fontWeight: "900" }}>
-                    {item.value}
-                  </Text>
-                  <Text style={{ color: "rgba(255,255,255,0.88)", fontSize: 8, fontWeight: "700" }}>
-                    {item.shortLabel}
-                  </Text>
-                </View>
-              ))}
-            </View>
-          }
-        />
-
         <View
           style={{
             minHeight: 50,

@@ -28,7 +28,6 @@ import api, {
     logoutUser,
 } from "../api";
 import { AddButton } from "../components/AddButton";
-import { AddPageHeader } from "../components/AddPageHeader";
 import { CenteredPageLoader } from "../components/CenteredPageLoader";
 import ConfirmPopup from "../components/ConfirmPopup";
 import {
@@ -819,13 +818,6 @@ export default function Categories() {
           <View
             className="flex-1 bg-white px-5 pb-5"
           >
-            <AddPageHeader
-              title={editingCategory ? "Edit Category" : "Add New Category"}
-              subtitle={editingCategory?.catId}
-              onBack={closeCategoryForm}
-              topInsetAlreadyApplied={isNewCategoryRoute}
-            />
-
             <ScrollView
               style={{ flex: 1, minHeight: 0 }}
               contentContainerStyle={{ paddingBottom: 24 + insets.bottom }}

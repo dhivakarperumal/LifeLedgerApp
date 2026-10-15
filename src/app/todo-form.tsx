@@ -14,7 +14,6 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import api, { getApiErrorMessage } from "../api";
-import { AddPageHeader } from "../components/AddPageHeader";
 import { DateTimePickerComponent } from "../components/DateTimePickerComponent";
 import { PopupSelect } from "../components/PopupSelect";
 import { Colors } from "../constants/colors";
@@ -187,14 +186,6 @@ export default function TodoFormPage() {
         backgroundColor={Colors.greenGradient[0]}
         translucent={false}
       />
-      <View style={{ paddingHorizontal: 24 }}>
-        <AddPageHeader
-          title={isEditing ? "Edit To Do" : "Add New To Do"}
-          onBack={goBack}
-          horizontalInset={24}
-          disabled={saving}
-        />
-      </View>
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={{ flex: 1 }}
