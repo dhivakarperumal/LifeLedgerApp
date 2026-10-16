@@ -1,7 +1,5 @@
-import {
-    Poppins_600SemiBold,
-    Poppins_700Bold,
-} from "@expo-google-fonts/poppins";
+import { Poppins_600SemiBold } from "@expo-google-fonts/poppins/600SemiBold";
+import { Poppins_700Bold } from "@expo-google-fonts/poppins/700Bold";
 import { useFonts } from "expo-font";
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
@@ -41,7 +39,6 @@ export function LoadingScreen() {
     let cancelled = false;
 
     const redirect = async () => {
-      await new Promise((resolve) => setTimeout(resolve, 1800));
       const loggedIn = await isLoggedIn().catch(() => false);
 
       if (!cancelled) {

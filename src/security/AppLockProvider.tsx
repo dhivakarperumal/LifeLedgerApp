@@ -194,20 +194,6 @@ export function AppLockProvider({ children }: { children: ReactNode }) {
       } else if (!getAppLockToken()) {
         setLocked(true);
       }
-      if (Platform.OS !== "web") {
-        try {
-          const LocalAuthentication = await import("expo-local-authentication");
-          const [hasHardware, enrolled] = await Promise.all([
-            LocalAuthentication.hasHardwareAsync(),
-            LocalAuthentication.isEnrolledAsync(),
-          ]);
-          setBiometricAvailable(hasHardware && enrolled);
-        } catch {
-          setBiometricAvailable(false);
-        }
-      } else {
-        setBiometricAvailable(false);
-      }
       setLoadError("");
       return nextSettings;
     } catch (error) {
@@ -232,6 +218,27 @@ export function AppLockProvider({ children }: { children: ReactNode }) {
   const refreshSettings = useCallback(async () => {
     await fetchSettings();
   }, [fetchSettings]);
+
+  useEffect(() => {
+    let active = true;
+    if (Platform.OS !== "web") {
+      void import("expo-local-authentication")
+        .then(async (LocalAuthentication) => {
+          const [hasHardware, enrolled] = await Promise.all([
+            LocalAuthentication.hasHardwareAsync(),
+            LocalAuthentication.isEnrolledAsync(),
+          ]);
+          if (active) setBiometricAvailable(hasHardware && enrolled);
+        })
+        .catch(() => {
+          if (active) setBiometricAvailable(false);
+        });
+    }
+
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const lock = useCallback(async (broadcast = true) => {
     const token = getAppLockToken();
@@ -314,8 +321,12 @@ export function AppLockProvider({ children }: { children: ReactNode }) {
 
     setLocked(true);
     try {
-      await api.post("/app-lock/lock");
-      await fetchSettings();
+      const [lockResult, settingsResult] = await Promise.allSettled([
+        api.post("/app-lock/lock"),
+        fetchSettings(),
+      ]);
+      if (lockResult.status === "rejected") throw lockResult.reason;
+      if (settingsResult.status === "rejected") throw settingsResult.reason;
     } catch (error) {
       if (!mountedRef.current) return;
       if ((error as { status?: number })?.status === 401) {

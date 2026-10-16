@@ -15,7 +15,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Svg, { Circle } from "react-native-svg";
 import { TopHeader } from "../../Navigations/TopHeader";
-import api, { API_BASE_URL, getStoredUser } from "../../api";
+import api, { API_BASE_URL, getShared, getStoredUser } from "../../api";
 import { CenteredPageLoader } from "../../components/CenteredPageLoader";
 import ConfirmPopup from "../../components/ConfirmPopup";
 import { GradientSafeAreaView as SafeAreaView } from "../../components/GradientSafeAreaView";
@@ -337,6 +337,7 @@ export default function Index() {
     [],
   );
   const [monthlyBudget, setMonthlyBudget] = useState(0);
+  const [budgetLoaded, setBudgetLoaded] = useState(false);
   const [budgetCategories, setBudgetCategories] = useState<
     BudgetCategoryItem[]
   >([]);
@@ -415,20 +416,25 @@ export default function Index() {
       const fetchData = async () => {
         try {
           if (!hasLoadedHomeOnce) setIsLoading(true);
-          const [
-            expensesRes,
-            memoriesRes,
-            diaryRes,
-            eventsRes,
-            incomesRes,
-            budgetRes,
-          ] = await Promise.allSettled([
+          void api
+            .get("/incomes/monthly-budget")
+            .then((response) => {
+              if (!isActive) return;
+              const value = Number(
+                response.data?.monthly_budget ??
+                  response.data?.data?.monthly_budget ??
+                  0,
+              );
+              setMonthlyBudget(Number.isFinite(value) ? Math.max(value, 0) : 0);
+              setBudgetLoaded(true);
+            })
+            .catch((error) => {
+              console.error("Failed to fetch monthly budget:", error);
+              if (isActive) setBudgetLoaded(true);
+            });
+          const [expensesRes, incomesRes] = await Promise.allSettled([
             api.get("/expenses"),
-            api.get("/memories"),
-            api.get("/diary"),
-            api.get("/calendar/events"),
             api.get("/incomes"),
-            api.get("/incomes/monthly-budget"),
           ]);
 
           if (!isActive) return;
@@ -446,46 +452,10 @@ export default function Index() {
                   ? expensesRes.value.data.expenses
                   : [];
 
-          const memoriesData =
-            memoriesRes.status === "fulfilled" &&
-            Array.isArray(memoriesRes.value?.data)
-              ? memoriesRes.value.data
-              : memoriesRes.status === "fulfilled" &&
-                  Array.isArray(memoriesRes.value?.data?.data)
-                ? memoriesRes.value.data.data
-                : memoriesRes.status === "fulfilled" &&
-                    Array.isArray(memoriesRes.value?.data?.memories)
-                  ? memoriesRes.value.data.memories
-                  : [];
-
-          const diaryData =
-            diaryRes.status === "fulfilled" &&
-            Array.isArray(diaryRes.value?.data)
-              ? diaryRes.value.data
-              : diaryRes.status === "fulfilled" &&
-                  Array.isArray(diaryRes.value?.data?.data)
-                ? diaryRes.value.data.data
-                : diaryRes.status === "fulfilled" &&
-                    Array.isArray(diaryRes.value?.data?.entries)
-                  ? diaryRes.value.data.entries
-                  : [];
-
-          const eventsData =
-            eventsRes.status === "fulfilled"
-              ? getCalendarEvents(eventsRes.value.data)
-              : [];
           const incomeData =
             incomesRes.status === "fulfilled"
               ? getIncomeRecords(incomesRes.value.data)
               : [];
-          if (budgetRes.status === "fulfilled") {
-            const value = Number(
-              budgetRes.value.data?.monthly_budget ??
-                budgetRes.value.data?.data?.monthly_budget ??
-                0,
-            );
-            setMonthlyBudget(Number.isFinite(value) ? Math.max(value, 0) : 0);
-          }
 
           // Process expenses stats
           const now = new Date();
@@ -617,6 +587,43 @@ export default function Index() {
               )
               .slice(0, 3),
           );
+          hasLoadedHomeOnce = true;
+          setIsLoading(false);
+          setIsRefreshing(false);
+
+          const secondaryDataRequest = Promise.allSettled([
+            api.get("/memories"),
+            api.get("/diary"),
+            getShared("/calendar/events"),
+          ]);
+          const [memoriesRes, diaryRes, eventsRes] =
+            await secondaryDataRequest;
+          if (!isActive) return;
+
+          const memoriesData =
+            memoriesRes.status === "fulfilled" &&
+            Array.isArray(memoriesRes.value?.data)
+                ? memoriesRes.value.data
+                : memoriesRes.status === "fulfilled" &&
+                    Array.isArray(memoriesRes.value?.data?.data)
+                  ? memoriesRes.value.data.data
+                  : memoriesRes.status === "fulfilled" &&
+                      Array.isArray(memoriesRes.value?.data?.memories)
+                    ? memoriesRes.value.data.memories
+                    : [];
+
+          const diaryData =
+            diaryRes.status === "fulfilled" &&
+            Array.isArray(diaryRes.value?.data)
+                ? diaryRes.value.data
+                : diaryRes.status === "fulfilled" &&
+                    Array.isArray(diaryRes.value?.data?.data)
+                  ? diaryRes.value.data.data
+                  : diaryRes.status === "fulfilled" &&
+                      Array.isArray(diaryRes.value?.data?.entries)
+                    ? diaryRes.value.data.entries
+                    : [];
+
           setRecentMemories(
             memoriesData
               .filter(
@@ -635,7 +642,11 @@ export default function Index() {
               )
               .slice(0, 3),
           );
-          setCalendarEvents(eventsData);
+          setCalendarEvents(
+            eventsRes.status === "fulfilled"
+              ? getCalendarEvents(eventsRes.value.data)
+              : [],
+          );
         } catch (error) {
           console.error("Failed to fetch home data:", error);
         } finally {
@@ -1162,15 +1173,24 @@ export default function Index() {
                     <Pressable
                       accessibilityRole="button"
                       onPress={() => router.push("/income")}
+                      disabled={!budgetLoaded}
                       className="flex-row items-center rounded-full bg-[#78965F] px-3 py-2"
                     >
-                      <Ionicons
-                        name={monthlyBudget > 0 ? "create-outline" : "add"}
-                        size={14}
-                        color={Colors.white}
-                      />
+                      {budgetLoaded ? (
+                        <Ionicons
+                          name={monthlyBudget > 0 ? "create-outline" : "add"}
+                          size={14}
+                          color={Colors.white}
+                        />
+                      ) : (
+                        <ActivityIndicator size="small" color={Colors.white} />
+                      )}
                       <Text className="ml-1 text-[10px] font-bold text-white">
-                        {monthlyBudget > 0 ? "Edit Budget" : "Add Budget"}
+                        {!budgetLoaded
+                          ? "Loading..."
+                          : monthlyBudget > 0
+                            ? "Edit Budget"
+                            : "Add Budget"}
                       </Text>
                     </Pressable>
                   </View>
@@ -1224,7 +1244,9 @@ export default function Index() {
                         className="mt-0.5 text-[10px]"
                         style={{ color: Colors.textSecondary }}
                       >
-                        of {formatAmount(monthlyBudget)} used
+                        {budgetLoaded
+                          ? `of ${formatAmount(monthlyBudget)} used`
+                          : "Loading monthly budget..."}
                       </Text>
                     </View>
                   </View>

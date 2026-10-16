@@ -1,4 +1,4 @@
-import { Poppins_600SemiBold } from "@expo-google-fonts/poppins";
+import { Poppins_600SemiBold } from "@expo-google-fonts/poppins/600SemiBold";
 import { Ionicons } from "@expo/vector-icons";
 import { useFonts } from "expo-font";
 import { useState } from "react";

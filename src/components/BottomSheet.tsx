@@ -1,7 +1,5 @@
-import {
-    Poppins_600SemiBold,
-    Poppins_700Bold,
-} from "@expo-google-fonts/poppins";
+import { Poppins_600SemiBold } from "@expo-google-fonts/poppins/600SemiBold";
+import { Poppins_700Bold } from "@expo-google-fonts/poppins/700Bold";
 import { Ionicons } from "@expo/vector-icons";
 import { useFonts } from "expo-font";
 import { cloneElement, isValidElement, type ReactNode } from "react";

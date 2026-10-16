@@ -13,7 +13,12 @@ import {
     useWindowDimensions,
     View,
 } from "react-native";
-import api, { getStoredToken, getStoredUser, logoutUser } from "../api";
+import api, {
+  getShared,
+  getStoredToken,
+  getStoredUser,
+  logoutUser,
+} from "../api";
 import ConfirmPopup from "../components/ConfirmPopup";
 import { parseLocalDate } from "../components/dateTimeUtils";
 import { GradientSafeAreaView as SafeAreaView } from "../components/GradientSafeAreaView";
@@ -110,7 +115,7 @@ export function TopHeader({ showLogo = true }: { showLogo?: boolean } = {}) {
     const loadNotifications = async () => {
       try {
         const [eventsResponse, remindersResponse] = await Promise.all([
-          api.get("/calendar/events").catch(() => ({ data: [] })),
+          getShared("/calendar/events").catch(() => ({ data: [] })),
           api.get("/calendar/reminders").catch(() => ({ data: [] })),
         ]);
 

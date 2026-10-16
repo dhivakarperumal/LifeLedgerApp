@@ -511,11 +511,13 @@ export default function Income() {
     if (showLoading && !incomeDataCache.hasData()) setLoading(true);
     try {
       const data = await incomeDataCache.load(async () => {
-        const incomeResponse = await api.get("/incomes");
-        const [categoryResult, budgetResult] = await Promise.allSettled([
-          api.get("/categories"),
-          api.get("/incomes/monthly-budget"),
-        ]);
+        const [incomeResult, categoryResult, budgetResult] =
+          await Promise.allSettled([
+            api.get("/incomes"),
+            api.get("/categories"),
+            api.get("/incomes/monthly-budget"),
+          ]);
+        if (incomeResult.status === "rejected") throw incomeResult.reason;
         for (const result of [categoryResult, budgetResult]) {
           if (
             result.status === "rejected" &&
@@ -564,7 +566,7 @@ export default function Income() {
         }
 
         return {
-          incomes: getRows(incomeResponse.data, "incomes"),
+          incomes: getRows(incomeResult.value.data, "incomes"),
           categories,
           monthlyBudget: nextBudget,
         };

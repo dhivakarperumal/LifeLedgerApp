@@ -13,15 +13,26 @@ const api = axios.create({
   },
 });
 
-let cachedToken = null;
+let cachedToken;
+let tokenCacheVersion = 0;
+let tokenReadPromise = null;
+let userReadPromise = null;
 let appLockToken = null;
+const inFlightGetRequests = new Map();
+
+const clearInFlightGetRequests = () => {
+  inFlightGetRequests.clear();
+};
 
 /* =========================
    TOKEN MANAGEMENT
 ========================= */
 
 export const setAuthToken = async (token) => {
+  tokenCacheVersion += 1;
+  clearInFlightGetRequests();
   cachedToken = token || null;
+  tokenReadPromise = null;
 
   if (token) {
     await AsyncStorage.setItem("userToken", token);
@@ -31,21 +42,46 @@ export const setAuthToken = async (token) => {
 };
 
 export const getStoredToken = async () => {
-  if (cachedToken) {
+  if (cachedToken !== undefined) {
     return cachedToken;
   }
 
-  const token = await AsyncStorage.getItem("userToken");
-
-  if (token) {
-    cachedToken = token;
+  if (!tokenReadPromise) {
+    const version = tokenCacheVersion;
+    const request = AsyncStorage.getItem("userToken")
+      .then((token) => {
+        const value = token || null;
+        if (version !== tokenCacheVersion) return cachedToken || null;
+        cachedToken = value;
+        return value;
+      })
+      .finally(() => {
+        if (tokenReadPromise === request) tokenReadPromise = null;
+      });
+    tokenReadPromise = request;
   }
 
-  return token || null;
+  return tokenReadPromise;
 };
 
 export const clearTokenCache = () => {
-  cachedToken = null;
+  tokenCacheVersion += 1;
+  clearInFlightGetRequests();
+  cachedToken = undefined;
+  tokenReadPromise = null;
+};
+
+export const getShared = (url) => {
+  const existingRequest = inFlightGetRequests.get(url);
+  if (existingRequest) return existingRequest;
+
+  const request = api.get(url).finally(() => {
+    if (inFlightGetRequests.get(url) === request) {
+      inFlightGetRequests.delete(url);
+    }
+  });
+  inFlightGetRequests.set(url, request);
+  return request;
 };
 
 export const getAppLockToken = () => appLockToken;
@@ -60,22 +96,29 @@ export const setAppLockToken = (token) => {
 
 export const saveUser = async (user) => {
   if (user) {
+    userReadPromise = null;
     await AsyncStorage.setItem("userProfile", JSON.stringify(user));
   }
 };
 
 export const getStoredUser = async () => {
-  const user = await AsyncStorage.getItem("userProfile");
-
-  if (!user) {
-    return null;
+  if (!userReadPromise) {
+    const request = AsyncStorage.getItem("userProfile")
+      .then((user) => {
+        if (!user) return null;
+        try {
+          return JSON.parse(user);
+        } catch {
+          return null;
+        }
+      })
+      .finally(() => {
+        if (userReadPromise === request) userReadPromise = null;
+      });
+    userReadPromise = request;
   }
 
-  try {
-    return JSON.parse(user);
-  } catch {
-    return null;
-  }
+  return userReadPromise;
 };
 
 /* =========================
@@ -206,6 +249,7 @@ export const logoutUser = async () => {
     await AsyncStorage.multiRemove(["userToken", "userProfile"]);
   } finally {
     clearTokenCache();
+    userReadPromise = null;
     setAppLockToken(null);
   }
 };
