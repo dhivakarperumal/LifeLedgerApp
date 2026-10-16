@@ -1867,39 +1867,44 @@ export default function Expenses() {
                 style={{
                   marginHorizontal: -20,
                   marginBottom: 15,
-                  paddingHorizontal: 20,
+                  paddingHorizontal: 16,
                   paddingTop: 8,
-                  paddingBottom: 12,
+                  paddingBottom: 16,
                   flexDirection: "row",
                   alignItems: "center",
-                  gap: 12,
+                  justifyContent: "flex-start",
                 }}
               >
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel="Go back"
-                  accessibilityState={{ disabled: saving }}
-                  disabled={saving}
-                  onPress={closeExpenseForm}
-                  style={{
-                    width: 40,
-                    height: 40,
-                    alignItems: "center",
-                    justifyContent: "center",
-                    borderRadius: 20,
-                    borderWidth: 1,
-                    borderColor: "#E6EBE7",
-                    backgroundColor: "#FFFFFF",
-                  }}
-                >
-                  <Ionicons name="arrow-back" size={20} color="#25332C" />
-                </Pressable>
-                <Text
-                  numberOfLines={1}
-                  style={{ flex: 1, color: "#FFFFFF", fontSize: 20, fontWeight: "700" }}
-                >
-                  {editingExpenseId === null ? "Add New Expense" : "Edit Expense"}
-                </Text>
+                <View style={{ flexDirection: "row", alignItems: "center" }}>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel="Go back"
+                    accessibilityState={{ disabled: saving }}
+                    disabled={saving}
+                    onPress={closeExpenseForm}
+                    style={{
+                      width: 40,
+                      height: 40,
+                      alignItems: "center",
+                      justifyContent: "center",
+                      borderRadius: 20,
+                      backgroundColor: "rgba(255,255,255,0.15)",
+                    }}
+                  >
+                    <Ionicons name="arrow-back" size={20} color={Colors.white} />
+                  </Pressable>
+                  <Text
+                    numberOfLines={1}
+                    style={{
+                      marginLeft: 12,
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: "700",
+                    }}
+                  >
+                    Expense
+                  </Text>
+                </View>
               </LinearGradient>
             ) : null}
             <ScrollView

@@ -1152,6 +1152,61 @@ export default function CalendarScreen() {
           <View
             className="flex-1 bg-[#F9FAFC] px-5 pb-5"
           >
+            {isNewEventRoute ? (
+              <LinearGradient
+                colors={Colors.greenGradient}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={{
+                  marginHorizontal: -20,
+                  marginBottom: 15,
+                  paddingHorizontal: 20,
+                  paddingTop: 8,
+                  paddingBottom: 12,
+                  flexDirection: "row",
+                  alignItems: "center",
+                  gap: 12,
+                }}
+              >
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Go back"
+                  accessibilityState={{ disabled: saving }}
+                  disabled={saving}
+                  onPress={() => {
+                    if (router.canGoBack()) router.back();
+                    else router.replace("/calendar");
+                  }}
+                  style={{
+                    width: 40,
+                    height: 40,
+                    alignItems: "center",
+                    justifyContent: "center",
+                    borderRadius: 20,
+                    borderWidth: 1,
+                    borderColor: "#E6EBE7",
+                    backgroundColor: "#FFFFFF",
+                  }}
+                >
+                  <Ionicons name="arrow-back" size={20} color="#25332C" />
+                </Pressable>
+                <Text
+                  numberOfLines={1}
+                  style={{
+                    flex: 1,
+                    color: "#FFFFFF",
+                    fontSize: 20,
+                    fontWeight: "700",
+                  }}
+                >
+                  {editingEvent
+                    ? "Edit Event"
+                    : modalType === "reminder"
+                      ? "Add New Reminder"
+                      : "Add New Event"}
+                </Text>
+              </LinearGradient>
+            ) : null}
             <ScrollView
               style={{ flex: 1, minHeight: 0 }}
               contentContainerStyle={{ paddingBottom: 24 + insets.bottom }}
