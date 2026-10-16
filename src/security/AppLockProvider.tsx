@@ -1,4 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
 import { usePathname, useRouter } from "expo-router";
 import {
   createContext,
@@ -647,6 +648,46 @@ function AppLockLoadingScreen() {
   );
 }
 
+function AppLockHeader() {
+  return (
+    <LinearGradient
+      colors={Colors.greenGradient}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 1 }}
+      style={{
+        minHeight: 64,
+        flexDirection: "row",
+        alignItems: "center",
+        paddingHorizontal: 16,
+        paddingVertical: 10,
+      }}
+    >
+      <View
+        style={{
+          width: 40,
+          height: 40,
+          alignItems: "center",
+          justifyContent: "center",
+          borderRadius: 20,
+          backgroundColor: "rgba(255,255,255,0.15)",
+        }}
+      >
+        <Ionicons name="lock-closed" size={19} color={Colors.white} />
+      </View>
+      <Text
+        style={{
+          marginLeft: 12,
+          color: Colors.white,
+          fontSize: 18,
+          fontWeight: "700",
+        }}
+      >
+        App Lock
+      </Text>
+    </LinearGradient>
+  );
+}
+
 function AppLockScreen({
   error,
   onRetry,
@@ -713,47 +754,58 @@ function AppLockScreen({
         edges={["top", "bottom"]}
         style={{
           flex: 1,
-          alignItems: "center",
-          justifyContent: "center",
           backgroundColor: Colors.contentBackground,
-          paddingHorizontal: 28,
         }}
       >
-        <Ionicons name="lock-closed-outline" size={42} color={Colors.primary} />
-        <Text
+        <StatusBar
+          barStyle="light-content"
+          backgroundColor={Colors.greenGradient[0]}
+        />
+        <AppLockHeader />
+        <View
           style={{
-            marginTop: 16,
-            color: Colors.textPrimary,
-            fontSize: 18,
-            fontWeight: "800",
-            textAlign: "center",
+            flex: 1,
+            alignItems: "center",
+            justifyContent: "center",
+            paddingHorizontal: 28,
           }}
         >
-          App Lock service unavailable
-        </Text>
-        <Text
-          style={{
-            marginTop: 8,
-            color: Colors.textSecondary,
-            fontSize: 14,
-            textAlign: "center",
-          }}
-        >
-          {error}
-        </Text>
-        <Pressable
-          accessibilityRole="button"
-          onPress={onRetry}
-          style={{
-            marginTop: 20,
-            paddingHorizontal: 20,
-            paddingVertical: 12,
-            borderRadius: 13,
-            backgroundColor: Colors.primary,
-          }}
-        >
-          <Text style={{ color: Colors.white, fontWeight: "700" }}>Retry</Text>
-        </Pressable>
+          <Ionicons name="lock-closed-outline" size={42} color={Colors.primary} />
+          <Text
+            style={{
+              marginTop: 16,
+              color: Colors.textPrimary,
+              fontSize: 18,
+              fontWeight: "800",
+              textAlign: "center",
+            }}
+          >
+            App Lock service unavailable
+          </Text>
+          <Text
+            style={{
+              marginTop: 8,
+              color: Colors.textSecondary,
+              fontSize: 14,
+              textAlign: "center",
+            }}
+          >
+            {error}
+          </Text>
+          <Pressable
+            accessibilityRole="button"
+            onPress={onRetry}
+            style={{
+              marginTop: 20,
+              paddingHorizontal: 20,
+              paddingVertical: 12,
+              borderRadius: 13,
+              backgroundColor: Colors.primary,
+            }}
+          >
+            <Text style={{ color: Colors.white, fontWeight: "700" }}>Retry</Text>
+          </Pressable>
+        </View>
       </SafeAreaView>
     );
   }
@@ -763,7 +815,11 @@ function AppLockScreen({
       edges={["top", "bottom"]}
       style={{ flex: 1, backgroundColor: "#F7F7F5" }}
     >
-      <StatusBar barStyle="dark-content" />
+      <StatusBar
+        barStyle="light-content"
+        backgroundColor={Colors.greenGradient[0]}
+      />
+      <AppLockHeader />
       <ScrollView
         scrollEnabled={!patternDrawing}
         contentContainerStyle={{

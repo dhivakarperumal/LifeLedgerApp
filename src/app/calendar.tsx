@@ -1152,20 +1152,19 @@ export default function CalendarScreen() {
           <View
             className="flex-1 bg-[#F9FAFC] px-5 pb-5"
           >
-            {isNewEventRoute ? (
+            {modalType !== null ? (
               <LinearGradient
                 colors={Colors.greenGradient}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
                 style={{
                   marginHorizontal: -20,
-                  marginBottom: 15,
-                  paddingHorizontal: 20,
+                  marginBottom: 12,
+                  paddingHorizontal: 16,
                   paddingTop: 8,
-                  paddingBottom: 12,
+                  paddingBottom: 16,
                   flexDirection: "row",
                   alignItems: "center",
-                  gap: 12,
                 }}
               >
                 <Pressable
@@ -1175,7 +1174,8 @@ export default function CalendarScreen() {
                   disabled={saving}
                   onPress={() => {
                     if (router.canGoBack()) router.back();
-                    else router.replace("/calendar");
+                    else if (isNewEventRoute) router.replace("/calendar");
+                    else setModalType(null);
                   }}
                   style={{
                     width: 40,
@@ -1183,19 +1183,18 @@ export default function CalendarScreen() {
                     alignItems: "center",
                     justifyContent: "center",
                     borderRadius: 20,
-                    borderWidth: 1,
-                    borderColor: "#E6EBE7",
-                    backgroundColor: "#FFFFFF",
+                    backgroundColor: "rgba(255,255,255,0.15)",
                   }}
                 >
-                  <Ionicons name="arrow-back" size={20} color="#25332C" />
+                  <Ionicons name="arrow-back" size={20} color={Colors.white} />
                 </Pressable>
                 <Text
                   numberOfLines={1}
                   style={{
                     flex: 1,
+                    marginLeft: 12,
                     color: "#FFFFFF",
-                    fontSize: 20,
+                    fontSize: 18,
                     fontWeight: "700",
                   }}
                 >

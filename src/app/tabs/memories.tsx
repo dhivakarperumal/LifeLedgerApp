@@ -8,7 +8,13 @@ import {
     useAudioRecorder,
 } from "expo-audio";
 import * as DocumentPicker from "expo-document-picker";
-import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
+import { LinearGradient } from "expo-linear-gradient";
+import {
+    useFocusEffect,
+    useLocalSearchParams,
+    usePathname,
+    useRouter,
+} from "expo-router";
 import { VideoView, useVideoPlayer } from "expo-video";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
@@ -20,11 +26,15 @@ import {
     Platform,
     Pressable,
     RefreshControl,
+    StatusBar,
     ScrollView,
     Text,
     View,
 } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import {
+    SafeAreaView as NativeSafeAreaView,
+    useSafeAreaInsets,
+} from "react-native-safe-area-context";
 import api, {
     API_BASE_URL,
     getApiErrorMessage,
@@ -376,6 +386,7 @@ function getCategoryType(category: MemoryCategory) {
 export default function Memories() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const isStandaloneMemoryForm = usePathname() === "/memory-form";
   const { create: rawCreate, edit: rawEditId } = useLocalSearchParams<{
     create?: string | string[];
     edit?: string | string[];
@@ -1393,6 +1404,22 @@ export default function Memories() {
           className="absolute inset-0 z-50 bg-white"
           style={{ paddingBottom: insets.bottom }}
         >
+          {isStandaloneMemoryForm ? (
+            <StatusBar
+              barStyle="light-content"
+              backgroundColor={Colors.greenGradient[0]}
+              translucent={false}
+            />
+          ) : null}
+          <NativeSafeAreaView
+            edges={isStandaloneMemoryForm ? ["top"] : []}
+            style={{
+              flex: 1,
+              backgroundColor: isStandaloneMemoryForm
+                ? Colors.greenGradient[0]
+                : Colors.white,
+            }}
+          >
           <KeyboardAvoidingView
             behavior={Platform.OS === "ios" ? "padding" : "height"}
             style={{ flex: 1 }}
@@ -1405,6 +1432,57 @@ export default function Memories() {
               backgroundColor: Colors.white,
             }}
           >
+            {isStandaloneMemoryForm ? (
+              <LinearGradient
+                colors={Colors.greenGradient}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={{
+                  marginHorizontal: -18,
+                  marginBottom: 12,
+                  paddingHorizontal: 16,
+                  paddingTop: 8,
+                  paddingBottom: 16,
+                  flexDirection: "row",
+                  alignItems: "center",
+                }}
+              >
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Go back"
+                  accessibilityState={{
+                    disabled: submitting || isRecording,
+                  }}
+                  disabled={submitting || isRecording}
+                  onPress={() => {
+                    if (router.canGoBack()) router.back();
+                    else setEditorVisible(false);
+                  }}
+                  style={{
+                    width: 40,
+                    height: 40,
+                    alignItems: "center",
+                    justifyContent: "center",
+                    borderRadius: 20,
+                    backgroundColor: "rgba(255,255,255,0.15)",
+                  }}
+                >
+                  <Ionicons name="arrow-back" size={20} color={Colors.white} />
+                </Pressable>
+                <Text
+                  numberOfLines={1}
+                  style={{
+                    flex: 1,
+                    marginLeft: 12,
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: "700",
+                  }}
+                >
+                  {editingId === null ? "Add Memory" : "Edit Memory"}
+                </Text>
+              </LinearGradient>
+            ) : null}
             <ScrollView
               style={{ flex: 1, minHeight: 0 }}
               keyboardShouldPersistTaps="handled"
@@ -1614,6 +1692,7 @@ export default function Memories() {
             </ScrollView>
           </View>
           </KeyboardAvoidingView>
+          </NativeSafeAreaView>
         </View>
       )}
     </SafeAreaView>

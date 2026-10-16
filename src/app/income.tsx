@@ -1237,6 +1237,34 @@ export default function Income() {
           className={isNewIncomeRoute ? "flex-1 bg-[#F8F9F6]" : "absolute inset-0 z-50 bg-[#F8F9F6]"}
           style={{ paddingBottom: insets.bottom }}
         >
+          {isNewIncomeRoute ? (
+            <LinearGradient
+              colors={Colors.greenGradient}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                paddingHorizontal: 16,
+                paddingTop: 8,
+                paddingBottom: 16,
+              }}
+            >
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Go back"
+                accessibilityState={{ disabled: saving }}
+                disabled={saving}
+                onPress={closeEditor}
+                className="h-10 w-10 items-center justify-center rounded-full bg-white/15"
+              >
+                <Ionicons name="arrow-back" size={20} color={Colors.white} />
+              </Pressable>
+              <Text className="ml-3 flex-1 text-lg font-bold text-white">
+                {editingIncomeId === null ? "Add Income" : "Edit Income"}
+              </Text>
+            </LinearGradient>
+          ) : null}
           <KeyboardAvoidingView
             behavior={Platform.OS === "ios" ? "padding" : "height"}
             keyboardVerticalOffset={0}

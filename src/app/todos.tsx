@@ -1,16 +1,21 @@
 import { Ionicons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Pressable,
   ScrollView,
+  StatusBar,
   Text,
   TextInput,
   View,
   useWindowDimensions,
 } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from "react-native-safe-area-context";
 import api, { getApiErrorMessage } from "../api";
 import { AddButton } from "../components/AddButton";
 import ConfirmPopup from "../components/ConfirmPopup";
@@ -628,7 +633,58 @@ export default function TodosPage() {
     : orderedTasks.map((task) => [task]);
 
   return (
-    <View style={{ flex: 1, backgroundColor: "#F2F5EA" }}>
+    <SafeAreaView
+      edges={["top"]}
+      style={{ flex: 1, backgroundColor: Colors.greenGradient[0] }}
+    >
+      <StatusBar
+        barStyle="light-content"
+        backgroundColor={Colors.greenGradient[0]}
+        translucent={false}
+      />
+      <LinearGradient
+        colors={Colors.greenGradient}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={{
+          flexDirection: "row",
+          alignItems: "center",
+          paddingHorizontal: 16,
+          paddingTop: 8,
+          paddingBottom: 16,
+        }}
+      >
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Go back"
+          onPress={() => {
+            if (router.canGoBack()) router.back();
+            else router.replace("/tabs/more");
+          }}
+          style={{
+            width: 40,
+            height: 40,
+            alignItems: "center",
+            justifyContent: "center",
+            borderRadius: 20,
+            backgroundColor: "rgba(255,255,255,0.15)",
+          }}
+        >
+          <Ionicons name="arrow-back" size={20} color={Colors.white} />
+        </Pressable>
+        <Text
+          style={{
+            flex: 1,
+            marginLeft: 12,
+            color: Colors.white,
+            fontSize: 18,
+            fontWeight: "700",
+          }}
+        >
+          To Do
+        </Text>
+      </LinearGradient>
+      <View style={{ flex: 1, backgroundColor: "#F2F5EA" }}>
       <ScrollView
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
@@ -849,7 +905,8 @@ export default function TodosPage() {
         onConfirm={deleteTask}
         onCancel={() => setTaskToDelete(null)}
       />
-    </View>
+      </View>
+    </SafeAreaView>
   );
 }
 

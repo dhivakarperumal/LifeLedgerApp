@@ -1,4 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
 import {
     AudioModule,
     RecordingPresets,
@@ -6,7 +7,12 @@ import {
     useAudioRecorder,
 } from "expo-audio";
 import * as DocumentPicker from "expo-document-picker";
-import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
+import {
+    useFocusEffect,
+    useLocalSearchParams,
+    usePathname,
+    useRouter,
+} from "expo-router";
 import {
     useCallback,
     useEffect,
@@ -23,12 +29,16 @@ import {
     Platform,
     Pressable,
     RefreshControl,
+    StatusBar,
     ScrollView,
     Text,
     View,
     useWindowDimensions,
 } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import {
+    SafeAreaView as NativeSafeAreaView,
+    useSafeAreaInsets,
+} from "react-native-safe-area-context";
 import api, {
     API_BASE_URL,
     getApiErrorMessage,
@@ -368,6 +378,7 @@ export default function Diary() {
   const insets = useSafeAreaInsets();
   const { width: screenWidth } = useWindowDimensions();
   const router = useRouter();
+  const isStandaloneDiaryForm = usePathname() === "/diary-form";
   const { create: rawCreate, edit: editParam } = useLocalSearchParams<{
     create?: string | string[];
     edit?: string | string[];
@@ -1482,6 +1493,22 @@ export default function Diary() {
             backgroundColor: Colors.white,
           }}
         >
+          {isStandaloneDiaryForm ? (
+            <StatusBar
+              barStyle="light-content"
+              backgroundColor={Colors.greenGradient[0]}
+              translucent={false}
+            />
+          ) : null}
+          <NativeSafeAreaView
+            edges={isStandaloneDiaryForm ? ["top"] : []}
+            style={{
+              flex: 1,
+              backgroundColor: isStandaloneDiaryForm
+                ? Colors.greenGradient[0]
+                : Colors.white,
+            }}
+          >
           <KeyboardAvoidingView
             behavior={Platform.OS === "ios" ? "padding" : "height"}
             style={{ flex: 1 }}
@@ -1494,6 +1521,57 @@ export default function Diary() {
               backgroundColor: Colors.white,
             }}
           >
+            {isStandaloneDiaryForm ? (
+              <LinearGradient
+                colors={Colors.greenGradient}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={{
+                  marginHorizontal: -18,
+                  marginBottom: 12,
+                  paddingHorizontal: 16,
+                  paddingTop: 8,
+                  paddingBottom: 16,
+                  flexDirection: "row",
+                  alignItems: "center",
+                }}
+              >
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Go back"
+                  accessibilityState={{
+                    disabled: submitting || isRecording,
+                  }}
+                  disabled={submitting || isRecording}
+                  onPress={() => {
+                    if (router.canGoBack()) router.back();
+                    else setEditorVisible(false);
+                  }}
+                  style={{
+                    width: 40,
+                    height: 40,
+                    alignItems: "center",
+                    justifyContent: "center",
+                    borderRadius: 20,
+                    backgroundColor: "rgba(255,255,255,0.15)",
+                  }}
+                >
+                  <Ionicons name="arrow-back" size={20} color={Colors.white} />
+                </Pressable>
+                <Text
+                  numberOfLines={1}
+                  style={{
+                    flex: 1,
+                    marginLeft: 12,
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: "700",
+                  }}
+                >
+                  {editingId === null ? "Add Diary Entry" : "Edit Diary Entry"}
+                </Text>
+              </LinearGradient>
+            ) : null}
             <ScrollView
               style={{ flex: 1, minHeight: 0 }}
               keyboardShouldPersistTaps="handled"
@@ -1750,6 +1828,7 @@ export default function Diary() {
             </ScrollView>
           </View>
           </KeyboardAvoidingView>
+          </NativeSafeAreaView>
         </View>
       )}
     </SafeAreaView>

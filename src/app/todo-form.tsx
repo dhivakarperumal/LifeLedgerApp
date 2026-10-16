@@ -1,4 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useRef, useState } from "react";
 import {
@@ -12,7 +13,10 @@ import {
   TextInput,
   View,
 } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from "react-native-safe-area-context";
 import api, { getApiErrorMessage } from "../api";
 import { DateTimePickerComponent } from "../components/DateTimePickerComponent";
 import { PopupSelect } from "../components/PopupSelect";
@@ -180,15 +184,60 @@ export default function TodoFormPage() {
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: Colors.white }}>
+    <SafeAreaView
+      edges={["top"]}
+      style={{ flex: 1, backgroundColor: Colors.greenGradient[0] }}
+    >
       <StatusBar
         barStyle="light-content"
         backgroundColor={Colors.greenGradient[0]}
         translucent={false}
       />
+      <LinearGradient
+        colors={Colors.greenGradient}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={{
+          flexDirection: "row",
+          alignItems: "center",
+          paddingHorizontal: 16,
+          paddingTop: 8,
+          paddingBottom: 16,
+        }}
+      >
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Go back"
+          accessibilityState={{ disabled: saving }}
+          disabled={saving}
+          onPress={goBack}
+          style={{
+            width: 40,
+            height: 40,
+            alignItems: "center",
+            justifyContent: "center",
+            borderRadius: 20,
+            backgroundColor: "rgba(255,255,255,0.15)",
+          }}
+        >
+          <Ionicons name="arrow-back" size={20} color={Colors.white} />
+        </Pressable>
+        <Text
+          numberOfLines={1}
+          style={{
+            flex: 1,
+            marginLeft: 12,
+            color: Colors.white,
+            fontSize: 18,
+            fontWeight: "700",
+          }}
+        >
+          {isEditing ? "Edit To Do" : "Add To Do"}
+        </Text>
+      </LinearGradient>
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
-        style={{ flex: 1 }}
+        style={{ flex: 1, backgroundColor: Colors.white }}
       >
         <ScrollView
           keyboardShouldPersistTaps="handled"
@@ -399,6 +448,6 @@ export default function TodoFormPage() {
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
-    </View>
+    </SafeAreaView>
   );
 }
