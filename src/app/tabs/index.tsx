@@ -60,6 +60,8 @@ type MonthlyOverviewItem = {
   expense: number;
 };
 
+type OverviewFilter = "All" | "Today" | "This Week";
+
 type BudgetCategoryItem = {
   label: string;
   amount: number;
@@ -333,9 +335,10 @@ export default function Index() {
   const [recentMemories, setRecentMemories] = useState<any[]>([]);
   const [recentDiary, setRecentDiary] = useState<any[]>([]);
   const [calendarEvents, setCalendarEvents] = useState<CalendarEvent[]>([]);
-  const [monthlyOverview, setMonthlyOverview] = useState<MonthlyOverviewItem[]>(
-    [],
-  );
+  const [overviewFilter, setOverviewFilter] = useState<OverviewFilter>("All");
+  const [overviewCharts, setOverviewCharts] = useState<
+    Record<OverviewFilter, MonthlyOverviewItem[]>
+  >({ All: [], Today: [], "This Week": [] });
   const [monthlyBudget, setMonthlyBudget] = useState(0);
   const [budgetLoaded, setBudgetLoaded] = useState(false);
   const [budgetCategories, setBudgetCategories] = useState<
@@ -489,6 +492,19 @@ export default function Index() {
           const monthlyDataByKey = new Map(
             monthlyData.map((month) => [month.key, month]),
           );
+          const weeklyData = Array.from({ length: 7 }, (_, index) => {
+            const day = new Date(startOfWeek);
+            day.setDate(startOfWeek.getDate() + index);
+            return {
+              key: dateKey(day),
+              label: day.toLocaleDateString("en-US", { weekday: "short" }),
+              income: 0,
+              expense: 0,
+            };
+          });
+          const weeklyDataByKey = new Map(
+            weeklyData.map((day) => [day.key, day]),
+          );
 
           const categoryTotals: Record<string, number> = {};
 
@@ -527,6 +543,8 @@ export default function Index() {
 
             const month = monthlyDataByKey.get(monthDateKey(exp.expense_date));
             if (month) month.expense += amount;
+            const day = weeklyDataByKey.get(eventDateKey(exp.expense_date));
+            if (day) day.expense += amount;
           });
 
           incomeData.forEach((income) => {
@@ -536,9 +554,23 @@ export default function Index() {
               monthDateKey(income.income_date),
             );
             if (month) month.income += amount;
+            const day = weeklyDataByKey.get(eventDateKey(income.income_date));
+            if (day) day.income += amount;
           });
 
-          setMonthlyOverview(monthlyData);
+          const todayData = weeklyDataByKey.get(dateKey(now));
+          setOverviewCharts({
+            All: monthlyData,
+            Today: [
+              {
+                key: dateKey(now),
+                label: "Today",
+                income: todayData?.income ?? 0,
+                expense: todayData?.expense ?? 0,
+              },
+            ],
+            "This Week": weeklyData,
+          });
           const budgetColors = ["#78965F", "#4D8762", "#EAB45B", "#67A6C2"];
           setBudgetCategories(
             Object.entries(monthlyCategoryTotals)
@@ -676,6 +708,7 @@ export default function Index() {
     .toUpperCase();
   const greeting = getTimeGreeting(currentTime.getHours());
   const todayKey = dateKey(currentTime);
+  const monthlyOverview = overviewCharts[overviewFilter];
   const todayEvents = calendarEvents.filter((event) =>
     [event.startDate, event.start_date, event.event_date, event.date]
       .map(eventDateKey)
@@ -1030,19 +1063,37 @@ export default function Index() {
                     >
                       Monthly Overview
                     </Text>
-                    <View className="flex-row items-center rounded-full bg-[#F2F4F3] px-3 py-1.5">
-                      <Text
-                        className="mr-1 text-[10px] font-semibold"
-                        style={{ color: Colors.textSecondary }}
-                      >
-                        This Month
-                      </Text>
-                      <Ionicons
-                        name="chevron-down"
-                        size={12}
-                        color={Colors.textSecondary}
-                      />
-                    </View>
+                  </View>
+
+                  <View className="mt-3 flex-row gap-2">
+                    {(["All", "Today", "This Week"] as const).map((filter) => {
+                      const isSelected = overviewFilter === filter;
+                      return (
+                        <Pressable
+                          key={filter}
+                          accessibilityRole="button"
+                          accessibilityState={{ selected: isSelected }}
+                          onPress={() => setOverviewFilter(filter)}
+                          className="flex-1 items-center rounded-full py-1.5"
+                          style={{
+                            backgroundColor: isSelected
+                              ? "#E4EEE5"
+                              : "#F2F4F3",
+                          }}
+                        >
+                          <Text
+                            className="text-[10px] font-semibold"
+                            style={{
+                              color: isSelected
+                                ? Colors.primary
+                                : Colors.textSecondary,
+                            }}
+                          >
+                            {filter}
+                          </Text>
+                        </Pressable>
+                      );
+                    })}
                   </View>
 
                   <View className="mt-4 flex-row">
@@ -1255,7 +1306,10 @@ export default function Index() {
                 </View>
 
                 {/* --- Recent Transactions --- */}
-                <SectionHeader title="Recent Transactions" />
+                <SectionHeader
+                  title="Recent Transactions"
+                  onAction={() => router.push("/tabs/expenses")}
+                />
                 {recentTransactions.length > 0 ? (
                   recentTransactions.map((tx) => {
                     const categoryName = getExpenseCategoryName(tx);
@@ -1307,7 +1361,10 @@ export default function Index() {
                 )}
 
                 {/* --- Recent Snaps --- */}
-                <SectionHeader title="Recent Snaps" />
+                <SectionHeader
+                  title="Recent Snaps"
+                  onAction={() => router.push("/tabs/memories")}
+                />
                 {recentMemories.length > 0 ? (
                   <View>
                     <View className="flex-row justify-between gap-3">
