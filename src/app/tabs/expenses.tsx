@@ -1836,21 +1836,43 @@ export default function Expenses() {
 
       {isModalVisible && (
         <View className="absolute inset-0 z-50 bg-white" style={{ paddingBottom: insets.bottom }}>
-          {isStandaloneExpenseForm ? (
-            <StatusBar
-              barStyle="light-content"
-              backgroundColor={Colors.greenGradient[0]}
-              translucent={false}
+          <View style={{ flex: 1 }}>
+            <LinearGradient
+              colors={
+                isStandaloneExpenseForm
+                  ? Colors.greenGradient
+                  : [Colors.white, Colors.white]
+              }
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={{
+                position: "absolute",
+                top: isStandaloneExpenseForm ? -insets.top : 0,
+                right: 0,
+                bottom: 0,
+                left: 0,
+              }}
             />
-          ) : null}
-          <NativeSafeAreaView
-            edges={isStandaloneExpenseForm ? ["top"] : []}
-            style={{ flex: 1, backgroundColor: Colors.greenGradient[0] }}
-          >
-            <KeyboardAvoidingView
-              behavior={Platform.OS === "ios" ? "padding" : "height"}
-              style={{ flex: 1 }}
+            {isStandaloneExpenseForm ? (
+              <StatusBar
+                barStyle="light-content"
+                backgroundColor="transparent"
+                translucent
+              />
+            ) : null}
+            <NativeSafeAreaView
+              edges={isStandaloneExpenseForm ? ["top"] : []}
+              style={{
+                flex: 1,
+                backgroundColor: isStandaloneExpenseForm
+                  ? "transparent"
+                  : Colors.greenGradient[0],
+              }}
             >
+              <KeyboardAvoidingView
+                behavior={Platform.OS === "ios" ? "padding" : "height"}
+                style={{ flex: 1 }}
+              >
           <View
             style={{
               backgroundColor: "#FFFFFF",
@@ -2280,9 +2302,10 @@ export default function Expenses() {
               </View>
             </ScrollView>
 
+              </View>
+              </KeyboardAvoidingView>
+            </NativeSafeAreaView>
           </View>
-            </KeyboardAvoidingView>
-          </NativeSafeAreaView>
         </View>
       )}
 
