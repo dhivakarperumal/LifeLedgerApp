@@ -6,7 +6,6 @@ import {
   ActivityIndicator,
   Pressable,
   ScrollView,
-  StatusBar,
   Text,
   TextInput,
   View,
@@ -634,14 +633,9 @@ export default function TodosPage() {
 
   return (
     <SafeAreaView
-      edges={["top"]}
+      edges={["bottom"]}
       style={{ flex: 1, backgroundColor: Colors.greenGradient[0] }}
     >
-      <StatusBar
-        barStyle="light-content"
-        backgroundColor={Colors.greenGradient[0]}
-        translucent={false}
-      />
       <LinearGradient
         colors={Colors.greenGradient}
         start={{ x: 0, y: 0 }}
@@ -649,39 +643,25 @@ export default function TodosPage() {
         style={{
           flexDirection: "row",
           alignItems: "center",
+          justifyContent: "flex-start",
           paddingHorizontal: 16,
-          paddingTop: 8,
+          paddingTop: insets.top + 8,
           paddingBottom: 16,
         }}
       >
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Go back"
+          className="h-10 w-10 items-center justify-center rounded-full bg-white/15"
           onPress={() => {
             if (router.canGoBack()) router.back();
             else router.replace("/tabs/more");
           }}
-          style={{
-            width: 40,
-            height: 40,
-            alignItems: "center",
-            justifyContent: "center",
-            borderRadius: 20,
-            backgroundColor: "rgba(255,255,255,0.15)",
-          }}
         >
           <Ionicons name="arrow-back" size={20} color={Colors.white} />
         </Pressable>
-        <Text
-          style={{
-            flex: 1,
-            marginLeft: 12,
-            color: Colors.white,
-            fontSize: 18,
-            fontWeight: "700",
-          }}
-        >
-          To Do
+        <Text className="ml-3 text-lg font-bold text-white">
+          Todo List
         </Text>
       </LinearGradient>
       <View style={{ flex: 1, backgroundColor: "#F2F5EA" }}>
