@@ -16,7 +16,6 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Svg, { Circle } from "react-native-svg";
 import { TopHeader } from "../../Navigations/TopHeader";
 import api, { API_BASE_URL, getShared, getStoredUser } from "../../api";
-import { CenteredPageLoader } from "../../components/CenteredPageLoader";
 import ConfirmPopup from "../../components/ConfirmPopup";
 import { GradientSafeAreaView as SafeAreaView } from "../../components/GradientSafeAreaView";
 import { parseLocalDate } from "../../components/dateTimeUtils";
@@ -748,9 +747,6 @@ export default function Index() {
         onCancel={dismissSuccessPopup}
       />
       <View style={{ flex: 1, backgroundColor: Colors.contentBackground }}>
-        {isLoading ? (
-          <CenteredPageLoader message="Loading your overview..." />
-        ) : (
         <ScrollView
           style={{ flex: 1 }}
           showsVerticalScrollIndicator={false}
@@ -1648,7 +1644,6 @@ export default function Index() {
             )}
           </View>
         </ScrollView>
-        )}
       </View>
     </SafeAreaView>
   );

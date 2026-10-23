@@ -182,7 +182,7 @@ export function PopupSelect({
                     : "mt-auto w-full overflow-hidden rounded-t-[28px] bg-white p-4 pb-5"
                 }
                 style={{
-                  maxHeight: "90%",
+                  maxHeight: isDesktop ? "90%" : "95%",
                   ...(!isDesktop && {
                     paddingBottom: Math.max(insets.bottom, 20),
                   }),
@@ -238,7 +238,7 @@ export function PopupSelect({
             ) : (
               <ScrollView
                 showsVerticalScrollIndicator={false}
-                className={isDesktop ? "max-h-[50vh]" : "max-h-[56vh]"}
+                className={isDesktop ? "max-h-[50vh]" : "max-h-[68vh]"}
                 keyboardShouldPersistTaps="handled"
                 automaticallyAdjustKeyboardInsets
                 keyboardDismissMode="none"
@@ -252,7 +252,7 @@ export function PopupSelect({
                       key={option.value || option.label}
                       onPress={() => handleSelect(option.value, optionDisabled)}
                       disabled={optionDisabled}
-                      className={`mb-2 flex-row items-center justify-between rounded-xl border px-3 py-3 ${
+                      className={`mb-2 min-h-[64px] flex-row items-center justify-between rounded-xl border px-3 py-4 ${
                         isSelected
                           ? "border-[#DDE9DF] bg-[#EEF6F0]"
                           : optionDisabled

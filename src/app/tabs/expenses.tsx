@@ -431,6 +431,46 @@ function getTransferRows(data: any): TransferItem[] {
   return [];
 }
 
+function getExpenseCategoryOptions(data: any): string[] {
+  const rows = Array.isArray(data)
+    ? data
+    : Array.isArray(data?.categories)
+      ? data.categories
+      : Array.isArray(data?.data)
+        ? data.data
+        : [];
+
+  const categories = rows
+    .map((item: unknown): string => {
+      if (typeof item === "string") return item.trim();
+      if (!item || typeof item !== "object") return "";
+      const category = item as Record<string, unknown>;
+      const categoryType = String(
+        category.catType ??
+          category.category_type ??
+          category.type ??
+          "Expensive",
+      )
+        .trim()
+        .toLowerCase();
+      if (!categoryType.includes("expense") && !categoryType.includes("expensive")) {
+        return "";
+      }
+      const nestedCategory = category.category;
+      const name =
+        category.name ??
+        category.category_name ??
+        (typeof nestedCategory === "string"
+          ? nestedCategory
+          : (nestedCategory as Record<string, unknown> | undefined)?.name) ??
+        category.title;
+      return typeof name === "string" ? name.trim() : "";
+    })
+    .filter((category: string) => category.length > 0);
+
+  return categories.length ? Array.from(new Set(categories)) : fallbackCategories;
+}
+
 function getTransferBalance(transfer: TransferItem) {
   const remaining = Number(transfer.remaining_amount);
   if (Number.isFinite(remaining)) return remaining;
@@ -597,6 +637,34 @@ export default function Expenses() {
     router.replace("/auth/login");
   }, [router]);
 
+  const fetchFormOptions = useCallback(async () => {
+    try {
+      const categoriesRequest = api
+        .get("/categories")
+        .then((response) =>
+          setCategoryOptions(getExpenseCategoryOptions(response?.data)),
+        );
+      const transfersRequest = api
+        .get("/transfers")
+        .then((response) => setTransfers(getTransferRows(response?.data)))
+        .catch(() => undefined);
+      await Promise.all([categoriesRequest, transfersRequest]);
+    } catch (error) {
+      const status = (error as any)?.status || (error as any)?.response?.status;
+      if (status === 401) {
+        await handleUnauthorized();
+        return;
+      }
+      console.error("Failed to load expense form options:", error);
+      Alert.alert(
+        "Error",
+        getApiErrorMessage(error, "Failed to load expense options."),
+      );
+    } finally {
+      setLoading(false);
+    }
+  }, [handleUnauthorized]);
+
   const fetchAll = useCallback(async (showRefreshIndicator = false) => {
     try {
       if (showRefreshIndicator) setRefreshing(true);
@@ -608,48 +676,6 @@ export default function Expenses() {
           api.get("/transfers").catch(() => null),
         ]);
 
-      const categoryRows = Array.isArray(categoriesRes?.data)
-        ? categoriesRes.data
-        : Array.isArray(categoriesRes?.data?.categories)
-          ? categoriesRes.data.categories
-          : Array.isArray(categoriesRes?.data?.data)
-            ? categoriesRes.data.data
-            : [];
-      const categories: string[] = categoryRows
-        .map((item: unknown): string => {
-          if (typeof item === "string") return item.trim();
-          if (!item || typeof item !== "object") return "";
-          const category = item as Record<string, unknown>;
-          const categoryType = String(
-            category.catType ??
-              category.category_type ??
-              category.type ??
-              "Expensive",
-          )
-            .trim()
-            .toLowerCase();
-          if (
-            !categoryType.includes("expense") &&
-            !categoryType.includes("expensive")
-          ) {
-            return "";
-          }
-          const nestedCategory = category.category;
-          const name =
-            category.name ??
-            category.category_name ??
-            (typeof nestedCategory === "string"
-              ? nestedCategory
-              : (nestedCategory as Record<string, unknown> | undefined)
-                  ?.name) ??
-            category.title;
-          return typeof name === "string" ? name.trim() : "";
-        })
-        .filter((category: string) => category.length > 0);
-      const acceptableCategories = categories.length
-        ? Array.from(new Set(categories))
-        : fallbackCategories;
-
       setExpenses(Array.isArray(expensesRes?.data) ? expensesRes.data : []);
       setTransfers(getTransferRows(transfersRes?.data));
       setStats(
@@ -660,7 +686,7 @@ export default function Expenses() {
           recurring: 0,
         },
       );
-      setCategoryOptions(acceptableCategories);
+      setCategoryOptions(getExpenseCategoryOptions(categoriesRes?.data));
     } catch (error) {
       const status = (error as any)?.status || (error as any)?.response?.status;
       if (status === 401) {
@@ -682,8 +708,12 @@ export default function Expenses() {
 
   useFocusEffect(
     useCallback(() => {
-      void fetchAll();
-    }, [fetchAll]),
+      if (isStandaloneExpenseForm && !editId) {
+        void fetchFormOptions();
+      } else {
+        void fetchAll();
+      }
+    }, [editId, fetchAll, fetchFormOptions, isStandaloneExpenseForm]),
   );
 
   const visibleExpenses = useMemo(() => {
@@ -972,7 +1002,11 @@ export default function Expenses() {
           savedExpense ? [savedExpense, ...current] : current,
         );
       }
-      await fetchAll();
+      if (isStandaloneExpenseForm && !editId) {
+        void fetchFormOptions();
+      } else {
+        void fetchAll();
+      }
       setCloseFormAfterSuccess(true);
       setSuccessMessage(
         isEditing
