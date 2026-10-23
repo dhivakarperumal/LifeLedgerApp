@@ -5,6 +5,7 @@ import type { ComponentProps } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Colors } from "../constants/colors";
+import { BOTTOM_TAB_BAR_HEIGHT } from "../constants/layout";
 
 type BottomTabBarProps = Parameters<
   NonNullable<ComponentProps<typeof Tabs>["tabBar"]>
@@ -136,7 +137,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 4,
     paddingTop: 12,
     paddingBottom: 8,
-    minHeight: 76,
+    height: BOTTOM_TAB_BAR_HEIGHT,
   },
   tabButton: {
     flex: 1,

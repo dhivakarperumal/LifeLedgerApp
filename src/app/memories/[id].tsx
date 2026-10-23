@@ -14,6 +14,7 @@ import {
   ScrollView,
   Text,
   View,
+  type ImageSourcePropType,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import api, {
@@ -36,9 +37,12 @@ type MemoryMedia = {
   url?: string;
   src?: string;
   path?: string;
+  file_path?: string;
   file_name?: string;
   name?: string;
   file_type?: string;
+  mime_type?: string;
+  mimeType?: string;
   type?: string;
 };
 
@@ -89,7 +93,7 @@ function mediaUrlOf(item: string | MemoryMedia) {
   return getMediaUrl(
     typeof item === "string"
       ? item
-      : item.file_url || item.url || item.src || item.path,
+      : item.file_url || item.url || item.src || item.path || item.file_path,
   );
 }
 
@@ -101,11 +105,16 @@ function mediaName(item: string | MemoryMedia, index: number) {
 }
 
 function mediaKind(item: string | MemoryMedia, fallback = "") {
-  const type =
-    typeof item === "string"
-      ? fallback
-      : String(item.file_type || item.type || fallback);
-  const value = `${type} ${mediaName(item, 0)}`.toLowerCase();
+  const type = typeof item === "string"
+    ? fallback
+    : String(
+        item.file_type ||
+          item.mime_type ||
+          item.mimeType ||
+          item.type ||
+          fallback,
+      );
+  const value = `${type} ${mediaName(item, 0)} ${mediaUrlOf(item)}`.toLowerCase();
   if (
     value.includes("image") ||
     /\.(png|jpe?g|gif|webp|bmp|svg)(\?|$)/i.test(value)
@@ -518,6 +527,7 @@ export default function MemoryDetails() {
       >
         {primaryUrl && primaryKind === "image" ? (
           <ImageHero
+            key={primaryUrl}
             url={primaryUrl}
             title={memory.title}
             category={categoryName}
@@ -726,6 +736,26 @@ function ImageHero({
   category: string;
   status: string;
 }) {
+  const [imageSource, setImageSource] = useState<ImageSourcePropType | null>(
+    null,
+  );
+  const [imageFailed, setImageFailed] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    void getAuthenticatedMediaSource(url)
+      .then((source) => {
+        if (active) setImageSource(source);
+      })
+      .catch(() => {
+        if (active) setImageFailed(true);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [url]);
+
   return (
     <View
       style={{
@@ -736,11 +766,32 @@ function ImageHero({
         backgroundColor: "#DCE7E2",
       }}
     >
-      <Image
-        source={{ uri: url }}
-        resizeMode="cover"
-        style={{ width: "100%", height: "100%" }}
-      />
+      {imageSource && !imageFailed ? (
+        <Image
+          source={imageSource}
+          resizeMode="cover"
+          onError={() => setImageFailed(true)}
+          style={{ width: "100%", height: "100%" }}
+        />
+      ) : (
+        <View
+          style={{
+            position: "absolute",
+            top: 0,
+            right: 0,
+            bottom: 0,
+            left: 0,
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          {imageFailed ? (
+            <Ionicons name="image-outline" size={34} color={Colors.sage} />
+          ) : (
+            <ActivityIndicator color={Colors.forest} />
+          )}
+        </View>
+      )}
       <LinearGradient
         colors={["transparent", "rgba(8,20,14,0.82)"]}
         style={{
@@ -879,28 +930,9 @@ function AttachmentPreview({
   name: string;
   kind: string;
 }) {
-  if (kind === "image")
-    return (
-      <View
-        style={{
-          overflow: "hidden",
-          borderRadius: 12,
-          backgroundColor: "#F2F5F3",
-        }}
-      >
-        <Image
-          source={{ uri: url }}
-          resizeMode="contain"
-          style={{ width: "100%", height: 220 }}
-        />
-        <Text numberOfLines={1} style={attachmentNameStyle}>
-          {name}
-        </Text>
-        <View style={{ paddingHorizontal: 10, paddingBottom: 10 }}>
-          <AttachmentFileActions url={url} name={name} />
-        </View>
-      </View>
-    );
+  if (kind === "image") {
+    return <ImageAttachment url={url} name={name} />;
+  }
   if (kind === "video") return <VideoAttachment url={url} name={name} />;
   if (kind === "audio") return <AudioAttachment url={url} name={name} />;
   return (
@@ -925,6 +957,69 @@ function AttachmentPreview({
       </Pressable>
       <AttachmentFileActions url={url} name={name} />
     </View>
+  );
+}
+
+function ImageAttachment({ url, name }: { url: string; name: string }) {
+  const [imageSource, setImageSource] = useState<ImageSourcePropType | null>(
+    null,
+  );
+  const [imageFailed, setImageFailed] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    void getAuthenticatedMediaSource(url)
+      .then((source) => {
+        if (active) setImageSource(source);
+      })
+      .catch(() => {
+        if (active) setImageFailed(true);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [url]);
+
+  return (
+      <View
+        style={{
+          overflow: "hidden",
+          borderRadius: 12,
+          backgroundColor: "#F2F5F3",
+        }}
+      >
+        {imageSource && !imageFailed ? (
+          <Image
+            source={imageSource}
+            resizeMode="contain"
+            onError={() => setImageFailed(true)}
+            style={{ width: "100%", height: 220 }}
+          />
+        ) : (
+          <View
+            style={{
+              height: 220,
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            {imageFailed ? (
+              <Text style={{ color: Colors.sage, fontSize: 13 }}>
+                Unable to load image.
+              </Text>
+            ) : (
+              <ActivityIndicator color={Colors.forest} />
+            )}
+          </View>
+        )}
+        <Text numberOfLines={1} style={attachmentNameStyle}>
+          {name}
+        </Text>
+        <View style={{ paddingHorizontal: 10, paddingBottom: 10 }}>
+          <AttachmentFileActions url={url} name={name} />
+        </View>
+      </View>
   );
 }
 

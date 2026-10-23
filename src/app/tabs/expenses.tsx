@@ -1714,7 +1714,6 @@ export default function Expenses() {
       <AddButton
         accessibilityLabel="Add expense"
         accessibilityHint="Opens the new expense form"
-        bottomOffset={88}
         onPress={() =>
           router.push({
             pathname: "/expense-form" as any,

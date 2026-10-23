@@ -1390,7 +1390,6 @@ export default function Memories() {
         }
         accessibilityLabel="Add memory"
         accessibilityHint="Opens the new memory form"
-        bottomOffset={84}
       />
 
       {editorVisible && (

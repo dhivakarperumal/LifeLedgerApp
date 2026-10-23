@@ -2,6 +2,10 @@ import { Ionicons } from "@expo/vector-icons";
 import { Pressable, StyleSheet } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Colors } from "../constants/colors";
+import {
+  BOTTOM_TAB_BAR_HEIGHT,
+  FLOATING_ACTION_BUTTON_GAP,
+} from "../constants/layout";
 
 type AddButtonProps = {
   onPress: () => void;
@@ -14,9 +18,13 @@ export function AddButton({
   onPress,
   accessibilityLabel,
   accessibilityHint,
-  bottomOffset = 76,
+  bottomOffset,
 }: AddButtonProps) {
   const insets = useSafeAreaInsets();
+  const bottom =
+    bottomOffset === undefined
+      ? BOTTOM_TAB_BAR_HEIGHT + FLOATING_ACTION_BUTTON_GAP
+      : insets.bottom + bottomOffset;
 
   return (
     <Pressable
@@ -24,7 +32,7 @@ export function AddButton({
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel}
       accessibilityHint={accessibilityHint}
-      style={[styles.button, { bottom: insets.bottom + bottomOffset }]}
+      style={[styles.button, { bottom }]}
     >
       <Ionicons name="add" size={24} color={Colors.white} />
     </Pressable>

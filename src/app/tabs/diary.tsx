@@ -1482,7 +1482,6 @@ export default function Diary() {
         }
         accessibilityLabel="Write diary entry"
         accessibilityHint="Opens a new diary entry"
-        bottomOffset={84}
       />
 
       {editorVisible && (

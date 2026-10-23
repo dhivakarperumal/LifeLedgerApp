@@ -1,0 +1,2 @@
+export const BOTTOM_TAB_BAR_HEIGHT = 76;
+export const FLOATING_ACTION_BUTTON_GAP = 12;
