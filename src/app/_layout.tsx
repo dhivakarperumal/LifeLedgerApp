@@ -5,6 +5,7 @@ import { useEffect } from "react";
 import { Platform, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { AppLockProvider } from "../security/AppLockProvider";
+import { Colors } from "../constants/colors";
 import "../../global.css";
 
 export default function RootLayout() {
@@ -29,7 +30,7 @@ export default function RootLayout() {
                 bottom: 0,
                 left: 0,
                 height: insets.bottom,
-                backgroundColor: "#000000",
+                backgroundColor: Colors.headerEnd,
               }}
             />
           )}
