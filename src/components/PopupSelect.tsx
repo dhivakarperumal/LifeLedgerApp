@@ -13,6 +13,7 @@ import {
   View,
   useWindowDimensions,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { FormLabel } from "./FormControls";
 import { toTitleCase } from "./formLabelUtils";
 
@@ -62,6 +63,7 @@ export function PopupSelect({
   const [visible, setVisible] = useState(false);
   const [search, setSearch] = useState("");
   const { width } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
   const isDesktop = width >= 768;
 
   const normalizedOptions = useMemo(
@@ -179,7 +181,12 @@ export function PopupSelect({
                     ? "mx-auto my-auto w-[92%] max-w-[420px] overflow-hidden rounded-[28px] bg-white p-4"
                     : "mt-auto w-full overflow-hidden rounded-t-[28px] bg-white p-4 pb-5"
                 }
-                style={{ maxHeight: "90%" }}
+                style={{
+                  maxHeight: "90%",
+                  ...(!isDesktop && {
+                    paddingBottom: Math.max(insets.bottom, 20),
+                  }),
+                }}
               >
             <View className="mb-3 flex-row items-center justify-between">
               <Text className="text-base font-bold text-[#25332C]">
