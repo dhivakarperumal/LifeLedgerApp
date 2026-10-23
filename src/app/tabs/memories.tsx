@@ -734,30 +734,26 @@ export default function Memories() {
     }
     try {
       setSubmitting(true);
-      const payload = new FormData();
-      Object.entries(form).forEach(([key, value]) => {
-        if (key === "is_favorite") payload.append(key, value ? "1" : "0");
-        else if (key === "category_id") {
-          if (value) payload.append(key, String(value));
-        } else if (key === "tags") {
-          payload.append(
-            key,
-            String(value)
-              .split(",")
-              .map((tag) => tag.trim())
-              .filter(Boolean)
-              .join(","),
-          );
-        } else payload.append(key, String(value));
-      });
+      const payload = {
+        title: form.title.trim(),
+        description: form.description,
+        ...(form.category_id ? { category_id: form.category_id } : {}),
+        memory_date: form.memory_date,
+        location: form.location,
+        mood: form.mood,
+        tags: form.tags
+          .split(",")
+          .map((tag) => tag.trim())
+          .filter(Boolean)
+          .join(","),
+        status: form.status,
+        is_favorite: form.is_favorite ? "1" : "0",
+        voice_note: form.voice_note,
+      };
 
       const response = editingId
-        ? await api.put(`/memories/${editingId}`, payload, {
-            headers: { "Content-Type": "multipart/form-data" },
-          })
-        : await api.post("/memories", payload, {
-            headers: { "Content-Type": "multipart/form-data" },
-          });
+        ? await api.put(`/memories/${editingId}`, payload)
+        : await api.post("/memories", payload);
       const saved = response.data?.memory || response.data;
       const savedId = saved?.id || editingId;
 
@@ -770,14 +766,12 @@ export default function Memories() {
             type: file.mimeType,
           } as any),
         );
-        await api.put(`/memories/${savedId}`, mediaPayload, {
-          headers: { "Content-Type": "multipart/form-data" },
-        });
+        await api.put(`/memories/${savedId}`, mediaPayload);
       }
 
       setNewMedia([]);
       setExistingMedia([]);
-      await fetchData();
+      void fetchData();
       setSuccessMessage(
         editingId ? "Memory updated successfully." : "Memory created successfully.",
       );
