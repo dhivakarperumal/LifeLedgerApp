@@ -1,5 +1,4 @@
 import { Ionicons } from "@expo/vector-icons";
-import { LinearGradient } from "expo-linear-gradient";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useState } from "react";
 import {
@@ -11,7 +10,6 @@ import {
     Text,
     View,
 } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 import api, {
     getApiErrorMessage,
     getStoredToken,
@@ -23,6 +21,7 @@ import { CenteredPageLoader } from "../components/CenteredPageLoader";
 import ConfirmPopup from "../components/ConfirmPopup";
 import { FormInput, FormLabel } from "../components/FormControls";
 import { GradientSafeAreaView as SafeAreaView } from "../components/GradientSafeAreaView";
+import { PageHeader } from "../components/PageHeader";
 import {
     getProfileImageUri,
     getProfileInitial,
@@ -110,7 +109,6 @@ function ProfileDetail({
 
 export default function Profile() {
   const router = useRouter();
-  const insets = useSafeAreaInsets();
   const [user, setUser] = useState<UserProfile | null>(null);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [profileForm, setProfileForm] = useState<ProfileFormState>({
@@ -365,32 +363,13 @@ export default function Profile() {
         message={successMessage ?? ""}
         onConfirm={() => setSuccessMessage(null)}
       />
-      <LinearGradient
-        colors={Colors.greenGradient}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={{
-          flexDirection: "row",
-          alignItems: "center",
-          justifyContent: "flex-start",
-          paddingHorizontal: 16,
-          paddingBottom: 16,
-          paddingTop: insets.top + 8,
+      <PageHeader
+        title="My Profile"
+        onBack={() => {
+          if (router.canGoBack()) router.back();
+          else router.replace("/tabs/more");
         }}
-      >
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Go back"
-          className="h-10 w-10 items-center justify-center rounded-full bg-white/15"
-          onPress={() => {
-            if (router.canGoBack()) router.back();
-            else router.replace("/tabs/more");
-          }}
-        >
-          <Ionicons name="arrow-back" size={20} color={Colors.white} />
-        </Pressable>
-        <Text className="ml-3 text-lg font-bold text-white">My Profile</Text>
-      </LinearGradient>
+      />
 
       {loading ? (
         <CenteredPageLoader message="Loading profile..." />

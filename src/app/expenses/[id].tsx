@@ -1,5 +1,4 @@
 import { Ionicons } from "@expo/vector-icons";
-import { LinearGradient } from "expo-linear-gradient";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
@@ -19,6 +18,7 @@ import {
   type ExpenseItem,
 } from "../tabs/expenses";
 import { GradientSafeAreaView as SafeAreaView } from "../../components/GradientSafeAreaView";
+import { PageHeader } from "../../components/PageHeader";
 import { Colors } from "../../constants/colors";
 
 export default function ExpenseDetailsPage() {
@@ -110,41 +110,17 @@ export default function ExpenseDetailsPage() {
 
   return (
     <SafeAreaView
-      edges={["top", "bottom"]}
+      edges={["bottom"]}
       style={{ flex: 1, backgroundColor: Colors.contentBackground }}
     >
-      <LinearGradient
-        colors={Colors.greenGradient}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={{ paddingHorizontal: 16, paddingVertical: 12 }}
-      >
-        <View
-          style={{
-            flexDirection: "row",
-            alignItems: "center",
-            gap: 12,
-          }}
-        >
-          <Pressable
-            onPress={goBack}
-            accessibilityRole="button"
-            accessibilityLabel="Back to expenses"
-            style={{
-              width: 38,
-              height: 38,
-              alignItems: "center",
-              justifyContent: "center",
-              borderRadius: 19,
-              backgroundColor: Colors.white,
-            }}
-          >
-            <Ionicons name="arrow-back" size={19} color={Colors.forest} />
-          </Pressable>
-          <View style={{ flex: 1, minWidth: 0 }}>
+      <PageHeader
+        onBack={goBack}
+        accessibilityLabel="Back to expenses"
+        title={
+          <View>
             <Text
               numberOfLines={1}
-              style={{ color: Colors.white, fontSize: 16, fontWeight: "700" }}
+              style={{ color: Colors.white, fontSize: 18, fontWeight: "700" }}
             >
               Expense details
             </Text>
@@ -157,8 +133,8 @@ export default function ExpenseDetailsPage() {
               </Text>
             ) : null}
           </View>
-        </View>
-      </LinearGradient>
+        }
+      />
 
       {loading && !expense ? (
         <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>

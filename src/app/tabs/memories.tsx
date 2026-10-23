@@ -8,7 +8,6 @@ import {
     useAudioRecorder,
 } from "expo-audio";
 import * as DocumentPicker from "expo-document-picker";
-import { LinearGradient } from "expo-linear-gradient";
 import {
     useFocusEffect,
     useLocalSearchParams,
@@ -26,7 +25,6 @@ import {
     Platform,
     Pressable,
     RefreshControl,
-    StatusBar,
     ScrollView,
     Text,
     View,
@@ -45,6 +43,7 @@ import { ActionIconButton } from "../../components/ActionIconButton";
 import { AddButton } from "../../components/AddButton";
 import { CenteredPageLoader } from "../../components/CenteredPageLoader";
 import ConfirmPopup from "../../components/ConfirmPopup";
+import { PageHeader } from "../../components/PageHeader";
 import {
     createDateRangeSelection,
     isDateInRange,
@@ -405,7 +404,9 @@ export default function Memories() {
   );
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [editorVisible, setEditorVisible] = useState(false);
+  const [editorVisible, setEditorVisible] = useState(
+    isStandaloneMemoryForm && createParam === "1",
+  );
   const [submitting, setSubmitting] = useState(false);
   const [pendingDeleteMemory, setPendingDeleteMemory] =
     useState<Memory | null>(null);
@@ -853,9 +854,19 @@ export default function Memories() {
     setForm((current) => ({ ...current, [key]: value }));
   };
 
+  const closeMemoryForm = () => {
+    if (!isStandaloneMemoryForm) {
+      setEditorVisible(false);
+      return;
+    }
+
+    if (router.canGoBack()) router.back();
+    else router.replace("/tabs/memories");
+  };
+
   return (
     <SafeAreaView
-      edges={["bottom"]}
+      edges={isStandaloneMemoryForm ? [] : ["bottom"]}
       style={{ flex: 1, backgroundColor: Colors.contentBackground }}
     >
       <ConfirmPopup
@@ -880,8 +891,7 @@ export default function Memories() {
           setSuccessMessage(null);
           if (closeEditorAfterSuccess) {
             setCloseEditorAfterSuccess(false);
-            if (router.canGoBack()) router.back();
-            else setEditorVisible(false);
+            closeMemoryForm();
           }
         }}
       />
@@ -1395,17 +1405,10 @@ export default function Memories() {
       {editorVisible && (
         <View
           className="absolute inset-0 z-50 bg-white"
-          style={{ paddingBottom: insets.bottom }}
+          style={{ paddingBottom: isStandaloneMemoryForm ? 0 : insets.bottom }}
         >
-          {isStandaloneMemoryForm ? (
-            <StatusBar
-              barStyle="light-content"
-              backgroundColor={Colors.greenGradient[0]}
-              translucent={false}
-            />
-          ) : null}
           <NativeSafeAreaView
-            edges={isStandaloneMemoryForm ? ["top"] : []}
+            edges={isStandaloneMemoryForm ? ["top", "bottom"] : []}
             style={{
               flex: 1,
               backgroundColor: isStandaloneMemoryForm
@@ -1426,55 +1429,17 @@ export default function Memories() {
             }}
           >
             {isStandaloneMemoryForm ? (
-              <LinearGradient
-                colors={Colors.greenGradient}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
+              <PageHeader
+                title={editingId === null ? "Add Memory" : "Edit Memory"}
+                topInsetApplied
+                disabled={submitting || isRecording}
+                onBack={closeMemoryForm}
                 style={{
                   marginHorizontal: -18,
                   marginBottom: 12,
-                  paddingHorizontal: 16,
                   paddingTop: 8,
-                  paddingBottom: 16,
-                  flexDirection: "row",
-                  alignItems: "center",
                 }}
-              >
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel="Go back"
-                  accessibilityState={{
-                    disabled: submitting || isRecording,
-                  }}
-                  disabled={submitting || isRecording}
-                  onPress={() => {
-                    if (router.canGoBack()) router.back();
-                    else setEditorVisible(false);
-                  }}
-                  style={{
-                    width: 40,
-                    height: 40,
-                    alignItems: "center",
-                    justifyContent: "center",
-                    borderRadius: 20,
-                    backgroundColor: "rgba(255,255,255,0.15)",
-                  }}
-                >
-                  <Ionicons name="arrow-back" size={20} color={Colors.white} />
-                </Pressable>
-                <Text
-                  numberOfLines={1}
-                  style={{
-                    flex: 1,
-                    marginLeft: 12,
-                    color: Colors.white,
-                    fontSize: 18,
-                    fontWeight: "700",
-                  }}
-                >
-                  {editingId === null ? "Add Memory" : "Edit Memory"}
-                </Text>
-              </LinearGradient>
+              />
             ) : null}
             <ScrollView
               style={{ flex: 1, minHeight: 0 }}
@@ -1633,10 +1598,7 @@ export default function Memories() {
                 }}
               >
               <Pressable
-                onPress={() => {
-                  if (router.canGoBack()) router.back();
-                  else setEditorVisible(false);
-                }}
+                onPress={closeMemoryForm}
                 disabled={submitting || isRecording}
                 style={{
                   flex: 1,

@@ -1,5 +1,4 @@
 import { Ionicons } from "@expo/vector-icons";
-import { LinearGradient } from "expo-linear-gradient";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useMemo, useState } from "react";
 import {
@@ -18,6 +17,7 @@ import {
 import api, { getApiErrorMessage } from "../api";
 import { AddButton } from "../components/AddButton";
 import ConfirmPopup from "../components/ConfirmPopup";
+import { PageHeader } from "../components/PageHeader";
 import { FilterBottomSheet } from "../components/filters/FilterBottomSheet";
 import {
   DEFAULT_FILTER_STATE,
@@ -636,34 +636,13 @@ export default function TodosPage() {
       edges={["bottom"]}
       style={{ flex: 1, backgroundColor: Colors.greenGradient[0] }}
     >
-      <LinearGradient
-        colors={Colors.greenGradient}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={{
-          flexDirection: "row",
-          alignItems: "center",
-          justifyContent: "flex-start",
-          paddingHorizontal: 16,
-          paddingTop: insets.top + 8,
-          paddingBottom: 16,
+      <PageHeader
+        title="Todo List"
+        onBack={() => {
+          if (router.canGoBack()) router.back();
+          else router.replace("/tabs/more");
         }}
-      >
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Go back"
-          className="h-10 w-10 items-center justify-center rounded-full bg-white/15"
-          onPress={() => {
-            if (router.canGoBack()) router.back();
-            else router.replace("/tabs/more");
-          }}
-        >
-          <Ionicons name="arrow-back" size={20} color={Colors.white} />
-        </Pressable>
-        <Text className="ml-3 text-lg font-bold text-white">
-          Todo List
-        </Text>
-      </LinearGradient>
+      />
       <View style={{ flex: 1, backgroundColor: "#F2F5EA" }}>
       <ScrollView
         keyboardShouldPersistTaps="handled"

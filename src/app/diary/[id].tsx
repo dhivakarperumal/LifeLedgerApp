@@ -1,6 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useAudioPlayer, useAudioPlayerStatus } from "expo-audio";
-import { LinearGradient } from "expo-linear-gradient";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { VideoView, useVideoPlayer } from "expo-video";
 import { useEffect, useMemo, useState } from "react";
@@ -21,6 +20,7 @@ import { AttachmentFileActions } from "../../components/AttachmentFileActions";
 import ConfirmPopup from "../../components/ConfirmPopup";
 import { parseLocalDate } from "../../components/dateTimeUtils";
 import { GradientSafeAreaView as SafeAreaView } from "../../components/GradientSafeAreaView";
+import { PageHeader } from "../../components/PageHeader";
 import { Colors } from "../../constants/colors";
 
 type DiaryMedia = {
@@ -307,9 +307,10 @@ export default function DiaryDetails() {
   if (loading) {
     return (
       <SafeAreaView
-        edges={["top", "bottom"]}
+        edges={["bottom"]}
         style={{ flex: 1, backgroundColor: Colors.contentBackground }}
       >
+        <PageHeader title="Diary" onBack={goBack} accessibilityLabel="Back to diary" />
         <View
           style={{ flex: 1, alignItems: "center", justifyContent: "center" }}
         >
@@ -329,7 +330,7 @@ export default function DiaryDetails() {
 
   return (
     <SafeAreaView
-      edges={["top", "bottom"]}
+      edges={["bottom"]}
       style={{ flex: 1, backgroundColor: Colors.contentBackground }}
     >
       <ConfirmPopup
@@ -339,41 +340,11 @@ export default function DiaryDetails() {
         onConfirm={confirmDeleteEntry}
         onCancel={() => setShowDeletePopup(false)}
       />
-      <LinearGradient
-        colors={Colors.greenGradient}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={{ paddingHorizontal: 16, paddingVertical: 12 }}
-      >
-        <View
-          style={{
-            flexDirection: "row",
-            alignItems: "center",
-            justifyContent: "space-between",
-          }}
-        >
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
-            <Pressable
-              onPress={goBack}
-              accessibilityRole="button"
-              accessibilityLabel="Back to diary"
-              style={{
-                width: 36,
-                height: 36,
-                alignItems: "center",
-                justifyContent: "center",
-                borderRadius: 18,
-                backgroundColor: Colors.white,
-              }}
-            >
-              <Ionicons name="arrow-back" size={19} color={Colors.forest} />
-            </Pressable>
-            <Text
-              style={{ color: Colors.white, fontSize: 15, fontWeight: "700" }}
-            >
-              Diary
-            </Text>
-          </View>
+      <PageHeader
+        title="Diary"
+        onBack={goBack}
+        accessibilityLabel="Back to diary"
+        right={
           <View style={{ flexDirection: "row", gap: 8 }}>
             <HeaderAction
               label={favorite ? "Remove favorite" : "Add favorite"}
@@ -392,8 +363,8 @@ export default function DiaryDetails() {
               <Ionicons name="trash-outline" size={19} color={Colors.white} />
             </HeaderAction>
           </View>
-        </View>
-      </LinearGradient>
+        }
+      />
 
       <ScrollView
         showsVerticalScrollIndicator={false}

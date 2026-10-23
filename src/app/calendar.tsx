@@ -1,5 +1,4 @@
 import { Ionicons } from "@expo/vector-icons";
-import { LinearGradient } from "expo-linear-gradient";
 import { useFocusEffect, useLocalSearchParams, usePathname, useRouter } from "expo-router";
 import { useCallback, useState } from "react";
 import {
@@ -25,6 +24,7 @@ import ConfirmPopup from "../components/ConfirmPopup";
 import { DateTimePickerComponent } from "../components/DateTimePickerComponent";
 import { FormInput, FormLabel } from "../components/FormControls";
 import { GradientSafeAreaView as SafeAreaView } from "../components/GradientSafeAreaView";
+import { PageHeader } from "../components/PageHeader";
 import { PopupSelect } from "../components/PopupSelect";
 import { createSessionDataCache } from "../components/SessionDataCache";
 import { parseLocalDate, parseLocalDateTimeValue } from "../components/dateTimeUtils";
@@ -663,7 +663,7 @@ export default function CalendarScreen() {
   return (
     <SafeAreaView
       className="flex-1"
-      edges={["top"]}
+      edges={isNewEventRoute ? ["top", "bottom"] : ["bottom"]}
       style={{
         backgroundColor: isNewEventRoute ? Colors.greenGradient[0] : Colors.primary,
       }}
@@ -696,47 +696,48 @@ export default function CalendarScreen() {
           />
         }
       >
-        <LinearGradient
-          colors={Colors.greenGradient}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={{
-            flexDirection: "row",
-            alignItems: "center",
-            paddingHorizontal: 16,
-            paddingBottom: 20,
-            paddingTop: 12,
+        <PageHeader
+          onBack={() => {
+            if (router.canGoBack()) router.back();
+            else router.replace("/tabs/more");
           }}
-        >
-          <Pressable
-            onPress={() => {
-              if (router.canGoBack()) router.back();
-              else router.replace("/tabs/more");
-            }}
-            accessibilityRole="button"
-            accessibilityLabel="Go back"
-            className="mr-3 h-10 w-10 items-center justify-center rounded-full bg-white/15"
-          >
-            <Ionicons name="arrow-back" size={20} color={Colors.white} />
-          </Pressable>
-          <View className="mr-3 items-center border-r border-white/30 pr-4">
-            <Text className="text-4xl font-light text-white">
-              {selectedDate.getDate().toString().padStart(2, "0")}
-            </Text>
-          </View>
-          <View className="flex-1">
-            <Text className="text-xl font-extrabold text-white">
-              Life Calendar
-            </Text>
-            <Text className="mt-1 text-sm font-medium text-[#ADBEA3]">
-              {selectedDate.toLocaleDateString("en-IN", {
-                weekday: "long",
-                month: "long",
-                year: "numeric",
-              })}
-            </Text>
-          </View>
-        </LinearGradient>
+          title={
+            <View style={{ flexDirection: "row", alignItems: "center", flex: 1 }}>
+              <View
+                style={{
+                  marginRight: 12,
+                  alignItems: "center",
+                  borderRightWidth: 1,
+                  borderRightColor: "rgba(255,255,255,0.3)",
+                  paddingRight: 16,
+                }}
+              >
+                <Text style={{ color: Colors.white, fontSize: 30, fontWeight: "300" }}>
+                  {selectedDate.getDate().toString().padStart(2, "0")}
+                </Text>
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={{ color: Colors.white, fontSize: 18, fontWeight: "700" }}>
+                  Life Calendar
+                </Text>
+                <Text
+                  style={{
+                    marginTop: 4,
+                    color: Colors.primaryLight,
+                    fontSize: 12,
+                    fontWeight: "500",
+                  }}
+                >
+                  {selectedDate.toLocaleDateString("en-IN", {
+                    weekday: "long",
+                    month: "long",
+                    year: "numeric",
+                  })}
+                </Text>
+              </View>
+            </View>
+          }
+        />
 
         <View className="px-4 pt-4">
           <View className="mb-3 flex-row items-center justify-between">
@@ -1153,58 +1154,31 @@ export default function CalendarScreen() {
             className="flex-1 bg-[#F9FAFC] px-5 pb-5"
           >
             {modalType !== null ? (
-              <LinearGradient
-                colors={Colors.greenGradient}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={{
-                  marginHorizontal: -20,
-                  marginBottom: 12,
-                  paddingHorizontal: 16,
-                  paddingTop: 8,
-                  paddingBottom: 16,
-                  flexDirection: "row",
-                  alignItems: "center",
-                }}
-              >
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel="Go back"
-                  accessibilityState={{ disabled: saving }}
-                  disabled={saving}
-                  onPress={() => {
-                    if (router.canGoBack()) router.back();
-                    else if (isNewEventRoute) router.replace("/calendar");
-                    else setModalType(null);
-                  }}
-                  style={{
-                    width: 40,
-                    height: 40,
-                    alignItems: "center",
-                    justifyContent: "center",
-                    borderRadius: 20,
-                    backgroundColor: "rgba(255,255,255,0.15)",
-                  }}
-                >
-                  <Ionicons name="arrow-back" size={20} color={Colors.white} />
-                </Pressable>
-                <Text
-                  numberOfLines={1}
-                  style={{
-                    flex: 1,
-                    marginLeft: 12,
-                    color: "#FFFFFF",
-                    fontSize: 18,
-                    fontWeight: "700",
-                  }}
-                >
-                  {editingEvent
+              <PageHeader
+                title={
+                  editingEvent
                     ? "Edit Event"
                     : modalType === "reminder"
                       ? "Add New Reminder"
-                      : "Add New Event"}
-                </Text>
-              </LinearGradient>
+                      : "Add New Event"
+                }
+                topInsetApplied={isNewEventRoute}
+                showStatusBar={false}
+                disabled={saving}
+                onBack={() => {
+                  if (isNewEventRoute) {
+                    if (router.canGoBack()) router.back();
+                    else router.replace("/calendar");
+                  } else {
+                    setModalType(null);
+                  }
+                }}
+                style={{
+                  marginHorizontal: -20,
+                  marginBottom: 12,
+                  paddingTop: 8,
+                }}
+              />
             ) : null}
             <ScrollView
               style={{ flex: 1, minHeight: 0 }}

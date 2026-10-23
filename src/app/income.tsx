@@ -2,7 +2,6 @@ import { Ionicons } from "@expo/vector-icons";
 import * as DocumentPicker from "expo-document-picker";
 import { LinearGradient } from "expo-linear-gradient";
 import { useFocusEffect, useLocalSearchParams, usePathname, useRouter } from "expo-router";
-import { StatusBar } from "expo-status-bar";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
     ActivityIndicator,
@@ -49,6 +48,7 @@ import {
 } from "../components/filters";
 import { FormInput, FormLabel, FormOption } from "../components/FormControls";
 import { GradientSafeAreaView as SafeAreaView } from "../components/GradientSafeAreaView";
+import { PageHeader } from "../components/PageHeader";
 import { PopupSelect } from "../components/PopupSelect";
 import { SearchBar } from "../components/SearchBar";
 import { createSessionDataCache } from "../components/SessionDataCache";
@@ -919,9 +919,6 @@ export default function Income() {
         message={successMessage ?? ""}
         onConfirm={() => setSuccessMessage(null)}
       />
-      <StatusBar
-        style="light"
-      />
       {isNewIncomeRoute ? (
         <NativeStatusBar
           barStyle="light-content"
@@ -929,37 +926,15 @@ export default function Income() {
           translucent={false}
         />
       ) : null}
-      <LinearGradient
-        colors={Colors.greenGradient}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={{
-          display: isNewIncomeRoute ? "none" : "flex",
-          flexDirection: "row",
-          alignItems: "center",
-          justifyContent: "flex-start",
-          paddingHorizontal: 16,
-          paddingBottom: 16,
-          paddingTop: insets.top + 8,
-        }}
-      >
-        <View className="flex-row items-center">
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Go back"
-            className="h-10 w-10 items-center justify-center rounded-full bg-white/15"
-            onPress={() => {
-              if (router.canGoBack()) router.back();
-              else router.replace("/tabs/more");
-            }}
-          >
-            <Ionicons name="arrow-back" size={20} color={Colors.white} />
-          </Pressable>
-          <Text className="ml-3 text-lg font-bold text-white">
-            Monthly Income
-          </Text>
-        </View>
-      </LinearGradient>
+      {isNewIncomeRoute ? null : (
+        <PageHeader
+          title="Monthly Income"
+          onBack={() => {
+            if (router.canGoBack()) router.back();
+            else router.replace("/tabs/more");
+          }}
+        />
+      )}
 
       {isNewIncomeRoute ? null : loading ? (
         <CenteredPageLoader message="Loading income..." />
@@ -1240,32 +1215,13 @@ export default function Income() {
           style={{ paddingBottom: insets.bottom }}
         >
           {isNewIncomeRoute ? (
-            <LinearGradient
-              colors={Colors.greenGradient}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-                paddingHorizontal: 16,
-                paddingTop: 8,
-                paddingBottom: 16,
-              }}
-            >
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="Go back"
-                accessibilityState={{ disabled: saving }}
-                disabled={saving}
-                onPress={closeEditor}
-                className="h-10 w-10 items-center justify-center rounded-full bg-white/15"
-              >
-                <Ionicons name="arrow-back" size={20} color={Colors.white} />
-              </Pressable>
-              <Text className="ml-3 flex-1 text-lg font-bold text-white">
-                {editingIncomeId === null ? "Add Income" : "Edit Income"}
-              </Text>
-            </LinearGradient>
+            <PageHeader
+              title={editingIncomeId === null ? "Add Income" : "Edit Income"}
+              topInsetApplied
+              showStatusBar={false}
+              disabled={saving}
+              onBack={closeEditor}
+            />
           ) : null}
           <KeyboardAvoidingView
             behavior={Platform.OS === "ios" ? "padding" : "height"}
@@ -1452,20 +1408,12 @@ export default function Income() {
       {budgetVisible && (
         <View className="absolute inset-0 z-50 bg-[#F8F9F6] px-5 py-5" style={{ paddingBottom: insets.bottom }}>
           <View className="flex-1">
-            <View className="mb-5 flex-row items-center justify-between">
-              <Text className="text-xl font-bold text-[#25332C]">Monthly budget</Text>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="Go back"
-                className="h-9 w-9 items-center justify-center rounded-full bg-white"
-                onPress={() => {
-                  if (router.canGoBack()) router.back();
-                  else setBudgetVisible(false);
-                }}
-              >
-                <Ionicons name="arrow-back" size={20} color="#526058" />
-              </Pressable>
-            </View>
+            <PageHeader
+              title="Monthly budget"
+              showStatusBar={false}
+              onBack={() => setBudgetVisible(false)}
+              style={{ marginHorizontal: -20, marginTop: -20 }}
+            />
             <Text className="text-base font-semibold text-[#25332C]">
               Set your income budget
             </Text>
@@ -1485,10 +1433,7 @@ export default function Income() {
               <Pressable
                 className="flex-1 items-center rounded-xl border border-[#DDE3DC] bg-white py-3"
                 disabled={budgetSaving}
-                onPress={() => {
-                  if (router.canGoBack()) router.back();
-                  else setBudgetVisible(false);
-                }}
+                onPress={() => setBudgetVisible(false)}
               >
                 <Text className="text-sm font-bold text-[#58645C]">Cancel</Text>
               </Pressable>

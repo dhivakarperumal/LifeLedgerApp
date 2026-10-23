@@ -1,5 +1,4 @@
 import { Ionicons } from "@expo/vector-icons";
-import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import type { ReactNode } from "react";
 import { useState } from "react";
@@ -7,7 +6,6 @@ import {
   ActivityIndicator,
   Pressable,
   ScrollView,
-  StatusBar,
   Switch,
   Text,
   View,
@@ -17,6 +15,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { getApiErrorMessage, getStoredToken } from "../api";
 import { GradientSafeAreaView as SafeAreaView } from "../components/GradientSafeAreaView";
+import { PageHeader } from "../components/PageHeader";
 import { Colors } from "../constants/colors";
 import {
   PasswordForm,
@@ -320,56 +319,16 @@ export default function AppLockSettingsPage() {
 
   return (
     <SafeAreaView
-      edges={["top", "bottom"]}
+      edges={["bottom"]}
       style={{ flex: 1, backgroundColor: Colors.contentBackground }}
     >
-      <StatusBar
-        barStyle="light-content"
-        backgroundColor={Colors.greenGradient[0]}
-        translucent={false}
-      />
-      <LinearGradient
-        colors={Colors.greenGradient}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={{
-          flexDirection: "row",
-          alignItems: "center",
-          paddingHorizontal: 16,
-          paddingTop: 8,
-          paddingBottom: 16,
+      <PageHeader
+        title="App Lock"
+        onBack={() => {
+          if (router.canGoBack()) router.back();
+          else router.replace("/tabs/more");
         }}
-      >
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Go back"
-          onPress={() => {
-            if (router.canGoBack()) router.back();
-            else router.replace("/tabs/more");
-          }}
-          style={{
-            width: 40,
-            height: 40,
-            alignItems: "center",
-            justifyContent: "center",
-            borderRadius: 20,
-            backgroundColor: "rgba(255,255,255,0.15)",
-          }}
-        >
-          <Ionicons name="arrow-back" size={20} color={Colors.white} />
-        </Pressable>
-        <Text
-          style={{
-            flex: 1,
-            marginLeft: 12,
-            color: Colors.white,
-            fontSize: 18,
-            fontWeight: "700",
-          }}
-        >
-          App Lock
-        </Text>
-      </LinearGradient>
+      />
       <ScrollView
         scrollEnabled={!patternDrawing}
         contentContainerStyle={{

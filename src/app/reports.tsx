@@ -26,6 +26,7 @@ import {
     type DateRangeSelection,
 } from "../components/DateRangeFilter";
 import { GradientSafeAreaView as SafeAreaView } from "../components/GradientSafeAreaView";
+import { PageHeader } from "../components/PageHeader";
 import { SearchBar } from "../components/SearchBar";
 import { createSessionDataCache } from "../components/SessionDataCache";
 import { formatLocalDate, parseLocalDate } from "../components/dateTimeUtils";
@@ -806,39 +807,14 @@ export default function Reports() {
     viewMode !== "grid";
 
   return (
-    <SafeAreaView
-      className="flex-1 bg-[#F2F5EA]"
-      edges={["top", "bottom"]}
-    >
-      <LinearGradient
-        colors={Colors.greenGradient}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={{
-          flexDirection: "row",
-          alignItems: "center",
-          justifyContent: "flex-start",
-          paddingHorizontal: 16,
-          paddingBottom: 16,
-          paddingTop: 8,
+    <SafeAreaView className="flex-1 bg-[#F2F5EA]" edges={["bottom"]}>
+      <PageHeader
+        title="Reports"
+        onBack={() => {
+          if (router.canGoBack()) router.back();
+          else router.replace("/tabs/more");
         }}
-      >
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Go back"
-          className="h-10 w-10 items-center justify-center rounded-full bg-white/15"
-          onPress={() => {
-            if (router.canGoBack()) router.back();
-            else router.replace("/tabs/more");
-          }}
-        >
-          <Ionicons name="arrow-back" size={20} color={Colors.white} />
-        </Pressable>
-        <View className="ml-3 flex-row items-center">
-          <Ionicons name="bar-chart-outline" size={20} color={Colors.accent} />
-          <Text className="ml-2 text-lg font-bold text-white">Reports</Text>
-        </View>
-      </LinearGradient>
+      />
 
       {loading ? (
         <CenteredPageLoader message="Loading report data..." />

@@ -46,6 +46,7 @@ import {
 } from "../components/filters";
 import { FormInput, FormLabel, FormOption } from "../components/FormControls";
 import { GradientSafeAreaView as SafeAreaView } from "../components/GradientSafeAreaView";
+import { PageHeader } from "../components/PageHeader";
 import { PopupSelect } from "../components/PopupSelect";
 import { SearchBar } from "../components/SearchBar";
 import { createSessionDataCache } from "../components/SessionDataCache";
@@ -1217,34 +1218,16 @@ export default function Transfers() {
               className="flex-1 bg-[#F8F9F6] px-5 pb-5"
             >
             {isNewTransferRoute ? (
-              <LinearGradient
-                colors={Colors.greenGradient}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={{
-                  marginHorizontal: -20,
-                  marginBottom: 12,
-                  paddingHorizontal: 16,
-                  paddingTop: 8,
-                  paddingBottom: 16,
-                  flexDirection: "row",
-                  alignItems: "center",
-                }}
-              >
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel="Go back"
-                  accessibilityState={{ disabled: submitting }}
-                  disabled={submitting}
-                  onPress={closeModal}
-                  className="h-10 w-10 items-center justify-center rounded-full bg-white/15"
-                >
-                  <Ionicons name="arrow-back" size={20} color={Colors.white} />
-                </Pressable>
-                <Text className="ml-3 flex-1 text-lg font-bold text-white">
-                  {editingTransferId === null ? "Add Transfer" : "Edit Transfer"}
-                </Text>
-              </LinearGradient>
+              <PageHeader
+                title={
+                  editingTransferId === null ? "Add Transfer" : "Edit Transfer"
+                }
+                topInsetApplied
+                showStatusBar={false}
+                disabled={submitting}
+                onBack={closeModal}
+                style={{ marginHorizontal: -20, marginBottom: 12 }}
+              />
             ) : null}
             <ScrollView
               style={{ flex: 1, minHeight: 0 }}

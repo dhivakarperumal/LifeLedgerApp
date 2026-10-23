@@ -29,6 +29,7 @@ import {
   parseLocalDateTimeValue,
 } from "../../components/dateTimeUtils";
 import { GradientSafeAreaView as SafeAreaView } from "../../components/GradientSafeAreaView";
+import { PageHeader } from "../../components/PageHeader";
 import { Colors } from "../../constants/colors";
 
 type MemoryMedia = {
@@ -325,9 +326,14 @@ export default function MemoryDetails() {
   if (loading) {
     return (
       <SafeAreaView
-        edges={["top", "bottom"]}
+        edges={["bottom"]}
         style={{ flex: 1, backgroundColor: Colors.contentBackground }}
       >
+        <PageHeader
+          title="Memories"
+          onBack={goBack}
+          accessibilityLabel="Back to memories"
+        />
         <View
           style={{ flex: 1, alignItems: "center", justifyContent: "center" }}
         >
@@ -343,33 +349,14 @@ export default function MemoryDetails() {
   if (!memory) {
     return (
       <SafeAreaView
-        edges={["top", "bottom"]}
+        edges={["bottom"]}
         style={{ flex: 1, backgroundColor: Colors.contentBackground }}
       >
-        <LinearGradient
-          colors={Colors.greenGradient}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={{ paddingHorizontal: 16, paddingVertical: 12 }}
-        >
-          <Pressable
-            onPress={goBack}
-            accessibilityRole="button"
-            accessibilityLabel="Back to memories"
-            style={{
-              flexDirection: "row",
-              alignItems: "center",
-              gap: 6,
-              paddingVertical: 8,
-              paddingRight: 8,
-            }}
-          >
-            <Ionicons name="arrow-back" size={21} color={Colors.white} />
-            <Text style={{ color: Colors.white, fontSize: 15, fontWeight: "700" }}>
-              Memories
-            </Text>
-          </Pressable>
-        </LinearGradient>
+        <PageHeader
+          title="Memories"
+          onBack={goBack}
+          accessibilityLabel="Back to memories"
+        />
         <View
           style={{
             flex: 1,
@@ -443,7 +430,7 @@ export default function MemoryDetails() {
 
   return (
     <SafeAreaView
-      edges={["top", "bottom"]}
+      edges={["bottom"]}
       style={{ flex: 1, backgroundColor: Colors.contentBackground }}
     >
       <ConfirmPopup
@@ -453,41 +440,11 @@ export default function MemoryDetails() {
         onConfirm={confirmDeleteMemory}
         onCancel={() => setShowDeletePopup(false)}
       />
-      <LinearGradient
-        colors={Colors.greenGradient}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={{ paddingHorizontal: 16, paddingVertical: 12 }}
-      >
-        <View
-          style={{
-            flexDirection: "row",
-            alignItems: "center",
-            justifyContent: "space-between",
-          }}
-        >
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
-            <Pressable
-              onPress={goBack}
-              accessibilityRole="button"
-              accessibilityLabel="Back to memories"
-              style={{
-                width: 36,
-                height: 36,
-                alignItems: "center",
-                justifyContent: "center",
-                borderRadius: 18,
-                backgroundColor: Colors.white,
-              }}
-            >
-              <Ionicons name="arrow-back" size={19} color={Colors.forest} />
-            </Pressable>
-            <Text
-              style={{ color: Colors.white, fontSize: 15, fontWeight: "700" }}
-            >
-              Memories
-            </Text>
-          </View>
+      <PageHeader
+        title="Memories"
+        onBack={goBack}
+        accessibilityLabel="Back to memories"
+        right={
           <View style={{ flexDirection: "row", gap: 8 }}>
             <HeaderAction
               label={favorite ? "Remove favorite" : "Add favorite"}
@@ -506,8 +463,8 @@ export default function MemoryDetails() {
               <Ionicons name="trash-outline" size={19} color={Colors.white} />
             </HeaderAction>
           </View>
-        </View>
-      </LinearGradient>
+        }
+      />
 
       <ScrollView
         showsVerticalScrollIndicator={false}

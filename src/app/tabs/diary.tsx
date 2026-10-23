@@ -1,5 +1,4 @@
 import { Ionicons } from "@expo/vector-icons";
-import { LinearGradient } from "expo-linear-gradient";
 import {
     AudioModule,
     RecordingPresets,
@@ -29,7 +28,6 @@ import {
     Platform,
     Pressable,
     RefreshControl,
-    StatusBar,
     ScrollView,
     Text,
     View,
@@ -47,6 +45,7 @@ import api, {
 import { ActionIconButton } from "../../components/ActionIconButton";
 import { AddButton } from "../../components/AddButton";
 import { CenteredPageLoader } from "../../components/CenteredPageLoader";
+import { PageHeader } from "../../components/PageHeader";
 import ConfirmPopup from "../../components/ConfirmPopup";
 import {
     createDateRangeSelection,
@@ -398,7 +397,9 @@ export default function Diary() {
   const [selectedMood, setSelectedMood] = useState("all");
   const [viewMode, setViewMode] = useState<ViewModeOption>("table");
   const useTwoColumnCards = viewMode === "card" && screenWidth >= 360;
-  const [editorVisible, setEditorVisible] = useState(false);
+  const [editorVisible, setEditorVisible] = useState(
+    isStandaloneDiaryForm && createParam === "1",
+  );
   const [submitting, setSubmitting] = useState(false);
   const [pendingDeleteEntry, setPendingDeleteEntry] =
     useState<DiaryEntry | null>(null);
@@ -581,6 +582,15 @@ export default function Diary() {
     setAttachments([]);
     setRemovedIds({ image: [], video: [], audio: [], zip: [] });
     setEditorVisible(true);
+  };
+  const closeDiaryForm = () => {
+    if (!isStandaloneDiaryForm) {
+      setEditorVisible(false);
+      return;
+    }
+
+    if (router.canGoBack()) router.back();
+    else router.replace("/tabs/diary");
   };
   const openRequestedEntry = useEffectEvent(() => {
     if (createParam === "1") {
@@ -880,7 +890,7 @@ export default function Diary() {
 
   return (
     <SafeAreaView
-      edges={["bottom"]}
+      edges={isStandaloneDiaryForm ? [] : ["bottom"]}
       style={{ flex: 1, backgroundColor: Colors.contentBackground }}
     >
       <ConfirmPopup
@@ -905,8 +915,7 @@ export default function Diary() {
           setSuccessMessage(null);
           if (closeEditorAfterSuccess) {
             setCloseEditorAfterSuccess(false);
-            if (router.canGoBack()) router.back();
-            else setEditorVisible(false);
+            closeDiaryForm();
           }
         }}
       />
@@ -1488,19 +1497,12 @@ export default function Diary() {
         <View
           className="absolute inset-0 z-50"
           style={{
-            paddingBottom: insets.bottom,
+            paddingBottom: isStandaloneDiaryForm ? 0 : insets.bottom,
             backgroundColor: Colors.white,
           }}
         >
-          {isStandaloneDiaryForm ? (
-            <StatusBar
-              barStyle="light-content"
-              backgroundColor={Colors.greenGradient[0]}
-              translucent={false}
-            />
-          ) : null}
           <NativeSafeAreaView
-            edges={isStandaloneDiaryForm ? ["top"] : []}
+            edges={isStandaloneDiaryForm ? ["top", "bottom"] : []}
             style={{
               flex: 1,
               backgroundColor: isStandaloneDiaryForm
@@ -1521,55 +1523,19 @@ export default function Diary() {
             }}
           >
             {isStandaloneDiaryForm ? (
-              <LinearGradient
-                colors={Colors.greenGradient}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
+              <PageHeader
+                title={
+                  editingId === null ? "Add Diary Entry" : "Edit Diary Entry"
+                }
+                topInsetApplied
+                disabled={submitting || isRecording}
+                onBack={closeDiaryForm}
                 style={{
                   marginHorizontal: -18,
                   marginBottom: 12,
-                  paddingHorizontal: 16,
                   paddingTop: 8,
-                  paddingBottom: 16,
-                  flexDirection: "row",
-                  alignItems: "center",
                 }}
-              >
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel="Go back"
-                  accessibilityState={{
-                    disabled: submitting || isRecording,
-                  }}
-                  disabled={submitting || isRecording}
-                  onPress={() => {
-                    if (router.canGoBack()) router.back();
-                    else setEditorVisible(false);
-                  }}
-                  style={{
-                    width: 40,
-                    height: 40,
-                    alignItems: "center",
-                    justifyContent: "center",
-                    borderRadius: 20,
-                    backgroundColor: "rgba(255,255,255,0.15)",
-                  }}
-                >
-                  <Ionicons name="arrow-back" size={20} color={Colors.white} />
-                </Pressable>
-                <Text
-                  numberOfLines={1}
-                  style={{
-                    flex: 1,
-                    marginLeft: 12,
-                    color: Colors.white,
-                    fontSize: 18,
-                    fontWeight: "700",
-                  }}
-                >
-                  {editingId === null ? "Add Diary Entry" : "Edit Diary Entry"}
-                </Text>
-              </LinearGradient>
+              />
             ) : null}
             <ScrollView
               style={{ flex: 1, minHeight: 0 }}
@@ -1781,10 +1747,7 @@ export default function Diary() {
                 }}
               >
                 <Pressable
-                  onPress={() => {
-                    if (router.canGoBack()) router.back();
-                    else setEditorVisible(false);
-                  }}
+                  onPress={closeDiaryForm}
                   disabled={submitting || isRecording}
                   style={{
                     flex: 1,

@@ -14,7 +14,6 @@ import {
     Pressable,
     RefreshControl,
     ScrollView,
-    StatusBar,
     Text,
     TextInput,
     View,
@@ -26,6 +25,7 @@ import {
 import api, { API_BASE_URL, getApiErrorMessage, logoutUser } from "../../api";
 import { AddButton } from "../../components/AddButton";
 import { ActionIconButton } from "../../components/ActionIconButton";
+import { PageHeader } from "../../components/PageHeader";
 
 import ConfirmPopup from "../../components/ConfirmPopup";
 import {
@@ -516,7 +516,9 @@ export default function Expenses() {
   const [search, setSearch] = useState("");
   const [refreshing, setRefreshing] = useState(false);
   const [showSummaryCards, setShowSummaryCards] = useState(false);
-  const [isModalVisible, setIsModalVisible] = useState(false);
+  const [isModalVisible, setIsModalVisible] = useState(
+    isStandaloneExpenseForm && createParam === "1",
+  );
   const [editingExpenseId, setEditingExpenseId] = useState<number | string | null>(null);
   const [isFilterSheetVisible, setIsFilterSheetVisible] = useState(false);
   const [categoryFilterSearch, setCategoryFilterSearch] = useState("");
@@ -1063,9 +1065,14 @@ export default function Expenses() {
   };
 
   const closeExpenseForm = () => {
-    if (router.canGoBack()) router.back();
-    else setIsModalVisible(false);
     resetForm();
+    if (!isStandaloneExpenseForm) {
+      setIsModalVisible(false);
+      return;
+    }
+
+    if (router.canGoBack()) router.back();
+    else router.replace("/tabs/expenses");
   };
 
   const openRequestedExpense = useEffectEvent(() => {
@@ -1121,7 +1128,7 @@ export default function Expenses() {
 
   return (
     <SafeAreaView
-      edges={["bottom"]}
+      edges={isStandaloneExpenseForm ? [] : ["bottom"]}
       style={{ flex: 1, backgroundColor: "#F2F5EA" }}
     >
       <ConfirmPopup
@@ -1143,9 +1150,7 @@ export default function Expenses() {
           setSuccessMessage(null);
           if (closeFormAfterSuccess) {
             setCloseFormAfterSuccess(false);
-            resetForm();
-            if (router.canGoBack()) router.back();
-            else setIsModalVisible(false);
+            closeExpenseForm();
           }
         }}
       />
@@ -1868,7 +1873,10 @@ export default function Expenses() {
       </Modal>
 
       {isModalVisible && (
-        <View className="absolute inset-0 z-50 bg-white" style={{ paddingBottom: insets.bottom }}>
+        <View
+          className="absolute inset-0 z-50 bg-white"
+          style={{ paddingBottom: isStandaloneExpenseForm ? 0 : insets.bottom }}
+        >
           <View style={{ flex: 1 }}>
             <LinearGradient
               colors={
@@ -1880,21 +1888,14 @@ export default function Expenses() {
               end={{ x: 1, y: 1 }}
               style={{
                 position: "absolute",
-                top: isStandaloneExpenseForm ? -insets.top : 0,
+                top: 0,
                 right: 0,
                 bottom: 0,
                 left: 0,
               }}
             />
-            {isStandaloneExpenseForm ? (
-              <StatusBar
-                barStyle="light-content"
-                backgroundColor="transparent"
-                translucent
-              />
-            ) : null}
             <NativeSafeAreaView
-              edges={isStandaloneExpenseForm ? ["top"] : []}
+              edges={isStandaloneExpenseForm ? ["top", "bottom"] : []}
               style={{
                 flex: 1,
                 backgroundColor: isStandaloneExpenseForm
@@ -1915,52 +1916,17 @@ export default function Expenses() {
             }}
           >
             {isStandaloneExpenseForm ? (
-              <LinearGradient
-                colors={Colors.greenGradient}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
+              <PageHeader
+                title="Expense"
+                topInsetApplied
+                disabled={saving}
+                onBack={closeExpenseForm}
                 style={{
                   marginHorizontal: -20,
                   marginBottom: 15,
-                  paddingHorizontal: 16,
                   paddingTop: 8,
-                  paddingBottom: 16,
-                  flexDirection: "row",
-                  alignItems: "center",
-                  justifyContent: "flex-start",
                 }}
-              >
-                <View style={{ flexDirection: "row", alignItems: "center" }}>
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel="Go back"
-                    accessibilityState={{ disabled: saving }}
-                    disabled={saving}
-                    onPress={closeExpenseForm}
-                    style={{
-                      width: 40,
-                      height: 40,
-                      alignItems: "center",
-                      justifyContent: "center",
-                      borderRadius: 20,
-                      backgroundColor: "rgba(255,255,255,0.15)",
-                    }}
-                  >
-                    <Ionicons name="arrow-back" size={20} color={Colors.white} />
-                  </Pressable>
-                  <Text
-                    numberOfLines={1}
-                    style={{
-                      marginLeft: 12,
-                      color: Colors.white,
-                      fontSize: 18,
-                      fontWeight: "700",
-                    }}
-                  >
-                    Expense
-                  </Text>
-                </View>
-              </LinearGradient>
+              />
             ) : null}
             <ScrollView
               style={{ flex: 1, minHeight: 0 }}
@@ -2267,9 +2233,7 @@ export default function Expenses() {
 
               <View style={{ flexDirection: "row", gap: 10, marginTop: 12 }}>
                 <Pressable
-                  onPress={() => {
-                    closeExpenseForm();
-                  }}
+                    onPress={closeExpenseForm}
                   disabled={saving}
                   style={{
                     flex: 1,
