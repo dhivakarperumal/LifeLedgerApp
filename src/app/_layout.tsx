@@ -5,7 +5,6 @@ import { useEffect } from "react";
 import { Platform, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { AppLockProvider } from "../security/AppLockProvider";
-import { Colors } from "../constants/colors";
 import "../../global.css";
 
 export default function RootLayout() {
@@ -17,7 +16,7 @@ export default function RootLayout() {
 
   return (
     <>
-      {Platform.OS === "android" && <NavigationBar style="light" />}
+      {Platform.OS === "android" && <NavigationBar style="dark" />}
       <AppLockProvider>
         <View style={{ flex: 1 }}>
           <Stack screenOptions={{ headerShown: false }} />
@@ -30,7 +29,7 @@ export default function RootLayout() {
                 bottom: 0,
                 left: 0,
                 height: insets.bottom,
-                backgroundColor: Colors.headerEnd,
+                backgroundColor: "#000000",
               }}
             />
           )}
