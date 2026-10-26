@@ -66,10 +66,10 @@ export type ExpenseItem = {
   expense_category?: unknown;
   expense_amount?: number | string;
   amount?: number | string;
-  expense_date?: string;
-  date?: string;
-  expense_time?: string;
-  time?: string;
+  expense_date?: string | number;
+  date?: string | number;
+  expense_time?: string | number;
+  time?: string | number;
   payment_method?: string;
   paymentMethod?: string;
   notes?: string;
@@ -299,6 +299,76 @@ function getCurrentTime() {
   return `${String(now.getHours()).padStart(2, "0")}:${String(
     now.getMinutes(),
   ).padStart(2, "0")}`;
+}
+
+function parseExpenseTimestamp(value?: string | number) {
+  if (typeof value === "number" && Number.isFinite(value)) {
+    const timestamp = new Date(
+      Math.abs(value) < 100_000_000_000 ? value * 1000 : value,
+    );
+    return Number.isNaN(timestamp.getTime()) ? null : timestamp;
+  }
+
+  if (typeof value !== "string" || !value.trim()) return null;
+
+  const parsed = parseLocalDateTimeValue(value.trim());
+  if (parsed) return parsed;
+
+  if (/^\d{10,13}$/.test(value.trim())) {
+    const numericValue = Number(value.trim());
+    const timestamp = new Date(
+      value.trim().length === 10 ? numericValue * 1000 : numericValue,
+    );
+    return Number.isNaN(timestamp.getTime()) ? null : timestamp;
+  }
+
+  return null;
+}
+
+function parseExpenseTime(value?: string | number) {
+  if (typeof value !== "string" && typeof value !== "number") return null;
+  const match =
+    /(?:^|[T ])(\d{1,2}):(\d{2})(?::\d{2}(?:\.\d+)?)?\s*(AM|PM)?\b/i.exec(
+      String(value).trim(),
+    );
+  if (!match) return null;
+
+  let hours = Number(match[1]);
+  const minutes = Number(match[2]);
+  if (match[3]) {
+    if (hours < 1 || hours > 12) return null;
+    hours = (hours % 12) + (match[3].toUpperCase() === "PM" ? 12 : 0);
+  }
+  if (hours > 23 || minutes > 59) return null;
+
+  return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
+}
+
+function getExpenseDateTime(expense: ExpenseItem) {
+  const rawDateValues = [expense.expense_date, expense.date].filter(
+    (value) => value !== undefined && value !== null && String(value).trim(),
+  );
+  const parsedDateValue = rawDateValues
+    .map((value) => ({ value, date: parseExpenseTimestamp(value) }))
+    .find((candidate) => candidate.date);
+  const rawDate = parsedDateValue?.value ?? rawDateValues[0];
+  const parsedDate =
+    parsedDateValue?.date ?? parseExpenseTimestamp(rawDate);
+  const timeValues = [expense.expense_time, expense.time].filter(
+    (value) => value !== undefined && value !== null && String(value).trim(),
+  );
+  const time =
+    timeValues.map(parseExpenseTime).find(Boolean) ??
+    (typeof rawDate === "string" &&
+    /[T ]\d{1,2}:\d{2}/.test(rawDate) &&
+    parsedDate
+      ? formatLocalTime(parsedDate)
+      : null);
+
+  return {
+    date: parsedDate ? formatLocalDate(parsedDate) : null,
+    time,
+  };
 }
 
 function formatAmount(value: number | string | undefined) {
@@ -724,7 +794,10 @@ export default function Expenses() {
       const matchesCategory =
         selectedCategory === "All" ||
         (expense.category || "Other") === selectedCategory;
-      const matchesDate = isDateInRange(expense.expense_date, dateRange);
+      const matchesDate = isDateInRange(
+        getExpenseDateTime(expense).date,
+        dateRange,
+      );
       const amount = Number(expense.expense_amount ?? expense.amount ?? 0);
       const matchesMin = amountMin === "" || amount >= Number(amountMin);
       const matchesMax = amountMax === "" || amount <= Number(amountMax);
@@ -743,8 +816,12 @@ export default function Expenses() {
     return filtered.sort((left, right) => {
       const leftAmount = Number(left.expense_amount ?? left.amount ?? 0);
       const rightAmount = Number(right.expense_amount ?? right.amount ?? 0);
-      const leftDate = parseLocalDate(left.expense_date)?.getTime() || 0;
-      const rightDate = parseLocalDate(right.expense_date)?.getTime() || 0;
+      const leftDate =
+        parseLocalDate(getExpenseDateTime(left).date || undefined)?.getTime() ||
+        0;
+      const rightDate =
+        parseLocalDate(getExpenseDateTime(right).date || undefined)?.getTime() ||
+        0;
       if (sort === "Oldest First") return leftDate - rightDate;
       if (sort === "Amount: High to Low") return rightAmount - leftAmount;
       if (sort === "Amount: Low to High") return leftAmount - rightAmount;
@@ -766,7 +843,9 @@ export default function Expenses() {
       { label: string; expenses: ExpenseItem[] }
     >();
     for (const expense of visibleExpenses) {
-      const month = getExpenseMonth(expense.expense_date);
+      const month = getExpenseMonth(
+        getExpenseDateTime(expense).date || undefined,
+      );
       const group = groups.get(month.key) || { label: month.label, expenses: [] };
       group.expenses.push(expense);
       groups.set(month.key, group);
@@ -788,8 +867,9 @@ export default function Expenses() {
       ),
       todayExpense: expenses
         .filter((item) => {
-          if (!item.expense_date) return false;
-          const date = parseLocalDate(item.expense_date);
+          const dateValue = getExpenseDateTime(item).date;
+          if (!dateValue) return false;
+          const date = parseLocalDate(dateValue);
           const now = new Date();
           return (
             !!date &&
@@ -906,6 +986,12 @@ export default function Expenses() {
       return;
     }
 
+    const selectedTime = parseExpenseTime(form.time);
+    if (!parseLocalDate(form.date) || !selectedTime) {
+      Alert.alert("Invalid date or time", "Select a valid expense date and time.");
+      return;
+    }
+
     const isTravel = isTravelCategory(form.category);
     if (isTravel && (!form.from.trim() || !form.to.trim())) {
       Alert.alert(
@@ -952,8 +1038,8 @@ export default function Expenses() {
         expense_amount: form.expense_amount,
         category: form.category.trim(),
         payment_method: form.payment_method,
-        date: form.date.trim(), // Use "date", NOT "expense_date"
-        time: form.time, // Use "time", NOT "expense_time"
+        date: form.date.trim(),
+        time: selectedTime,
         notes: form.notes || "",
         location: form.location.trim(),
         transfer_id: form.transfer_id || "",
@@ -994,8 +1080,15 @@ export default function Expenses() {
       if (isEditing) {
         setExpenses((current) =>
           current.map((item) =>
-            String(item.id) === String(editingExpenseId) && savedExpense
-              ? { ...item, ...savedExpense }
+            String(item.id) === String(editingExpenseId)
+              ? {
+                  ...item,
+                  ...(savedExpense || {}),
+                  expense_date: form.date.trim(),
+                  date: form.date.trim(),
+                  expense_time: selectedTime,
+                  time: selectedTime,
+                }
               : item,
           ),
         );
@@ -1033,14 +1126,7 @@ export default function Expenses() {
   const handleEditExpense = (expense: ExpenseItem) => {
     const expenseCategory =
       expense.category ?? expense.category_name ?? expense.expense_category;
-    const rawDate = expense.expense_date || "";
-    const dateMatch = rawDate.match(/^(\d{4}-\d{2}-\d{2})/);
-    const date = dateMatch?.[1] ||
-      (rawDate && (parseLocalDate(rawDate) || !Number.isNaN(new Date(rawDate).getTime()))
-        ? formatLocalDate(parseLocalDate(rawDate) || new Date(rawDate))
-        : getCurrentDate());
-    const rawTime = expense.expense_time || expense.time || "";
-    const dateTimeMatch = rawDate.match(/T(\d{2}:\d{2})/);
+    const { date: savedDate, time: savedTime } = getExpenseDateTime(expense);
 
     setForm({
       title: expense.title || "",
@@ -1053,8 +1139,8 @@ export default function Expenses() {
       from: expense.from || "",
       to: expense.to || "",
       payment_method: expense.payment_method || "Cash",
-      date,
-      time: rawTime.slice(0, 5) || dateTimeMatch?.[1] || getCurrentTime(),
+      date: savedDate || getCurrentDate(),
+      time: savedTime || getCurrentTime(),
       notes: expense.notes || "",
       location: expense.location || "",
     });
@@ -1448,6 +1534,8 @@ export default function Expenses() {
                   expense.category ??
                   expense.category_name ??
                   expense.expense_category;
+                const { date: expenseDate, time: expenseTime } =
+                  getExpenseDateTime(expense);
                 const accent = getCategoryAccent(expenseCategory);
                 const categoryIcon = getCategoryIcon(expenseCategory);
 
@@ -1554,7 +1642,8 @@ export default function Expenses() {
                           }}
                           numberOfLines={1}
                         >
-                          {formatDate(expense.expense_date)}
+                          {formatDate(expenseDate || undefined)}
+                          {expenseTime ? ` · ${expenseTime}` : ""}
                         </Text>
                       </View>
                       {expense.location ? (
@@ -1917,14 +2006,13 @@ export default function Expenses() {
           >
             {isStandaloneExpenseForm ? (
               <PageHeader
-                title="Expense"
+                title="Add New Expense"
                 topInsetApplied
                 disabled={saving}
                 onBack={closeExpenseForm}
                 style={{
                   marginHorizontal: -20,
-                  marginBottom: 15,
-                  paddingTop: 8,
+                  marginBottom: 12,
                 }}
               />
             ) : null}
@@ -2587,16 +2675,8 @@ export function ExpenseDetailsContent({
   onRetry: () => void;
   onOpenAttachment: (uri: string) => Promise<void>;
 }) {
-  const rawDate = expense.expense_date || expense.date || "";
-  const parsedDateTime = parseLocalDateTimeValue(rawDate);
-  const time =
-    (typeof expense.expense_time === "string"
-      ? expense.expense_time.slice(0, 5)
-      : "") ||
-    (typeof expense.time === "string" ? expense.time.slice(0, 5) : "") ||
-    (parsedDateTime && /[T ]\d{2}:\d{2}/.test(rawDate)
-      ? formatLocalTime(parsedDateTime)
-      : "");
+  const rawDate = expense.expense_date ?? expense.date ?? "";
+  const { date: savedDate, time } = getExpenseDateTime(expense);
   const attachments = getExpenseAttachments(expense);
   const notes =
     (typeof expense.notes === "string" && expense.notes.trim()) ||
@@ -2631,9 +2711,9 @@ export function ExpenseDetailsContent({
     ...(rawDate
       ? [{
           label: "Date",
-          value: parsedDateTime
-            ? formatDate(formatLocalDate(parsedDateTime))
-            : formatDate(rawDate),
+          value: savedDate
+            ? formatDate(savedDate)
+            : formatDate(String(rawDate)),
           icon: "calendar-outline" as const,
           iconColor: Colors.primary,
         }]
