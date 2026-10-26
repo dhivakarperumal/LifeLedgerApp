@@ -1,4 +1,4 @@
-import { Ionicons } from "@expo/vector-icons";
+import Ionicons from "@expo/vector-icons/Ionicons";
 import * as DocumentPicker from "expo-document-picker";
 import { LinearGradient } from "expo-linear-gradient";
 import { useFocusEffect, useLocalSearchParams, usePathname, useRouter } from "expo-router";
@@ -21,7 +21,12 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Svg, { Path } from "react-native-svg";
-import api, { API_BASE_URL, getApiErrorMessage, logoutUser } from "../api";
+import api, {
+  API_BASE_URL,
+  getApiErrorMessage,
+  getShared,
+  logoutUser,
+} from "../api";
 import { AddButton } from "../components/AddButton";
 import {
     createDateRangeSelection,
@@ -513,9 +518,9 @@ export default function Income() {
       const data = await incomeDataCache.load(async () => {
         const [incomeResult, categoryResult, budgetResult] =
           await Promise.allSettled([
-            api.get("/incomes"),
-            api.get("/categories"),
-            api.get("/incomes/monthly-budget"),
+            getShared("/incomes"),
+            getShared("/categories"),
+            getShared("/incomes/monthly-budget"),
           ]);
         if (incomeResult.status === "rejected") throw incomeResult.reason;
         for (const result of [categoryResult, budgetResult]) {

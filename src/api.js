@@ -16,6 +16,8 @@ const api = axios.create({
 let cachedToken;
 let tokenCacheVersion = 0;
 let tokenReadPromise = null;
+let cachedUser;
+let userCacheVersion = 0;
 let userReadPromise = null;
 let appLockToken = null;
 const inFlightGetRequests = new Map();
@@ -96,19 +98,29 @@ export const setAppLockToken = (token) => {
 
 export const saveUser = async (user) => {
   if (user) {
+    userCacheVersion += 1;
+    cachedUser = user;
     userReadPromise = null;
     await AsyncStorage.setItem("userProfile", JSON.stringify(user));
   }
 };
 
 export const getStoredUser = async () => {
+  if (cachedUser !== undefined) {
+    return cachedUser;
+  }
+
   if (!userReadPromise) {
+    const version = userCacheVersion;
     const request = AsyncStorage.getItem("userProfile")
       .then((user) => {
-        if (!user) return null;
+        if (version !== userCacheVersion) return cachedUser || null;
+        if (!user) return (cachedUser = null);
         try {
-          return JSON.parse(user);
+          cachedUser = JSON.parse(user);
+          return cachedUser;
         } catch {
+          cachedUser = null;
           return null;
         }
       })
@@ -249,6 +261,8 @@ export const logoutUser = async () => {
     await AsyncStorage.multiRemove(["userToken", "userProfile"]);
   } finally {
     clearTokenCache();
+    userCacheVersion += 1;
+    cachedUser = null;
     userReadPromise = null;
     setAppLockToken(null);
   }

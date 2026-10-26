@@ -1,4 +1,4 @@
-import { Ionicons } from "@expo/vector-icons";
+import Ionicons from "@expo/vector-icons/Ionicons";
 import * as DocumentPicker from "expo-document-picker";
 import { LinearGradient } from "expo-linear-gradient";
 import { useFocusEffect, useLocalSearchParams, useNavigation, usePathname, useRouter } from "expo-router";
@@ -22,7 +22,12 @@ import {
     SafeAreaView as NativeSafeAreaView,
     useSafeAreaInsets,
 } from "react-native-safe-area-context";
-import api, { API_BASE_URL, getApiErrorMessage, logoutUser } from "../../api";
+import api, {
+  API_BASE_URL,
+  getApiErrorMessage,
+  getShared,
+  logoutUser,
+} from "../../api";
 import { AddButton } from "../../components/AddButton";
 import { ActionIconButton } from "../../components/ActionIconButton";
 import { PageHeader } from "../../components/PageHeader";
@@ -711,14 +716,14 @@ export default function Expenses() {
 
   const fetchFormOptions = useCallback(async () => {
     try {
-      const categoriesRequest = api
-        .get("/categories")
-        .then((response) =>
+      const categoriesRequest = getShared("/categories")
+        .then((response: { data?: any }) =>
           setCategoryOptions(getExpenseCategoryOptions(response?.data)),
         );
-      const transfersRequest = api
-        .get("/transfers")
-        .then((response) => setTransfers(getTransferRows(response?.data)))
+      const transfersRequest = getShared("/transfers")
+        .then((response: { data?: any }) =>
+          setTransfers(getTransferRows(response?.data)),
+        )
         .catch(() => undefined);
       await Promise.all([categoriesRequest, transfersRequest]);
     } catch (error) {
@@ -742,10 +747,10 @@ export default function Expenses() {
       if (showRefreshIndicator) setRefreshing(true);
       const [expensesRes, statsRes, categoriesRes, transfersRes] =
         await Promise.all([
-          api.get("/expenses"),
-          api.get("/expenses/stats"),
-          api.get("/categories"),
-          api.get("/transfers").catch(() => null),
+          getShared("/expenses"),
+          getShared("/expenses/stats"),
+          getShared("/categories"),
+          getShared("/transfers").catch(() => null),
         ]);
 
       setExpenses(Array.isArray(expensesRes?.data) ? expensesRes.data : []);

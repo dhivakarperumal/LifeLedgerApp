@@ -1,5 +1,5 @@
 import { Poppins_600SemiBold } from "@expo-google-fonts/poppins/600SemiBold";
-import { Ionicons } from "@expo/vector-icons";
+import Ionicons from "@expo/vector-icons/Ionicons";
 import { useFonts } from "expo-font";
 import { useState } from "react";
 import { Pressable, Text, View } from "react-native";

@@ -2,7 +2,7 @@ import { Poppins_400Regular } from "@expo-google-fonts/poppins/400Regular";
 import { Poppins_500Medium } from "@expo-google-fonts/poppins/500Medium";
 import { Poppins_600SemiBold } from "@expo-google-fonts/poppins/600SemiBold";
 import { Poppins_700Bold } from "@expo-google-fonts/poppins/700Bold";
-import { Ionicons } from "@expo/vector-icons";
+import Ionicons from "@expo/vector-icons/Ionicons";
 import { useFonts } from "expo-font";
 import { useEffect, useState } from "react";
 import {
@@ -133,19 +133,22 @@ export function FilterBottomSheet({
   // Slide-up animation
   const [translateY] = useState(() => new Animated.Value(SCREEN_HEIGHT));
 
-  useEffect(() => {
-    if (visible) {
-      setDraft(currentFilters);
-      setExpanded({
-        date: initialExpandedSections.includes("date"),
-        category: initialExpandedSections.includes("category"),
-        status: initialExpandedSections.includes("status"),
-        amount: initialExpandedSections.includes("amount"),
-        sort: initialExpandedSections.includes("sort"),
-        viewMode: initialExpandedSections.includes("viewMode"),
-      });
-    }
-  }, [visible, currentFilters, initialExpandedSections]);
+  const resetDraft = () => {
+    setDraft(currentFilters);
+    setExpanded({
+      date: initialExpandedSections.includes("date"),
+      category: initialExpandedSections.includes("category"),
+      status: initialExpandedSections.includes("status"),
+      amount: initialExpandedSections.includes("amount"),
+      sort: initialExpandedSections.includes("sort"),
+      viewMode: initialExpandedSections.includes("viewMode"),
+    });
+  };
+
+  const closeWithoutApplying = () => {
+    resetDraft();
+    onClose();
+  };
 
   useEffect(() => {
     if (visible) {
@@ -167,6 +170,7 @@ export function FilterBottomSheet({
 
   const handleApply = () => {
     onApply(draft);
+    setDraft(draft);
     onClose();
   };
 
@@ -195,12 +199,12 @@ export function FilterBottomSheet({
       visible={visible}
       transparent
       animationType="none"
-      onRequestClose={onClose}
+      onRequestClose={closeWithoutApplying}
       statusBarTranslucent
     >
       {/* Backdrop */}
       <Pressable
-        onPress={onClose}
+        onPress={closeWithoutApplying}
         style={{
           flex: 1,
           backgroundColor: "rgba(19,34,25,0.50)",
@@ -273,7 +277,7 @@ export function FilterBottomSheet({
                 <Pressable
                   onPress={(event) => {
                     event.stopPropagation();
-                    onClose();
+                    closeWithoutApplying();
                   }}
                   hitSlop={8}
                   accessibilityLabel="Close filters"

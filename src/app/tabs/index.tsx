@@ -1,4 +1,4 @@
-import { Ionicons } from "@expo/vector-icons";
+import Ionicons from "@expo/vector-icons/Ionicons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { LinearGradient } from "expo-linear-gradient";
 import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
@@ -15,7 +15,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Svg, { Circle } from "react-native-svg";
 import { TopHeader } from "../../Navigations/TopHeader";
-import api, { API_BASE_URL, getShared, getStoredUser } from "../../api";
+import { API_BASE_URL, getShared, getStoredUser } from "../../api";
 import ConfirmPopup from "../../components/ConfirmPopup";
 import { GradientSafeAreaView as SafeAreaView } from "../../components/GradientSafeAreaView";
 import { parseLocalDate } from "../../components/dateTimeUtils";
@@ -418,9 +418,14 @@ export default function Index() {
       const fetchData = async () => {
         try {
           if (!hasLoadedHomeOnce) setIsLoading(true);
-          void api
-            .get("/incomes/monthly-budget")
-            .then((response) => {
+          void getShared("/incomes/monthly-budget")
+            .then(
+              (response: {
+                data?: {
+                  monthly_budget?: number | string | null;
+                  data?: { monthly_budget?: number | string | null };
+                };
+              }) => {
               if (!isActive) return;
               const value = Number(
                 response.data?.monthly_budget ??
@@ -429,14 +434,15 @@ export default function Index() {
               );
               setMonthlyBudget(Number.isFinite(value) ? Math.max(value, 0) : 0);
               setBudgetLoaded(true);
-            })
-            .catch((error) => {
+              },
+            )
+            .catch((error: unknown) => {
               console.error("Failed to fetch monthly budget:", error);
               if (isActive) setBudgetLoaded(true);
             });
           const [expensesRes, incomesRes] = await Promise.allSettled([
-            api.get("/expenses"),
-            api.get("/incomes"),
+            getShared("/expenses"),
+            getShared("/incomes"),
           ]);
 
           if (!isActive) return;
@@ -623,8 +629,8 @@ export default function Index() {
           setIsRefreshing(false);
 
           const secondaryDataRequest = Promise.allSettled([
-            api.get("/memories"),
-            api.get("/diary"),
+            getShared("/memories"),
+            getShared("/diary"),
             getShared("/calendar/events"),
           ]);
           const [memoriesRes, diaryRes, eventsRes] =
