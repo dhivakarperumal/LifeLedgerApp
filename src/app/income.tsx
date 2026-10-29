@@ -927,8 +927,6 @@ export default function Income() {
       {isNewIncomeRoute ? (
         <NativeStatusBar
           barStyle="light-content"
-          backgroundColor={Colors.greenGradient[0]}
-          translucent={false}
         />
       ) : null}
       {isNewIncomeRoute ? null : (

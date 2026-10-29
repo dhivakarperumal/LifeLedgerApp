@@ -671,8 +671,6 @@ export default function CalendarScreen() {
       {isNewEventRoute ? (
         <StatusBar
           barStyle="light-content"
-          backgroundColor={Colors.greenGradient[0]}
-          translucent={false}
         />
       ) : null}
       {isNewEventRoute ? null : loading ? (

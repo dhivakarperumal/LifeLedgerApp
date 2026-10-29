@@ -1,7 +1,7 @@
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { useRouter } from "expo-router";
 import type { ReactNode } from "react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Pressable,
@@ -27,6 +27,8 @@ import {
   useAppLock,
   type LockMethod,
 } from "../security/AppLockProvider";
+
+type PrimaryLockMethod = LockMethod | "fingerprint";
 
 const methodDetails: Record<
   LockMethod,
@@ -87,12 +89,22 @@ export default function AppLockSettingsPage() {
     biometricAvailable,
     serviceAvailable,
     serviceError,
-    unlockWithBiometrics,
+    loading,
   } = useAppLock();
   const [draftEnabled, setDraftEnabled] = useState(settings.enabled);
-  const [draftMethod, setDraftMethod] = useState(settings.method);
+  const [draftMethod, setDraftMethod] = useState<LockMethod | null>(
+    configured ? settings.method : null,
+  );
+  const [draftPrimaryMethod, setDraftPrimaryMethod] =
+    useState<PrimaryLockMethod | null>(
+      configured
+        ? settings.biometricEnabled
+          ? "fingerprint"
+          : settings.method
+        : null,
+    );
   const [draftBiometricEnabled, setDraftBiometricEnabled] = useState(
-    settings.biometricEnabled,
+    configured && settings.biometricEnabled,
   );
   const [draftLockOnHidden, setDraftLockOnHidden] = useState(
     settings.lockOnHidden,
@@ -113,17 +125,28 @@ export default function AppLockSettingsPage() {
   const [resetKey, setResetKey] = useState(0);
   const [timeoutOptionsVisible, setTimeoutOptionsVisible] = useState(false);
   const [patternDrawing, setPatternDrawing] = useState(false);
+  const initializedSettings = useRef(false);
   const wideLayout = width >= 700;
-  const selectedMethodCard = draftBiometricEnabled
-    ? "fingerprint"
-    : draftMethod;
+  const selectedMethodCard = draftPrimaryMethod;
 
-  const startSetup = (
-    method: LockMethod,
-    options: {
-      biometric?: boolean;
-    } = {},
-  ) => {
+  useEffect(() => {
+    if (loading || initializedSettings.current) return;
+    initializedSettings.current = true;
+    setDraftEnabled(settings.enabled);
+    setDraftMethod(configured ? settings.method : null);
+    setDraftPrimaryMethod(
+      configured
+        ? settings.biometricEnabled
+          ? "fingerprint"
+          : settings.method
+        : null,
+    );
+    setDraftBiometricEnabled(configured && settings.biometricEnabled);
+    setDraftLockOnHidden(settings.lockOnHidden);
+    setDraftIdleTimeout(settings.idleTimeoutMinutes);
+  }, [configured, loading, settings]);
+
+  const startSetup = (method: LockMethod) => {
     setSetupMethod(method);
     setDraftMethod(method);
     setSetupPhase("create");
@@ -131,13 +154,16 @@ export default function AppLockSettingsPage() {
     setConfirmation("");
     setCredentialToSave("");
     setSetupError("");
-    if (options.biometric) setDraftBiometricEnabled(true);
     setResetKey((current) => current + 1);
   };
 
   const chooseMethod = (method: LockMethod) => {
     setSetupError("");
     setMessage("");
+    if (!(draftPrimaryMethod === "fingerprint" && !configured)) {
+      setDraftPrimaryMethod(method);
+      setDraftBiometricEnabled(false);
+    }
     startSetup(method);
   };
 
@@ -150,20 +176,44 @@ export default function AppLockSettingsPage() {
       );
       return;
     }
-    if (!configured) {
-      startSetup(draftMethod, { biometric: true });
-      setSetupError(
-        `Create and confirm your ${methodDetails[draftMethod].label.toLowerCase()} fallback before saving fingerprint unlock.`,
-      );
-      return;
-    }
+    setDraftPrimaryMethod("fingerprint");
     setDraftBiometricEnabled(true);
-    setSetupMethod(null);
+    if (!configured && !draftMethod && !credentialToSave) {
+      setSetupError(
+        "Select and configure a PIN, Pattern, or Password as a fallback before enabling fingerprint unlock.",
+      );
+    }
   };
 
   const toggleAppLock = (enabled: boolean) => {
     setSetupError("");
     setMessage("");
+    if (enabled && !draftPrimaryMethod) {
+      setSetupError("Please select a lock method first.");
+      return;
+    }
+    const hasConfiguredCredential =
+      configured && draftMethod === settings.method;
+    if (
+      enabled &&
+      (!draftMethod ||
+        (!hasConfiguredCredential && !credentialToSave))
+    ) {
+      setSetupError(
+        "Create and confirm your lock credential before enabling App Lock.",
+      );
+      return;
+    }
+    if (
+      enabled &&
+      draftPrimaryMethod === "fingerprint" &&
+      (!biometricAvailable || !draftBiometricEnabled)
+    ) {
+      setSetupError(
+        "Fingerprint or face authentication is not enrolled on this device.",
+      );
+      return;
+    }
     setDraftEnabled(enabled);
     setConfirmDisable(false);
   };
@@ -230,7 +280,14 @@ export default function AppLockSettingsPage() {
     setCredential("");
     setConfirmation("");
     setCredentialToSave("");
-    setDraftMethod(settings.method);
+    setDraftMethod(configured ? settings.method : null);
+    setDraftPrimaryMethod(
+      configured
+        ? settings.biometricEnabled
+          ? "fingerprint"
+          : settings.method
+        : null,
+    );
     setDraftBiometricEnabled(settings.biometricEnabled);
     setDraftEnabled(settings.enabled);
     setSetupError("");
@@ -240,6 +297,32 @@ export default function AppLockSettingsPage() {
     if (!serviceAvailable || busy) return;
     if (settings.enabled && !draftEnabled && !confirmDisable) {
       setSetupError("Confirm disabling App Lock before saving.");
+      return;
+    }
+    if (draftEnabled && !draftPrimaryMethod) {
+      setSetupError("Please select a lock method first.");
+      return;
+    }
+    const hasConfiguredCredential =
+      configured && draftMethod === settings.method;
+    if (
+      draftEnabled &&
+      (!draftMethod ||
+        (!hasConfiguredCredential && !credentialToSave))
+    ) {
+      setSetupError(
+        "Create and confirm your lock credential before enabling App Lock.",
+      );
+      return;
+    }
+    if (
+      draftEnabled &&
+      draftPrimaryMethod === "fingerprint" &&
+      (!biometricAvailable || !draftBiometricEnabled)
+    ) {
+      setSetupError(
+        "Fingerprint or face authentication is not enrolled on this device.",
+      );
       return;
     }
     if (setupMethod === "password") {
@@ -283,7 +366,7 @@ export default function AppLockSettingsPage() {
         {
           ...settings,
           enabled: draftEnabled,
-          method: draftMethod,
+          method: draftMethod ?? settings.method,
           biometricEnabled: draftBiometricEnabled,
           lockOnHidden: draftLockOnHidden,
           idleTimeoutMinutes: draftIdleTimeout,
@@ -292,30 +375,35 @@ export default function AppLockSettingsPage() {
           (setupMethod === "password" ? credential : undefined),
         accountPassword,
       );
-      let saveMessage = "Security settings saved.";
-      if (draftEnabled && draftBiometricEnabled && biometricAvailable) {
-        const result = await unlockWithBiometrics();
-        saveMessage = result.success
-          ? "Security settings saved. Fingerprint or face unlock is ready."
-          : `Security settings saved. ${result.message}`;
-      }
       setCredentialToSave("");
       setSetupMethod(null);
       setCredential("");
       setConfirmation("");
       setAccountPassword("");
-      setMessage(saveMessage);
+      setMessage("Security settings saved.");
     } catch (error) {
       if ((error as { status?: number })?.status === 401) {
         setAccountPassword("");
         router.replace("/auth/login");
         return;
       }
+      if (!settings.enabled && draftEnabled) setDraftEnabled(false);
       setSetupError(getApiErrorMessage(error, "Unable to save security settings."));
     } finally {
       setBusy(false);
     }
   };
+
+  const hasConfiguredCredential =
+    configured && draftMethod === settings.method;
+  const canEnable =
+    Boolean(draftPrimaryMethod) &&
+    Boolean(draftMethod) &&
+    (hasConfiguredCredential || Boolean(credentialToSave)) &&
+    (draftPrimaryMethod !== "fingerprint" ||
+      (biometricAvailable && draftBiometricEnabled));
+  const toggleDisabled =
+    !serviceAvailable || busy || (!draftEnabled && !canEnable);
 
   return (
     <SafeAreaView
@@ -346,9 +434,26 @@ export default function AppLockSettingsPage() {
             title="Lock protection"
             description="Your private pages and authenticated data APIs are gated together."
             value={draftEnabled}
-            disabled={!serviceAvailable || busy}
+            disabled={toggleDisabled}
             onChange={toggleAppLock}
           />
+          {!draftEnabled && !canEnable ? (
+            <Text
+              accessibilityLiveRegion="polite"
+              style={{
+                color: "#9B3E36",
+                fontSize: 12,
+                lineHeight: 18,
+                marginTop: 8,
+              }}
+            >
+              {!draftPrimaryMethod
+                ? "Please select a lock method first."
+                : draftPrimaryMethod === "fingerprint" && !biometricAvailable
+                  ? "Fingerprint or face authentication is not enrolled on this device."
+                  : "Configure and confirm your lock credential before enabling App Lock."}
+            </Text>
+          ) : null}
 
           <View style={dividerStyle} />
           <Text style={contentHeadingStyle}>Choose a lock method</Text>

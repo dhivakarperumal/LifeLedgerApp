@@ -61,8 +61,6 @@ export function LoadingScreen() {
     <View style={styles.screen}>
       <StatusBar
         barStyle="dark-content"
-        translucent
-        backgroundColor="transparent"
       />
       <View style={styles.background}>
         <View

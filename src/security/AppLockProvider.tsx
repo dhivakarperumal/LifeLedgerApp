@@ -355,11 +355,39 @@ export function AppLockProvider({ children }: { children: ReactNode }) {
       accountPassword?: string,
     ) => {
       const isFirstSetup = !configured;
-      if (isFirstSetup && !credential) {
+      if (nextSettings.enabled && isFirstSetup && !credential) {
         throw new Error("Create a lock credential before enabling App Lock.");
+      }
+      if (
+        nextSettings.enabled &&
+        configured &&
+        nextSettings.method !== settings.method &&
+        !credential
+      ) {
+        throw new Error(
+          "Create and confirm the new lock credential before enabling App Lock.",
+        );
       }
       if (!accountPassword?.trim()) {
         throw new Error("Enter your account password to confirm these changes.");
+      }
+      if (nextSettings.enabled && nextSettings.biometricEnabled) {
+        if (!biometricAvailable || Platform.OS === "web") {
+          throw new Error(
+            "Fingerprint or face authentication is unavailable on this device.",
+          );
+        }
+        const LocalAuthentication = await import("expo-local-authentication");
+        const result = await LocalAuthentication.authenticateAsync({
+          promptMessage: "Confirm App Lock",
+          cancelLabel: "Cancel",
+          disableDeviceFallback: true,
+        });
+        if (!result.success) {
+          throw new Error(
+            "Biometric authentication was not completed. App Lock was not enabled.",
+          );
+        }
       }
       const body = {
         enabled: nextSettings.enabled,
@@ -380,14 +408,10 @@ export function AppLockProvider({ children }: { children: ReactNode }) {
         ...(returnedSettings && typeof returnedSettings === "object"
           ? returnedSettings
           : {}),
-        configured: true,
+        configured: configured || Boolean(credential),
       });
       setSettings(savedSettings);
-      setConfigured(
-        typeof savedSettings.configured === "boolean"
-          ? savedSettings.configured
-          : true,
-      );
+      setConfigured(savedSettings.configured);
       setServiceAvailable(true);
       setServiceError(null);
       setLoadError("");
@@ -396,9 +420,22 @@ export function AppLockProvider({ children }: { children: ReactNode }) {
         setLocked(false);
       } else {
         await lock(false);
+        if (savedSettings.biometricEnabled) {
+          const { data } = await api.post("/app-lock/unlock", {
+            method: "biometric",
+          });
+          if (typeof data?.token !== "string" || !data.token.trim()) {
+            throw new Error(
+              "The server did not return a valid App Lock grant.",
+            );
+          }
+          setAppLockToken(data.token);
+          setLocked(false);
+          setLoadError("");
+        }
       }
     },
-    [configured, lock, settings.enabled],
+    [biometricAvailable, configured, lock, settings.enabled, settings.method],
   );
 
   const acceptGrant = useCallback((token: unknown) => {
@@ -770,7 +807,6 @@ function AppLockScreen({
       >
         <StatusBar
           barStyle="light-content"
-          backgroundColor={Colors.greenGradient[0]}
         />
         <AppLockHeader />
         <View
@@ -828,7 +864,6 @@ function AppLockScreen({
     >
       <StatusBar
         barStyle="light-content"
-        backgroundColor={Colors.greenGradient[0]}
       />
       <AppLockHeader />
       <ScrollView

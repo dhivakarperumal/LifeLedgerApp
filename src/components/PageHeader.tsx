@@ -40,8 +40,6 @@ export function PageHeader({
       {showStatusBar ? (
         <StatusBar
           barStyle="light-content"
-          backgroundColor={Colors.greenGradient[0]}
-          translucent={false}
         />
       ) : null}
       <LinearGradient

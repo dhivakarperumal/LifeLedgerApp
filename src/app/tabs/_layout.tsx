@@ -39,7 +39,6 @@ export default function TabsLayout() {
     <>
       <StatusBar
         barStyle="light-content"
-        backgroundColor={Colors.greenGradient[0]}
       />
       <Tabs
         screenOptions={{

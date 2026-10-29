@@ -24,7 +24,8 @@ const tabIcons: Record<string, { outline: IconName; solid: IconName }> = {
 export function BottomTabBar({
   state,
   descriptors,
-  navigation,
+  emitter,
+  navigateToTab,
 }: BottomTabBarProps) {
   // Get the safe area bottom inset (gesture bar / home indicator height)
   const insets = useSafeAreaInsets();
@@ -58,14 +59,14 @@ export function BottomTabBar({
             const iconName = focused ? routeIcons.solid : routeIcons.outline;
 
             const handlePress = () => {
-              const event = navigation.emit({
+              const event = emitter.emit({
                 type: "tabPress",
                 target: route.key,
                 canPreventDefault: true,
               });
 
               if (!focused && !event.defaultPrevented) {
-                navigation.navigate(route.name, route.params);
+                navigateToTab(route.key);
               }
             };
 
@@ -78,7 +79,7 @@ export function BottomTabBar({
                 testID={options.tabBarButtonTestID}
                 onPress={handlePress}
                 onLongPress={() =>
-                  navigation.emit({ type: "tabLongPress", target: route.key })
+                  emitter.emit({ type: "tabLongPress", target: route.key })
                 }
                 style={styles.tabButton}
               >

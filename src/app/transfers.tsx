@@ -897,8 +897,6 @@ export default function Transfers() {
       {isNewTransferRoute ? (
         <StatusBar
           barStyle="light-content"
-          backgroundColor={Colors.greenGradient[0]}
-          translucent={false}
         />
       ) : null}
       <ConfirmPopup

@@ -495,8 +495,6 @@ export default function Categories() {
       {isNewCategoryRoute ? (
         <NativeStatusBar
           barStyle="light-content"
-          backgroundColor={Colors.greenGradient[0]}
-          translucent={false}
         />
       ) : null}
       {isNewCategoryRoute ? null : (

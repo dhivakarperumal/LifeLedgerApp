@@ -59,7 +59,7 @@ export function FormInput({
       style={[
         style,
         bordered && styles.inputBorder,
-        bordered && borderColor && { borderColor },
+        bordered && borderColor ? { borderColor } : undefined,
       ]}
     />
   );
