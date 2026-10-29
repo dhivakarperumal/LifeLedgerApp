@@ -59,15 +59,19 @@ export function BottomTabBar({
             const iconName = focused ? routeIcons.solid : routeIcons.outline;
 
             const handlePress = () => {
-              const event = emitter.emit({
+              const event = emitter?.emit?.({
                 type: "tabPress",
                 target: route.key,
                 canPreventDefault: true,
               });
 
-              if (!focused && !event.defaultPrevented) {
+              if (!focused && !event?.defaultPrevented) {
                 navigateToTab(route.key);
               }
+            };
+
+            const handleLongPress = () => {
+              emitter?.emit?.({ type: "tabLongPress", target: route.key });
             };
 
             return (
@@ -78,9 +82,7 @@ export function BottomTabBar({
                 accessibilityLabel={options.tabBarAccessibilityLabel}
                 testID={options.tabBarButtonTestID}
                 onPress={handlePress}
-                onLongPress={() =>
-                  emitter.emit({ type: "tabLongPress", target: route.key })
-                }
+                onLongPress={handleLongPress}
                 style={styles.tabButton}
               >
                 <View
@@ -102,11 +104,8 @@ export function BottomTabBar({
         </View>
       </LinearGradient>
 
-      <LinearGradient
-        colors={Colors.greenGradient}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={{ height: insets.bottom }}
+      <View
+        style={{ height: insets.bottom, backgroundColor: "#000000" }}
       />
     </View>
   );

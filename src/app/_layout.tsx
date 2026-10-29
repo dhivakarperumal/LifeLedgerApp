@@ -28,8 +28,9 @@ export default function RootLayout() {
                 right: 0,
                 bottom: 0,
                 left: 0,
-                height: insets.bottom,
+                height: Math.max(insets.bottom, 0),
                 backgroundColor: "#000000",
+                zIndex: 1,
               }}
             />
           )}
