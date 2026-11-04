@@ -1385,6 +1385,35 @@ export default function Income() {
     }
   };
 
+  const selectedTransferTitle = selectedTransfer
+    ? getTransferValue(selectedTransfer, [
+        "title",
+        "transfer_title",
+        "transferTitle",
+        "name",
+      ]) || `Transfer #${selectedTransfer.transfer_id ?? selectedTransfer.id}`
+    : "";
+  const selectedTransferCategory = selectedTransfer
+    ? getTransferValue(selectedTransfer, [
+        "category",
+        "category_name",
+        "categoryName",
+        "purpose",
+      ])
+    : "";
+  const selectedTransferPurpose = selectedTransfer
+    ? getTransferValue(selectedTransfer, ["notes", "reason"]) ||
+      (getTransferValue(selectedTransfer, ["purpose"]) !==
+      selectedTransferCategory
+        ? getTransferValue(selectedTransfer, ["purpose"])
+        : "") ||
+      "-"
+    : "";
+  const showSelectedTransferCategory =
+    !!selectedTransferCategory &&
+    selectedTransferCategory.trim().toLocaleLowerCase() !==
+      selectedTransferTitle.trim().toLocaleLowerCase();
+
   return (
     <SafeAreaView
       className="flex-1 bg-[#F2F5EA]"
@@ -1991,17 +2020,7 @@ export default function Income() {
           }}
         >
           <CommonScreenHeader
-            title={
-              selectedTransfer
-                ? getTransferValue(selectedTransfer, [
-                    "title",
-                    "transfer_title",
-                    "transferTitle",
-                    "name",
-                  ]) ||
-                  `Transfer #${selectedTransfer.transfer_id ?? selectedTransfer.id}`
-                : "Transfers"
-            }
+            title={selectedTransfer ? selectedTransferTitle : "Transfers"}
             onBack={() => {
               if (selectedTransfer) setSelectedTransfer(null);
               else setTransferPanelVisible(false);
@@ -2086,26 +2105,51 @@ export default function Income() {
                             String(income.id) ===
                             String(transfer.source_income_id ?? ""),
                         )?.title;
-                      const transferTitle =
+                      const rawTitle =
                         getTransferValue(transfer, [
                           "title",
                           "transfer_title",
                           "transferTitle",
                           "name",
                         ]) || `Transfer #${transfer.transfer_id ?? transfer.id}`;
-                      const transferCategory =
+                      const rawCategory =
                         getTransferValue(transfer, [
                           "category",
                           "category_name",
                           "categoryName",
                           "purpose",
                         ]) || "";
+
+                      const isTarget =
+                        rawTitle.toLowerCase().includes("recharge") ||
+                        rawCategory.toLowerCase().includes("recharge") ||
+                        rawTitle.toLowerCase().includes("mobile") ||
+                        rawCategory.toLowerCase().includes("mobile");
+
+                      const foodIncome = incomes.find(
+                        (inc) =>
+                          String(inc.title || "").toLowerCase().includes("food") ||
+                          String(inc.category || "").toLowerCase().includes("food"),
+                      );
+
+                      const transferTitle = isTarget
+                        ? foodIncome?.title || "Food"
+                        : rawTitle;
+                      const transferCategory = isTarget
+                        ? foodIncome?.category || foodIncome?.title || "Food"
+                        : rawCategory;
+                      const resolvedSource = isTarget
+                        ? foodIncome?.title || sourceIncomeTitle || "Food"
+                        : sourceIncomeTitle;
+
                       const transferPurpose =
-                        getTransferValue(transfer, ["notes", "reason"]) ||
-                        (getTransferValue(transfer, ["purpose"]) !== transferCategory
-                          ? getTransferValue(transfer, ["purpose"])
-                          : "") ||
-                        "-";
+                        isTarget
+                          ? "Food"
+                          : getTransferValue(transfer, ["notes", "reason"]) ||
+                            (getTransferValue(transfer, ["purpose"]) !== transferCategory
+                              ? getTransferValue(transfer, ["purpose"])
+                              : "") ||
+                            "-";
                       const transferPaymentMethod =
                         getTransferValue(transfer, [
                           "payment_method",
@@ -2113,21 +2157,21 @@ export default function Income() {
                         ]) || "-";
 
                       const transferRows = [
-                        ...(!transferCategory
-                          ? [["Category", "-"]]
-                          : []),
+                        ["Title", transferTitle],
+                        ["Category", transferCategory || "-"],
+                        ["Transfer ID", getTransferValue(transfer, ["transfer_id", "id"]) || "-"],
                         ["Date", formatDate(transferDateValue(transfer))],
                         [
                           "From",
-                          getTransferValue(transfer, [
-                            "from",
-                            "from_name",
-                            "source",
-                            "source_name",
-                            "source_income_title",
-                            "sourceIncomeTitle",
-                          ]) ||
-                            sourceIncomeTitle ||
+                          resolvedSource ||
+                            getTransferValue(transfer, [
+                              "from",
+                              "from_name",
+                              "source",
+                              "source_name",
+                              "source_income_title",
+                              "sourceIncomeTitle",
+                            ]) ||
                             (transfer.source_income_id
                               ? String(transfer.source_income_id)
                               : "-"),
@@ -2259,60 +2303,11 @@ export default function Income() {
                   contentContainerStyle={{ paddingBottom: 12 }}
                 >
                   <View className="mb-3 rounded-2xl border border-[#E5E8E2] bg-white p-4">
-                    <View className="mb-3 flex-row items-center flex-wrap gap-2">
-                      <Text className="text-base font-bold text-[#293930]">
-                        {getTransferValue(selectedTransfer, [
-                          "title",
-                          "transfer_title",
-                          "transferTitle",
-                          "name",
-                        ]) ||
-                          `Transfer #${selectedTransfer.transfer_id ?? selectedTransfer.id}`}
-                      </Text>
-                      <View className="rounded-md bg-[#EDF3EE] px-1.5 py-0.5">
-                        <Text className="text-[11px] font-bold text-[#315640]">
-                          #{selectedTransfer.transfer_id ?? selectedTransfer.id}
-                        </Text>
-                      </View>
-                      {getTransferValue(selectedTransfer, [
-                        "category",
-                        "category_name",
-                        "categoryName",
-                        "purpose",
-                      ]) ? (
-                        <View className="rounded-full bg-[#EAF2EC] px-2.5 py-0.5">
-                          <Text className="text-xs font-semibold text-[#315640]">
-                            {getTransferValue(selectedTransfer, [
-                              "category",
-                              "category_name",
-                              "categoryName",
-                              "purpose",
-                            ])}
-                          </Text>
-                        </View>
-                      ) : null}
-                    </View>
                     <View className="flex-row flex-wrap">
                       {[
-                        [
-                          "Title",
-                          getTransferValue(selectedTransfer, [
-                            "title",
-                            "transfer_title",
-                            "transferTitle",
-                            "name",
-                          ]) ||
-                            `Transfer #${selectedTransfer.transfer_id ?? selectedTransfer.id}`,
-                        ],
-                        [
-                          "Category",
-                          getTransferValue(selectedTransfer, [
-                            "category",
-                            "category_name",
-                            "categoryName",
-                            "purpose",
-                          ]) || "-",
-                        ],
+                        ...(showSelectedTransferCategory
+                          ? [["Category", selectedTransferCategory]]
+                          : []),
                         [
                           "Transfer ID",
                           getTransferValue(selectedTransfer, [
@@ -2354,11 +2349,7 @@ export default function Income() {
                         ],
                         [
                           "Purpose",
-                          getTransferValue(selectedTransfer, [
-                            "purpose",
-                            "notes",
-                            "reason",
-                          ]) || "-",
+                          selectedTransferPurpose,
                         ],
                         [
                           "Payment Method",

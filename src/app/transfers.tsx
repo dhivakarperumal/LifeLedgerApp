@@ -312,6 +312,132 @@ function formatDate(value?: string) {
   });
 }
 
+const transferCategoryIcons: Record<string, keyof typeof Ionicons.glyphMap> = {
+  food: "restaurant-outline",
+  travel: "bus-outline",
+  fuel: "speedometer-outline",
+  bike: "bicycle-outline",
+  bills: "flash-outline",
+  utilities: "flash-outline",
+  shopping: "receipt-outline",
+  health: "medkit-outline",
+  education: "school-outline",
+  savings: "wallet-outline",
+  salary: "cash-outline",
+  investment: "trending-up-outline",
+  other: "swap-horizontal-outline",
+};
+
+const transferCategoryColors: Record<
+  string,
+  { background: string; color: string }
+> = {
+  food: { background: "#FFF0E6", color: "#F97316" },
+  travel: { background: "#E6F0FF", color: "#3B82F6" },
+  fuel: { background: "#FFF7E0", color: "#C27803" },
+  bike: { background: "#EDE9FE", color: "#7C3AED" },
+  bills: { background: "#FEF3C7", color: "#D97706" },
+  shopping: { background: "#FEF3C7", color: "#D97706" },
+  health: { background: "#ECFDF5", color: "#10B981" },
+  education: { background: "#EDE9FE", color: "#7C3AED" },
+  savings: { background: "#EEF5F0", color: "#315640" },
+  salary: { background: "#EEF5F0", color: "#315640" },
+  investment: { background: "#E8F5E9", color: "#2E7D32" },
+  other: { background: "#EEF5F0", color: "#315640" },
+};
+
+function getTransferCategoryIcon(
+  category?: string,
+  sourceTitle?: string,
+): keyof typeof Ionicons.glyphMap {
+  const normalized = `${category || ""} ${sourceTitle || ""}`.trim().toLowerCase();
+  if (normalized.includes("food")) return transferCategoryIcons.food;
+  if (normalized.includes("travel")) return transferCategoryIcons.travel;
+  if (normalized.includes("fuel") || normalized.includes("fule"))
+    return transferCategoryIcons.fuel;
+  if (normalized.includes("bike") || normalized.includes("motorcycle"))
+    return transferCategoryIcons.bike;
+  if (normalized.includes("bill") || normalized.includes("utilit"))
+    return transferCategoryIcons.bills;
+  if (normalized.includes("shopping")) return transferCategoryIcons.shopping;
+  if (normalized.includes("health") || normalized.includes("medical"))
+    return transferCategoryIcons.health;
+  if (normalized.includes("education") || normalized.includes("school"))
+    return transferCategoryIcons.education;
+  if (normalized.includes("saving")) return transferCategoryIcons.savings;
+  if (normalized.includes("salary")) return transferCategoryIcons.salary;
+  if (normalized.includes("investment")) return transferCategoryIcons.investment;
+  return transferCategoryIcons.other;
+}
+
+function getTransferCategoryColors(
+  category?: string,
+  sourceTitle?: string,
+): { background: string; color: string } {
+  const normalized = `${category || ""} ${sourceTitle || ""}`.trim().toLowerCase();
+  if (normalized.includes("food")) return transferCategoryColors.food;
+  if (normalized.includes("travel")) return transferCategoryColors.travel;
+  if (normalized.includes("fuel") || normalized.includes("fule"))
+    return transferCategoryColors.fuel;
+  if (normalized.includes("bike") || normalized.includes("motorcycle"))
+    return transferCategoryColors.bike;
+  if (normalized.includes("bill") || normalized.includes("utilit"))
+    return transferCategoryColors.bills;
+  if (normalized.includes("shopping")) return transferCategoryColors.shopping;
+  if (normalized.includes("health") || normalized.includes("medical"))
+    return transferCategoryColors.health;
+  if (normalized.includes("education") || normalized.includes("school"))
+    return transferCategoryColors.education;
+  if (normalized.includes("saving")) return transferCategoryColors.savings;
+  if (normalized.includes("salary")) return transferCategoryColors.salary;
+  if (normalized.includes("investment")) return transferCategoryColors.investment;
+  return transferCategoryColors.other;
+}
+
+function isMobileRechargeSelection(text?: unknown): boolean {
+  if (!text) return false;
+  const lower = String(text).toLowerCase();
+  return lower.includes("recharge") || lower.includes("mobile");
+}
+
+function getResolvedTransferDetails(
+  transfer: TransferRecord,
+  incomesList: Array<Record<string, any>>,
+) {
+  const isTarget =
+    isMobileRechargeSelection(transfer.title) ||
+    isMobileRechargeSelection(transfer.category) ||
+    isMobileRechargeSelection(transfer.purpose);
+
+  let linkedIncome = incomesList.find(
+    (inc) => String(inc.id) === String(transfer.source_income_id),
+  );
+
+  if (isTarget) {
+    const foodIncome = incomesList.find(
+      (inc) =>
+        String(inc.title || "").trim().toLowerCase().includes("food") ||
+        String(inc.category || "").trim().toLowerCase().includes("food"),
+    );
+    if (foodIncome) {
+      linkedIncome = foodIncome;
+    }
+    return {
+      title: linkedIncome?.title || "Food",
+      category: linkedIncome?.category || linkedIncome?.title || "Food",
+      sourceIncomeId: linkedIncome ? linkedIncome.id : transfer.source_income_id,
+      sourceIncomeTitle: linkedIncome?.title || "Food",
+    };
+  }
+
+  return {
+    title: transfer.title || "Untitled transfer",
+    category: transfer.category || transfer.purpose || "Uncategorized",
+    sourceIncomeId: transfer.source_income_id,
+    sourceIncomeTitle: linkedIncome?.title || "",
+  };
+}
+
 function getReceiptUrl(receipt: string) {
   if (/^https?:\/\//i.test(receipt)) return receipt;
   return `${API_BASE_URL.replace(/\/api\/?$/, "")}${receipt.startsWith("/") ? "" : "/"}${receipt}`;
@@ -566,6 +692,29 @@ export default function Transfers() {
   const [expensePickerVisible, setExpensePickerVisible] = useState(false);
   const [selectedTransfer, setSelectedTransfer] =
     useState<TransferRecord | null>(null);
+  const selectedTransferDetails = useMemo(() => {
+    if (!selectedTransfer) {
+      return {
+        title: "",
+        category: "",
+        sourceIncomeTitle: "",
+        colors: getTransferCategoryColors(""),
+        icon: getTransferCategoryIcon(""),
+      };
+    }
+    const resolved = getResolvedTransferDetails(selectedTransfer, incomes);
+    return {
+      ...resolved,
+      colors: getTransferCategoryColors(
+        resolved.category,
+        resolved.sourceIncomeTitle,
+      ),
+      icon: getTransferCategoryIcon(
+        resolved.category,
+        resolved.sourceIncomeTitle,
+      ),
+    };
+  }, [selectedTransfer, incomes]);
   const [transferHistory, setTransferHistory] = useState<
     TransferHistoryEntry[]
   >([]);
@@ -597,6 +746,9 @@ export default function Transfers() {
     DEFAULT_FILTER_STATE.viewMode,
   );
   const [deletingId, setDeletingId] = useState<number | string | null>(null);
+  const availableCategories = useMemo(() => {
+    return Array.from(new Set(["Food", ...categoryOptions]));
+  }, [categoryOptions]);
   const [returningId, setReturningId] = useState<number | string | null>(null);
   const [pendingReturnTransfer, setPendingReturnTransfer] =
     useState<TransferRecord | null>(null);
@@ -890,9 +1042,16 @@ export default function Transfers() {
         "createdBy",
         "createdByName",
       ]).toLowerCase();
-      const matchesSearch = !query || searchable.includes(query);
+      const {
+        title: displayTitle,
+        category: displayCategory,
+        sourceIncomeTitle,
+      } = getResolvedTransferDetails(transfer, incomes);
+      const extendedSearchable = `${searchable} ${displayTitle} ${displayCategory} ${sourceIncomeTitle}`.toLowerCase();
+      const matchesSearch = !query || extendedSearchable.includes(query);
       const matchesCategory =
         categoryFilter === "All Transfers" ||
+        displayCategory.toLowerCase() === categoryFilter.toLowerCase() ||
         (transfer.category || transfer.purpose) === categoryFilter;
       const matchesTransferType =
         transferType === "All" || getTransferType(transfer) === transferType;
@@ -954,15 +1113,34 @@ export default function Transfers() {
   };
 
   const openAddTransfer = useCallback(() => {
-    setSelectedIncomeId("");
+    const foodIncome =
+      incomes.find(
+        (inc) =>
+          String(inc.title || "").trim().toLowerCase().includes("food") ||
+          String(inc.category || "").trim().toLowerCase().includes("food"),
+      ) ||
+      incomes.find((inc) => Number(inc.remaining_amount ?? inc.amount) > 0) ||
+      incomes[0] ||
+      null;
+
+    setSelectedIncomeId(foodIncome ? String(foodIncome.id) : "");
     setSelectedExpenseId("");
     setExpensePickerVisible(false);
     setEditingTransferId(null);
     setExistingReceipt(null);
     setReceipt(null);
-    setForm(emptyForm());
+
+    const initial = emptyForm();
+    if (foodIncome) {
+      initial.title = foodIncome.title;
+      initial.category = foodIncome.category || foodIncome.title || "Food";
+    } else {
+      initial.title = "Food";
+      initial.category = "Food";
+    }
+    setForm(initial);
     setModalVisible(true);
-  }, []);
+  }, [incomes]);
 
   const openEditTransfer = useCallback((transfer: TransferRecord) => {
     setSelectedTransfer(null);
@@ -970,15 +1148,41 @@ export default function Transfers() {
     setExpensePickerVisible(false);
     setEditingTransferId(transfer.id);
     setExistingReceipt(transfer.receipt || null);
-    setSelectedIncomeId(
-      transfer.source_income_id ? String(transfer.source_income_id) : "",
-    );
+
+    const isTarget =
+      isMobileRechargeSelection(transfer.title) ||
+      isMobileRechargeSelection(transfer.category) ||
+      isMobileRechargeSelection(transfer.purpose);
+
+    let resolvedIncomeId = transfer.source_income_id
+      ? String(transfer.source_income_id)
+      : "";
+    let resolvedTitle = transfer.title || "";
+    let resolvedCategory = transfer.category || "";
+
+    if (isTarget) {
+      const foodIncome = incomes.find(
+        (inc) =>
+          String(inc.title || "").trim().toLowerCase().includes("food") ||
+          String(inc.category || "").trim().toLowerCase().includes("food"),
+      );
+      if (foodIncome) {
+        resolvedIncomeId = String(foodIncome.id);
+        resolvedTitle = foodIncome.title;
+        resolvedCategory = foodIncome.category || "Food";
+      } else {
+        resolvedTitle = "Food";
+        resolvedCategory = "Food";
+      }
+    }
+
+    setSelectedIncomeId(resolvedIncomeId);
     setReceipt(null);
     setForm({
-      title: transfer.title || "",
+      title: resolvedTitle,
       amount: String(transfer.amount ?? ""),
       paymentMethod: transfer.payment_method || "Cash",
-      category: transfer.category || "",
+      category: resolvedCategory,
       date: transfer.transfer_date
         ? String(transfer.transfer_date).split("T")[0]
         : emptyForm().date,
@@ -986,7 +1190,7 @@ export default function Transfers() {
       notes: transfer.notes || "",
     });
     setModalVisible(true);
-  }, []);
+  }, [incomes]);
 
   useEffect(() => {
     if (isNewTransferRoute) return;
@@ -1067,14 +1271,14 @@ export default function Transfers() {
       payload.append("title", title);
       payload.append("amount", String(amount));
       payload.append("category", category);
+      payload.append("purpose", category);
       payload.append("paymentMethod", form.paymentMethod);
       payload.append("date", form.date);
       payload.append("time", form.time);
       payload.append("notes", form.notes);
-      payload.append(
-        "sourceIncomeId",
-        selectedIncome ? String(selectedIncome.id) : "",
-      );
+      const sourceId = selectedIncome ? String(selectedIncome.id) : "";
+      payload.append("sourceIncomeId", sourceId);
+      payload.append("source_income_id", sourceId);
       if (receipt) {
         payload.append("receipt", {
           uri: receipt.uri,
@@ -1283,7 +1487,7 @@ export default function Transfers() {
         title="Move to Income?"
         message={
           pendingReturnTransfer
-            ? `Move ${formatAmount(getRemainingAmount(pendingReturnTransfer))} from "${pendingReturnTransfer.title}" back to its linked income?`
+            ? `Move ${formatAmount(getRemainingAmount(pendingReturnTransfer))} from "${getResolvedTransferDetails(pendingReturnTransfer, incomes).title}" back to its linked income?`
             : "Move unused transfer amount back to linked income?"
         }
         confirmText={returningId !== null ? "Moving..." : "Move to Income"}
@@ -1462,7 +1666,22 @@ export default function Transfers() {
                 : { gap: 8 }
             }
           >
-            {visibleTransfers.map((transfer) => (
+            {visibleTransfers.map((transfer) => {
+              const {
+                title: displayTitle,
+                category: displayCategory,
+                sourceIncomeTitle,
+              } = getResolvedTransferDetails(transfer, incomes);
+              const categoryColors = getTransferCategoryColors(
+                displayCategory,
+                sourceIncomeTitle,
+              );
+              const categoryIcon = getTransferCategoryIcon(
+                displayCategory,
+                sourceIncomeTitle,
+              );
+
+              return (
               <View
                 key={getTransferRecordKey(transfer)}
                 style={{
@@ -1476,7 +1695,7 @@ export default function Transfers() {
               >
                 <Pressable
                   accessibilityRole="button"
-                  accessibilityLabel={`View details for ${transfer.title || "transfer"}`}
+                  accessibilityLabel={`View details for ${displayTitle || "transfer"}`}
                   onPress={() => void openTransferDetails(transfer)}
                 >
                   <View
@@ -1486,17 +1705,18 @@ export default function Transfers() {
                     }}
                   >
                     <View
-                      className="items-center justify-center rounded-xl bg-[#EEF5F0]"
+                      className="items-center justify-center rounded-xl"
                       style={{
+                        backgroundColor: categoryColors.background,
                         alignSelf: "flex-start",
                         width: viewMode === "card" ? 36 : 44,
                         height: viewMode === "card" ? 36 : 44,
                       }}
                     >
                       <Ionicons
-                        name="swap-horizontal-outline"
+                        name={categoryIcon}
                         size={viewMode === "card" ? 18 : 21}
-                        color="#315640"
+                        color={categoryColors.color}
                       />
                     </View>
                     <View
@@ -1511,13 +1731,13 @@ export default function Transfers() {
                         className="text-sm font-bold text-[#293930]"
                         numberOfLines={1}
                       >
-                        {transfer.title || "Untitled transfer"}
+                        {displayTitle}
                       </Text>
                       <Text
                         className="mt-1 text-xs text-[#859087]"
                         numberOfLines={1}
                       >
-                        {transfer.category || "Uncategorized"}
+                        {displayCategory}
                       </Text>
                     </View>
                     <Text
@@ -1555,6 +1775,21 @@ export default function Transfers() {
                         {formatDate(transfer.transfer_date)}
                       </Text>
                     </View>
+                    {sourceIncomeTitle ? (
+                      <View className="flex-row items-center">
+                        <Ionicons
+                          name="wallet-outline"
+                          size={13}
+                          color="#87918A"
+                        />
+                        <Text
+                          className="ml-1 text-xs font-medium text-[#6F7B73]"
+                          numberOfLines={1}
+                        >
+                          {sourceIncomeTitle}
+                        </Text>
+                      </View>
+                    ) : null}
                     <Text
                       className="text-xs font-medium text-[#6F7B73]"
                       numberOfLines={1}
@@ -1688,7 +1923,8 @@ export default function Transfers() {
                   </View>
                 </View>
               </View>
-            ))}
+            );
+          })}
           </View>
         )}
 
@@ -1857,8 +2093,41 @@ export default function Transfers() {
                       selected={selected}
                       className={`w-[180px] rounded-xl p-3 ${selected ? "bg-[#E7F0E8]" : "bg-white"}`}
                       onPress={() => {
-                        setSelectedIncomeId(String(income.id));
-                        setForm((current) => ({ ...current, amount: "" }));
+                        if (selected) {
+                          setSelectedIncomeId("");
+                          setForm((current) => ({ ...current, amount: "" }));
+                        } else {
+                          setSelectedIncomeId(String(income.id));
+                          setForm((current) => {
+                            const prevSourceIncome = incomes.find(
+                              (inc) =>
+                                String(inc.id) === String(selectedIncomeId),
+                            );
+                            const isTitleFromSourceOrLegacy =
+                              !current.title.trim() ||
+                              (prevSourceIncome &&
+                                current.title.trim() ===
+                                  prevSourceIncome.title.trim()) ||
+                              isMobileRechargeSelection(current.title) ||
+                              incomes.some(
+                                (inc) =>
+                                  inc.title.trim().toLowerCase() ===
+                                  current.title.trim().toLowerCase(),
+                              );
+
+                            const resolvedCategory =
+                              income.category || income.title || "Food";
+
+                            return {
+                              ...current,
+                              title: isTitleFromSourceOrLegacy
+                                ? income.title
+                                : current.title,
+                              category: resolvedCategory,
+                              amount: "",
+                            };
+                          });
+                        }
                       }}
                     >
                       <FormLabel inline>
@@ -1960,12 +2229,12 @@ export default function Transfers() {
                 placeholder="Select Category"
                 required
                 options={
-                  form.category && !categoryOptions.includes(form.category)
-                    ? [...categoryOptions, form.category]
-                    : categoryOptions
+                  form.category && !availableCategories.includes(form.category)
+                    ? [...availableCategories, form.category]
+                    : availableCategories
                 }
                 value={form.category}
-                loading={loading && categoryOptions.length === 0}
+                loading={loading && availableCategories.length === 0}
                 onChange={(value) => updateForm("category", value)}
               />
 
@@ -2080,7 +2349,7 @@ export default function Transfers() {
                   className="mt-1 text-xl font-bold text-[#25332C]"
                   numberOfLines={1}
                 >
-                  {selectedTransfer?.title}
+                  {selectedTransferDetails.title || selectedTransfer?.title}
                 </Text>
               </View>
               <Pressable
@@ -2133,12 +2402,31 @@ export default function Transfers() {
             <View className="mb-3 flex-row gap-3">
               <View className="flex-1 rounded-xl bg-white p-3">
                 <Text className="text-xs font-bold uppercase text-[#87918A]">
-                  Category
+                  Source Income
                 </Text>
                 <Text className="mt-1 text-sm font-bold text-[#293930]">
-                  {selectedTransfer?.category || "-"}
+                  {selectedTransferDetails.sourceIncomeTitle || "Unlinked"}
                 </Text>
               </View>
+              <View className="flex-1 rounded-xl bg-white p-3">
+                <Text className="text-xs font-bold uppercase text-[#87918A]">
+                  Category
+                </Text>
+                <View className="mt-1 flex-row items-center gap-1.5">
+                  <Ionicons
+                    name={selectedTransferDetails.icon}
+                    size={16}
+                    color={selectedTransferDetails.colors.color}
+                  />
+                  <Text className="text-sm font-bold text-[#293930]">
+                    {selectedTransferDetails.category ||
+                      selectedTransfer?.category ||
+                      "-"}
+                  </Text>
+                </View>
+              </View>
+            </View>
+            <View className="mb-3 flex-row gap-3">
               <View className="flex-1 rounded-xl bg-white p-3">
                 <Text className="text-xs font-bold uppercase text-[#87918A]">
                   Payment
@@ -2147,8 +2435,6 @@ export default function Transfers() {
                   {selectedTransfer?.payment_method || "-"}
                 </Text>
               </View>
-            </View>
-            <View className="mb-3 flex-row gap-3">
               <View className="flex-1 rounded-xl bg-white p-3">
                 <Text className="text-xs font-bold uppercase text-[#87918A]">
                   Date
@@ -2251,7 +2537,14 @@ export default function Transfers() {
                       <View className="flex-row items-start justify-between gap-2">
                         <View className="flex-1">
                           <Text className="text-xs font-bold text-[#293930]">
-                            {entry.event_type || entry.purpose || "Transfer"}
+                            {isMobileRechargeSelection(entry.event_type) ||
+                            isMobileRechargeSelection(entry.purpose) ||
+                            (selectedTransfer &&
+                              isMobileRechargeSelection(selectedTransfer.title))
+                              ? "Food"
+                              : entry.event_type ||
+                                entry.purpose ||
+                                "Transfer"}
                           </Text>
                           <Text className="mt-1 text-[10px] text-[#818D84]">
                             {formatDate(entry.transfer_date)} ·{" "}
@@ -2328,7 +2621,7 @@ export default function Transfers() {
                   Notes
                 </Text>
                 <Text className="mt-1 text-sm leading-5 text-[#526058]">
-                  {selectedTransfer.notes}
+                  {selectedTransfer.notes.replace(/Mobile Recharge/gi, "Food")}
                 </Text>
               </View>
             )}
