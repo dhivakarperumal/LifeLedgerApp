@@ -1990,7 +1990,13 @@ export default function Income() {
           <CommonScreenHeader
             title={
               selectedTransfer
-                ? `Transfer #${selectedTransfer.transfer_id ?? selectedTransfer.id}`
+                ? getTransferValue(selectedTransfer, [
+                    "title",
+                    "transfer_title",
+                    "transferTitle",
+                    "name",
+                  ]) ||
+                  `Transfer #${selectedTransfer.transfer_id ?? selectedTransfer.id}`
                 : "Transfers"
             }
             onBack={() => {
@@ -2365,9 +2371,7 @@ export default function Income() {
                     )}
                   </View>
 
-                  <Text className="mb-2 text-base font-bold text-[#293930]">
-                    Fund from income
-                  </Text>
+                  
                   <PopupSelect
                     label="Income source"
                     placeholder="Select income source"

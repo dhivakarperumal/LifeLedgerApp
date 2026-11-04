@@ -625,12 +625,6 @@ export default function Expenses() {
   const [fundingDate, setFundingDate] = useState(formatLocalDate(new Date()));
   const [fundingTransfer, setFundingTransfer] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [stats, setStats] = useState({
-    total: 0,
-    totalAmount: 0,
-    totalTransfer: 0,
-    recurring: 0,
-  });
   const [categoryOptions, setCategoryOptions] = useState<string[]>(fallbackCategories);
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [dateRange, setDateRange] = useState<DateRangeSelection>(() =>
@@ -834,24 +828,17 @@ export default function Expenses() {
   const fetchAll = useCallback(async (showRefreshIndicator = false) => {
     try {
       if (showRefreshIndicator) setRefreshing(true);
-      const [expensesRes, statsRes, categoriesRes, transfersRes] =
+      const getExpenseData = (url: string) =>
+        getShared(url, { forceRefresh: showRefreshIndicator });
+      const [expensesRes, categoriesRes, transfersRes] =
         await Promise.all([
-          getShared("/expenses"),
-          getShared("/expenses/stats"),
-          getShared("/categories"),
-          getShared("/transfers").catch(() => null),
+          getExpenseData("/expenses"),
+          getExpenseData("/categories"),
+          getExpenseData("/transfers").catch(() => null),
         ]);
 
       setExpenses(Array.isArray(expensesRes?.data) ? expensesRes.data : []);
       setTransfers(getTransferRows(transfersRes?.data));
-      setStats(
-        statsRes?.data || {
-          total: 0,
-          totalAmount: 0,
-          totalTransfer: 0,
-          recurring: 0,
-        },
-      );
       setCategoryOptions(getExpenseCategoryOptions(categoriesRes?.data));
     } catch (error) {
       const status = (error as any)?.status || (error as any)?.response?.status;
@@ -952,6 +939,16 @@ export default function Expenses() {
       })
       .map(([key, group]) => ({ key, ...group }));
   }, [visibleExpenses]);
+
+  const filteredExpenseTotal = useMemo(
+    () =>
+      visibleExpenses.reduce(
+        (sum, expense) =>
+          sum + Number(expense.expense_amount ?? expense.amount ?? 0),
+        0,
+      ),
+    [visibleExpenses],
+  );
 
   const totals = useMemo(
     () => ({
@@ -1487,7 +1484,7 @@ export default function Expenses() {
               <HeroStatCard
                 title="Total Amount"
                 subtitle="All time expenses"
-                value={formatAmount(stats.totalAmount || totals.totalExpense)}
+                value={formatAmount(filteredExpenseTotal)}
                 icon="wallet-outline"
                 iconBg="#8EB379"
                 iconColor="#FFFFFF"

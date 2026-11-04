@@ -2,7 +2,7 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { LinearGradient } from "expo-linear-gradient";
 import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
     ActivityIndicator,
     Image,
@@ -328,6 +328,7 @@ export default function Index() {
   const [isLoading, setIsLoading] = useState(!hasLoadedHomeOnce);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
+  const lastHandledRefreshKey = useRef(refreshKey);
   const [recentTransactions, setRecentTransactions] = useState<ExpenseItem[]>(
     [],
   );
@@ -418,7 +419,10 @@ export default function Index() {
       const fetchData = async () => {
         try {
           if (!hasLoadedHomeOnce) setIsLoading(true);
-          void getShared("/incomes/monthly-budget")
+          const forceRefresh = refreshKey !== lastHandledRefreshKey.current;
+          lastHandledRefreshKey.current = refreshKey;
+          const requestOptions = { forceRefresh };
+          void getShared("/incomes/monthly-budget", requestOptions)
             .then(
               (response: {
                 data?: {
@@ -441,8 +445,8 @@ export default function Index() {
               if (isActive) setBudgetLoaded(true);
             });
           const [expensesRes, incomesRes] = await Promise.allSettled([
-            getShared("/expenses"),
-            getShared("/incomes"),
+            getShared("/expenses", requestOptions),
+            getShared("/incomes", requestOptions),
           ]);
 
           if (!isActive) return;
@@ -629,9 +633,9 @@ export default function Index() {
           setIsRefreshing(false);
 
           const secondaryDataRequest = Promise.allSettled([
-            getShared("/memories"),
-            getShared("/diary"),
-            getShared("/calendar/events"),
+            getShared("/memories", requestOptions),
+            getShared("/diary", requestOptions),
+            getShared("/calendar/events", requestOptions),
           ]);
           const [memoriesRes, diaryRes, eventsRes] =
             await secondaryDataRequest;

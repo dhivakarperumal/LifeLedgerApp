@@ -21,9 +21,18 @@ let userCacheVersion = 0;
 let userReadPromise = null;
 let appLockToken = null;
 const inFlightGetRequests = new Map();
+const sharedGetCache = new Map();
+const SHARED_GET_CACHE_TTL_MS = 10000;
+let sharedGetCacheGeneration = 0;
 
 const clearInFlightGetRequests = () => {
   inFlightGetRequests.clear();
+};
+
+const invalidateSharedGetCache = () => {
+  sharedGetCacheGeneration += 1;
+  sharedGetCache.clear();
+  clearInFlightGetRequests();
 };
 
 /* =========================
@@ -32,7 +41,7 @@ const clearInFlightGetRequests = () => {
 
 export const setAuthToken = async (token) => {
   tokenCacheVersion += 1;
-  clearInFlightGetRequests();
+  invalidateSharedGetCache();
   cachedToken = token || null;
   tokenReadPromise = null;
 
@@ -68,20 +77,41 @@ export const getStoredToken = async () => {
 
 export const clearTokenCache = () => {
   tokenCacheVersion += 1;
-  clearInFlightGetRequests();
+  invalidateSharedGetCache();
   cachedToken = undefined;
   tokenReadPromise = null;
 };
 
-export const getShared = (url) => {
-  const existingRequest = inFlightGetRequests.get(url);
-  if (existingRequest) return existingRequest;
+export const getShared = (url, { forceRefresh = false } = {}) => {
+  const cached = sharedGetCache.get(url);
+  if (
+    !forceRefresh &&
+    cached &&
+    Date.now() - cached.cachedAt < SHARED_GET_CACHE_TTL_MS
+  ) {
+    return Promise.resolve(cached.response);
+  }
 
-  const request = api.get(url).finally(() => {
-    if (inFlightGetRequests.get(url) === request) {
-      inFlightGetRequests.delete(url);
-    }
-  });
+  const existingRequest = inFlightGetRequests.get(url);
+  if (existingRequest && !forceRefresh) return existingRequest;
+
+  const generation = sharedGetCacheGeneration;
+  const request = api
+    .get(url)
+    .then((response) => {
+      if (
+        generation === sharedGetCacheGeneration &&
+        inFlightGetRequests.get(url) === request
+      ) {
+        sharedGetCache.set(url, { response, cachedAt: Date.now() });
+      }
+      return response;
+    })
+    .finally(() => {
+      if (inFlightGetRequests.get(url) === request) {
+        inFlightGetRequests.delete(url);
+      }
+    });
   inFlightGetRequests.set(url, request);
   return request;
 };
@@ -155,6 +185,10 @@ export const getApiErrorMessage = (
 
 api.interceptors.request.use(
   async (config) => {
+    if (config.method && config.method.toLowerCase() !== "get") {
+      invalidateSharedGetCache();
+    }
+
     const token = await getStoredToken();
 
     if (token) {
@@ -175,9 +209,18 @@ api.interceptors.request.use(
 ========================= */
 
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    if (response.config?.method?.toLowerCase() !== "get") {
+      invalidateSharedGetCache();
+    }
+    return response;
+  },
 
   async (error) => {
+    if (error.config?.method?.toLowerCase() !== "get") {
+      invalidateSharedGetCache();
+    }
+
     if (error.response) {
       const status = error.response.status;
 
