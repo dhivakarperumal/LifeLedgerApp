@@ -30,7 +30,7 @@ import api, {
 } from "../../api";
 import { AddButton } from "../../components/AddButton";
 import { ActionIconButton } from "../../components/ActionIconButton";
-import { PageHeader } from "../../components/PageHeader";
+import { CommonScreenHeader } from "../../components/CommonScreenHeader";
 
 import ConfirmPopup from "../../components/ConfirmPopup";
 import {
@@ -1989,7 +1989,7 @@ export default function Expenses() {
               }}
             />
             <NativeSafeAreaView
-              edges={isStandaloneExpenseForm ? ["top", "bottom"] : []}
+              edges={isStandaloneExpenseForm ? ["bottom"] : []}
               style={{
                 flex: 1,
                 backgroundColor: isStandaloneExpenseForm
@@ -2009,18 +2009,15 @@ export default function Expenses() {
               flex: 1,
             }}
           >
-            {isStandaloneExpenseForm ? (
-              <PageHeader
-                title="Add New Expense"
-                topInsetApplied
-                disabled={saving}
-                onBack={closeExpenseForm}
-                style={{
-                  marginHorizontal: -20,
-                  marginBottom: 12,
-                }}
-              />
-            ) : null}
+            <CommonScreenHeader
+              title="Add New Expense"
+              disabled={saving}
+              onBack={closeExpenseForm}
+              style={{
+                marginHorizontal: -20,
+                marginBottom: 12,
+              }}
+            />
             <ScrollView
               style={{ flex: 1, minHeight: 0 }}
               contentContainerStyle={{ paddingBottom: 16 }}

@@ -12,7 +12,6 @@ import {
     Pressable,
     RefreshControl,
     ScrollView,
-    StatusBar as NativeStatusBar,
     Text,
     useWindowDimensions,
     View,
@@ -38,7 +37,7 @@ import {
 } from "../components/filters";
 import { FormInput, FormLabel, FormOption } from "../components/FormControls";
 import { GradientSafeAreaView as SafeAreaView } from "../components/GradientSafeAreaView";
-import { PageHeader } from "../components/PageHeader";
+import { CommonScreenHeader } from "../components/CommonScreenHeader";
 import { PopupSelect } from "../components/PopupSelect";
 import { SearchBar } from "../components/SearchBar";
 import { createSessionDataCache } from "../components/SessionDataCache";
@@ -490,15 +489,10 @@ export default function Categories() {
   return (
     <SafeAreaView
       className="flex-1 bg-[#F2F5EA]"
-      edges={isNewCategoryRoute ? ["top", "bottom"] : ["bottom"]}
+      edges={["bottom"]}
     >
-      {isNewCategoryRoute ? (
-        <NativeStatusBar
-          barStyle="light-content"
-        />
-      ) : null}
       {isNewCategoryRoute ? null : (
-        <PageHeader
+        <CommonScreenHeader
           title="Categories"
           onBack={() => {
             if (router.canGoBack()) router.back();
@@ -793,16 +787,12 @@ export default function Categories() {
           <View
             className="flex-1 bg-white px-5 pb-5"
           >
-            {isNewCategoryRoute ? (
-              <PageHeader
-                title={editingCategory ? "Edit Category" : "Add New Category"}
-                topInsetApplied
-                showStatusBar={false}
-                disabled={saving}
-                onBack={closeCategoryForm}
-                style={{ marginHorizontal: -20, marginBottom: 15, paddingTop: 8 }}
-              />
-            ) : null}
+            <CommonScreenHeader
+              title={editingCategory ? "Edit Category" : "Add New Category"}
+              disabled={saving}
+              onBack={closeCategoryForm}
+              style={{ marginHorizontal: -20, marginBottom: 15 }}
+            />
             <ScrollView
               style={{ flex: 1, minHeight: 0 }}
               contentContainerStyle={{ paddingBottom: 24 + insets.bottom }}

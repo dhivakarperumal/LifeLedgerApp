@@ -12,7 +12,6 @@ import {
   RefreshControl,
   ScrollView,
   StyleSheet,
-  StatusBar,
   Text,
   View,
 } from "react-native";
@@ -24,7 +23,7 @@ import ConfirmPopup from "../components/ConfirmPopup";
 import { DateTimePickerComponent } from "../components/DateTimePickerComponent";
 import { FormInput, FormLabel } from "../components/FormControls";
 import { GradientSafeAreaView as SafeAreaView } from "../components/GradientSafeAreaView";
-import { PageHeader } from "../components/PageHeader";
+import { CommonScreenHeader } from "../components/CommonScreenHeader";
 import { PopupSelect } from "../components/PopupSelect";
 import { createSessionDataCache } from "../components/SessionDataCache";
 import { parseLocalDate, parseLocalDateTimeValue } from "../components/dateTimeUtils";
@@ -663,16 +662,11 @@ export default function CalendarScreen() {
   return (
     <SafeAreaView
       className="flex-1"
-      edges={isNewEventRoute ? ["top", "bottom"] : ["bottom"]}
+      edges={["bottom"]}
       style={{
         backgroundColor: isNewEventRoute ? Colors.greenGradient[0] : Colors.primary,
       }}
     >
-      {isNewEventRoute ? (
-        <StatusBar
-          barStyle="light-content"
-        />
-      ) : null}
       {isNewEventRoute ? null : loading ? (
         <View style={{ flex: 1, backgroundColor: Colors.white }}>
           <CenteredPageLoader message="Loading calendar..." />
@@ -694,7 +688,7 @@ export default function CalendarScreen() {
           />
         }
       >
-        <PageHeader
+        <CommonScreenHeader
           onBack={() => {
             if (router.canGoBack()) router.back();
             else router.replace("/tabs/more");
@@ -1152,7 +1146,7 @@ export default function CalendarScreen() {
             className="flex-1 bg-[#F9FAFC] px-5 pb-5"
           >
             {modalType !== null ? (
-              <PageHeader
+              <CommonScreenHeader
                 title={
                   editingEvent
                     ? "Edit Event"
@@ -1160,8 +1154,6 @@ export default function CalendarScreen() {
                       ? "Add New Reminder"
                       : "Add New Event"
                 }
-                topInsetApplied={isNewEventRoute}
-                showStatusBar={false}
                 disabled={saving}
                 onBack={() => {
                   if (isNewEventRoute) {
@@ -1174,7 +1166,6 @@ export default function CalendarScreen() {
                 style={{
                   marginHorizontal: -20,
                   marginBottom: 12,
-                  paddingTop: 8,
                 }}
               />
             ) : null}

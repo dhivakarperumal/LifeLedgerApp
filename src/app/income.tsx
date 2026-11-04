@@ -14,7 +14,6 @@ import {
     RefreshControl,
     ScrollView,
     StyleSheet,
-    StatusBar as NativeStatusBar,
     Text,
     useWindowDimensions,
     View,
@@ -53,7 +52,7 @@ import {
 } from "../components/filters";
 import { FormInput, FormLabel, FormOption } from "../components/FormControls";
 import { GradientSafeAreaView as SafeAreaView } from "../components/GradientSafeAreaView";
-import { PageHeader } from "../components/PageHeader";
+import { CommonScreenHeader } from "../components/CommonScreenHeader";
 import { PopupSelect } from "../components/PopupSelect";
 import { SearchBar } from "../components/SearchBar";
 import { createSessionDataCache } from "../components/SessionDataCache";
@@ -783,6 +782,7 @@ export default function Income() {
   };
 
   const submitIncome = async () => {
+    const isEditing = editingIncomeId !== null;
     const title = form.title.trim();
     const amount = Number(form.amount);
     if (
@@ -817,7 +817,7 @@ export default function Income() {
         } as any);
       }
 
-      const response = editingIncomeId
+      const response = isEditing
         ? await api.put(`/incomes/${editingIncomeId}`, payload, {
             headers: { "Content-Type": "multipart/form-data" },
           })
@@ -826,17 +826,20 @@ export default function Income() {
           });
       const savedIncome = response.data?.income || response.data;
 
-      if (editingIncomeId) {
+      if (isEditing) {
         setIncomes((current) =>
           current.map((income) =>
-            income.id === editingIncomeId ? savedIncome : income,
+            String(income.id) === String(editingIncomeId)
+              ? savedIncome
+              : income,
           ),
         );
+        incomeDataCache.clear();
       } else {
         setIncomes((current) => [savedIncome, ...current]);
       }
       setSuccessMessage(
-        editingIncomeId ? "Income updated successfully." : "Income added successfully.",
+        isEditing ? "Income updated successfully." : "Income added successfully.",
       );
       closeEditor();
     } catch (error) {
@@ -905,7 +908,7 @@ export default function Income() {
   return (
     <SafeAreaView
       className="flex-1 bg-[#F2F5EA]"
-      edges={isNewIncomeRoute ? ["top", "bottom"] : ["bottom"]}
+      edges={["bottom"]}
     >
       <ConfirmPopup
         visible={pendingDelete !== null}
@@ -924,13 +927,8 @@ export default function Income() {
         message={successMessage ?? ""}
         onConfirm={() => setSuccessMessage(null)}
       />
-      {isNewIncomeRoute ? (
-        <NativeStatusBar
-          barStyle="light-content"
-        />
-      ) : null}
       {isNewIncomeRoute ? null : (
-        <PageHeader
+        <CommonScreenHeader
           title="Monthly Income"
           onBack={() => {
             if (router.canGoBack()) router.back();
@@ -1217,15 +1215,11 @@ export default function Income() {
           className={isNewIncomeRoute ? "flex-1 bg-[#F8F9F6]" : "absolute inset-0 z-50 bg-[#F8F9F6]"}
           style={{ paddingBottom: insets.bottom }}
         >
-          {isNewIncomeRoute ? (
-            <PageHeader
-              title={editingIncomeId === null ? "Add Income" : "Edit Income"}
-              topInsetApplied
-              showStatusBar={false}
-              disabled={saving}
-              onBack={closeEditor}
-            />
-          ) : null}
+          <CommonScreenHeader
+            title={editingIncomeId === null ? "Add Income" : "Edit Income"}
+            disabled={saving}
+            onBack={closeEditor}
+          />
           <KeyboardAvoidingView
             behavior={Platform.OS === "ios" ? "padding" : "height"}
             keyboardVerticalOffset={0}
@@ -1397,7 +1391,7 @@ export default function Income() {
                   <ActivityIndicator color="#FFFFFF" />
                 ) : (
                   <Text className="text-sm font-bold text-white">
-                    {editingIncomeId ? "Update income" : "Save income"}
+                    {editingIncomeId !== null ? "Update income" : "Save income"}
                   </Text>
                 )}
               </Pressable>
@@ -1411,7 +1405,7 @@ export default function Income() {
       {budgetVisible && (
         <View className="absolute inset-0 z-50 bg-[#F8F9F6] px-5 py-5" style={{ paddingBottom: insets.bottom }}>
           <View className="flex-1">
-            <PageHeader
+            <CommonScreenHeader
               title="Monthly budget"
               showStatusBar={false}
               onBack={() => setBudgetVisible(false)}

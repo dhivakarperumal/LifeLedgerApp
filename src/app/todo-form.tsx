@@ -16,7 +16,7 @@ import {
   useSafeAreaInsets,
 } from "react-native-safe-area-context";
 import api, { getApiErrorMessage } from "../api";
-import { PageHeader } from "../components/PageHeader";
+import { CommonScreenHeader } from "../components/CommonScreenHeader";
 import { DateTimePickerComponent } from "../components/DateTimePickerComponent";
 import { PopupSelect } from "../components/PopupSelect";
 import { Colors } from "../constants/colors";
@@ -187,7 +187,7 @@ export default function TodoFormPage() {
       edges={["bottom"]}
       style={{ flex: 1, backgroundColor: Colors.greenGradient[0] }}
     >
-      <PageHeader
+      <CommonScreenHeader
         title={isEditing ? "Edit To Do" : "Add To Do"}
         onBack={goBack}
         disabled={saving}

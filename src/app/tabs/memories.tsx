@@ -43,7 +43,7 @@ import { ActionIconButton } from "../../components/ActionIconButton";
 import { AddButton } from "../../components/AddButton";
 import { CenteredPageLoader } from "../../components/CenteredPageLoader";
 import ConfirmPopup from "../../components/ConfirmPopup";
-import { PageHeader } from "../../components/PageHeader";
+import { CommonScreenHeader } from "../../components/CommonScreenHeader";
 import {
     createDateRangeSelection,
     isDateInRange,
@@ -1408,7 +1408,7 @@ export default function Memories() {
           style={{ paddingBottom: isStandaloneMemoryForm ? 0 : insets.bottom }}
         >
           <NativeSafeAreaView
-            edges={isStandaloneMemoryForm ? ["top", "bottom"] : []}
+            edges={isStandaloneMemoryForm ? ["bottom"] : []}
             style={{
               flex: 1,
               backgroundColor: isStandaloneMemoryForm
@@ -1428,19 +1428,15 @@ export default function Memories() {
               backgroundColor: Colors.white,
             }}
           >
-            {isStandaloneMemoryForm ? (
-              <PageHeader
-                title={editingId === null ? "Add Memory" : "Edit Memory"}
-                topInsetApplied
-                disabled={submitting || isRecording}
-                onBack={closeMemoryForm}
-                style={{
-                  marginHorizontal: -18,
-                  marginBottom: 12,
-                  paddingTop: 8,
-                }}
-              />
-            ) : null}
+            <CommonScreenHeader
+              title={editingId === null ? "Add Memory" : "Edit Memory"}
+              disabled={submitting || isRecording}
+              onBack={closeMemoryForm}
+              style={{
+                marginHorizontal: -18,
+                marginBottom: 12,
+              }}
+            />
             <ScrollView
               style={{ flex: 1, minHeight: 0 }}
               keyboardShouldPersistTaps="handled"

@@ -14,7 +14,6 @@ import {
     RefreshControl,
     ScrollView,
     StyleSheet,
-    StatusBar,
     Text,
     useWindowDimensions,
     View,
@@ -46,7 +45,7 @@ import {
 } from "../components/filters";
 import { FormInput, FormLabel, FormOption } from "../components/FormControls";
 import { GradientSafeAreaView as SafeAreaView } from "../components/GradientSafeAreaView";
-import { PageHeader } from "../components/PageHeader";
+import { CommonScreenHeader } from "../components/CommonScreenHeader";
 import { PopupSelect } from "../components/PopupSelect";
 import { SearchBar } from "../components/SearchBar";
 import { createSessionDataCache } from "../components/SessionDataCache";
@@ -735,8 +734,10 @@ export default function Transfers() {
   useEffect(() => {
     if (isNewTransferRoute) return;
     if (formParam === "new") {
-      const timeout = setTimeout(openAddTransfer, 0);
-      router.setParams({ form: undefined });
+      const timeout = setTimeout(() => {
+        openAddTransfer();
+        router.setParams({ form: undefined });
+      }, 0);
       return () => clearTimeout(timeout);
     }
     if (formParam !== "edit" || !editId || loading) return;
@@ -746,8 +747,10 @@ export default function Transfers() {
       if (router.canGoBack()) router.back();
       return;
     }
-    const timeout = setTimeout(() => openEditTransfer(transfer), 0);
-    router.setParams({ form: undefined, id: undefined });
+    const timeout = setTimeout(() => {
+      openEditTransfer(transfer);
+      router.setParams({ form: undefined, id: undefined });
+    }, 0);
     return () => clearTimeout(timeout);
   }, [editId, formParam, isNewTransferRoute, loading, openAddTransfer, openEditTransfer, router, transfers]);
 
@@ -892,13 +895,8 @@ export default function Transfers() {
   return (
     <SafeAreaView
       className="flex-1 bg-[#F2F5EA]"
-      edges={isNewTransferRoute ? ["top", "bottom"] : ["bottom"]}
+      edges={["bottom"]}
     >
-      {isNewTransferRoute ? (
-        <StatusBar
-          barStyle="light-content"
-        />
-      ) : null}
       <ConfirmPopup
         visible={pendingDelete !== null}
         type="delete"
@@ -1215,18 +1213,14 @@ export default function Transfers() {
             <View
               className="flex-1 bg-[#F8F9F6] px-5 pb-5"
             >
-            {isNewTransferRoute ? (
-              <PageHeader
-                title={
-                  editingTransferId === null ? "Add Transfer" : "Edit Transfer"
-                }
-                topInsetApplied
-                showStatusBar={false}
-                disabled={submitting}
-                onBack={closeModal}
-                style={{ marginHorizontal: -20, marginBottom: 12 }}
-              />
-            ) : null}
+            <CommonScreenHeader
+              title={
+                editingTransferId === null ? "Add Transfer" : "Edit Transfer"
+              }
+              disabled={submitting}
+              onBack={closeModal}
+              style={{ marginHorizontal: -20, marginBottom: 12 }}
+            />
             <ScrollView
               style={{ flex: 1, minHeight: 0 }}
               contentContainerStyle={{ paddingBottom: 24 + insets.bottom }}

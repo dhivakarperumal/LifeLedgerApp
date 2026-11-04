@@ -3,6 +3,7 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useState } from "react";
 import {
+    ActivityIndicator,
     Alert,
     Image,
     Pressable,
@@ -35,6 +36,8 @@ export default function LoginScreen() {
   const showSuccessPopup = Boolean(successMessage);
 
   const handleSubmit = async () => {
+    if (isSubmitting) return;
+
     if (!identifier.trim() || !password) {
       Alert.alert(
         "Missing details",
@@ -152,6 +155,7 @@ export default function LoginScreen() {
 
           <View className="mb-5">
             <Pressable
+              disabled={isSubmitting}
               onPress={() =>
                 Alert.alert(
                   "Coming soon",
@@ -167,32 +171,27 @@ export default function LoginScreen() {
 
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="Sign In"
+            accessibilityLabel={isSubmitting ? "Signing In..." : "Sign In"}
             disabled={isSubmitting}
             onPress={handleSubmit}
             style={({ pressed }) => ({
-              backgroundColor: isSubmitting
-                ? Colors.primaryLight
-                : pressed
-                  ? Colors.primaryDark
-                  : Colors.primary,
+              backgroundColor: pressed
+                ? Colors.primaryDark
+                : Colors.primary,
+              opacity: isSubmitting ? 0.75 : 1,
               shadowColor: Colors.primaryDark,
               shadowOpacity: pressed || isSubmitting ? 0 : 0.45,
               shadowRadius: 14,
               shadowOffset: { width: 0, height: 6 },
               elevation: pressed || isSubmitting ? 0 : 8,
             })}
-            className="mb-10 mt-2 h-[60px] flex-row items-center justify-center gap-3 rounded-full bg-[#366039]"
+            className="mb-10 mt-2 h-[60px] flex-row items-center justify-center gap-3 rounded-full px-4 bg-[#366039]"
           >
-            {isSubmitting && (
-              <Ionicons
-                name="refresh-outline"
-                size={20}
-                color={Colors.primaryDark}
-              />
-            )}
+            {isSubmitting ? (
+              <ActivityIndicator size="small" color="#FFFFFF" />
+            ) : null}
             <Text className="text-[17px] font-extrabold tracking-[0.22em] text-white">
-              {isSubmitting ? "Signing In" : "Sign In"}
+              {isSubmitting ? "Signing In..." : "Sign In"}
             </Text>
           </Pressable>
 
@@ -201,6 +200,7 @@ export default function LoginScreen() {
               Don&apos;t have an account?
             </Text>
             <Pressable
+              disabled={isSubmitting}
               onPress={() => router.push("/auth/register")}
               className="min-h-10 justify-center px-2 active:opacity-60"
             >

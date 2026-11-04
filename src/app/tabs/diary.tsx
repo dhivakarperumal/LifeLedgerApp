@@ -45,7 +45,7 @@ import api, {
 import { ActionIconButton } from "../../components/ActionIconButton";
 import { AddButton } from "../../components/AddButton";
 import { CenteredPageLoader } from "../../components/CenteredPageLoader";
-import { PageHeader } from "../../components/PageHeader";
+import { CommonScreenHeader } from "../../components/CommonScreenHeader";
 import ConfirmPopup from "../../components/ConfirmPopup";
 import {
     createDateRangeSelection,
@@ -1502,7 +1502,7 @@ export default function Diary() {
           }}
         >
           <NativeSafeAreaView
-            edges={isStandaloneDiaryForm ? ["top", "bottom"] : []}
+            edges={isStandaloneDiaryForm ? ["bottom"] : []}
             style={{
               flex: 1,
               backgroundColor: isStandaloneDiaryForm
@@ -1522,21 +1522,17 @@ export default function Diary() {
               backgroundColor: Colors.white,
             }}
           >
-            {isStandaloneDiaryForm ? (
-              <PageHeader
-                title={
-                  editingId === null ? "Add Diary Entry" : "Edit Diary Entry"
-                }
-                topInsetApplied
-                disabled={submitting || isRecording}
-                onBack={closeDiaryForm}
-                style={{
-                  marginHorizontal: -18,
-                  marginBottom: 12,
-                  paddingTop: 8,
-                }}
-              />
-            ) : null}
+            <CommonScreenHeader
+              title={
+                editingId === null ? "Add Diary Entry" : "Edit Diary Entry"
+              }
+              disabled={submitting || isRecording}
+              onBack={closeDiaryForm}
+              style={{
+                marginHorizontal: -18,
+                marginBottom: 12,
+              }}
+            />
             <ScrollView
               style={{ flex: 1, minHeight: 0 }}
               keyboardShouldPersistTaps="handled"

@@ -3,6 +3,7 @@ import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useState } from "react";
 import {
+    ActivityIndicator,
     Alert,
     Image,
     Pressable,
@@ -124,6 +125,8 @@ export default function RegisterScreen() {
   };
 
   const handleSubmit = async () => {
+    if (isSubmitting) return;
+
     if (
       !form.username.trim() ||
       !form.email.trim() ||
@@ -239,32 +242,29 @@ export default function RegisterScreen() {
 
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="Sign Up"
+            accessibilityLabel={
+              isSubmitting ? "Creating Account..." : "Create Account"
+            }
             disabled={isSubmitting}
             onPress={handleSubmit}
             style={({ pressed }) => ({
-              backgroundColor: isSubmitting
-                ? Colors.primaryLight
-                : pressed
-                  ? Colors.primaryDark
-                  : Colors.primary,
+              backgroundColor: pressed
+                ? Colors.primaryDark
+                : Colors.primary,
+              opacity: isSubmitting ? 0.75 : 1,
               shadowColor: Colors.primaryDark,
               shadowOpacity: pressed || isSubmitting ? 0 : 0.25,
               shadowRadius: 10,
               shadowOffset: { width: 0, height: 4 },
               elevation: pressed || isSubmitting ? 0 : 5,
             })}
-            className="mb-7 mt-2 h-16 flex-row items-center justify-center rounded-full bg-[#366039]"
+            className="mb-7 mt-2 h-16 flex-row items-center justify-center gap-3 rounded-full px-4 bg-[#366039]"
           >
             {isSubmitting ? (
-              <Ionicons
-                name="refresh-outline"
-                size={20}
-                color={Colors.primaryDark}
-              />
+              <ActivityIndicator size="small" color="#FFFFFF" />
             ) : null}
             <Text className="text-[16px] font-extrabold tracking-[0.18em] text-white">
-              {isSubmitting ? "Signing Up" : "Sign Up"}
+              {isSubmitting ? "Creating Account..." : "Create Account"}
             </Text>
           </Pressable>
 
@@ -272,7 +272,10 @@ export default function RegisterScreen() {
             <Text className="text-[12px] font-bold tracking-[0.08em] text-[#707982]">
               Already have an account?
             </Text>
-            <Pressable onPress={() => router.replace("/auth/login")}>
+            <Pressable
+              disabled={isSubmitting}
+              onPress={() => router.replace("/auth/login")}
+            >
               <Text className="text-[12px] font-extrabold tracking-[0.08em] text-[#366039] underline">
                 Log In
               </Text>
