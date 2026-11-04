@@ -610,6 +610,8 @@ export default function Income() {
   const [refreshing, setRefreshing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [returnToIncomeAfterSuccess, setReturnToIncomeAfterSuccess] =
+    useState(false);
   const [pendingDelete, setPendingDelete] = useState<IncomeRecord | null>(null);
   const [budgetSaving, setBudgetSaving] = useState(false);
   const [search, setSearch] = useState("");
@@ -1063,12 +1065,8 @@ export default function Income() {
       setSelectedFundingIncomeId("");
       setFundingAmount("");
       setFundingReason("");
-      setSelectedTransfer(null);
-      setTransferPanelVisible(false);
-      setTransferToast({
-        kind: "success",
-        message: result.message ?? "Transfer funded successfully.",
-      });
+      setReturnToIncomeAfterSuccess(true);
+      setSuccessMessage(result.message ?? "Transfer funded successfully.");
     } catch (error) {
       const status =
         (error as { status?: number; response?: { status?: number } })?.status ||
@@ -1404,7 +1402,14 @@ export default function Income() {
         visible={successMessage !== null}
         type="success"
         message={successMessage ?? ""}
-        onConfirm={() => setSuccessMessage(null)}
+        onConfirm={() => {
+          setSuccessMessage(null);
+          if (returnToIncomeAfterSuccess) {
+            setReturnToIncomeAfterSuccess(false);
+            setSelectedTransfer(null);
+            setTransferPanelVisible(false);
+          }
+        }}
       />
       {isNewIncomeRoute ? null : (
         <CommonScreenHeader

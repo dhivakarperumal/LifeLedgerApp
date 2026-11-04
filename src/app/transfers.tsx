@@ -540,6 +540,9 @@ export default function Transfers() {
     DEFAULT_FILTER_STATE.viewMode,
   );
   const [deletingId, setDeletingId] = useState<number | string | null>(null);
+  const [returningId, setReturningId] = useState<number | string | null>(null);
+  const [pendingReturnTransfer, setPendingReturnTransfer] =
+    useState<TransferRecord | null>(null);
 
   const handleUnauthorized = useCallback(async () => {
     await logoutUser();
@@ -686,12 +689,7 @@ export default function Transfers() {
     0,
   );
   const totalRemaining = transfers.reduce(
-    (sum, transfer) =>
-      sum +
-      Math.max(
-        Number(transfer.amount || 0) - Number(transfer.total_expense || 0),
-        0,
-      ),
+    (sum, transfer) => sum + getRemainingAmount(transfer),
     0,
   );
   const metricCardWidth = Math.min(500, (screenWidth - 36 - 14) / 2);
@@ -1022,6 +1020,118 @@ export default function Transfers() {
     }
   };
 
+  const handleReturnRemainingToIncome = (transfer: TransferRecord) => {
+    const remainingAmount = getRemainingAmount(transfer);
+    if (!transfer.source_income_id) {
+      Alert.alert(
+        "No linked income",
+        "This transfer is not linked to any source income record.",
+      );
+      return;
+    }
+    if (remainingAmount <= 0) {
+      Alert.alert(
+        "No remaining amount",
+        "There is no remaining amount available to move to income.",
+      );
+      return;
+    }
+    setPendingReturnTransfer(transfer);
+  };
+
+  const confirmReturnToIncome = async () => {
+    if (!pendingReturnTransfer || returningId !== null) return;
+    const transfer = pendingReturnTransfer;
+    const remainingAmount = getRemainingAmount(transfer);
+
+    if (!transfer.source_income_id || remainingAmount <= 0) {
+      setPendingReturnTransfer(null);
+      return;
+    }
+
+    setReturningId(transfer.id);
+    try {
+      const response = await api.post(
+        `/transfers/${transfer.id}/return-to-income`,
+      );
+      const returnedAmount = Number(
+        response.data?.returned_amount ?? remainingAmount,
+      );
+      const updatedIncomeRemaining =
+        response.data?.income_remaining_amount;
+
+      // Update transfer in local state: set remaining_amount to 0 and update total_returned
+      setTransfers((current) =>
+        current.map((item) =>
+          item.id === transfer.id
+            ? {
+                ...item,
+                ...(response.data?.transfer ?? {}),
+                remaining_amount: 0,
+                total_returned:
+                  Number(item.total_returned || 0) + returnedAmount,
+              }
+            : item,
+        ),
+      );
+
+      // Update source income in local state
+      if (updatedIncomeRemaining !== undefined) {
+        setIncomes((current) =>
+          current.map((income) =>
+            String(income.id) === String(transfer.source_income_id)
+              ? { ...income, remaining_amount: updatedIncomeRemaining }
+              : income,
+          ),
+        );
+      }
+
+      // If details modal was open for this transfer, update it
+      if (selectedTransfer?.id === transfer.id) {
+        setSelectedTransfer((prev) =>
+          prev
+            ? {
+                ...prev,
+                ...(response.data?.transfer ?? {}),
+                remaining_amount: 0,
+                total_returned:
+                  Number(prev.total_returned || 0) + returnedAmount,
+              }
+            : null,
+        );
+      }
+
+      // Clear caches so navigation to Income or page reload uses fresh data
+      transfersDataCache.clear();
+      try {
+        incomeDataCache.clear();
+      } catch {}
+
+      // Refresh in background to ensure DB consistency
+      await loadAll(false);
+
+      setPendingReturnTransfer(null);
+      setSuccessMessage(
+        response.data?.message ||
+          `${formatAmount(returnedAmount)} returned to income successfully.`,
+      );
+    } catch (error) {
+      if ((error as { status?: number })?.status === 401) {
+        await handleUnauthorized();
+        return;
+      }
+      Alert.alert(
+        "Failed to return to income",
+        getApiErrorMessage(
+          error,
+          "Failed to return remaining amount to linked income.",
+        ),
+      );
+    } finally {
+      setReturningId(null);
+    }
+  };
+
   const openReceipt = async (path: string) => {
     try {
       await Linking.openURL(getReceiptUrl(path));
@@ -1042,6 +1152,24 @@ export default function Transfers() {
         onConfirm={confirmDeleteTransfer}
         onCancel={() => setPendingDelete(null)}
         loading={pendingDelete !== null && deletingId === pendingDelete.id}
+      />
+      <ConfirmPopup
+        visible={pendingReturnTransfer !== null}
+        type="cancel"
+        destructive={false}
+        title="Move to Income?"
+        message={
+          pendingReturnTransfer
+            ? `Move ${formatAmount(getRemainingAmount(pendingReturnTransfer))} from "${pendingReturnTransfer.title}" back to its linked income?`
+            : "Move unused transfer amount back to linked income?"
+        }
+        confirmText={returningId !== null ? "Moving..." : "Move to Income"}
+        cancelText="Cancel"
+        onConfirm={() => void confirmReturnToIncome()}
+        onCancel={() => {
+          if (returningId === null) setPendingReturnTransfer(null);
+        }}
+        loading={returningId !== null}
       />
       <ConfirmPopup
         visible={successMessage !== null}
@@ -1313,40 +1441,83 @@ export default function Transfers() {
                   </View>
                 </Pressable>
                 <View
-                  className="flex-row justify-end"
                   style={{
-                    gap: 8,
+                    flexDirection: viewMode === "card" ? "column" : "row",
+                    alignItems: viewMode === "card" ? "stretch" : "center",
+                    justifyContent: "space-between",
                     marginTop: viewMode === "card" ? 8 : 12,
+                    gap: 8,
                   }}
                 >
-                  <ActionIconButton
-                    action="view"
-                    label={`View details for ${transfer.title || "transfer"}`}
-                    onPress={(event) => {
-                      event.stopPropagation();
-                      setSelectedTransfer(transfer);
-                    }}
-                  />
-                  <ActionIconButton
-                    action="edit"
-                    label={`Edit ${transfer.title || "transfer"}`}
-                    onPress={(event) => {
-                      event.stopPropagation();
-                      router.push({
-                        pathname: "/transfers",
-                        params: { form: "edit", id: String(transfer.id) },
-                      });
-                    }}
-                  />
-                  <ActionIconButton
-                    action="delete"
-                    label={`Delete ${transfer.title || "transfer"}`}
-                    disabled={deletingId === transfer.id}
-                    onPress={(event) => {
-                      event.stopPropagation();
-                      deleteTransfer(transfer);
-                    }}
-                  />
+                  {Boolean(transfer.source_income_id) &&
+                  getRemainingAmount(transfer) > 0 ? (
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel="Move to Income"
+                      disabled={returningId === transfer.id}
+                      onPress={(event) => {
+                        event.stopPropagation();
+                        handleReturnRemainingToIncome(transfer);
+                      }}
+                      className="flex-row items-center justify-center rounded-xl border border-[#C6DECA] bg-[#EBF5ED] px-3 py-2"
+                      style={{
+                        opacity: returningId === transfer.id ? 0.6 : 1,
+                        alignSelf:
+                          viewMode === "card" ? "stretch" : "flex-start",
+                      }}
+                    >
+                      {returningId === transfer.id ? (
+                        <ActivityIndicator size="small" color="#264B2A" />
+                      ) : (
+                        <Ionicons
+                          name="arrow-undo-outline"
+                          size={14}
+                          color="#264B2A"
+                        />
+                      )}
+                      <Text
+                        className="ml-1.5 text-xs font-bold text-[#264B2A]"
+                        numberOfLines={1}
+                      >
+                        {returningId === transfer.id
+                          ? "Moving..."
+                          : `Move to Income (${formatAmount(getRemainingAmount(transfer))})`}
+                      </Text>
+                    </Pressable>
+                  ) : (
+                    <View />
+                  )}
+
+                  <View className="flex-row justify-end" style={{ gap: 8 }}>
+                    <ActionIconButton
+                      action="view"
+                      label={`View details for ${transfer.title || "transfer"}`}
+                      onPress={(event) => {
+                        event.stopPropagation();
+                        setSelectedTransfer(transfer);
+                      }}
+                    />
+                    <ActionIconButton
+                      action="edit"
+                      label={`Edit ${transfer.title || "transfer"}`}
+                      onPress={(event) => {
+                        event.stopPropagation();
+                        router.push({
+                          pathname: "/transfers",
+                          params: { form: "edit", id: String(transfer.id) },
+                        });
+                      }}
+                    />
+                    <ActionIconButton
+                      action="delete"
+                      label={`Delete ${transfer.title || "transfer"}`}
+                      disabled={deletingId === transfer.id}
+                      onPress={(event) => {
+                        event.stopPropagation();
+                        deleteTransfer(transfer);
+                      }}
+                    />
+                  </View>
                 </View>
               </View>
             ))}
@@ -1782,6 +1953,58 @@ export default function Transfers() {
                 </Text>
               </View>
             </View>
+            <View className="mb-3 flex-row gap-3">
+              <View className="flex-1 rounded-xl bg-white p-3">
+                <Text className="text-xs font-bold uppercase text-[#87918A]">
+                  Remaining
+                </Text>
+                <Text className="mt-1 text-sm font-extrabold text-[#264B2A]">
+                  {formatAmount(
+                    selectedTransfer ? getRemainingAmount(selectedTransfer) : 0,
+                  )}
+                </Text>
+              </View>
+              <View className="flex-1 rounded-xl bg-white p-3">
+                <Text className="text-xs font-bold uppercase text-[#87918A]">
+                  Returned
+                </Text>
+                <Text className="mt-1 text-sm font-bold text-[#293930]">
+                  {formatAmount(selectedTransfer?.total_returned || 0)}
+                </Text>
+              </View>
+            </View>
+            {Boolean(selectedTransfer?.source_income_id) &&
+              getRemainingAmount(selectedTransfer!) > 0 && (
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Move to Income"
+                  disabled={returningId === selectedTransfer?.id}
+                  className="mb-3 flex-row items-center justify-center rounded-xl bg-[#264B2A] py-3.5"
+                  style={{
+                    opacity: returningId === selectedTransfer?.id ? 0.6 : 1,
+                  }}
+                  onPress={() => {
+                    if (selectedTransfer) {
+                      handleReturnRemainingToIncome(selectedTransfer);
+                    }
+                  }}
+                >
+                  {returningId === selectedTransfer?.id ? (
+                    <ActivityIndicator size="small" color="#FFFFFF" />
+                  ) : (
+                    <Ionicons
+                      name="arrow-undo-outline"
+                      size={17}
+                      color="#FFFFFF"
+                    />
+                  )}
+                  <Text className="ml-2 text-sm font-bold text-white">
+                    {returningId === selectedTransfer?.id
+                      ? "Moving..."
+                      : `Move to Income (${formatAmount(getRemainingAmount(selectedTransfer!))})`}
+                  </Text>
+                </Pressable>
+              )}
             {!!selectedTransfer?.notes && (
               <View className="mb-3 rounded-xl bg-white p-3">
                 <Text className="text-xs font-bold uppercase text-[#87918A]">
