@@ -32,6 +32,7 @@ type TodoTask = {
   id: number | string;
   title: string;
   description?: string | null;
+  amount?: number | string | null;
   priority: TaskPriority;
   status: TaskStatus;
   dueDate?: string | null;
@@ -112,6 +113,19 @@ function formatDateTime(value?: string | null) {
     : "Not set";
 }
 
+function formatAmount(value?: number | string | null) {
+  if (value === null || value === undefined || String(value).trim() === "") {
+    return null;
+  }
+  const amount = Number(value);
+  return Number.isFinite(amount)
+    ? `₹${amount.toLocaleString("en-IN", {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      })}`
+    : null;
+}
+
 function Card({
   children,
   style,
@@ -150,6 +164,7 @@ function TaskCard({
   onToggleComplete: (task: TodoTask) => void;
 }) {
   const complete = task.status === "Completed";
+  const taskAmount = formatAmount(task.amount);
   const priorityColor =
     task.priority === "High"
       ? { background: "#FFF0F0", text: "#B84242", border: "#F3D4D4" }
@@ -253,6 +268,9 @@ function TaskCard({
                 icon="calendar-outline"
                 text={task.dueDate ? `Due ${formatDate(task.dueDate)}` : "No due date"}
               />
+              {taskAmount ? (
+                <DateInfo icon="cash-outline" text={`Amount ${taskAmount}`} />
+              ) : null}
               <DateInfo
                 icon="alarm-outline"
                 text={task.reminderAt ? `Reminder ${formatDateTime(task.reminderAt)}` : "No reminder"}
@@ -343,6 +361,9 @@ function TaskCard({
                 icon="calendar-outline"
                 text={task.dueDate ? `Due ${formatDate(task.dueDate)}` : "No due date"}
               />
+              {taskAmount ? (
+                <DateInfo icon="cash-outline" text={`Amount ${taskAmount}`} />
+              ) : null}
               {task.reminderAt ? (
                 <DateInfo
                   icon="alarm-outline"
@@ -577,6 +598,7 @@ export default function TodosPage() {
         id: String(task.id),
         title: task.title || "",
         description: task.description || "",
+        amount: task.amount == null ? "" : String(task.amount),
         priority: task.priority || "Medium",
         status: task.status || "Pending",
         dueDate: task.dueDate?.slice(0, 10) || "",

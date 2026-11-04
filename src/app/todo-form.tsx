@@ -27,6 +27,7 @@ type TaskPriority = "High" | "Medium" | "Low";
 type TaskForm = {
   title: string;
   description: string;
+  amount: string;
   priority: TaskPriority;
   status: TaskStatus;
   dueDate: string;
@@ -93,6 +94,7 @@ export default function TodoFormPage() {
     id?: string | string[];
     title?: string | string[];
     description?: string | string[];
+    amount?: string | string[];
     priority?: string | string[];
     status?: string | string[];
     dueDate?: string | string[];
@@ -107,6 +109,7 @@ export default function TodoFormPage() {
     return {
       title: paramValue(params.title) ?? "",
       description: paramValue(params.description) ?? "",
+      amount: paramValue(params.amount) ?? "",
       priority: PRIORITIES.includes(requestedPriority as TaskPriority)
         ? (requestedPriority as TaskPriority)
         : "Medium",
@@ -144,6 +147,11 @@ export default function TodoFormPage() {
       setErrorMessage("");
       return;
     }
+    const amount = form.amount.trim() ? Number(form.amount) : null;
+    if (amount !== null && (!Number.isFinite(amount) || amount < 0)) {
+      setErrorMessage("Enter a valid non-negative amount.");
+      return;
+    }
 
     saveInFlight.current = true;
     setSaving(true);
@@ -155,6 +163,7 @@ export default function TodoFormPage() {
         ...fields,
         title: form.title.trim(),
         description: form.description.trim(),
+        amount,
         dueDate: form.dueDate
           ? `${form.dueDate}${dueTime ? `T${dueTime}` : ""}`
           : null,
@@ -241,6 +250,20 @@ export default function TodoFormPage() {
                 multiline
                 textAlignVertical="top"
                 style={[inputStyle, { minHeight: 92, paddingTop: 12 }]}
+              />
+            </View>
+
+            <View style={{ marginTop: 16 }}>
+              <FieldLabel>Amount</FieldLabel>
+              <TextInput
+                accessibilityLabel="Amount"
+                value={form.amount}
+                onChangeText={(value) => updateForm("amount", value)}
+                placeholder="Enter amount"
+                placeholderTextColor="#9AA3AF"
+                keyboardType="decimal-pad"
+                returnKeyType="next"
+                style={inputStyle}
               />
             </View>
 
