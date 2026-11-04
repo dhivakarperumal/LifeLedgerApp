@@ -64,6 +64,18 @@ type TransferRecord = {
   time?: string;
   transfer_time?: string;
   source_income_id?: number | string | null;
+  transfer_id?: number | string;
+  transfer_type?: string;
+  from?: string;
+  from_account?: string;
+  from_account_name?: string;
+  to?: string;
+  to_account?: string;
+  to_account_name?: string;
+  purpose?: string;
+  created_by?: string | number;
+  created_by_name?: string;
+  [key: string]: unknown;
   notes?: string;
   receipt?: string | null;
 };
@@ -173,6 +185,52 @@ function formatAmount(value: number | string | undefined) {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   })}`;
+}
+
+function getTransferSearchValue(
+  transfer: TransferRecord,
+  keys: string[],
+): string {
+  return keys
+    .map((key) => transfer[key])
+    .filter((value) => value !== null && value !== undefined)
+    .map((value) => {
+      if (typeof value === "object") {
+        const record = value as Record<string, unknown>;
+        return String(record.name ?? record.title ?? record.id ?? "");
+      }
+      return String(value);
+    })
+    .join(" ");
+}
+
+function getTransferType(transfer: TransferRecord) {
+  const explicitType = getTransferSearchValue(transfer, [
+    "transfer_type",
+    "transferType",
+    "type",
+    "transaction_type",
+    "source_type",
+    "from_type",
+    "to_type",
+  ]).toLowerCase();
+  if (explicitType.includes("income")) return "Income";
+  if (explicitType.includes("expense")) return "Expense";
+  if (
+    transfer.source_income_id ||
+    transfer.income_id ||
+    transfer.sourceIncomeId
+  ) {
+    return "Income";
+  }
+  if (
+    transfer.expense_id ||
+    transfer.source_expense_id ||
+    transfer.sourceExpenseId
+  ) {
+    return "Expense";
+  }
+  return "";
 }
 
 function formatDate(value?: string) {
@@ -459,6 +517,7 @@ export default function Transfers() {
   );
   const [amountMin, setAmountMin] = useState("");
   const [amountMax, setAmountMax] = useState("");
+  const [transferType, setTransferType] = useState("All");
   const [sort, setSort] = useState<SortOption>(DEFAULT_FILTER_STATE.sort);
   const [viewMode, setViewMode] = useState<ViewModeOption>(
     DEFAULT_FILTER_STATE.viewMode,
@@ -521,8 +580,16 @@ export default function Transfers() {
           categoryOptions = Array.from(new Set<string>(filteredCategories));
         }
 
+        const transferRows = getRows(
+          transferResponse.data,
+          "transfers",
+        ) as TransferRecord[];
+        const transferPurposes = transferRows
+          .map((transfer) => transfer.category || transfer.purpose || "")
+          .filter(Boolean);
+
         return {
-          transfers: getRows(transferResponse.data, "transfers"),
+          transfers: transferRows,
           incomes:
             incomeResult.status === "fulfilled"
               ? getRows(incomeResult.value.data, "incomes")
@@ -531,7 +598,9 @@ export default function Transfers() {
             expensesResult.status === "fulfilled"
               ? getRows(expensesResult.value.data, "expenses")
               : [],
-          categoryOptions,
+          categoryOptions: Array.from(
+            new Set([...categoryOptions, ...transferPurposes]),
+          ),
         };
       });
       setTransfers(data.transfers);
@@ -619,8 +688,17 @@ export default function Transfers() {
       amountMax,
       sort,
       viewMode,
+      custom: { transferType },
     }),
-    [dateRange, categoryFilter, amountMin, amountMax, sort, viewMode],
+    [
+      dateRange,
+      categoryFilter,
+      amountMin,
+      amountMax,
+      sort,
+      viewMode,
+      transferType,
+    ],
   );
 
   const applyTransferFilters = (filters: FilterState) => {
@@ -630,17 +708,58 @@ export default function Transfers() {
     setAmountMax(filters.amountMax);
     setSort(filters.sort);
     setViewMode(filters.viewMode);
+    setTransferType(filters.custom?.transferType || "All");
+  };
+
+  const clearTransferFilters = () => {
+    setSearch("");
+    setDateRange(createDateRangeSelection("All"));
+    setCategoryFilter("All Transfers");
+    setAmountMin("");
+    setAmountMax("");
+    setTransferType("All");
+    setSort(DEFAULT_FILTER_STATE.sort);
+    setViewMode(DEFAULT_FILTER_STATE.viewMode);
   };
 
   const visibleTransfers = useMemo(() => {
     const query = search.trim().toLowerCase();
     const filtered = transfers.filter((transfer) => {
-      const searchable =
-        `${transfer.title || ""} ${transfer.category || ""}`.toLowerCase();
+      const searchable = getTransferSearchValue(transfer, [
+        "id",
+        "transfer_id",
+        "title",
+        "from",
+        "from_account",
+        "from_account_name",
+        "fromAccount",
+        "fromAccountName",
+        "source",
+        "source_name",
+        "source_account",
+        "source_account_name",
+        "to",
+        "to_account",
+        "to_account_name",
+        "toAccount",
+        "toAccountName",
+        "destination",
+        "destination_name",
+        "destination_account",
+        "destination_account_name",
+        "purpose",
+        "category",
+        "created_by",
+        "created_by_name",
+        "createdBy",
+        "createdByName",
+      ]).toLowerCase();
       const matchesSearch = !query || searchable.includes(query);
       const matchesCategory =
         categoryFilter === "All Transfers" ||
-        transfer.category === categoryFilter;
+        (transfer.category || transfer.purpose) === categoryFilter;
+      const matchesTransferType =
+        transferType === "All" || getTransferType(transfer) === transferType;
       const matchesDate = isDateInRange(transfer.transfer_date, dateRange);
       const amount = Number(transfer.amount || 0);
       const matchesMin = amountMin === "" || amount >= Number(amountMin);
@@ -648,6 +767,7 @@ export default function Transfers() {
       return (
         matchesSearch &&
         matchesCategory &&
+        matchesTransferType &&
         matchesDate &&
         matchesMin &&
         matchesMax
@@ -671,6 +791,7 @@ export default function Transfers() {
     amountMin,
     amountMax,
     sort,
+    transferType,
   ]);
   const updateForm = <K extends keyof TransferForm>(
     key: K,
@@ -959,6 +1080,49 @@ export default function Transfers() {
           paddingBottom: insets.bottom + 140,
         }}
       >
+        <SearchBar
+          value={search}
+          onChangeText={setSearch}
+          placeholder="Search ID, from, to, purpose, created by"
+          activeFilterCount={countActiveFilters(filterValues)}
+          filterSheet={{
+            currentFilters: filterValues,
+            onApply: applyTransferFilters,
+            onReset: clearTransferFilters,
+            categories: categoryOptions,
+            sections: ["date", "category", "amount", "sort", "viewMode"],
+            additionalFilters: [
+              {
+                key: "transferType",
+                label: "Transfer Type",
+                presentation: "chips",
+                options: [
+                  { value: "All", label: "All" },
+                  { value: "Income", label: "Income" },
+                  { value: "Expense", label: "Expense" },
+                ],
+              },
+            ],
+          }}
+          style={{ marginTop: 16 }}
+        />
+        <View className="mb-1 flex-row items-center justify-between">
+          <Text className="text-xs font-semibold text-[#7B8580]">
+            {visibleTransfers.length}{" "}
+            {visibleTransfers.length === 1 ? "transfer" : "transfers"} found
+          </Text>
+          {search.trim() || countActiveFilters(filterValues) > 0 ? (
+            <Pressable
+              accessibilityRole="button"
+              onPress={clearTransferFilters}
+              className="px-2 py-2"
+            >
+              <Text className="text-xs font-bold text-[#315640]">
+                Clear All Filters
+              </Text>
+            </Pressable>
+          ) : null}
+        </View>
         <View
           style={{
             flexDirection: "row",
@@ -1004,22 +1168,6 @@ export default function Transfers() {
         </View>
 
        
-
-        <SearchBar
-          value={search}
-          onChangeText={(value) => {
-            setSearch(value);
-          }}
-          placeholder="Search title or category"
-          activeFilterCount={countActiveFilters(filterValues)}
-          filterSheet={{
-            currentFilters: filterValues,
-            onApply: applyTransferFilters,
-            categories: categoryOptions,
-            sections: ["date", "category", "amount", "sort", "viewMode"],
-          }}
-          style={{ marginBottom: 12 }}
-        />
 
         {visibleTransfers.length === 0 ? (
           <View className="items-center rounded-2xl border border-[#E4E8E3] bg-white px-5 py-10">

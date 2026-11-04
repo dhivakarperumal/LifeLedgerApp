@@ -74,6 +74,69 @@ type IncomeRecord = {
   attachment?: string | null;
 };
 
+type TransferRecord = {
+  id: number | string;
+  transfer_id?: number | string;
+  transfer_date?: string;
+  date?: string;
+  from?: string;
+  from_name?: string;
+  source?: string;
+  source_name?: string;
+  source_income_id?: number | string | null;
+  source_income_title?: string;
+  sourceIncomeTitle?: string;
+  to?: string;
+  to_name?: string;
+  destination?: string;
+  destination_name?: string;
+  target?: string;
+  target_name?: string;
+  title?: string;
+  previous_amount?: number | string;
+  previousAmount?: number | string;
+  amount?: number | string;
+  transfer_amount?: number | string;
+  transferAmount?: number | string;
+  added_amount?: number | string;
+  addedAmount?: number | string;
+  total_transferred?: number | string;
+  totalTransferred?: number | string;
+  remaining_amount?: number | string;
+  remainingAmount?: number | string;
+  purpose?: string;
+  category?: string;
+  reason?: string;
+  created_by?: string | number;
+  created_by_name?: string;
+  createdBy?: string | number;
+  created_at?: string;
+  [key: string]: unknown;
+};
+
+type TransferHistoryRecord = {
+  id?: number | string;
+  created_at?: string;
+  previous_amount?: number | string;
+  added_amount?: number | string;
+  amount?: number | string;
+  transfer_amount?: number | string;
+  purpose?: string;
+  category?: string;
+  reason?: string;
+  notes?: string;
+  adjustment?: TransferHistoryRecord;
+  [key: string]: unknown;
+};
+
+type TransferFundingResult = {
+  previous_amount?: number | string;
+  added_amount?: number | string;
+  total_transferred?: number | string;
+  remaining_amount?: number | string;
+  income_remaining_amount?: number | string;
+};
+
 type IncomeData = {
   incomes: IncomeRecord[];
   categories: string[];
@@ -159,6 +222,70 @@ function getRows(data: any, key: string) {
   return [];
 }
 
+function getTransferHistoryRows(data: unknown): TransferHistoryRecord[] {
+  const asRecord = (value: unknown): Record<string, unknown> | null =>
+    value !== null && typeof value === "object" && !Array.isArray(value)
+      ? (value as Record<string, unknown>)
+      : null;
+  const response = asRecord(data);
+  const nested = asRecord(response?.data);
+  const candidates = [
+    data,
+    response?.history,
+    response?.adjustments,
+    response?.data,
+    nested?.history,
+    nested?.adjustments,
+    nested?.data,
+  ];
+  const rows = candidates.find(Array.isArray);
+  if (!Array.isArray(rows)) return [];
+
+  const getScalar = (
+    record: Record<string, unknown>,
+    keys: string[],
+  ): string | number | undefined => {
+    for (const key of keys) {
+      const value = record[key];
+      if (typeof value === "string" || typeof value === "number") {
+        return value;
+      }
+    }
+    return undefined;
+  };
+  const getText = (
+    record: Record<string, unknown>,
+    keys: string[],
+  ): string | undefined => {
+    const value = getScalar(record, keys);
+    return value === undefined ? undefined : String(value);
+  };
+
+  return rows.flatMap((row): TransferHistoryRecord[] => {
+    const record = asRecord(row);
+    if (!record) return [];
+    const adjustment = asRecord(record.adjustment);
+    const source = adjustment ? { ...record, ...adjustment } : record;
+
+    return [
+      {
+        id: getScalar(source, ["id"]),
+        created_at: getText(source, ["created_at"]),
+        transfer_date: getText(source, ["transfer_date"]),
+        date: getText(source, ["date"]),
+        previous_amount: getScalar(source, ["previous_amount"]),
+        added_amount: getScalar(source, ["added_amount"]),
+        amount: getScalar(source, ["amount"]),
+        transfer_amount: getScalar(source, ["transfer_amount"]),
+        purpose: getText(source, ["purpose"]),
+        category: getText(source, ["category"]),
+        reason: getText(source, ["reason"]),
+        notes: getText(source, ["notes"]),
+      },
+    ];
+  });
+}
+
 function formatDate(value?: string) {
   if (!value) return "-";
   const date = parseLocalDate(value) ?? parseLocalDateTimeValue(value);
@@ -188,6 +315,23 @@ function formatCompactAmount(value: number) {
     return `${sign}₹${(absoluteAmount / 1_000).toLocaleString("en-IN", { maximumFractionDigits: 1 })}K`;
   }
   return `${sign}₹${absoluteAmount.toLocaleString("en-IN", { maximumFractionDigits: 0 })}`;
+}
+
+function getTransferValue(
+  transfer: TransferRecord | TransferHistoryRecord,
+  keys: string[],
+) {
+  for (const key of keys) {
+    const value = transfer[key];
+    if (value !== null && value !== undefined && String(value).trim()) {
+      return String(value);
+    }
+  }
+  return "";
+}
+
+function transferDateValue(transfer: TransferRecord | TransferHistoryRecord) {
+  return getTransferValue(transfer, ["transfer_date", "date", "created_at"]);
 }
 
 function getAttachmentUrl(attachment: string) {
@@ -481,6 +625,42 @@ export default function Income() {
   const [attachment, setAttachment] = useState<PickedAttachment | null>(null);
   const [form, setForm] = useState<IncomeForm>(createInitialForm);
   const [budgetDraft, setBudgetDraft] = useState("0");
+  const [transfers, setTransfers] = useState<TransferRecord[]>([]);
+  const [transferCategories, setTransferCategories] = useState<string[]>([]);
+  const [transfersLoading, setTransfersLoading] = useState(false);
+  const [transferPanelVisible, setTransferPanelVisible] = useState(false);
+  const [selectedTransfer, setSelectedTransfer] =
+    useState<TransferRecord | null>(null);
+  const [transferHistory, setTransferHistory] = useState<
+    TransferHistoryRecord[]
+  >([]);
+  const [fundingResult, setFundingResult] =
+    useState<TransferFundingResult | null>(null);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [funding, setFunding] = useState(false);
+  const [selectedFundingIncomeId, setSelectedFundingIncomeId] = useState("");
+  const [fundingAmount, setFundingAmount] = useState("");
+  const [fundingPurpose, setFundingPurpose] = useState("");
+  const [fundingReason, setFundingReason] = useState("");
+  const [fabMenuOpen, setFabMenuOpen] = useState(false);
+  const [transferToast, setTransferToast] = useState<{
+    kind: "success" | "error";
+    message: string;
+  } | null>(null);
+
+  const selectedFundingIncome =
+    incomes.find(
+      (income) => String(income.id) === selectedFundingIncomeId,
+    ) ?? null;
+  const fundingAvailableBalance = Number(
+    selectedFundingIncome?.remaining_amount ?? selectedFundingIncome?.amount ?? 0,
+  );
+
+  useEffect(() => {
+    if (!transferToast) return;
+    const timeout = setTimeout(() => setTransferToast(null), 3500);
+    return () => clearTimeout(timeout);
+  }, [transferToast]);
 
   const filterValues = useMemo<FilterState>(
     () => ({
@@ -606,6 +786,288 @@ export default function Income() {
       void fetchIncome(!incomeDataCache.hasData());
     }, [fetchIncome]),
   );
+
+  const fetchTransfers = useCallback(async (
+    showLoading = true,
+  ): Promise<TransferRecord[] | null> => {
+    if (showLoading) setTransfersLoading(true);
+    try {
+      const [transferResult, categoryResult] = await Promise.allSettled([
+        api.get("/transfers"),
+        getShared("/categories"),
+      ]);
+      if (transferResult.status === "rejected") throw transferResult.reason;
+      const records = getRows(
+        transferResult.value.data,
+        "transfers",
+      ) as TransferRecord[];
+      const categoryNames =
+        categoryResult.status === "fulfilled"
+          ? getRows(categoryResult.value.data, "categories")
+              .filter((category: any) => {
+                if (typeof category === "string") return false;
+                const type = String(
+                  category?.catType ||
+                    category?.type ||
+                    category?.category_type ||
+                    "",
+                ).toLowerCase();
+                const name = String(category?.name || "").toLowerCase();
+                return (
+                  type.includes("transfer") ||
+                  ["transfer", "saving", "investment"].some((keyword) =>
+                    name.includes(keyword),
+                  )
+                );
+              })
+              .map((category: any) => String(category.name || "").trim())
+              .filter(Boolean)
+          : [];
+      const recordPurposes = records
+        .map((transfer) =>
+          getTransferValue(transfer, ["purpose", "category"]),
+        )
+        .filter(Boolean);
+      const purposes = Array.from(
+        new Set([...categoryNames, ...recordPurposes]),
+      );
+      setTransfers(records);
+      setTransferCategories(purposes);
+      setSelectedTransfer((current) =>
+        current
+          ? records.find(
+              (transfer) => String(transfer.id) === String(current.id),
+            ) ?? current
+          : null,
+      );
+      return records;
+    } catch (error) {
+      const status =
+        (error as { status?: number; response?: { status?: number } })?.status ||
+        (error as { response?: { status?: number } })?.response?.status;
+      if (status === 401) {
+        await handleUnauthorized();
+        return null;
+      }
+      setTransferToast({
+        kind: "error",
+        message: getApiErrorMessage(error, "Unable to load transfers."),
+      });
+      return null;
+    } finally {
+      if (showLoading) setTransfersLoading(false);
+    }
+  }, [handleUnauthorized]);
+
+  useFocusEffect(
+    useCallback(() => {
+      void fetchTransfers();
+    }, [fetchTransfers]),
+  );
+
+  const showTransferList = () => {
+    setFabMenuOpen(false);
+    setSelectedTransfer(null);
+    setTransferPanelVisible(true);
+    void fetchTransfers();
+  };
+
+  const openTransferDetails = async (transfer: TransferRecord) => {
+    setSelectedTransfer(transfer);
+    setTransferHistory([]);
+    setFundingResult(null);
+    setSelectedFundingIncomeId("");
+    setFundingAmount("");
+    setFundingPurpose(
+      getTransferValue(transfer, ["purpose", "category"]),
+    );
+    setFundingReason("");
+    setHistoryLoading(true);
+    try {
+      const response = await api.get(
+        `/transfers/${transfer.id}/history`,
+      );
+      setTransferHistory(getTransferHistoryRows(response.data));
+    } catch (error) {
+      const status =
+        (error as { status?: number; response?: { status?: number } })?.status ||
+        (error as { response?: { status?: number } })?.response?.status;
+      if (status === 401) {
+        await handleUnauthorized();
+        return;
+      }
+      setTransferToast({
+        kind: "error",
+        message: getApiErrorMessage(error, "Unable to load transfer history."),
+      });
+    } finally {
+      setHistoryLoading(false);
+    }
+  };
+
+  const submitTransferFunding = async () => {
+    if (!selectedTransfer) return;
+    const amount = Number(fundingAmount);
+    const transferDate = transferDateValue(selectedTransfer);
+    if (!selectedFundingIncomeId) {
+      setTransferToast({ kind: "error", message: "Select an income source." });
+      return;
+    }
+    if (!Number.isFinite(amount) || amount <= 0) {
+      setTransferToast({
+        kind: "error",
+        message: "Enter a transfer amount greater than zero.",
+      });
+      return;
+    }
+    if (amount > fundingAvailableBalance) {
+      setTransferToast({
+        kind: "error",
+        message: `Amount exceeds available income balance (${formatAmount(fundingAvailableBalance)}).`,
+      });
+      return;
+    }
+    if (!fundingPurpose.trim()) {
+      setTransferToast({ kind: "error", message: "Select a purpose." });
+      return;
+    }
+    if (!fundingReason.trim()) {
+      setTransferToast({ kind: "error", message: "Enter a reason." });
+      return;
+    }
+    if (!transferDate) {
+      setTransferToast({ kind: "error", message: "Select a transfer date." });
+      return;
+    }
+
+    setFunding(true);
+    try {
+      const fundingResponse = await api.post(
+        `/transfers/${selectedTransfer.id}/fund-from-income`,
+        {
+          sourceIncomeId: selectedFundingIncomeId,
+          amount,
+          purpose: fundingPurpose.trim(),
+          reason: fundingReason.trim(),
+          date: transferDate,
+        },
+      );
+      const result = (
+        fundingResponse.data?.data ?? fundingResponse.data
+      ) as TransferFundingResult & {
+        adjustment?: TransferHistoryRecord;
+        transfer?: TransferRecord;
+        message?: string;
+      };
+      const adjustment = result.adjustment ?? {};
+      const updatedTransfer = result.transfer;
+      const confirmedAmounts: TransferFundingResult = {
+        previous_amount:
+          result.previous_amount ??
+          adjustment.previous_amount,
+        added_amount:
+          adjustment.added_amount ??
+          adjustment.amount ??
+          amount,
+        total_transferred:
+          result.total_transferred ??
+          updatedTransfer?.amount ??
+          selectedTransfer.amount,
+        remaining_amount:
+          updatedTransfer?.remaining_amount ??
+          result.remaining_amount ??
+          selectedTransfer.remaining_amount,
+        income_remaining_amount: result.income_remaining_amount,
+      };
+      setFundingResult(confirmedAmounts);
+      if (updatedTransfer) {
+        setSelectedTransfer((current) =>
+          current
+            ? {
+                ...current,
+                ...updatedTransfer,
+                previous_amount: confirmedAmounts.previous_amount,
+                total_transferred: confirmedAmounts.total_transferred,
+                remaining_amount: confirmedAmounts.remaining_amount,
+              }
+            : current,
+        );
+      }
+      if (result.income_remaining_amount !== undefined) {
+        setIncomes((current) =>
+          current.map((income) =>
+            String(income.id) === selectedFundingIncomeId
+              ? {
+                  ...income,
+                  remaining_amount: result.income_remaining_amount,
+                }
+              : income,
+          ),
+        );
+      }
+      setTransferToast({
+        kind: "success",
+        message: result.message ?? "Transfer funded successfully.",
+      });
+      incomeDataCache.clear();
+      const [, refreshedTransfers] = await Promise.all([
+        fetchIncome(false),
+        fetchTransfers(false),
+      ]);
+      const refreshedTransfer = refreshedTransfers?.find(
+        (transfer) => String(transfer.id) === String(selectedTransfer.id),
+      );
+      if (refreshedTransfer) {
+        setSelectedTransfer((current) =>
+          current
+            ? {
+                ...current,
+                ...refreshedTransfer,
+                previous_amount: confirmedAmounts.previous_amount,
+                total_transferred: confirmedAmounts.total_transferred,
+                remaining_amount: confirmedAmounts.remaining_amount,
+              }
+            : current,
+        );
+      }
+      try {
+        const historyResponse = await api.get(
+          `/transfers/${selectedTransfer.id}/history`,
+        );
+        setTransferHistory(getTransferHistoryRows(historyResponse.data));
+      } catch (error) {
+        const status =
+          (error as { status?: number; response?: { status?: number } })
+            ?.status ||
+          (error as { response?: { status?: number } })?.response?.status;
+        if (status === 401) {
+          await handleUnauthorized();
+          return;
+        }
+        setTransferToast({
+          kind: "error",
+          message: "Transfer funded, but its history could not be refreshed.",
+        });
+      }
+      setSelectedFundingIncomeId("");
+      setFundingAmount("");
+      setFundingReason("");
+    } catch (error) {
+      const status =
+        (error as { status?: number; response?: { status?: number } })?.status ||
+        (error as { response?: { status?: number } })?.response?.status;
+      if (status === 401) {
+        await handleUnauthorized();
+        return;
+      }
+      setTransferToast({
+        kind: "error",
+        message: getApiErrorMessage(error, "Unable to fund this transfer."),
+      });
+    } finally {
+      setFunding(false);
+    }
+  };
 
   const filteredIncomes = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -1202,12 +1664,51 @@ export default function Income() {
       )}
 
       {!isNewIncomeRoute && (
-        <AddButton
-          onPress={() => navigateToAddPage("/income/new")}
-          accessibilityLabel="Add income"
-          accessibilityHint="Opens the new income form"
-          bottomOffset={2}
-        />
+        <>
+          {fabMenuOpen ? (
+            <View
+              style={{
+                position: "absolute",
+                right: 18,
+                bottom: insets.bottom + 66,
+                zIndex: 11,
+                gap: 10,
+              }}
+            >
+              <Pressable
+                accessibilityRole="button"
+                onPress={() => {
+                  setFabMenuOpen(false);
+                  navigateToAddPage("/income/new");
+                }}
+                className="flex-row items-center rounded-full bg-white px-4 py-3"
+                style={{ elevation: 5 }}
+              >
+                <Ionicons name="wallet-outline" size={18} color="#315640" />
+                <Text className="ml-2 text-sm font-bold text-[#293930]">
+                  Add Income
+                </Text>
+              </Pressable>
+              <Pressable
+                accessibilityRole="button"
+                onPress={showTransferList}
+                className="flex-row items-center rounded-full bg-white px-4 py-3"
+                style={{ elevation: 5 }}
+              >
+                <Ionicons name="swap-horizontal-outline" size={18} color="#315640" />
+                <Text className="ml-2 text-sm font-bold text-[#293930]">
+                  Add Transfer
+                </Text>
+              </Pressable>
+            </View>
+          ) : null}
+          <AddButton
+            onPress={() => setFabMenuOpen((open) => !open)}
+            accessibilityLabel="Open add actions"
+            accessibilityHint="Choose Add Income or Add Transfer"
+            bottomOffset={2}
+          />
+        </>
       )}
 
       {editorVisible && (
@@ -1451,6 +1952,521 @@ export default function Income() {
           </View>
         </View>
       )}
+
+      {transferPanelVisible ? (
+        <View
+          style={{
+            position: "absolute",
+            top: 0,
+            right: 0,
+            bottom: 0,
+            left: 0,
+            zIndex: 20,
+            backgroundColor: "#F8F9F6",
+          }}
+        >
+          <CommonScreenHeader
+            title={
+              selectedTransfer
+                ? `Transfer #${selectedTransfer.transfer_id ?? selectedTransfer.id}`
+                : "Transfers"
+            }
+            onBack={() => {
+              if (selectedTransfer) setSelectedTransfer(null);
+              else setTransferPanelVisible(false);
+            }}
+          />
+          <KeyboardAvoidingView
+            behavior={Platform.OS === "ios" ? "padding" : undefined}
+            style={{ flex: 1 }}
+          >
+            <View
+              className="flex-1 bg-[#F8F9F6] px-5 pt-4"
+              style={{ paddingBottom: Math.max(insets.bottom, 20) }}
+            >
+              {transferToast ? (
+                <View
+                  accessibilityRole="alert"
+                  className={`mb-3 flex-row items-center rounded-xl px-3 py-2.5 ${
+                    transferToast.kind === "success"
+                      ? "bg-[#E7F4EC]"
+                      : "bg-[#FFF0EF]"
+                  }`}
+                >
+                  <Ionicons
+                    name={
+                      transferToast.kind === "success"
+                        ? "checkmark-circle"
+                        : "alert-circle"
+                    }
+                    size={18}
+                    color={
+                      transferToast.kind === "success" ? "#25805A" : "#B64C45"
+                    }
+                  />
+                  <Text
+                    className={`ml-2 flex-1 text-sm font-semibold ${
+                      transferToast.kind === "success"
+                        ? "text-[#236443]"
+                        : "text-[#9E3933]"
+                    }`}
+                  >
+                    {transferToast.message}
+                  </Text>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel="Dismiss notification"
+                    onPress={() => setTransferToast(null)}
+                  >
+                    <Ionicons name="close" size={17} color="#7B8580" />
+                  </Pressable>
+                </View>
+              ) : null}
+
+              {selectedTransfer === null ? (
+                <ScrollView
+                  style={{ flex: 1 }}
+                  showsVerticalScrollIndicator={false}
+                  contentContainerStyle={{ paddingBottom: 8 }}
+                >
+                  {transfersLoading ? (
+                    <View className="flex-row items-center justify-center py-10">
+                      <ActivityIndicator color={Colors.primary} />
+                      <Text className="ml-2 text-sm font-semibold text-[#68736E]">
+                        Loading transfers...
+                      </Text>
+                    </View>
+                  ) : transfers.length === 0 ? (
+                    <View className="items-center rounded-2xl bg-white px-5 py-9">
+                      <Ionicons
+                        name="swap-horizontal-outline"
+                        size={30}
+                        color="#9AA39D"
+                      />
+                      <Text className="mt-3 text-sm font-bold text-[#293930]">
+                        No transfers available
+                      </Text>
+                    </View>
+                  ) : (
+                    transfers.map((transfer) => {
+                      const sourceIncomeTitle =
+                        incomes.find(
+                          (income) =>
+                            String(income.id) ===
+                            String(transfer.source_income_id ?? ""),
+                        )?.title;
+                      const transferRows = [
+                        [
+                          "Transfer ID",
+                          getTransferValue(transfer, ["transfer_id", "id"]),
+                        ],
+                        ["Date", formatDate(transferDateValue(transfer))],
+                        [
+                          "From",
+                          getTransferValue(transfer, [
+                            "from",
+                            "from_name",
+                            "source",
+                            "source_name",
+                            "source_income_title",
+                            "sourceIncomeTitle",
+                          ]) ||
+                            sourceIncomeTitle ||
+                            (transfer.source_income_id
+                              ? String(transfer.source_income_id)
+                              : "-"),
+                        ],
+                        [
+                          "To",
+                          getTransferValue(transfer, [
+                            "to",
+                            "to_name",
+                            "destination",
+                            "destination_name",
+                            "target",
+                            "target_name",
+                          ]) || "-",
+                        ],
+                        [
+                          "Previous Amount",
+                          formatAmount(
+                            getTransferValue(transfer, [
+                              "previous_amount",
+                              "previousAmount",
+                            ]),
+                          ),
+                        ],
+                        [
+                          "Transfer Amount",
+                          formatAmount(
+                            getTransferValue(transfer, [
+                              "transfer_amount",
+                              "transferAmount",
+                              "amount",
+                            ]),
+                          ),
+                        ],
+                        [
+                          "Remaining Amount",
+                          formatAmount(
+                            getTransferValue(transfer, [
+                              "remaining_amount",
+                              "remainingAmount",
+                            ]),
+                          ),
+                        ],
+                        [
+                          "Purpose",
+                          getTransferValue(transfer, ["purpose", "category"]) ||
+                            "-",
+                        ],
+                        [
+                          "Created By",
+                          getTransferValue(transfer, [
+                            "created_by_name",
+                            "created_by",
+                            "createdBy",
+                          ]) || "-",
+                        ],
+                      ];
+
+                      return (
+                        <Pressable
+                          key={String(transfer.id)}
+                          accessibilityRole="button"
+                          accessibilityLabel={`View transfer ${transfer.transfer_id ?? transfer.id}`}
+                          onPress={() => void openTransferDetails(transfer)}
+                          className="mb-3 rounded-2xl border border-[#E5E8E2] bg-white p-4"
+                        >
+                          <View className="mb-3 flex-row items-center justify-between">
+                            <Text className="text-base font-bold text-[#293930]">
+                              Transfer #{transfer.transfer_id ?? transfer.id}
+                            </Text>
+                            <Ionicons
+                              name="chevron-forward"
+                              size={18}
+                              color="#7B8580"
+                            />
+                          </View>
+                          <View className="flex-row flex-wrap">
+                            {transferRows.map(([label, value]) => (
+                              <View
+                                key={label}
+                                className="mb-2 w-1/2 pr-2"
+                              >
+                                <Text className="text-[10px] font-bold uppercase text-[#87918A]">
+                                  {label}
+                                </Text>
+                                <Text
+                                  className="mt-0.5 text-xs font-semibold text-[#293930]"
+                                  numberOfLines={2}
+                                >
+                                  {value}
+                                </Text>
+                              </View>
+                            ))}
+                          </View>
+                        </Pressable>
+                      );
+                    })
+                  )}
+                  {!transfersLoading ? (
+                    <Pressable
+                      accessibilityRole="button"
+                      onPress={() => void fetchTransfers()}
+                      className="mb-2 self-center px-4 py-2"
+                    >
+                      <Text className="text-sm font-bold text-[#315640]">
+                        Refresh transfers
+                      </Text>
+                    </Pressable>
+                  ) : null}
+                </ScrollView>
+              ) : (
+                <ScrollView
+                  style={{ flex: 1 }}
+                  keyboardShouldPersistTaps="handled"
+                  showsVerticalScrollIndicator={false}
+                  contentContainerStyle={{ paddingBottom: 12 }}
+                >
+                  <View className="mb-3 flex-row flex-wrap">
+                    {[
+                      [
+                        "Date",
+                        formatDate(transferDateValue(selectedTransfer)),
+                      ],
+                      [
+                        "From",
+                        getTransferValue(selectedTransfer, [
+                          "from",
+                          "from_name",
+                          "source",
+                          "source_name",
+                          "source_income_title",
+                          "sourceIncomeTitle",
+                        ]) ||
+                          incomes.find(
+                            (income) =>
+                              String(income.id) ===
+                              String(selectedTransfer.source_income_id ?? ""),
+                          )?.title ||
+                          "-",
+                      ],
+                      [
+                        "To",
+                        getTransferValue(selectedTransfer, [
+                          "to",
+                          "to_name",
+                          "destination",
+                          "destination_name",
+                          "target",
+                          "target_name",
+                        ]) || "-",
+                      ],
+                      [
+                        "Purpose",
+                        getTransferValue(selectedTransfer, [
+                          "purpose",
+                          "category",
+                        ]) || "-",
+                      ],
+                      [
+                        "Created By",
+                        getTransferValue(selectedTransfer, [
+                          "created_by_name",
+                          "created_by",
+                          "createdBy",
+                        ]) || "-",
+                      ],
+                    ].map(([label, value]) => (
+                      <View key={label} className="mb-3 w-1/2 pr-2">
+                        <Text className="text-[10px] font-bold uppercase text-[#87918A]">
+                          {label}
+                        </Text>
+                        <Text className="mt-0.5 text-sm font-semibold text-[#293930]">
+                          {value}
+                        </Text>
+                      </View>
+                    ))}
+                  </View>
+
+                  <View className="mb-4 flex-row flex-wrap gap-2">
+                    {[
+                      [
+                        "Previous Amount",
+                        fundingResult?.previous_amount ??
+                        selectedTransfer.previous_amount ??
+                          selectedTransfer.previousAmount ??
+                          0,
+                      ],
+                      [
+                        "Added Amount",
+                        fundingResult?.added_amount ??
+                        selectedTransfer.added_amount ??
+                          selectedTransfer.addedAmount ??
+                          selectedTransfer.transfer_amount ??
+                          selectedTransfer.transferAmount ??
+                          selectedTransfer.amount ??
+                          0,
+                      ],
+                      [
+                        "Total Transferred",
+                        fundingResult?.total_transferred ??
+                        selectedTransfer.total_transferred ??
+                          selectedTransfer.totalTransferred ??
+                          selectedTransfer.amount ??
+                          0,
+                      ],
+                      [
+                        "Remaining Amount",
+                        fundingResult?.remaining_amount ??
+                        selectedTransfer.remaining_amount ??
+                          selectedTransfer.remainingAmount ??
+                          0,
+                      ],
+                    ].map(([label, value]) => (
+                      <View
+                        key={label}
+                        className="min-w-[46%] flex-1 rounded-xl bg-white p-3"
+                      >
+                        <Text className="text-[10px] font-bold uppercase text-[#87918A]">
+                          {label}
+                        </Text>
+                        <Text className="mt-1 text-sm font-extrabold text-[#293930]">
+                          {formatAmount(String(value))}
+                        </Text>
+                      </View>
+                    ))}
+                  </View>
+
+                  <View className="mb-4 rounded-2xl bg-white p-4">
+                    <View className="mb-3 flex-row items-center justify-between">
+                      <Text className="text-sm font-bold text-[#293930]">
+                        Transfer history
+                      </Text>
+                      {historyLoading ? (
+                        <ActivityIndicator
+                          size="small"
+                          color={Colors.primary}
+                        />
+                      ) : null}
+                    </View>
+                    {historyLoading ? (
+                      <Text className="text-xs text-[#818D84]">
+                        Loading history...
+                      </Text>
+                    ) : transferHistory.length === 0 ? (
+                      <Text className="text-xs text-[#818D84]">
+                        No history records.
+                      </Text>
+                    ) : (
+                      transferHistory.map((history, index) => (
+                        <View
+                          key={`transfer-history-${index}-${String(
+                            history.id ?? history.created_at ?? "record",
+                          )}`}
+                          className="border-t border-[#EEF0ED] py-3"
+                        >
+                          <View className="flex-row justify-between">
+                            <Text className="text-xs font-bold text-[#293930]">
+                              {formatAmount(
+                                getTransferValue(history, [
+                                  "added_amount",
+                                  "amount",
+                                  "transfer_amount",
+                                ]),
+                              )}
+                            </Text>
+                            <Text className="text-xs text-[#818D84]">
+                              {formatDate(transferDateValue(history))}
+                            </Text>
+                          </View>
+                          <Text className="mt-1 text-xs text-[#68736E]">
+                            {getTransferValue(history, ["purpose", "category"]) ||
+                              "-"}
+                            {getTransferValue(history, ["reason", "notes"])
+                              ? ` · ${getTransferValue(history, ["reason", "notes"])}`
+                              : ""}
+                          </Text>
+                        </View>
+                      ))
+                    )}
+                  </View>
+
+                  <Text className="mb-2 text-base font-bold text-[#293930]">
+                    Fund from income
+                  </Text>
+                  <PopupSelect
+                    label="Income source"
+                    placeholder="Select income source"
+                    required
+                    options={incomes.map((income) => ({
+                      label: income.title,
+                      value: String(income.id),
+                      description: `${formatAmount(income.remaining_amount ?? income.amount)} available`,
+                    }))}
+                    value={selectedFundingIncomeId}
+                    onChange={setSelectedFundingIncomeId}
+                  />
+                  {selectedFundingIncome ? (
+                    <View className="mb-3 rounded-xl bg-[#EAF5EC] px-3 py-2.5">
+                      <Text className="text-xs font-semibold text-[#526058]">
+                        Available income balance
+                      </Text>
+                      <Text className="mt-0.5 text-sm font-extrabold text-[#25805A]">
+                        {formatAmount(fundingAvailableBalance)}
+                      </Text>
+                    </View>
+                  ) : null}
+                  <FormLabel>Additional transfer amount *</FormLabel>
+                  <FormInput
+                    accessibilityLabel="Additional transfer amount"
+                    borderColor="#AAB8AE"
+                    keyboardType="decimal-pad"
+                    placeholder="0.00"
+                    value={fundingAmount}
+                    onChangeText={setFundingAmount}
+                    style={incomeFormStyles.input}
+                  />
+                  <PopupSelect
+                    label="Purpose"
+                    placeholder="Select purpose"
+                    required
+                    options={
+                      fundingPurpose &&
+                      !transferCategories.includes(fundingPurpose)
+                        ? [...transferCategories, fundingPurpose]
+                        : transferCategories
+                    }
+                    value={fundingPurpose}
+                    onChange={setFundingPurpose}
+                  />
+                  <FormLabel>Reason *</FormLabel>
+                  <FormInput
+                    accessibilityLabel="Transfer reason"
+                    borderColor="#AAB8AE"
+                    multiline
+                    placeholder="Enter reason for this transfer"
+                    value={fundingReason}
+                    onChangeText={setFundingReason}
+                    style={[
+                      incomeFormStyles.input,
+                      incomeFormStyles.multilineInput,
+                    ]}
+                  />
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityState={{ disabled: funding, busy: funding }}
+                    disabled={funding}
+                    onPress={() => void submitTransferFunding()}
+                    className="mb-2 min-h-12 flex-row items-center justify-center rounded-xl bg-[#315640] px-4 py-3"
+                    style={{ opacity: funding ? 0.7 : 1 }}
+                  >
+                    {funding ? (
+                      <ActivityIndicator color="#FFFFFF" />
+                    ) : (
+                      <Text className="text-sm font-bold text-white">
+                        Fund transfer
+                      </Text>
+                    )}
+                  </Pressable>
+                </ScrollView>
+              )}
+            </View>
+          </KeyboardAvoidingView>
+        </View>
+      ) : null}
+
+      {transferToast && !transferPanelVisible ? (
+        <View
+          accessibilityRole="alert"
+          pointerEvents="box-none"
+          style={{
+            position: "absolute",
+            top: insets.top + 10,
+            left: 16,
+            right: 16,
+            zIndex: 30,
+          }}
+        >
+          <View
+            className={`flex-row items-center rounded-xl px-3 py-3 ${
+              transferToast.kind === "success" ? "bg-[#E7F4EC]" : "bg-[#FFF0EF]"
+            }`}
+          >
+            <Text className="flex-1 text-sm font-semibold text-[#293930]">
+              {transferToast.message}
+            </Text>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Dismiss notification"
+              onPress={() => setTransferToast(null)}
+            >
+              <Ionicons name="close" size={17} color="#7B8580" />
+            </Pressable>
+          </View>
+        </View>
+      ) : null}
 
       <Modal
         animationType="slide"
