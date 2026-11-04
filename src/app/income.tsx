@@ -2083,7 +2083,35 @@ export default function Income() {
                             String(income.id) ===
                             String(transfer.source_income_id ?? ""),
                         )?.title;
+                      const transferTitle =
+                        getTransferValue(transfer, [
+                          "title",
+                          "transfer_title",
+                          "transferTitle",
+                          "name",
+                        ]) || `Transfer #${transfer.transfer_id ?? transfer.id}`;
+                      const transferCategory =
+                        getTransferValue(transfer, [
+                          "category",
+                          "category_name",
+                          "categoryName",
+                          "purpose",
+                        ]) || "";
+                      const transferPurpose =
+                        getTransferValue(transfer, ["notes", "reason"]) ||
+                        (getTransferValue(transfer, ["purpose"]) !== transferCategory
+                          ? getTransferValue(transfer, ["purpose"])
+                          : "") ||
+                        "-";
+                      const transferPaymentMethod =
+                        getTransferValue(transfer, [
+                          "payment_method",
+                          "paymentMethod",
+                        ]) || "-";
+
                       const transferRows = [
+                        ["Title", transferTitle],
+                        ["Category", transferCategory || "-"],
                         [
                           "Transfer ID",
                           getTransferValue(transfer, ["transfer_id", "id"]),
@@ -2145,8 +2173,11 @@ export default function Income() {
                         ],
                         [
                           "Purpose",
-                          getTransferValue(transfer, ["purpose", "category"]) ||
-                            "-",
+                          transferPurpose,
+                        ],
+                        [
+                          "Payment Method",
+                          transferPaymentMethod,
                         ],
                         [
                           "Created By",
@@ -2162,18 +2193,38 @@ export default function Income() {
                         <Pressable
                           key={String(transfer.id)}
                           accessibilityRole="button"
-                          accessibilityLabel={`View transfer ${transfer.transfer_id ?? transfer.id}`}
+                          accessibilityLabel={`View transfer ${transferTitle}`}
                           onPress={() => void openTransferDetails(transfer)}
                           className="mb-3 rounded-2xl border border-[#E5E8E2] bg-white p-4"
                         >
-                          <View className="mb-3 flex-row items-center justify-between">
-                            <Text className="text-base font-bold text-[#293930]">
-                              Transfer #{transfer.transfer_id ?? transfer.id}
-                            </Text>
+                          <View className="mb-3 flex-row items-start justify-between">
+                            <View className="flex-1 pr-2">
+                              <View className="flex-row items-center flex-wrap gap-2">
+                                <Text
+                                  className="text-base font-bold text-[#293930]"
+                                  numberOfLines={1}
+                                >
+                                  {transferTitle}
+                                </Text>
+                                <View className="rounded-md bg-[#EDF3EE] px-1.5 py-0.5">
+                                  <Text className="text-[11px] font-bold text-[#315640]">
+                                    #{transfer.transfer_id ?? transfer.id}
+                                  </Text>
+                                </View>
+                              </View>
+                              {transferCategory ? (
+                                <View className="mt-1 self-start rounded-full bg-[#EAF2EC] px-2.5 py-0.5">
+                                  <Text className="text-xs font-semibold text-[#315640]">
+                                    {transferCategory}
+                                  </Text>
+                                </View>
+                              ) : null}
+                            </View>
                             <Ionicons
                               name="chevron-forward"
                               size={18}
                               color="#7B8580"
+                              style={{ marginTop: 2 }}
                             />
                           </View>
                           <View className="flex-row flex-wrap">
@@ -2207,65 +2258,134 @@ export default function Income() {
                   showsVerticalScrollIndicator={false}
                   contentContainerStyle={{ paddingBottom: 12 }}
                 >
-                  <View className="mb-3 flex-row flex-wrap">
-                    {[
-                      [
-                        "Date",
-                        formatDate(transferDateValue(selectedTransfer)),
-                      ],
-                      [
-                        "From",
-                        getTransferValue(selectedTransfer, [
-                          "from",
-                          "from_name",
-                          "source",
-                          "source_name",
-                          "source_income_title",
-                          "sourceIncomeTitle",
+                  <View className="mb-3 rounded-2xl border border-[#E5E8E2] bg-white p-4">
+                    <View className="mb-3 flex-row items-center flex-wrap gap-2">
+                      <Text className="text-base font-bold text-[#293930]">
+                        {getTransferValue(selectedTransfer, [
+                          "title",
+                          "transfer_title",
+                          "transferTitle",
+                          "name",
                         ]) ||
-                          incomes.find(
-                            (income) =>
-                              String(income.id) ===
-                              String(selectedTransfer.source_income_id ?? ""),
-                          )?.title ||
-                          "-",
-                      ],
-                      [
-                        "To",
-                        getTransferValue(selectedTransfer, [
-                          "to",
-                          "to_name",
-                          "destination",
-                          "destination_name",
-                          "target",
-                          "target_name",
-                        ]) || "-",
-                      ],
-                      [
-                        "Purpose",
-                        getTransferValue(selectedTransfer, [
-                          "purpose",
-                          "category",
-                        ]) || "-",
-                      ],
-                      [
-                        "Created By",
-                        getTransferValue(selectedTransfer, [
-                          "created_by_name",
-                          "created_by",
-                          "createdBy",
-                        ]) || "-",
-                      ],
-                    ].map(([label, value]) => (
-                      <View key={label} className="mb-3 w-1/2 pr-2">
-                        <Text className="text-[10px] font-bold uppercase text-[#87918A]">
-                          {label}
-                        </Text>
-                        <Text className="mt-0.5 text-sm font-semibold text-[#293930]">
-                          {value}
+                          `Transfer #${selectedTransfer.transfer_id ?? selectedTransfer.id}`}
+                      </Text>
+                      <View className="rounded-md bg-[#EDF3EE] px-1.5 py-0.5">
+                        <Text className="text-[11px] font-bold text-[#315640]">
+                          #{selectedTransfer.transfer_id ?? selectedTransfer.id}
                         </Text>
                       </View>
-                    ))}
+                      {getTransferValue(selectedTransfer, [
+                        "category",
+                        "category_name",
+                        "categoryName",
+                        "purpose",
+                      ]) ? (
+                        <View className="rounded-full bg-[#EAF2EC] px-2.5 py-0.5">
+                          <Text className="text-xs font-semibold text-[#315640]">
+                            {getTransferValue(selectedTransfer, [
+                              "category",
+                              "category_name",
+                              "categoryName",
+                              "purpose",
+                            ])}
+                          </Text>
+                        </View>
+                      ) : null}
+                    </View>
+                    <View className="flex-row flex-wrap">
+                      {[
+                        [
+                          "Title",
+                          getTransferValue(selectedTransfer, [
+                            "title",
+                            "transfer_title",
+                            "transferTitle",
+                            "name",
+                          ]) ||
+                            `Transfer #${selectedTransfer.transfer_id ?? selectedTransfer.id}`,
+                        ],
+                        [
+                          "Category",
+                          getTransferValue(selectedTransfer, [
+                            "category",
+                            "category_name",
+                            "categoryName",
+                            "purpose",
+                          ]) || "-",
+                        ],
+                        [
+                          "Transfer ID",
+                          getTransferValue(selectedTransfer, [
+                            "transfer_id",
+                            "id",
+                          ]) || "-",
+                        ],
+                        [
+                          "Date",
+                          formatDate(transferDateValue(selectedTransfer)),
+                        ],
+                        [
+                          "From",
+                          getTransferValue(selectedTransfer, [
+                            "from",
+                            "from_name",
+                            "source",
+                            "source_name",
+                            "source_income_title",
+                            "sourceIncomeTitle",
+                          ]) ||
+                            incomes.find(
+                              (income) =>
+                                String(income.id) ===
+                                String(selectedTransfer.source_income_id ?? ""),
+                            )?.title ||
+                            "-",
+                        ],
+                        [
+                          "To",
+                          getTransferValue(selectedTransfer, [
+                            "to",
+                            "to_name",
+                            "destination",
+                            "destination_name",
+                            "target",
+                            "target_name",
+                          ]) || "-",
+                        ],
+                        [
+                          "Purpose",
+                          getTransferValue(selectedTransfer, [
+                            "purpose",
+                            "notes",
+                            "reason",
+                          ]) || "-",
+                        ],
+                        [
+                          "Payment Method",
+                          getTransferValue(selectedTransfer, [
+                            "payment_method",
+                            "paymentMethod",
+                          ]) || "-",
+                        ],
+                        [
+                          "Created By",
+                          getTransferValue(selectedTransfer, [
+                            "created_by_name",
+                            "created_by",
+                            "createdBy",
+                          ]) || "-",
+                        ],
+                      ].map(([label, value]) => (
+                        <View key={label} className="mb-3 w-1/2 pr-2">
+                          <Text className="text-[10px] font-bold uppercase text-[#87918A]">
+                            {label}
+                          </Text>
+                          <Text className="mt-0.5 text-sm font-semibold text-[#293930]">
+                            {value}
+                          </Text>
+                        </View>
+                      ))}
+                    </View>
                   </View>
 
                   <View className="mb-4 flex-row flex-wrap gap-2">
