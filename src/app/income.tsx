@@ -331,7 +331,16 @@ function getTransferValue(
 }
 
 function transferDateValue(transfer: TransferRecord | TransferHistoryRecord) {
-  return getTransferValue(transfer, ["transfer_date", "date", "created_at"]);
+  const value = getTransferValue(transfer, [
+    "transfer_date",
+    "transferDate",
+    "date",
+    "transaction_date",
+    "created_at",
+  ]);
+  if (!value) return "";
+  const parsed = parseLocalDate(value) ?? parseLocalDateTimeValue(value);
+  return parsed ? formatLocalDate(parsed) : value.split("T")[0];
 }
 
 function getAttachmentUrl(attachment: string) {
@@ -642,6 +651,7 @@ export default function Income() {
   const [fundingAmount, setFundingAmount] = useState("");
   const [fundingPurpose, setFundingPurpose] = useState("");
   const [fundingReason, setFundingReason] = useState("");
+  const [fundingDate, setFundingDate] = useState(formatLocalDate(new Date()));
   const [fabMenuOpen, setFabMenuOpen] = useState(false);
   const [transferToast, setTransferToast] = useState<{
     kind: "success" | "error";
@@ -882,6 +892,11 @@ export default function Income() {
       getTransferValue(transfer, ["purpose", "category"]),
     );
     setFundingReason("");
+    const savedTransferDate = transferDateValue(transfer);
+    const parsedTransferDate =
+      parseLocalDate(savedTransferDate) ??
+      parseLocalDateTimeValue(savedTransferDate);
+    setFundingDate(formatLocalDate(parsedTransferDate ?? new Date()));
     setHistoryLoading(true);
     try {
       const response = await api.get(
@@ -908,7 +923,7 @@ export default function Income() {
   const submitTransferFunding = async () => {
     if (!selectedTransfer) return;
     const amount = Number(fundingAmount);
-    const transferDate = transferDateValue(selectedTransfer);
+    const transferDate = fundingDate;
     if (!selectedFundingIncomeId) {
       setTransferToast({ kind: "error", message: "Select an income source." });
       return;
@@ -935,7 +950,7 @@ export default function Income() {
       setTransferToast({ kind: "error", message: "Enter a reason." });
       return;
     }
-    if (!transferDate) {
+    if (!parseLocalDate(transferDate)) {
       setTransferToast({ kind: "error", message: "Select a transfer date." });
       return;
     }
@@ -945,7 +960,7 @@ export default function Income() {
       const fundingResponse = await api.post(
         `/transfers/${selectedTransfer.id}/fund-from-income`,
         {
-          sourceIncomeId: selectedFundingIncomeId,
+          incomeId: Number(selectedFundingIncomeId),
           amount,
           purpose: fundingPurpose.trim(),
           reason: fundingReason.trim(),
@@ -2413,6 +2428,16 @@ export default function Income() {
                       incomeFormStyles.input,
                       incomeFormStyles.multilineInput,
                     ]}
+                  />
+                  <DateTimePickerComponent
+                    mode="date"
+                    compact
+                    value={parseLocalDate(fundingDate)}
+                    onChange={(date) => {
+                      if (date) setFundingDate(formatLocalDate(date));
+                    }}
+                    label="Transfer Date"
+                    placeholder="Select transfer date"
                   />
                   <Pressable
                     accessibilityRole="button"

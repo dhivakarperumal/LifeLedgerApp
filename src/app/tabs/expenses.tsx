@@ -125,6 +125,15 @@ type TransferItem = {
   amount?: number | string;
   total_expense?: number | string;
   remaining_amount?: number | string;
+  category?: string;
+  purpose?: string;
+};
+
+type IncomeSource = {
+  id: number | string;
+  title: string;
+  amount?: number | string;
+  remaining_amount?: number | string;
 };
 
 type PickedAttachment = {
@@ -506,6 +515,41 @@ function getTransferRows(data: any): TransferItem[] {
   return [];
 }
 
+function getIncomeRows(data: any): IncomeSource[] {
+  if (Array.isArray(data)) return data;
+  if (Array.isArray(data?.incomes)) return data.incomes;
+  if (Array.isArray(data?.data)) return data.data;
+  if (Array.isArray(data?.data?.incomes)) return data.data.incomes;
+  return [];
+}
+
+function getTransferPurposeOptions(
+  data: any,
+  transfers: TransferItem[],
+): string[] {
+  const rows = Array.isArray(data)
+    ? data
+    : Array.isArray(data?.categories)
+      ? data.categories
+      : Array.isArray(data?.data?.categories)
+        ? data.data.categories
+        : [];
+  const purposes = rows.flatMap((item: unknown) => {
+    if (!item || typeof item !== "object") return [];
+    const category = item as Record<string, unknown>;
+    const type = String(
+      category.catType ?? category.type ?? category.category_type ?? "",
+    ).toLowerCase();
+    const name = String(category.name ?? category.category_name ?? "").trim();
+    return type.includes("transfer") && name ? [name] : [];
+  });
+  const existingPurposes = transfers.flatMap((transfer) => {
+    const purpose = String(transfer.purpose ?? transfer.category ?? "").trim();
+    return purpose ? [purpose] : [];
+  });
+  return Array.from(new Set([...purposes, ...existingPurposes]));
+}
+
 function getExpenseCategoryOptions(data: any): string[] {
   const rows = Array.isArray(data)
     ? data
@@ -572,6 +616,14 @@ export default function Expenses() {
   const editId = Array.isArray(rawEditId) ? rawEditId[0] : rawEditId;
   const [expenses, setExpenses] = useState<ExpenseItem[]>([]);
   const [transfers, setTransfers] = useState<TransferItem[]>([]);
+  const [incomeSources, setIncomeSources] = useState<IncomeSource[]>([]);
+  const [transferPurposes, setTransferPurposes] = useState<string[]>([]);
+  const [fundingIncomeId, setFundingIncomeId] = useState("");
+  const [fundingExtraAmount, setFundingExtraAmount] = useState("");
+  const [fundingPurpose, setFundingPurpose] = useState("");
+  const [fundingReason, setFundingReason] = useState("");
+  const [fundingDate, setFundingDate] = useState(formatLocalDate(new Date()));
+  const [fundingTransfer, setFundingTransfer] = useState(false);
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({
     total: 0,
@@ -624,6 +676,14 @@ export default function Expenses() {
     notes: "",
     location: "",
   });
+  const selectedFundingIncome = incomeSources.find(
+    (income) => String(income.id) === fundingIncomeId,
+  );
+  const fundingAvailableBalance = selectedFundingIncome
+    ? Number(
+        selectedFundingIncome.remaining_amount ?? selectedFundingIncome.amount ?? 0,
+      )
+    : 0;
 
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -741,6 +801,35 @@ export default function Expenses() {
       setLoading(false);
     }
   }, [handleUnauthorized]);
+
+  const fetchTransferFundingOptions = async () => {
+    try {
+      const [incomesResponse, categoriesResponse, transfersResponse] =
+        await Promise.all([
+        getShared("/incomes"),
+        getShared("/categories"),
+        getShared("/transfers"),
+      ]);
+      const availableTransfers = getTransferRows(transfersResponse?.data);
+      setIncomeSources(getIncomeRows(incomesResponse?.data));
+      setTransfers(availableTransfers);
+      setTransferPurposes(
+        getTransferPurposeOptions(categoriesResponse?.data, availableTransfers),
+      );
+      return true;
+    } catch (error) {
+      const status = (error as any)?.status || (error as any)?.response?.status;
+      if (status === 401) {
+        await handleUnauthorized();
+        return false;
+      }
+      Alert.alert(
+        "Unable to load funding options",
+        getApiErrorMessage(error, "Please try again."),
+      );
+      return false;
+    }
+  };
 
   const fetchAll = useCallback(async (showRefreshIndicator = false) => {
     try {
@@ -910,6 +999,11 @@ export default function Expenses() {
     setManualTransfer(false);
     setCustomTransferAmount(false);
     setAttachment(null);
+    setFundingIncomeId("");
+    setFundingExtraAmount("");
+    setFundingPurpose("");
+    setFundingReason("");
+    setFundingDate(formatLocalDate(new Date()));
   };
 
   const applyTransferSelection = (transferId: string, useFullBalance = true) => {
@@ -933,6 +1027,128 @@ export default function Expenses() {
         ? String(getTransferBalance(selectedTransfer))
         : current.transfer_amount,
     }));
+  };
+
+  const submitTransferFunding = async () => {
+    const selectedTransfer = transfers.find(
+      (transfer) => String(transfer.id) === form.transfer_id,
+    );
+    const amount = Number(fundingExtraAmount);
+
+    if (!selectedTransfer) {
+      Alert.alert("Transfer required", "Select a transfer to fund.");
+      return;
+    }
+    if (!fundingIncomeId) {
+      Alert.alert("Income source required", "Select an income source.");
+      return;
+    }
+    if (!Number.isFinite(amount) || amount <= 0) {
+      Alert.alert("Invalid amount", "Enter an extra amount greater than zero.");
+      return;
+    }
+    if (!Number.isFinite(fundingAvailableBalance) || amount > fundingAvailableBalance) {
+      Alert.alert(
+        "Insufficient income balance",
+        `Available: ${formatAmount(fundingAvailableBalance)}`,
+      );
+      return;
+    }
+    if (!fundingPurpose.trim()) {
+      Alert.alert("Purpose required", "Select a transfer purpose.");
+      return;
+    }
+    if (!fundingReason.trim()) {
+      Alert.alert("Reason required", "Enter a reason for this transfer.");
+      return;
+    }
+    if (!parseLocalDate(fundingDate)) {
+      Alert.alert("Invalid transfer date", "Select a valid transfer date.");
+      return;
+    }
+
+    setFundingTransfer(true);
+    try {
+      const response = await api.post(
+        `/transfers/${selectedTransfer.id}/fund-from-income`,
+        {
+          incomeId: Number(fundingIncomeId),
+          amount,
+          purpose: fundingPurpose.trim(),
+          reason: fundingReason.trim(),
+          date: fundingDate,
+        },
+      );
+      const result = response?.data?.data ?? response?.data ?? {};
+      const updatedTransfer = result.transfer as TransferItem | undefined;
+      if (updatedTransfer) {
+        setTransfers((current) =>
+          current.map((transfer) =>
+            String(transfer.id) === String(updatedTransfer.id)
+              ? { ...transfer, ...updatedTransfer }
+              : transfer,
+          ),
+        );
+      }
+      if (result.income_remaining_amount !== undefined) {
+        setIncomeSources((current) =>
+          current.map((income) =>
+            String(income.id) === fundingIncomeId
+              ? { ...income, remaining_amount: result.income_remaining_amount }
+              : income,
+          ),
+        );
+      }
+      setFundingExtraAmount("");
+      setFundingReason("");
+
+      let refreshFailed = false;
+      try {
+        const [transfersResponse, incomesResponse] = await Promise.all([
+          getShared("/transfers"),
+          getShared("/incomes"),
+        ]);
+        const refreshedTransfers = getTransferRows(transfersResponse?.data);
+        setTransfers(refreshedTransfers);
+        const refreshedSelectedTransfer = refreshedTransfers.find(
+          (transfer) => String(transfer.id) === form.transfer_id,
+        );
+        if (refreshedSelectedTransfer) {
+          setForm((current) => ({
+            ...current,
+            transfer_amount: String(getTransferBalance(refreshedSelectedTransfer)),
+          }));
+        }
+        setIncomeSources(getIncomeRows(incomesResponse?.data));
+      } catch (refreshError) {
+        const status =
+          (refreshError as any)?.status ||
+          (refreshError as any)?.response?.status;
+        if (status === 401) {
+          await handleUnauthorized();
+          return;
+        }
+        refreshFailed = true;
+      }
+      Alert.alert(
+        "Transfer funded",
+        refreshFailed
+          ? `${result.message || "Transfer amount updated successfully."} Refresh the screen to update balances.`
+          : result.message || "Transfer amount updated successfully.",
+      );
+    } catch (error) {
+      const status = (error as any)?.status || (error as any)?.response?.status;
+      if (status === 401) {
+        await handleUnauthorized();
+        return;
+      }
+      Alert.alert(
+        "Unable to fund transfer",
+        getApiErrorMessage(error, "Transfer funding failed."),
+      );
+    } finally {
+      setFundingTransfer(false);
+    }
   };
 
   const pickAttachment = async () => {
@@ -1152,6 +1368,12 @@ export default function Expenses() {
     setFormErrors({ category: "", payment_method: "", transfer_amount: "" });
     setEditingExpenseId(expense.id);
     setAttachment(null);
+    setFundingIncomeId("");
+    setFundingExtraAmount("");
+    setFundingPurpose("");
+    setFundingReason("");
+    setFundingDate(formatLocalDate(new Date()));
+    if (expense.transfer_id) void fetchTransferFundingOptions();
     setIsModalVisible(true);
   };
 
@@ -2057,6 +2279,12 @@ export default function Expenses() {
                   );
 
                   setFormErrors((current) => ({ ...current, transfer_amount: "" }));
+                  setFundingIncomeId("");
+                  setFundingExtraAmount("");
+                  setFundingPurpose("");
+                  setFundingReason("");
+                  setFundingDate(formatLocalDate(new Date()));
+                  if (transferId) void fetchTransferFundingOptions();
                   setForm((current) => ({
                     ...current,
                     transfer_id: transferId,
@@ -2179,6 +2407,130 @@ export default function Expenses() {
                       )}
                     </Text>
                   </View>
+                </View>
+              ) : null}
+
+              {form.transfer_id ? (
+                <View
+                  style={{
+                    marginBottom: 16,
+                    padding: 14,
+                    borderRadius: 16,
+                    borderWidth: 1,
+                    borderColor: "#D8E8DA",
+                    backgroundColor: "#F4F8F5",
+                  }}
+                >
+                  <Text
+                    style={{
+                      marginBottom: 12,
+                      color: Colors.textPrimary,
+                      fontSize: 16,
+                      fontWeight: "800",
+                    }}
+                  >
+                    Add extra amount
+                  </Text>
+                  <PopupSelect
+                    label="Income source"
+                    placeholder="Select income source"
+                    required
+                    options={incomeSources.map((income) => ({
+                      label: income.title,
+                      value: String(income.id),
+                      description: `${formatAmount(income.remaining_amount ?? income.amount)} available`,
+                    }))}
+                    value={fundingIncomeId}
+                    onChange={setFundingIncomeId}
+                  />
+                  {selectedFundingIncome ? (
+                    <View
+                      style={{
+                        marginBottom: 12,
+                        padding: 10,
+                        borderRadius: 10,
+                        backgroundColor: "#EAF5EC",
+                      }}
+                    >
+                      <Text style={{ color: "#526058", fontSize: 12 }}>
+                        Available income balance
+                      </Text>
+                      <Text
+                        style={{
+                          marginTop: 2,
+                          color: "#25805A",
+                          fontSize: 15,
+                          fontWeight: "800",
+                        }}
+                      >
+                        {formatAmount(fundingAvailableBalance)}
+                      </Text>
+                    </View>
+                  ) : null}
+                  <FormField
+                    label="New extra amount *"
+                    value={fundingExtraAmount}
+                    onChangeText={setFundingExtraAmount}
+                    placeholder="0.00"
+                    keyboardType="decimal-pad"
+                  />
+                  <PopupSelect
+                    label="Purpose"
+                    placeholder="Select purpose"
+                    required
+                    options={transferPurposes.length ? transferPurposes : ["Other"]}
+                    value={fundingPurpose}
+                    onChange={setFundingPurpose}
+                  />
+                  <FormField
+                    label="Reason *"
+                    value={fundingReason}
+                    onChangeText={setFundingReason}
+                    placeholder="Add a note about this transfer"
+                    multiline
+                  />
+                  <DateTimePickerComponent
+                    mode="date"
+                    compact
+                    value={parseLocalDate(fundingDate)}
+                    onChange={(date) => {
+                      if (date) setFundingDate(formatLocalDate(date));
+                    }}
+                    label="Transfer Date"
+                    placeholder="Select transfer date"
+                  />
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityState={{
+                      disabled: fundingTransfer,
+                      busy: fundingTransfer,
+                    }}
+                    disabled={fundingTransfer}
+                    onPress={() => void submitTransferFunding()}
+                    style={{
+                      minHeight: 46,
+                      marginTop: 12,
+                      alignItems: "center",
+                      justifyContent: "center",
+                      borderRadius: 12,
+                      backgroundColor: Colors.primary,
+                      opacity: fundingTransfer ? 0.7 : 1,
+                    }}
+                  >
+                    {fundingTransfer ? (
+                      <ActivityIndicator color={Colors.white} />
+                    ) : (
+                      <Text
+                        style={{
+                          color: Colors.white,
+                          fontSize: 14,
+                          fontWeight: "800",
+                        }}
+                      >
+                        Add extra amount
+                      </Text>
+                    )}
+                  </Pressable>
                 </View>
               ) : null}
 
