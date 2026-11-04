@@ -66,9 +66,20 @@ export function PopupSelect({
   const insets = useSafeAreaInsets();
   const isDesktop = width >= 768;
 
-  const normalizedOptions = useMemo(
-    () =>
-      options.map((option) =>
+  const normalizedOptions = useMemo(() => {
+    const uniqueOptions = new Map<
+      string,
+      {
+        label: string;
+        value: string;
+        description?: string;
+        icon?: ReactNode;
+        disabled?: boolean;
+      }
+    >();
+
+    for (const option of options) {
+      const normalizedOption =
         typeof option === "string"
           ? { label: option, value: option }
           : {
@@ -77,10 +88,15 @@ export function PopupSelect({
               description: option.description,
               icon: option.icon,
               disabled: option.disabled,
-            },
-      ),
-    [options],
-  );
+            };
+
+      if (!uniqueOptions.has(normalizedOption.value)) {
+        uniqueOptions.set(normalizedOption.value, normalizedOption);
+      }
+    }
+
+    return Array.from(uniqueOptions.values());
+  }, [options]);
 
   const selectedOption = normalizedOptions.find((option) => option.value === value);
   const displayLabel = toTitleCase(label);

@@ -121,6 +121,8 @@ type IncomeRecord = {
   title: string;
   amount?: number | string;
   remaining_amount?: number | string;
+  category?: string;
+  [key: string]: unknown;
 };
 
 type ExpenseRecord = {
@@ -394,41 +396,13 @@ function getTransferCategoryColors(
   return transferCategoryColors.other;
 }
 
-function isMobileRechargeSelection(text?: unknown): boolean {
-  if (!text) return false;
-  const lower = String(text).toLowerCase();
-  return lower.includes("recharge") || lower.includes("mobile");
-}
-
 function getResolvedTransferDetails(
   transfer: TransferRecord,
-  incomesList: Array<Record<string, any>>,
+  incomesList: Record<string, any>[],
 ) {
-  const isTarget =
-    isMobileRechargeSelection(transfer.title) ||
-    isMobileRechargeSelection(transfer.category) ||
-    isMobileRechargeSelection(transfer.purpose);
-
-  let linkedIncome = incomesList.find(
+  const linkedIncome = incomesList.find(
     (inc) => String(inc.id) === String(transfer.source_income_id),
   );
-
-  if (isTarget) {
-    const foodIncome = incomesList.find(
-      (inc) =>
-        String(inc.title || "").trim().toLowerCase().includes("food") ||
-        String(inc.category || "").trim().toLowerCase().includes("food"),
-    );
-    if (foodIncome) {
-      linkedIncome = foodIncome;
-    }
-    return {
-      title: linkedIncome?.title || "Food",
-      category: linkedIncome?.category || linkedIncome?.title || "Food",
-      sourceIncomeId: linkedIncome ? linkedIncome.id : transfer.source_income_id,
-      sourceIncomeTitle: linkedIncome?.title || "Food",
-    };
-  }
 
   return {
     title: transfer.title || "Untitled transfer",
@@ -1080,6 +1054,7 @@ export default function Transfers() {
     });
   }, [
     transfers,
+    incomes,
     search,
     categoryFilter,
     dateRange,
@@ -1149,40 +1124,15 @@ export default function Transfers() {
     setEditingTransferId(transfer.id);
     setExistingReceipt(transfer.receipt || null);
 
-    const isTarget =
-      isMobileRechargeSelection(transfer.title) ||
-      isMobileRechargeSelection(transfer.category) ||
-      isMobileRechargeSelection(transfer.purpose);
-
-    let resolvedIncomeId = transfer.source_income_id
-      ? String(transfer.source_income_id)
-      : "";
-    let resolvedTitle = transfer.title || "";
-    let resolvedCategory = transfer.category || "";
-
-    if (isTarget) {
-      const foodIncome = incomes.find(
-        (inc) =>
-          String(inc.title || "").trim().toLowerCase().includes("food") ||
-          String(inc.category || "").trim().toLowerCase().includes("food"),
-      );
-      if (foodIncome) {
-        resolvedIncomeId = String(foodIncome.id);
-        resolvedTitle = foodIncome.title;
-        resolvedCategory = foodIncome.category || "Food";
-      } else {
-        resolvedTitle = "Food";
-        resolvedCategory = "Food";
-      }
-    }
-
-    setSelectedIncomeId(resolvedIncomeId);
+    setSelectedIncomeId(
+      transfer.source_income_id ? String(transfer.source_income_id) : "",
+    );
     setReceipt(null);
     setForm({
-      title: resolvedTitle,
+      title: transfer.title || "",
       amount: String(transfer.amount ?? ""),
       paymentMethod: transfer.payment_method || "Cash",
-      category: resolvedCategory,
+      category: transfer.category || "",
       date: transfer.transfer_date
         ? String(transfer.transfer_date).split("T")[0]
         : emptyForm().date,
@@ -1190,7 +1140,7 @@ export default function Transfers() {
       notes: transfer.notes || "",
     });
     setModalVisible(true);
-  }, [incomes]);
+  }, []);
 
   useEffect(() => {
     if (isNewTransferRoute) return;
@@ -2108,7 +2058,6 @@ export default function Transfers() {
                               (prevSourceIncome &&
                                 current.title.trim() ===
                                   prevSourceIncome.title.trim()) ||
-                              isMobileRechargeSelection(current.title) ||
                               incomes.some(
                                 (inc) =>
                                   inc.title.trim().toLowerCase() ===
@@ -2537,14 +2486,7 @@ export default function Transfers() {
                       <View className="flex-row items-start justify-between gap-2">
                         <View className="flex-1">
                           <Text className="text-xs font-bold text-[#293930]">
-                            {isMobileRechargeSelection(entry.event_type) ||
-                            isMobileRechargeSelection(entry.purpose) ||
-                            (selectedTransfer &&
-                              isMobileRechargeSelection(selectedTransfer.title))
-                              ? "Food"
-                              : entry.event_type ||
-                                entry.purpose ||
-                                "Transfer"}
+                            {entry.event_type || entry.purpose || "Transfer"}
                           </Text>
                           <Text className="mt-1 text-[10px] text-[#818D84]">
                             {formatDate(entry.transfer_date)} ·{" "}
@@ -2621,7 +2563,7 @@ export default function Transfers() {
                   Notes
                 </Text>
                 <Text className="mt-1 text-sm leading-5 text-[#526058]">
-                  {selectedTransfer.notes.replace(/Mobile Recharge/gi, "Food")}
+                  {selectedTransfer.notes}
                 </Text>
               </View>
             )}

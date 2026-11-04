@@ -1401,6 +1401,10 @@ export default function Income() {
         "purpose",
       ])
     : "";
+  const showSelectedTransferCategory =
+    !!selectedTransferCategory &&
+    selectedTransferCategory.trim().toLowerCase() !==
+      selectedTransferTitle.trim().toLowerCase();
   const selectedTransferPurpose = selectedTransfer
     ? getTransferValue(selectedTransfer, ["notes", "reason"]) ||
       (getTransferValue(selectedTransfer, ["purpose"]) !==
@@ -1409,10 +1413,6 @@ export default function Income() {
         : "") ||
       "-"
     : "";
-  const showSelectedTransferCategory =
-    !!selectedTransferCategory &&
-    selectedTransferCategory.trim().toLocaleLowerCase() !==
-      selectedTransferTitle.trim().toLocaleLowerCase();
 
   return (
     <SafeAreaView
@@ -2119,37 +2119,20 @@ export default function Income() {
                           "categoryName",
                           "purpose",
                         ]) || "";
-
-                      const isTarget =
-                        rawTitle.toLowerCase().includes("recharge") ||
-                        rawCategory.toLowerCase().includes("recharge") ||
-                        rawTitle.toLowerCase().includes("mobile") ||
-                        rawCategory.toLowerCase().includes("mobile");
-
-                      const foodIncome = incomes.find(
-                        (inc) =>
-                          String(inc.title || "").toLowerCase().includes("food") ||
-                          String(inc.category || "").toLowerCase().includes("food"),
-                      );
-
-                      const transferTitle = isTarget
-                        ? foodIncome?.title || "Food"
-                        : rawTitle;
-                      const transferCategory = isTarget
-                        ? foodIncome?.category || foodIncome?.title || "Food"
-                        : rawCategory;
-                      const resolvedSource = isTarget
-                        ? foodIncome?.title || sourceIncomeTitle || "Food"
-                        : sourceIncomeTitle;
+                      const transferTitle = rawTitle;
+                      const transferCategory = rawCategory;
+                      const showTransferCategory =
+                        !!transferCategory &&
+                        transferCategory.trim().toLowerCase() !==
+                          transferTitle.trim().toLowerCase();
+                      const resolvedSource = sourceIncomeTitle;
 
                       const transferPurpose =
-                        isTarget
-                          ? "Food"
-                          : getTransferValue(transfer, ["notes", "reason"]) ||
-                            (getTransferValue(transfer, ["purpose"]) !== transferCategory
-                              ? getTransferValue(transfer, ["purpose"])
-                              : "") ||
-                            "-";
+                        getTransferValue(transfer, ["notes", "reason"]) ||
+                        (getTransferValue(transfer, ["purpose"]) !== transferCategory
+                          ? getTransferValue(transfer, ["purpose"])
+                          : "") ||
+                        "-";
                       const transferPaymentMethod =
                         getTransferValue(transfer, [
                           "payment_method",
@@ -2157,8 +2140,9 @@ export default function Income() {
                         ]) || "-";
 
                       const transferRows = [
-                        ["Title", transferTitle],
-                        ["Category", transferCategory || "-"],
+                        ...(showTransferCategory
+                          ? [["Category", transferCategory]]
+                          : []),
                         ["Transfer ID", getTransferValue(transfer, ["transfer_id", "id"]) || "-"],
                         ["Date", formatDate(transferDateValue(transfer))],
                         [
@@ -2256,7 +2240,7 @@ export default function Income() {
                                   </Text>
                                 </View>
                               </View>
-                              {transferCategory ? (
+                              {showTransferCategory ? (
                                 <View className="mt-1 self-start rounded-full bg-[#EAF2EC] px-2.5 py-0.5">
                                   <Text className="text-xs font-semibold text-[#315640]">
                                     {transferCategory}
@@ -2330,11 +2314,13 @@ export default function Income() {
                             "sourceIncomeTitle",
                           ]) ||
                             incomes.find(
-                              (income) =>
-                                String(income.id) ===
-                                String(selectedTransfer.source_income_id ?? ""),
+                            (income) =>
+                              String(income.id) ===
+                              String(selectedTransfer.source_income_id ?? ""),
                             )?.title ||
-                            "-",
+                            (selectedTransfer.source_income_id
+                              ? String(selectedTransfer.source_income_id)
+                              : "-"),
                         ],
                         [
                           "To",
@@ -2347,10 +2333,7 @@ export default function Income() {
                             "target_name",
                           ]) || "-",
                         ],
-                        [
-                          "Purpose",
-                          selectedTransferPurpose,
-                        ],
+                        ["Purpose", selectedTransferPurpose],
                         [
                           "Payment Method",
                           getTransferValue(selectedTransfer, [
