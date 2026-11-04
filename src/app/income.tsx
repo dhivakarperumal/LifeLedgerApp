@@ -58,6 +58,10 @@ import { SearchBar } from "../components/SearchBar";
 import { createSessionDataCache } from "../components/SessionDataCache";
 import { UploadFilePreview } from "../components/UploadFilePreview";
 import { Colors } from "../constants/colors";
+import {
+  dedupeTransferRecords,
+  getTransferRecordKey,
+} from "../components/transferRecordUtils";
 
 type IncomeRecord = {
   id: number | string;
@@ -809,10 +813,9 @@ export default function Income() {
         getShared("/categories"),
       ]);
       if (transferResult.status === "rejected") throw transferResult.reason;
-      const records = getRows(
-        transferResult.value.data,
-        "transfers",
-      ) as TransferRecord[];
+      const records = dedupeTransferRecords(
+        getRows(transferResult.value.data, "transfers") as TransferRecord[],
+      );
       const categoryNames =
         categoryResult.status === "fulfilled"
           ? getRows(categoryResult.value.data, "categories")
@@ -2110,12 +2113,9 @@ export default function Income() {
                         ]) || "-";
 
                       const transferRows = [
-                        ["Title", transferTitle],
-                        ["Category", transferCategory || "-"],
-                        [
-                          "Transfer ID",
-                          getTransferValue(transfer, ["transfer_id", "id"]),
-                        ],
+                        ...(!transferCategory
+                          ? [["Category", "-"]]
+                          : []),
                         ["Date", formatDate(transferDateValue(transfer))],
                         [
                           "From",
@@ -2191,7 +2191,7 @@ export default function Income() {
 
                       return (
                         <Pressable
-                          key={String(transfer.id)}
+                          key={getTransferRecordKey(transfer)}
                           accessibilityRole="button"
                           accessibilityLabel={`View transfer ${transferTitle}`}
                           onPress={() => void openTransferDetails(transfer)}

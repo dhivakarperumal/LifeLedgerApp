@@ -53,6 +53,10 @@ import { UploadFilePreview } from "../components/UploadFilePreview";
 import { useAddPageNavigation } from "../components/useAddPageNavigation";
 import { Colors } from "../constants/colors";
 import { incomeDataCache } from "./income";
+import {
+  dedupeTransferRecords,
+  getTransferRecordKey,
+} from "../components/transferRecordUtils";
 
 type TransferRecord = {
   id: number | string;
@@ -653,10 +657,9 @@ export default function Transfers() {
           categoryOptions = Array.from(new Set<string>(filteredCategories));
         }
 
-        const transferRows = getRows(
-          transferResponse.data,
-          "transfers",
-        ) as TransferRecord[];
+        const transferRows = dedupeTransferRecords(
+          getRows(transferResponse.data, "transfers") as TransferRecord[],
+        );
         const transferPurposes = transferRows
           .map((transfer) => transfer.category || transfer.purpose || "")
           .filter(Boolean);
@@ -1461,7 +1464,7 @@ export default function Transfers() {
           >
             {visibleTransfers.map((transfer) => (
               <View
-                key={String(transfer.id)}
+                key={getTransferRecordKey(transfer)}
                 style={{
                   width: viewMode === "card" ? "48.5%" : "100%",
                   borderRadius: viewMode === "card" ? 16 : 10,
