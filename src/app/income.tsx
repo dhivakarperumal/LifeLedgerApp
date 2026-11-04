@@ -143,7 +143,7 @@ type IncomeData = {
   monthlyBudget: number;
 };
 
-const incomeDataCache = createSessionDataCache<IncomeData>();
+export const incomeDataCache = createSessionDataCache<IncomeData>();
 
 type IncomeForm = {
   title: string;
@@ -1020,10 +1020,6 @@ export default function Income() {
           ),
         );
       }
-      setTransferToast({
-        kind: "success",
-        message: result.message ?? "Transfer funded successfully.",
-      });
       incomeDataCache.clear();
       const [, refreshedTransfers] = await Promise.all([
         fetchIncome(false),
@@ -1067,6 +1063,12 @@ export default function Income() {
       setSelectedFundingIncomeId("");
       setFundingAmount("");
       setFundingReason("");
+      setSelectedTransfer(null);
+      setTransferPanelVisible(false);
+      setTransferToast({
+        kind: "success",
+        message: result.message ?? "Transfer funded successfully.",
+      });
     } catch (error) {
       const status =
         (error as { status?: number; response?: { status?: number } })?.status ||
@@ -2185,17 +2187,7 @@ export default function Income() {
                       );
                     })
                   )}
-                  {!transfersLoading ? (
-                    <Pressable
-                      accessibilityRole="button"
-                      onPress={() => void fetchTransfers()}
-                      className="mb-2 self-center px-4 py-2"
-                    >
-                      <Text className="text-sm font-bold text-[#315640]">
-                        Refresh transfers
-                      </Text>
-                    </Pressable>
-                  ) : null}
+                 
                 </ScrollView>
               ) : (
                 <ScrollView

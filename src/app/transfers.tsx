@@ -52,12 +52,16 @@ import { createSessionDataCache } from "../components/SessionDataCache";
 import { UploadFilePreview } from "../components/UploadFilePreview";
 import { useAddPageNavigation } from "../components/useAddPageNavigation";
 import { Colors } from "../constants/colors";
+import { incomeDataCache } from "./income";
 
 type TransferRecord = {
   id: number | string;
   title: string;
   amount: number | string;
   total_expense?: number | string;
+  total_transferred?: number | string;
+  total_returned?: number | string;
+  remaining_amount?: number | string;
   category?: string;
   payment_method?: string;
   transfer_date?: string;
@@ -79,6 +83,19 @@ type TransferRecord = {
   notes?: string;
   receipt?: string | null;
 };
+
+const getRemainingAmount = (transfer: TransferRecord): number =>
+  Math.max(
+    Number(
+      transfer.remaining_amount ?? (
+        Number(transfer.amount || 0) -
+        Number(transfer.total_expense || 0) -
+        Number(transfer.total_transferred || 0) -
+        Number(transfer.total_returned || 0)
+      ),
+    ),
+    0,
+  );
 
 type IncomeRecord = {
   id: number | string;
