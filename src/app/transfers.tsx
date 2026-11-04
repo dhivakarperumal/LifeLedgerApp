@@ -2,7 +2,7 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 import * as DocumentPicker from "expo-document-picker";
 import { LinearGradient } from "expo-linear-gradient";
 import { useFocusEffect, useLocalSearchParams, usePathname, useRouter } from "expo-router";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
     ActivityIndicator,
     Alert,
@@ -84,6 +84,21 @@ type TransferRecord = {
   receipt?: string | null;
 };
 
+type TransferHistoryEntry = {
+  history_key?: string;
+  id: number | string;
+  event_type?: string;
+  purpose?: string;
+  amount?: number | string;
+  previous_amount?: number | string;
+  remaining_amount?: number | string;
+  transfer_date?: string;
+  created_by?: string | number;
+  created_by_name?: string;
+  created_at?: string;
+  reason?: string;
+};
+
 const getRemainingAmount = (transfer: TransferRecord): number =>
   Math.max(
     Number(
@@ -110,6 +125,8 @@ type ExpenseRecord = {
   category?: string;
   expense_amount?: number | string;
   amount?: number | string;
+  transfer_id?: number | string | null;
+  expense_date?: string;
 };
 
 type TransfersData = {
@@ -195,6 +212,36 @@ function getRows(data: any, key: string): any[] {
   if (Array.isArray(data?.data)) return data.data;
   if (Array.isArray(data?.data?.[key])) return data.data[key];
   return [];
+}
+
+function getTransferHistoryRows(data: unknown): TransferHistoryEntry[] {
+  const record =
+    data !== null && typeof data === "object" && !Array.isArray(data)
+      ? (data as Record<string, unknown>)
+      : null;
+  const nested =
+    record?.data !== null &&
+    typeof record?.data === "object" &&
+    !Array.isArray(record.data)
+      ? (record.data as Record<string, unknown>)
+      : null;
+  const rows = [
+    data,
+    record?.history,
+    record?.data,
+    nested?.history,
+    nested?.data,
+  ].find(Array.isArray);
+  if (!Array.isArray(rows)) return [];
+
+  return rows.filter(
+    (row): row is TransferHistoryEntry =>
+      row !== null &&
+      typeof row === "object" &&
+      !Array.isArray(row) &&
+      (typeof (row as Record<string, unknown>).id === "string" ||
+        typeof (row as Record<string, unknown>).id === "number"),
+  );
 }
 
 function formatAmount(value: number | string | undefined) {
@@ -515,6 +562,12 @@ export default function Transfers() {
   const [expensePickerVisible, setExpensePickerVisible] = useState(false);
   const [selectedTransfer, setSelectedTransfer] =
     useState<TransferRecord | null>(null);
+  const [transferHistory, setTransferHistory] = useState<
+    TransferHistoryEntry[]
+  >([]);
+  const [transferHistoryLoading, setTransferHistoryLoading] = useState(false);
+  const [transferHistoryError, setTransferHistoryError] = useState("");
+  const transferHistoryRequestId = useRef(0);
   const [editingTransferId, setEditingTransferId] = useState<
     number | string | null
   >(null);
@@ -649,6 +702,71 @@ export default function Transfers() {
       setRefreshing(false);
     }
   }, [loadAll]);
+
+  const closeTransferDetails = () => {
+    transferHistoryRequestId.current += 1;
+    setSelectedTransfer(null);
+    setTransferHistory([]);
+    setTransferHistoryError("");
+    setTransferHistoryLoading(false);
+  };
+
+  const linkedExpenses = useMemo(() => {
+    if (!selectedTransfer) return [];
+    return expenses.filter(
+      (expense) =>
+        String(expense.transfer_id ?? "") === String(selectedTransfer.id),
+    );
+  }, [expenses, selectedTransfer]);
+
+  const openTransferDetails = async (transfer: TransferRecord) => {
+    const requestId = ++transferHistoryRequestId.current;
+    setSelectedTransfer(transfer);
+    setTransferHistory([]);
+    setTransferHistoryError("");
+    setTransferHistoryLoading(true);
+    try {
+      const historyUrl = `/transfers/${transfer.id}/history`;
+      const responseConfig = {
+        params: { _refresh: `${transfer.id}-${requestId}` },
+        headers: {
+          "Cache-Control": "no-cache",
+          Pragma: "no-cache",
+        },
+        validateStatus: (status: number) =>
+          (status >= 200 && status < 300) || status === 304,
+      };
+      let response = await api.get(historyUrl, responseConfig);
+      if (response.status === 304) {
+        response = await api.get(historyUrl, {
+          ...responseConfig,
+          params: { _refresh: `${transfer.id}-${requestId}-retry` },
+          headers: {
+            "Cache-Control": "no-store",
+            Pragma: "no-cache",
+          },
+        });
+      }
+      if (response.status === 304) {
+        throw new Error("The server returned a cached history response without its records.");
+      }
+      if (requestId !== transferHistoryRequestId.current) return;
+      setTransferHistory(getTransferHistoryRows(response.data));
+    } catch (error) {
+      if (requestId !== transferHistoryRequestId.current) return;
+      if ((error as { status?: number })?.status === 401) {
+        await handleUnauthorized();
+        return;
+      }
+      setTransferHistoryError(
+        getApiErrorMessage(error, "Unable to load transfer history."),
+      );
+    } finally {
+      if (requestId === transferHistoryRequestId.current) {
+        setTransferHistoryLoading(false);
+      }
+    }
+  };
 
   useFocusEffect(
     useCallback(() => {
@@ -1007,7 +1125,9 @@ export default function Transfers() {
       setTransfers((current) =>
         current.filter((item) => item.id !== transfer.id),
       );
-      if (selectedTransfer?.id === transfer.id) setSelectedTransfer(null);
+      if (String(selectedTransfer?.id) === String(transfer.id)) {
+        closeTransferDetails();
+      }
       setSuccessMessage("Transfer deleted successfully.");
     } catch (error) {
       if ((error as { status?: number })?.status === 401) {
@@ -1354,7 +1474,7 @@ export default function Transfers() {
                 <Pressable
                   accessibilityRole="button"
                   accessibilityLabel={`View details for ${transfer.title || "transfer"}`}
-                  onPress={() => setSelectedTransfer(transfer)}
+                  onPress={() => void openTransferDetails(transfer)}
                 >
                   <View
                     style={{
@@ -1439,6 +1559,51 @@ export default function Transfers() {
                       {transfer.payment_method || "-"}
                     </Text>
                   </View>
+                  <View
+                    className="flex-row items-center gap-2 pt-2"
+                    style={{
+                      marginTop: 6,
+                      borderTopWidth: 1,
+                      borderTopColor: "#EEF1EE",
+                    }}
+                  >
+                    <View className="flex-1 rounded-lg bg-[#F8FAFC] p-1.5 items-center">
+                      <Text className="text-[10px] font-semibold text-[#64748B]">
+                        Transfer
+                      </Text>
+                      <Text
+                        className="text-xs font-extrabold text-[#1E293B]"
+                        numberOfLines={1}
+                        adjustsFontSizeToFit
+                      >
+                        {formatAmount(transfer.amount)}
+                      </Text>
+                    </View>
+                    <View className="flex-1 rounded-lg bg-[#FEF2F2] p-1.5 items-center">
+                      <Text className="text-[10px] font-semibold text-[#EF4444]">
+                        Expense
+                      </Text>
+                      <Text
+                        className="text-xs font-extrabold text-[#DC2626]"
+                        numberOfLines={1}
+                        adjustsFontSizeToFit
+                      >
+                        {formatAmount(transfer.total_expense || 0)}
+                      </Text>
+                    </View>
+                    <View className="flex-1 rounded-lg bg-[#ECFDF5] p-1.5 items-center">
+                      <Text className="text-[10px] font-semibold text-[#10B981]">
+                        Remaining
+                      </Text>
+                      <Text
+                        className="text-xs font-extrabold text-[#059669]"
+                        numberOfLines={1}
+                        adjustsFontSizeToFit
+                      >
+                        {formatAmount(getRemainingAmount(transfer))}
+                      </Text>
+                    </View>
+                  </View>
                 </Pressable>
                 <View
                   style={{
@@ -1494,7 +1659,7 @@ export default function Transfers() {
                       label={`View details for ${transfer.title || "transfer"}`}
                       onPress={(event) => {
                         event.stopPropagation();
-                        setSelectedTransfer(transfer);
+                        void openTransferDetails(transfer);
                       }}
                     />
                     <ActionIconButton
@@ -1890,12 +2055,19 @@ export default function Transfers() {
 
       <Modal
         animationType="slide"
-        onRequestClose={() => setSelectedTransfer(null)}
+        onRequestClose={closeTransferDetails}
         transparent
         visible={!!selectedTransfer}
       >
         <View className="flex-1 justify-end bg-black/40">
-          <View className="rounded-t-[26px] bg-[#F8F9F6] px-5 pb-9 pt-5">
+          <View
+            className="rounded-t-[26px] bg-[#F8F9F6] px-5 pt-5"
+            style={{ maxHeight: "90%" }}
+          >
+            <ScrollView
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={{ paddingBottom: 36 }}
+            >
             <View className="mb-4 flex-row items-center justify-between">
               <View className="flex-1 pr-3">
                 <Text className="text-xs font-bold uppercase tracking-[1px] text-[#818B84]">
@@ -1912,7 +2084,7 @@ export default function Transfers() {
                 accessibilityRole="button"
                 accessibilityLabel="Close transfer details"
                 className="h-9 w-9 items-center justify-center rounded-full bg-white"
-                onPress={() => setSelectedTransfer(null)}
+                onPress={closeTransferDetails}
               >
                 <Ionicons name="close" size={20} color="#526058" />
               </Pressable>
@@ -1920,36 +2092,18 @@ export default function Transfers() {
             <View className="mb-3 flex-row gap-3">
               <View className="flex-1 rounded-xl bg-white p-3">
                 <Text className="text-xs font-bold uppercase text-[#87918A]">
-                  Amount
+                  Transfer Amount
                 </Text>
                 <Text className="mt-1 text-sm font-extrabold text-[#293930]">
                   {formatAmount(selectedTransfer?.amount)}
                 </Text>
               </View>
               <View className="flex-1 rounded-xl bg-white p-3">
-                <Text className="text-xs font-bold uppercase text-[#87918A]">
-                  Category
+                <Text className="text-xs font-bold uppercase text-[#DC2626]">
+                  Expense Amount
                 </Text>
-                <Text className="mt-1 text-sm font-bold text-[#293930]">
-                  {selectedTransfer?.category || "-"}
-                </Text>
-              </View>
-            </View>
-            <View className="mb-3 flex-row gap-3">
-              <View className="flex-1 rounded-xl bg-white p-3">
-                <Text className="text-xs font-bold uppercase text-[#87918A]">
-                  Date
-                </Text>
-                <Text className="mt-1 text-sm font-bold text-[#293930]">
-                  {formatDate(selectedTransfer?.transfer_date)}
-                </Text>
-              </View>
-              <View className="flex-1 rounded-xl bg-white p-3">
-                <Text className="text-xs font-bold uppercase text-[#87918A]">
-                  Payment
-                </Text>
-                <Text className="mt-1 text-sm font-bold text-[#293930]">
-                  {selectedTransfer?.payment_method || "-"}
+                <Text className="mt-1 text-sm font-extrabold text-[#DC2626]">
+                  {formatAmount(selectedTransfer?.total_expense || 0)}
                 </Text>
               </View>
             </View>
@@ -1972,6 +2126,166 @@ export default function Transfers() {
                   {formatAmount(selectedTransfer?.total_returned || 0)}
                 </Text>
               </View>
+            </View>
+            <View className="mb-3 flex-row gap-3">
+              <View className="flex-1 rounded-xl bg-white p-3">
+                <Text className="text-xs font-bold uppercase text-[#87918A]">
+                  Category
+                </Text>
+                <Text className="mt-1 text-sm font-bold text-[#293930]">
+                  {selectedTransfer?.category || "-"}
+                </Text>
+              </View>
+              <View className="flex-1 rounded-xl bg-white p-3">
+                <Text className="text-xs font-bold uppercase text-[#87918A]">
+                  Payment
+                </Text>
+                <Text className="mt-1 text-sm font-bold text-[#293930]">
+                  {selectedTransfer?.payment_method || "-"}
+                </Text>
+              </View>
+            </View>
+            <View className="mb-3 flex-row gap-3">
+              <View className="flex-1 rounded-xl bg-white p-3">
+                <Text className="text-xs font-bold uppercase text-[#87918A]">
+                  Date
+                </Text>
+                <Text className="mt-1 text-sm font-bold text-[#293930]">
+                  {formatDate(selectedTransfer?.transfer_date)}
+                </Text>
+              </View>
+            </View>
+            {linkedExpenses.length > 0 && (
+              <View className="mb-3 rounded-xl bg-white p-3">
+                <View className="mb-2 flex-row items-center justify-between">
+                  <Text className="text-sm font-bold text-[#293930]">
+                    Expenses Paid from Transfer
+                  </Text>
+                  <Text className="text-xs font-extrabold text-[#DC2626]">
+                    Total: {formatAmount(selectedTransfer?.total_expense || 0)}
+                  </Text>
+                </View>
+                <View className="gap-2">
+                  {linkedExpenses.map((expense) => (
+                    <View
+                      key={expense.id}
+                      className="flex-row items-center justify-between border-t border-[#EEF0ED] pt-2"
+                    >
+                      <View className="flex-1 pr-2">
+                        <Text
+                          className="text-xs font-bold text-[#293930]"
+                          numberOfLines={1}
+                        >
+                          {expense.title || "Expense"}
+                        </Text>
+                        <Text className="mt-0.5 text-[10px] text-[#818D84]">
+                          {expense.category || "-"}
+                          {expense.expense_date
+                            ? ` · ${formatDate(expense.expense_date)}`
+                            : ""}
+                        </Text>
+                      </View>
+                      <Text className="text-xs font-extrabold text-[#DC2626]">
+                        {formatAmount(
+                          expense.expense_amount ?? expense.amount ?? 0,
+                        )}
+                      </Text>
+                    </View>
+                  ))}
+                </View>
+              </View>
+            )}
+            <View className="mb-3 rounded-xl bg-white p-3">
+              <View className="mb-2 flex-row items-center justify-between">
+                <Text className="text-sm font-bold text-[#293930]">
+                  Transfer History
+                </Text>
+                <Text className="text-xs text-[#818D84]">
+                  {transferHistory.length}{" "}
+                  {transferHistory.length === 1 ? "entry" : "entries"}
+                </Text>
+              </View>
+              {transferHistoryLoading ? (
+                <View className="flex-row items-center justify-center py-4">
+                  <ActivityIndicator size="small" color={Colors.primary} />
+                  <Text className="ml-2 text-xs text-[#818D84]">
+                    Loading history...
+                  </Text>
+                </View>
+              ) : transferHistoryError ? (
+                <View className="items-center py-3">
+                  <Text className="text-center text-xs text-[#9E3933]">
+                    {transferHistoryError}
+                  </Text>
+                  <Pressable
+                    accessibilityRole="button"
+                    onPress={() => {
+                      if (selectedTransfer) {
+                        void openTransferDetails(selectedTransfer);
+                      }
+                    }}
+                    className="mt-2 px-3 py-1"
+                  >
+                    <Text className="text-xs font-bold text-[#315640]">
+                      Retry
+                    </Text>
+                  </Pressable>
+                </View>
+              ) : transferHistory.length === 0 ? (
+                <Text className="py-3 text-center text-xs text-[#818D84]">
+                  No transfer history.
+                </Text>
+              ) : (
+                <View className="gap-2">
+                  {transferHistory.map((entry, index) => (
+                    <View
+                      key={
+                        entry.history_key ||
+                        `transfer-history-${entry.id}-${index}`
+                      }
+                      className="rounded-lg border border-[#EEF0ED] p-3"
+                    >
+                      <View className="flex-row items-start justify-between gap-2">
+                        <View className="flex-1">
+                          <Text className="text-xs font-bold text-[#293930]">
+                            {entry.event_type || entry.purpose || "Transfer"}
+                          </Text>
+                          <Text className="mt-1 text-[10px] text-[#818D84]">
+                            {formatDate(entry.transfer_date)} ·{" "}
+                            {entry.created_by_name ||
+                              entry.created_by ||
+                              "Unknown"}
+                          </Text>
+                        </View>
+                        <Text className="text-xs font-extrabold text-[#25805A]">
+                          {formatAmount(entry.amount)}
+                        </Text>
+                      </View>
+                      <View className="mt-2 flex-row gap-2">
+                        {[
+                          ["Previous", entry.previous_amount],
+                          ["Transfer", entry.amount],
+                          ["Remaining", entry.remaining_amount],
+                        ].map(([label, amount]) => (
+                          <View key={label} className="flex-1 rounded-md bg-[#F7F9F6] p-2">
+                            <Text className="text-[9px] text-[#818D84]">
+                              {label}
+                            </Text>
+                            <Text className="mt-0.5 text-[10px] font-bold text-[#293930]">
+                              {formatAmount(amount)}
+                            </Text>
+                          </View>
+                        ))}
+                      </View>
+                      {entry.reason ? (
+                        <Text className="mt-2 border-t border-[#EEF0ED] pt-2 text-xs text-[#68736E]">
+                          {entry.reason}
+                        </Text>
+                      ) : null}
+                    </View>
+                  ))}
+                </View>
+              )}
             </View>
             {Boolean(selectedTransfer?.source_income_id) &&
               getRemainingAmount(selectedTransfer!) > 0 && (
@@ -2026,6 +2340,7 @@ export default function Transfers() {
                 </Text>
               </Pressable>
             )}
+            </ScrollView>
           </View>
         </View>
       </Modal>
