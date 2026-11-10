@@ -85,6 +85,7 @@ export function BottomTabBar({
                 onLongPress={handleLongPress}
                 style={styles.tabButton}
               >
+                {focused ? <View style={styles.activeTopBorder} /> : null}
                 <View
                   style={[styles.tabItem, focused && styles.tabItemFocused]}
                 >
@@ -143,6 +144,16 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
+    position: "relative",
+  },
+  activeTopBorder: {
+    position: "absolute",
+    top: 0,
+    left: 24,
+    right: 24,
+    height: 4,
+    borderRadius: 1,
+    backgroundColor: Colors.accent,
   },
   tabItem: {
     flexDirection: "column",
