@@ -13,6 +13,7 @@ import {
     useWindowDimensions,
     View,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import api, {
   getShared,
   getStoredToken,
@@ -61,6 +62,7 @@ function formatNotificationDate(value?: string) {
 export function TopHeader({ showLogo = true }: { showLogo?: boolean } = {}) {
   const router = useRouter();
   const { width } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
   const [user, setUser] = useState<UserProfile | null>(null);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [sideMenuVisible, setSideMenuVisible] = useState(false);
@@ -448,7 +450,13 @@ export function TopHeader({ showLogo = true }: { showLogo?: boolean } = {}) {
                   </Pressable>
                 </View>
 
-                <ScrollView className="flex-1 px-4 pt-6">
+                <ScrollView
+                  className="flex-1 px-4 pt-6"
+                  style={{ flex: 1 }}
+                  contentContainerStyle={{
+                    paddingBottom: Math.max(insets.bottom, 24),
+                  }}
+                >
                   <View className="mb-5">
                     <Pressable
                       accessibilityRole="button"
