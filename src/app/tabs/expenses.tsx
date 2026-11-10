@@ -1487,7 +1487,7 @@ export default function Expenses() {
         <View
           style={{
             paddingTop: showSummaryCards ? 8 : 0,
-            paddingBottom: showSummaryCards ? 28 : 0,
+            paddingBottom: 16,
             paddingHorizontal: 16,
           }}
         >
@@ -1570,7 +1570,7 @@ export default function Expenses() {
           >
           {/* ── Search bar + Filter button ── */}
           <SearchBar
-            className="mt-5"
+            className="mt-0"
             value={search}
             onChangeText={handleExpenseSearchChange}
             placeholder="Search expenses…"
@@ -1581,7 +1581,7 @@ export default function Expenses() {
               sections: ["date", "category", "amount", "sort", "viewMode"],
               initialExpandedSections: ["viewMode"],
             }}
-            style={{ marginBottom: 12 }}
+            style={{ marginBottom: selectedCategory === "All" ? 20 : 0 }}
           />
 
           {/* Active filter chip */}
@@ -1590,7 +1590,7 @@ export default function Expenses() {
               style={{
                 flexDirection: "row",
                 alignItems: "center",
-                marginBottom: 14,
+                marginBottom: 20,
               }}
             >
               <View
@@ -1633,18 +1633,6 @@ export default function Expenses() {
           )}
 
           {/* ── Expense list ── */}
-          <View
-            style={{
-              flexDirection: "row",
-              alignItems: "center",
-              justifyContent: "space-between",
-              marginBottom: 12,
-            }}
-          >
-           
-            
-          </View>
-
           {visibleExpenses.length === 0 ? (
             <View
               style={{
@@ -1691,13 +1679,13 @@ export default function Expenses() {
           ) : (
             <View>
               {expensesByMonth.map((month) => (
-                <View key={month.key} style={{ marginBottom: 18 }}>
+                <View key={month.key}>
                   <View
                     style={{
                       flexDirection: "row",
                       alignItems: "center",
                       gap: 10,
-                      marginBottom: 10,
+                      marginBottom: 12,
                       paddingHorizontal: 2,
                     }}
                   >
@@ -1796,7 +1784,7 @@ export default function Expenses() {
                       borderRadius: 16,
                       padding: viewMode === "card" ? 12 : 16,
                       paddingBottom: viewMode === "card" ? 58 : 16,
-                      marginBottom: 10,
+                      marginBottom: 12,
                       flexDirection: viewMode === "card" ? "column" : "row",
                       alignItems: viewMode === "card" ? "stretch" : "center",
                       borderWidth: 1,
