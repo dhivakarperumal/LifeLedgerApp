@@ -39,6 +39,7 @@ import {
     type DateRangeSelection,
 } from "../../components/DateRangeFilter";
 import { DateTimePickerComponent } from "../../components/DateTimePickerComponent";
+import { Pagination } from "../../components/Pagination";
 import {
     formatLocalDate,
     formatLocalTime,
@@ -167,6 +168,7 @@ const fallbackCategories = [
   "Education",
   "Other",
 ];
+const expensesPerPage = 10;
 
 const paymentTypeOptions = [
   "Cash",
@@ -615,6 +617,7 @@ export default function Expenses() {
   const createParam = Array.isArray(rawCreate) ? rawCreate[0] : rawCreate;
   const editId = Array.isArray(rawEditId) ? rawEditId[0] : rawEditId;
   const [expenses, setExpenses] = useState<ExpenseItem[]>([]);
+  const [currentPage, setCurrentPage] = useState(1);
   const [transfers, setTransfers] = useState<TransferItem[]>([]);
   const [incomeSources, setIncomeSources] = useState<IncomeSource[]>([]);
   const [transferPurposes, setTransferPurposes] = useState<string[]>([]);
@@ -744,6 +747,7 @@ export default function Expenses() {
   );
 
   const applyExpenseFilters = (filters: FilterState) => {
+    setCurrentPage(1);
     setDateRange(filters.dateRange);
     setSelectedCategory(filters.category || "All");
     setAmountMin(filters.amountMin);
@@ -753,8 +757,14 @@ export default function Expenses() {
   };
 
   const showAllExpenses = () => {
+    setCurrentPage(1);
     setSearch("");
     applyExpenseFilters(DEFAULT_FILTER_STATE);
+  };
+
+  const handleExpenseSearchChange = (value: string) => {
+    setCurrentPage(1);
+    setSearch(value);
   };
 
   const openAddExpense = () => {
@@ -918,12 +928,19 @@ export default function Expenses() {
     sort,
   ]);
 
+  const totalPages = Math.ceil(visibleExpenses.length / expensesPerPage);
+  const displayedPage = Math.min(currentPage, Math.max(totalPages, 1));
+  const paginatedExpenses = visibleExpenses.slice(
+    (displayedPage - 1) * expensesPerPage,
+    displayedPage * expensesPerPage,
+  );
+
   const expensesByMonth = useMemo(() => {
     const groups = new Map<
       string,
       { label: string; expenses: ExpenseItem[] }
     >();
-    for (const expense of visibleExpenses) {
+    for (const expense of paginatedExpenses) {
       const month = getExpenseMonth(
         getExpenseDateTime(expense).date || undefined,
       );
@@ -938,7 +955,7 @@ export default function Expenses() {
         return right.localeCompare(left);
       })
       .map(([key, group]) => ({ key, ...group }));
-  }, [visibleExpenses]);
+  }, [paginatedExpenses]);
 
   const filteredExpenseTotal = useMemo(
     () =>
@@ -1554,7 +1571,7 @@ export default function Expenses() {
           <SearchBar
             className="mt-5"
             value={search}
-            onChangeText={setSearch}
+            onChangeText={handleExpenseSearchChange}
             placeholder="Search expenses…"
             filterSheet={{
               currentFilters: filterValues,
@@ -1598,7 +1615,10 @@ export default function Expenses() {
                   {selectedCategory}
                 </Text>
                 <Pressable
-                  onPress={() => setSelectedCategory("All")}
+                  onPress={() => {
+                    setCurrentPage(1);
+                    setSelectedCategory("All");
+                  }}
                   hitSlop={8}
                 >
                   <Ionicons name="close-circle" size={16} color="#2D6A4F" />
@@ -2025,6 +2045,20 @@ export default function Expenses() {
               ))}
             </View>
           )}
+          {totalPages > 1 ? (
+            <View style={{ alignItems: "center", gap: 12, marginTop: 8 }}>
+              <Text style={{ color: Colors.textSecondary, fontSize: 12 }}>
+                Showing {(displayedPage - 1) * expensesPerPage + 1}–
+                {Math.min(displayedPage * expensesPerPage, visibleExpenses.length)} of{" "}
+                {visibleExpenses.length} expenses
+              </Text>
+              <Pagination
+                currentPage={displayedPage}
+                totalPages={totalPages}
+                onPageChange={setCurrentPage}
+              />
+            </View>
+          ) : null}
           </ScrollView>
         )}
       </View>
@@ -2139,6 +2173,7 @@ export default function Expenses() {
                   <Pressable
                     key={item}
                     onPress={() => {
+                      setCurrentPage(1);
                       setSelectedCategory(item);
                       setIsFilterSheetVisible(false);
                     }}
@@ -2826,6 +2861,7 @@ export default function Expenses() {
                     <Pressable
                       key={category}
                       onPress={() => {
+                        setCurrentPage(1);
                         setSelectedCategory(category);
                         setIsFilterSheetVisible(false);
                       }}
