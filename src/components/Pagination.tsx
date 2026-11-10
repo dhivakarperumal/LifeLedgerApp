@@ -41,16 +41,14 @@ export function Pagination({
   const items = getPageItems(page, pageCount);
 
   const buttonStyle = (selected = false, disabled = false) => ({
-    minWidth: 36,
-    height: 36,
-    paddingHorizontal: 8,
-    borderRadius: 10,
+    minWidth: 34,
+    height: 38,
+    paddingHorizontal: 7,
+    borderRadius: 12,
     alignItems: "center" as const,
     justifyContent: "center" as const,
-    backgroundColor: selected ? Colors.primary : Colors.white,
-    borderWidth: 1,
-    borderColor: selected ? Colors.primary : Colors.border,
-    opacity: disabled ? 0.45 : 1,
+    backgroundColor: selected ? Colors.primary : "transparent",
+    opacity: disabled ? 0.35 : 1,
   });
 
   return (
@@ -60,7 +58,19 @@ export function Pagination({
           flexDirection: "row",
           alignItems: "center",
           justifyContent: "center",
-          gap: 6,
+          alignSelf: "center",
+          gap: 3,
+          padding: 5,
+          marginBottom: 15,
+          borderRadius: 17,
+          borderWidth: 1,
+          borderColor: "#E5ECE5",
+          backgroundColor: Colors.white,
+          shadowColor: "#263238",
+          shadowOffset: { width: 0, height: 3 },
+          shadowOpacity: 0.07,
+          shadowRadius: 8,
+          elevation: 2,
         },
         style,
       ]}
@@ -74,7 +84,11 @@ export function Pagination({
         accessibilityRole="button"
         accessibilityLabel="Previous page"
       >
-        <Ionicons name="chevron-back" size={18} color={Colors.textPrimary} />
+        <Ionicons
+          name="chevron-back"
+          size={18}
+          color={page === 1 ? Colors.textMuted : Colors.primary}
+        />
       </Pressable>
 
       {items.map((item) =>
@@ -90,8 +104,8 @@ export function Pagination({
             <Text
               style={{
                 color: item === page ? Colors.white : Colors.textPrimary,
-                fontSize: 14,
-                fontWeight: item === page ? "600" : "400",
+                fontSize: 13,
+                fontWeight: item === page ? "700" : "500",
               }}
             >
               {item}
@@ -115,7 +129,11 @@ export function Pagination({
         accessibilityRole="button"
         accessibilityLabel="Next page"
       >
-        <Ionicons name="chevron-forward" size={18} color={Colors.textPrimary} />
+        <Ionicons
+          name="chevron-forward"
+          size={18}
+          color={page === pageCount ? Colors.textMuted : Colors.primary}
+        />
       </Pressable>
     </View>
   );
