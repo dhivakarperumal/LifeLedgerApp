@@ -563,7 +563,6 @@ export function TopHeader({ showLogo = true }: { showLogo?: boolean } = {}) {
                     ],
                     ["Calendar", "calendar-outline", "/calendar"],
                     ["Reports", "bar-chart-outline", "/reports"],
-                    ["Settings", "settings-outline", "/tabs/more"],
                     ["More", "grid-outline", "/tabs/more"],
                   ].map(([label, icon, path]) => (
                     <Pressable
