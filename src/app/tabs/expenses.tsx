@@ -733,15 +733,16 @@ export default function Expenses() {
   const transferAmountOptions = useMemo(
     () => [
       { label: "No transfer", value: "", description: "" },
-      ...transfers.map((transfer) => {
-        const amount = getTransferBalance(transfer);
-        return {
-          label: `${transfer.title || "Transfer"} • ${formatAmount(amount)}`,
-          value: String(transfer.id),
-          description: amount > 0 ? `Available: ${formatAmount(amount)}` : "Unavailable",
-          disabled: amount <= 0,
-        };
-      }),
+      ...transfers
+        .filter((transfer) => getTransferBalance(transfer) > 0)
+        .map((transfer) => {
+          const amount = getTransferBalance(transfer);
+          return {
+            label: `${transfer.title || "Transfer"} • ${formatAmount(amount)}`,
+            value: String(transfer.id),
+            description: `Available: ${formatAmount(amount)}`,
+          };
+        }),
     ],
     [transfers],
   );

@@ -1468,7 +1468,10 @@ export default function Index() {
                 )}
 
                 {/* --- Diary Spotlight --- */}
-                <SectionHeader title="Diary Spotlight" />
+                <SectionHeader
+                  title="Diary Spotlight"
+                  onAction={() => router.push("/tabs/diary")}
+                />
                 {recentDiary.length > 0 ? (
                   recentDiary.map((diary) => {
                     return (
