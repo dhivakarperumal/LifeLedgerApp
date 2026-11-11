@@ -2,10 +2,10 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import {
-  ArrowRight,
   CalendarDays,
   Fingerprint,
   ListChecks,
+  LogIn,
   ShieldCheck,
   TrendingUp,
   Wallet,
@@ -13,7 +13,6 @@ import {
 import { useRef, useState } from "react";
 import {
   ActivityIndicator,
-  Image,
   Pressable,
   ScrollView,
   type ScrollViewInstance,
@@ -79,83 +78,46 @@ export default function WelcomeScreen() {
     }
   };
 
-  const goToPage = (nextPage: number) => {
-    if (nextPage < 0 || nextPage >= pages.length) return;
-    setPage(nextPage);
-    scrollRef.current?.scrollTo({ x: width * nextPage, animated: true });
-  };
-
   return (
     <SafeAreaView edges={["top", "bottom"]} style={{ flex: 1, backgroundColor: "#FFFAF4" }}>
       <StatusBar style="dark" />
-      <View style={{ flex: 1, paddingTop: 8 }}>
+      <View style={{ flex: 1 }}>
         <View
           style={{
-            height: 56,
-            marginHorizontal: 20,
-            flexDirection: "row",
-            alignItems: "center",
-            gap: 10,
+            height: 54,
+            alignItems: "flex-end",
+            justifyContent: "center",
+            paddingHorizontal: 20,
           }}
         >
-          <View
-            style={{
-              width: 44,
-              height: 44,
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Skip welcome and go to login"
+            disabled={saving}
+            onPress={() => void finishWelcome()}
+            style={({ pressed }) => ({
+              minWidth: 76,
+              minHeight: 38,
               alignItems: "center",
               justifyContent: "center",
               borderWidth: 1,
               borderColor: "#D8D0BA",
-              borderRadius: 14,
-              backgroundColor: "#FFFFFF",
-            }}
-          >
-            <Image
-              source={require("../../assets/images/logo.png")}
-              style={{ width: 34, height: 34, borderRadius: 10 }}
-              resizeMode="contain"
-              accessibilityLabel="Life Ledger logo"
-            />
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text style={{ color: Colors.deepForest, fontSize: 17, fontWeight: "800" }}>
-              Life Ledger
-            </Text>
-            <Text
-              style={{
-                marginTop: 3,
-                color: "#A17D34",
-                fontSize: 9,
-                fontWeight: "800",
-                letterSpacing: 1.8,
-              }}
-            >
-              YOUR DAILY COMPANION
-            </Text>
-          </View>
-          <Pressable
-            accessibilityRole="button"
-            disabled={saving}
-            onPress={() => void finishWelcome()}
-            hitSlop={10}
-            style={{
-              minWidth: 66,
-              alignItems: "center",
-              justifyContent: "center",
-              borderWidth: 1.5,
-              borderColor: "#315B4B",
-              borderRadius: 24,
-              paddingHorizontal: 14,
-              paddingVertical: 9,
+              borderRadius: 22,
+              backgroundColor: pressed ? "#F2F5EA" : "#FFFFFF",
+              paddingHorizontal: 16,
+              shadowColor: "#244B3D",
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: pressed ? 0 : 0.08,
+              shadowRadius: 5,
+              elevation: pressed ? 0 : 2,
               opacity: saving ? 0.6 : 1,
-            }}
+            })}
           >
             <Text style={{ color: "#244B3D", fontSize: 13, fontWeight: "700" }}>
               Skip
             </Text>
           </Pressable>
         </View>
-
         <ScrollView
           ref={scrollRef}
           horizontal
@@ -318,55 +280,40 @@ export default function WelcomeScreen() {
             </Text>
           ) : null}
 
-          <View
-            style={{
-              width: "100%",
-              minHeight: 56,
-              marginTop: 26,
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-          >
+          <View style={{ width: "100%", marginTop: 24 }}>
             <Pressable
               accessibilityRole="button"
+              accessibilityLabel="Log in to Life Ledger"
               disabled={saving}
-              onPress={() => {
-                if (page === pages.length - 1) {
-                  void finishWelcome();
-                } else {
-                  goToPage(page + 1);
-                }
-              }}
-              style={{
+              onPress={() => void finishWelcome()}
+              style={({ pressed }) => ({
                 width: "100%",
-                minHeight: 54,
+                minHeight: 52,
                 flexDirection: "row",
                 alignItems: "center",
                 justifyContent: "center",
-                gap: 10,
-                borderWidth: 1.5,
+                gap: 8,
+                borderWidth: 1,
                 borderColor: "#C9A34E",
-                borderRadius: 30,
-                backgroundColor: "#064D3B",
-                paddingHorizontal: 22,
-                opacity: saving ? 0.75 : 1,
-                shadowColor: "#C9A34E",
-                shadowOffset: { width: 0, height: 7 },
-                shadowOpacity: 0.18,
-                shadowRadius: 12,
-                elevation: 5,
-              }}
+                borderRadius: 28,
+                backgroundColor: pressed ? "#123F33" : "#064D3B",
+                paddingHorizontal: 12,
+                opacity: saving ? 0.7 : 1,
+                shadowColor: "#064D3B",
+                shadowOffset: { width: 0, height: 5 },
+                shadowOpacity: pressed ? 0.08 : 0.16,
+                shadowRadius: 9,
+                elevation: pressed ? 2 : 4,
+              })}
             >
               {saving ? (
                 <ActivityIndicator size="small" color="#FFFFFF" />
               ) : (
-                <>
-                  <Text style={{ color: "#FFFFFF", fontSize: 15, fontWeight: "700" }}>
-                    Continue
-                  </Text>
-                  <ArrowRight size={19} color="#FFFFFF" strokeWidth={2.5} />
-                </>
+                <LogIn size={17} color="#FFFFFF" strokeWidth={2.3} />
               )}
+              <Text style={{ color: "#FFFFFF", fontSize: 14, fontWeight: "800" }}>
+                Log in
+              </Text>
             </Pressable>
           </View>
         </View>

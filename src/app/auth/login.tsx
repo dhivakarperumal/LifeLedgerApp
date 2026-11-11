@@ -1,6 +1,7 @@
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
+import { ArrowLeft } from "lucide-react-native";
 import { useState } from "react";
 import {
     ActivityIndicator,
@@ -74,13 +75,25 @@ export default function LoginScreen() {
       />
       <KeyboardAwareFormScrollView>
         <View
-          className="justify-center bg-[#DFE7C8] px-5"
+          className="justify-center bg-[#DFE7C8] px-5 pb-8 pt-5"
           style={{
             minHeight: 225,
             borderBottomLeftRadius: 62,
             borderBottomRightRadius: 62,
           }}
         >
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Back to welcome screen"
+            disabled={isSubmitting}
+            onPress={() => router.replace("/welcome")}
+            className="mb-6 min-h-10 flex-row items-center self-start rounded-full border border-[#C7D2B0] bg-[#F2F5EA] px-4 active:opacity-70"
+          >
+            <ArrowLeft size={16} color={Colors.primary} strokeWidth={2.5} />
+            <Text className="ml-2 text-[12px] font-bold tracking-[0.04em] text-[#366039]">
+              Back to welcome
+            </Text>
+          </Pressable>
           <View className="flex-row items-center gap-3">
           <Image
             source={require("../../../assets/images/logo.png")}
