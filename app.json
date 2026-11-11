@@ -66,6 +66,9 @@
         "./plugins/withAndroidNavigationBarColor.js"
       ],
       [
+        "./plugins/withAndroidCmakeObjectPathMax.js"
+      ],
+      [
         "expo-audio",
         {
           "microphonePermission": "Allow Life Ledger to record voice notes."

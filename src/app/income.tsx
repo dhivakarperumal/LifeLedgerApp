@@ -1,14 +1,19 @@
 import Ionicons from "@expo/vector-icons/Ionicons";
 import * as DocumentPicker from "expo-document-picker";
 import { LinearGradient } from "expo-linear-gradient";
-import { useFocusEffect, useLocalSearchParams, usePathname, useRouter } from "expo-router";
+import {
+  type Href,
+  useFocusEffect,
+  useLocalSearchParams,
+  usePathname,
+  useRouter,
+} from "expo-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
     ActivityIndicator,
     Alert,
     KeyboardAvoidingView,
     Linking,
-    Modal,
     Platform,
     Pressable,
     RefreshControl,
@@ -53,6 +58,7 @@ import {
 import { FormInput, FormLabel, FormOption } from "../components/FormControls";
 import { GradientSafeAreaView as SafeAreaView } from "../components/GradientSafeAreaView";
 import { CommonScreenHeader } from "../components/CommonScreenHeader";
+import { Pagination } from "../components/Pagination";
 import { PopupSelect } from "../components/PopupSelect";
 import { SearchBar } from "../components/SearchBar";
 import { createSessionDataCache } from "../components/SessionDataCache";
@@ -628,9 +634,9 @@ export default function Income() {
   const [amountMax, setAmountMax] = useState("");
   const [sort, setSort] = useState<SortOption>(DEFAULT_FILTER_STATE.sort);
   const [viewMode, setViewMode] = useState<"list" | "grid">("list");
+  const [incomePage, setIncomePage] = useState(1);
   const [editorVisible, setEditorVisible] = useState(isNewIncomeRoute);
   const [budgetVisible, setBudgetVisible] = useState(false);
-  const [detailsIncome, setDetailsIncome] = useState<IncomeRecord | null>(null);
   const [editingIncomeId, setEditingIncomeId] = useState<
     number | string | null
   >(null);
@@ -692,6 +698,7 @@ export default function Income() {
   );
 
   const applyIncomeFilters = (filters: FilterState) => {
+    setIncomePage(1);
     setDateRange(filters.dateRange);
     setSelectedCategory(filters.category);
     setAmountMin(filters.amountMin);
@@ -1133,6 +1140,17 @@ export default function Income() {
     sort,
   ]);
 
+  const incomesPerPage = 10;
+  const incomeTotalPages = Math.ceil(filteredIncomes.length / incomesPerPage);
+  const displayedIncomePage = Math.min(
+    incomePage,
+    Math.max(incomeTotalPages, 1),
+  );
+  const paginatedIncomes = filteredIncomes.slice(
+    (displayedIncomePage - 1) * incomesPerPage,
+    displayedIncomePage * incomesPerPage,
+  );
+
   const totalIncome = incomes.reduce(
     (total, income) => total + Number(income.amount || 0),
     0,
@@ -1345,7 +1363,6 @@ export default function Income() {
     try {
       await api.delete(`/incomes/${income.id}`);
       setIncomes((current) => current.filter((item) => item.id !== income.id));
-      if (detailsIncome?.id === income.id) setDetailsIncome(null);
       setSuccessMessage("Income deleted successfully.");
     } catch (error) {
       Alert.alert("Unable to delete income", getApiErrorMessage(error));
@@ -1569,6 +1586,7 @@ export default function Income() {
           value={search}
           onChangeText={(value) => {
             setSearch(value);
+            setIncomePage(1);
           }}
           placeholder="Search title, category, payment"
           activeFilterCount={
@@ -1578,7 +1596,10 @@ export default function Income() {
           filterSheet={{
             currentFilters: filterValues,
             onApply: applyIncomeFilters,
-            onReset: () => setIncomeFilter("All Income"),
+            onReset: () => {
+              setIncomeFilter("All Income");
+              setIncomePage(1);
+            },
             categories: incomeCategories,
             sections: ["date", "category", "amount", "sort", "viewMode"],
           }}
@@ -1605,7 +1626,7 @@ export default function Income() {
                 : "gap-3"
             }
           >
-            {filteredIncomes.map((income) => (
+            {paginatedIncomes.map((income) => (
               <View
                 key={income.id}
                 className={`mb-3 min-w-0 rounded-2xl border border-[#E4E8E3] bg-white ${viewMode === "grid" ? "w-[48%] p-3" : "w-full p-4"}`}
@@ -1650,6 +1671,25 @@ export default function Income() {
                   className={`mt-3 border-t border-[#EEF0ED] pt-3 ${viewMode === "grid" ? "gap-2" : "flex-row items-center justify-between"}`}
                 >
                   <View className="flex-row flex-wrap items-center gap-2">
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel={`View details for ${income.title}`}
+                      className="flex-row items-center rounded-full bg-[#EAF2E8] px-3 py-1.5"
+                      onPress={() =>
+                        router.push(
+                          `/income/${encodeURIComponent(String(income.id))}` as Href,
+                        )
+                      }
+                    >
+                      <Ionicons
+                        name="information-circle-outline"
+                        size={15}
+                        color="#315F3D"
+                      />
+                      <Text className="ml-1 text-xs font-bold text-[#315F3D]">
+                        View details
+                      </Text>
+                    </Pressable>
                     <View
                       className={`rounded-full px-2 py-1 ${income.recurring === "Yes" ? "bg-[#E7F4EC]" : "bg-[#F1F3F0]"}`}
                     >
@@ -1664,7 +1704,11 @@ export default function Income() {
                         accessibilityRole="button"
                         accessibilityLabel="View income attachment"
                         className="h-7 w-7 items-center justify-center rounded-full bg-[#EEF3F8]"
-                        onPress={() => setDetailsIncome(income)}
+                        onPress={() =>
+                          router.push(
+                            `/income/${encodeURIComponent(String(income.id))}` as Href,
+                          )
+                        }
                       >
                         <Ionicons
                           name="attach-outline"
@@ -1713,6 +1757,23 @@ export default function Income() {
             ))}
           </View>
         )}
+        {incomeTotalPages > 1 ? (
+          <View className="mt-2 items-center">
+            <Text className="mb-3 text-xs text-[#7B8580]">
+              Showing {(displayedIncomePage - 1) * incomesPerPage + 1}–
+              {Math.min(
+                displayedIncomePage * incomesPerPage,
+                filteredIncomes.length,
+              )}{" "}
+              of {filteredIncomes.length} income records
+            </Text>
+            <Pagination
+              currentPage={displayedIncomePage}
+              totalPages={incomeTotalPages}
+              onPageChange={setIncomePage}
+            />
+          </View>
+        ) : null}
 
       </ScrollView>
       )}
@@ -2588,95 +2649,6 @@ export default function Income() {
         </View>
       ) : null}
 
-      <Modal
-        animationType="slide"
-        onRequestClose={() => setDetailsIncome(null)}
-        transparent
-        visible={!!detailsIncome}
-      >
-        <View className="flex-1 justify-end bg-black/40">
-          <View className="rounded-t-[26px] bg-[#F8F9F6] px-5 pb-9 pt-5">
-            <View className="mb-4 flex-row items-center justify-between">
-              <View className="flex-1 pr-3">
-                <Text className="text-xs font-bold uppercase tracking-[1px] text-[#818B84]">
-                  Income details
-                </Text>
-                <Text
-                  className="mt-1 text-xl font-bold text-[#25332C]"
-                  numberOfLines={1}
-                >
-                  {detailsIncome?.title}
-                </Text>
-              </View>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="Close income details"
-                className="h-9 w-9 items-center justify-center rounded-full bg-white"
-                onPress={() => setDetailsIncome(null)}
-              >
-                <Ionicons name="close" size={20} color="#526058" />
-              </Pressable>
-            </View>
-            <View className="mb-4 flex-row gap-3">
-              <View className="flex-1 rounded-xl bg-white p-3">
-                <Text className="text-xs font-bold uppercase text-[#87918A]">
-                  Category
-                </Text>
-                <Text className="mt-1 text-sm font-bold text-[#293930]">
-                  {detailsIncome?.category || "-"}
-                </Text>
-              </View>
-              <View className="flex-1 rounded-xl bg-white p-3">
-                <Text className="text-xs font-bold uppercase text-[#87918A]">
-                  Amount
-                </Text>
-                <Text className="mt-1 text-sm font-extrabold text-[#25805A]">
-                  {formatAmount(detailsIncome?.amount)}
-                </Text>
-              </View>
-            </View>
-            <View className="mb-3 flex-row gap-3">
-              <View className="flex-1 rounded-xl bg-white p-3">
-                <Text className="text-xs font-bold uppercase text-[#87918A]">
-                  Date
-                </Text>
-                <Text className="mt-1 text-sm font-bold text-[#293930]">
-                  {formatDate(detailsIncome?.income_date)}
-                </Text>
-              </View>
-              <View className="flex-1 rounded-xl bg-white p-3">
-                <Text className="text-xs font-bold uppercase text-[#87918A]">
-                  Payment
-                </Text>
-                <Text className="mt-1 text-sm font-bold text-[#293930]">
-                  {detailsIncome?.payment_method || "-"}
-                </Text>
-              </View>
-            </View>
-            {!!detailsIncome?.notes && (
-              <View className="mb-3 rounded-xl bg-white p-3">
-                <Text className="text-xs font-bold uppercase text-[#87918A]">
-                  Notes
-                </Text>
-                <Text className="mt-1 text-sm leading-5 text-[#526058]">
-                  {detailsIncome.notes}
-                </Text>
-              </View>
-            )}
-            {!!detailsIncome?.attachment && (
-              <Pressable
-                className="flex-row items-center justify-center rounded-xl bg-[#315640] py-3.5"
-                onPress={() => void openAttachment(detailsIncome.attachment!)}
-              >
-                <Ionicons name="open-outline" size={17} color="#FFFFFF" />
-                <Text className="ml-2 text-sm font-bold text-white">
-                  Open attachment
-                </Text>
-              </Pressable>
-            )}
-          </View>
-        </View>
-      </Modal>
     </SafeAreaView>
   );
 }

@@ -22,8 +22,13 @@ import {
   StyleSheet,
   Text,
   View,
+  useWindowDimensions,
 } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { Wallet } from "lucide-react-native";
+import {
+  SafeAreaView as SafeAreaContainer,
+  useSafeAreaInsets,
+} from "react-native-safe-area-context";
 import api, {
   getApiErrorMessage,
   getAppLockToken,
@@ -678,21 +683,79 @@ export function AppLockProvider({ children }: { children: ReactNode }) {
 }
 
 function AppLockLoadingScreen() {
+  const { width } = useWindowDimensions();
+  const badgeSize = Math.min(width * 0.28, 128);
+
   return (
-    <SafeAreaView
+    <SafeAreaContainer
       edges={["top", "bottom"]}
       style={{
         flex: 1,
-        alignItems: "center",
-        justifyContent: "center",
-        backgroundColor: Colors.contentBackground,
+        backgroundColor: "#F8FAFC",
       }}
     >
-      <ActivityIndicator size="large" color={Colors.primary} />
-      <Text style={{ color: Colors.textSecondary, marginTop: 12 }}>
-        Securing Life Ledger...
-      </Text>
-    </SafeAreaView>
+      <StatusBar barStyle="dark-content" />
+      <View
+        style={{
+          flex: 1,
+          alignItems: "center",
+          justifyContent: "center",
+          paddingHorizontal: 20,
+        }}
+      >
+        <View
+          style={{
+            width: badgeSize,
+            height: badgeSize,
+            alignItems: "center",
+            justifyContent: "center",
+            borderRadius: badgeSize / 2,
+            backgroundColor: Colors.white,
+            shadowColor: Colors.deepForest,
+            shadowOffset: { width: 0, height: 10 },
+            shadowOpacity: 0.14,
+            shadowRadius: 18,
+            elevation: 8,
+          }}
+        >
+          <Wallet
+            size={Math.min(badgeSize * 0.46, 58)}
+            color={Colors.deepForest}
+            strokeWidth={2.4}
+          />
+        </View>
+        <Text
+          style={{
+            marginTop: 34,
+            color: Colors.textPrimary,
+            fontSize: 21,
+            lineHeight: 29,
+            fontWeight: "700",
+            letterSpacing: 1.1,
+          }}
+        >
+          LifeLedger
+        </Text>
+        <Text
+          style={{
+            marginTop: 6,
+            color: Colors.textSecondary,
+            fontSize: 14,
+            lineHeight: 21,
+            fontWeight: "600",
+            letterSpacing: 0.5,
+            textAlign: "center",
+          }}
+        >
+          Syncing your workspace...
+        </Text>
+        <ActivityIndicator
+          size="small"
+          color={Colors.primary}
+          style={{ marginTop: 24 }}
+        />
+      </View>
+    </SafeAreaContainer>
   );
 }
 
