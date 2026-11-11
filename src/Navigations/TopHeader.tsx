@@ -1,7 +1,7 @@
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { useRouter } from "expo-router";
 import { LogOut, UserRound } from "lucide-react-native";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
     Animated,
     Easing,
@@ -12,6 +12,7 @@ import {
     Text,
     useWindowDimensions,
     View,
+    type PressableInstance,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import api, {
@@ -63,7 +64,14 @@ export function TopHeader({ showLogo = true }: { showLogo?: boolean } = {}) {
   const router = useRouter();
   const { width } = useWindowDimensions();
   const insets = useSafeAreaInsets();
+  const profileButtonRef = useRef<PressableInstance>(null);
   const [user, setUser] = useState<UserProfile | null>(null);
+  const [profileAnchor, setProfileAnchor] = useState<{
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  } | null>(null);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [sideMenuVisible, setSideMenuVisible] = useState(false);
   const [sideMenuMounted, setSideMenuMounted] = useState(false);
@@ -99,6 +107,13 @@ export function TopHeader({ showLogo = true }: { showLogo?: boolean } = {}) {
   const displayName = user?.name?.trim() || user?.email?.trim() || "User";
   const profileImageUri = isLoggedIn ? getProfileImageUri(user) : null;
   const profileInitial = isLoggedIn ? getProfileInitial(user) : null;
+
+  const openProfileMenu = () => {
+    profileButtonRef.current?.measureInWindow((x, y, anchorWidth, height) => {
+      setProfileAnchor({ x, y, width: anchorWidth, height });
+      setMenuVisible(true);
+    });
+  };
 
   useEffect(() => {
     Animated.timing(sidebarProfileMenuAnimation, {
@@ -301,10 +316,11 @@ export function TopHeader({ showLogo = true }: { showLogo?: boolean } = {}) {
             </View>
           </Pressable>
           <Pressable
+            ref={profileButtonRef}
             accessibilityRole="button"
             accessibilityLabel="Open account menu"
             className="h-9 w-9 items-center justify-center overflow-hidden rounded-full bg-[#ADBEA3]"
-            onPress={() => setMenuVisible(true)}
+            onPress={openProfileMenu}
           >
             <ProfileAvatar
               imageUri={profileImageUri}
@@ -613,14 +629,29 @@ export function TopHeader({ showLogo = true }: { showLogo?: boolean } = {}) {
         onRequestClose={() => setMenuVisible(false)}
         transparent
         visible={menuVisible}
+        statusBarTranslucent
+        navigationBarTranslucent
       >
         <Pressable
           className="flex-1 bg-[rgba(0,0,0,0.18)]"
           onPress={() => setMenuVisible(false)}
         >
           <Pressable
-            className="absolute right-4 top-16 w-56 rounded-2xl bg-white p-2 shadow-2xl"
+            className="absolute rounded-2xl bg-white p-2 shadow-2xl"
             onPress={(event) => event.stopPropagation()}
+            style={{
+              top: (profileAnchor?.y ?? 0) + (profileAnchor?.height ?? 0) + 8,
+              right: profileAnchor
+                ? Math.max(16, width - profileAnchor.x - profileAnchor.width)
+                : 16,
+              width: Math.min(224, width - 32),
+              zIndex: 1,
+              shadowColor: "#000000",
+              shadowOffset: { width: 0, height: 4 },
+              shadowOpacity: 0.14,
+              shadowRadius: 8,
+              elevation: 12,
+            }}
           >
             <View className="border-b border-[#E5EAE7] px-3 pb-3 pt-2">
               <Text className="text-xs font-semibold uppercase text-[#7B8589]">
