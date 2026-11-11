@@ -80,13 +80,6 @@ export default function WelcomeScreen() {
     }
   };
 
-  const goToNextPage = () => {
-    const nextPage = page + 1;
-    if (nextPage >= pages.length) return;
-    setPage(nextPage);
-    scrollRef.current?.scrollTo({ x: width * nextPage, animated: true });
-  };
-
   return (
     <SafeAreaView
       edges={["top", "bottom"]}
@@ -305,8 +298,8 @@ export default function WelcomeScreen() {
             </Text>
           ) : null}
 
-          <View style={{ width: "100%", alignItems: "center", marginTop: 24 }}>
-            {isLastPage ? (
+          {isLastPage ? (
+            <View style={{ width: "100%", alignItems: "center", marginTop: 24 }}>
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel="Get started"
@@ -344,41 +337,8 @@ export default function WelcomeScreen() {
                   Get Started
                 </Text>
               </Pressable>
-            ) : (
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="Next welcome slide"
-                disabled={saving}
-                onPress={goToNextPage}
-                style={({ pressed }) => ({
-                  width: "85%",
-                  maxWidth: 360,
-                  minHeight: 52,
-                  flexDirection: "row",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  gap: 8,
-                  borderWidth: 1,
-                  borderColor: "#C9A34E",
-                  borderRadius: 28,
-                  backgroundColor: pressed ? "#123F33" : "#064D3B",
-                  paddingHorizontal: 12,
-                  shadowColor: "#064D3B",
-                  shadowOffset: { width: 0, height: 5 },
-                  shadowOpacity: pressed ? 0.08 : 0.16,
-                  shadowRadius: 9,
-                  elevation: pressed ? 2 : 4,
-                })}
-              >
-                <ArrowRight size={17} color="#FFFFFF" strokeWidth={2.3} />
-                <Text
-                  style={{ color: "#FFFFFF", fontSize: 14, fontWeight: "800" }}
-                >
-                  Next
-                </Text>
-              </Pressable>
-            )}
-          </View>
+            </View>
+          ) : null}
         </View>
       </View>
     </SafeAreaView>
