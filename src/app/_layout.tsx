@@ -1,4 +1,4 @@
-import { Stack } from "expo-router";
+import { Stack, usePathname } from "expo-router";
 import { NavigationBar } from "expo-navigation-bar";
 import * as SystemUI from "expo-system-ui";
 import { useEffect } from "react";
@@ -8,10 +8,6 @@ import { AppLockProvider, useAppLock } from "../security/AppLockProvider";
 import "../../global.css";
 
 export default function RootLayout() {
-  useEffect(() => {
-    void SystemUI.setBackgroundColorAsync("#000000").catch(() => undefined);
-  }, []);
-
   return (
     <AppLockProvider>
       <RootNavigation />
@@ -22,11 +18,21 @@ export default function RootLayout() {
 function RootNavigation() {
   const insets = useSafeAreaInsets();
   const { ready } = useAppLock();
+  const pathname = usePathname();
+  const lightSystemBackground = !ready || pathname === "/welcome";
+
+  useEffect(() => {
+    if (Platform.OS === "android") {
+      void SystemUI.setBackgroundColorAsync(
+        lightSystemBackground ? "#F8FAFC" : "#000000",
+      ).catch(() => undefined);
+    }
+  }, [lightSystemBackground]);
 
   return (
     <>
       {Platform.OS === "android" && (
-        <NavigationBar style={ready ? "dark" : "light"} />
+        <NavigationBar style={lightSystemBackground ? "light" : "dark"} />
       )}
       <View style={{ flex: 1 }}>
         <Stack screenOptions={{ headerShown: false }} />
@@ -39,7 +45,7 @@ function RootNavigation() {
               bottom: 0,
               left: 0,
               height: Math.max(insets.bottom, 0),
-              backgroundColor: ready ? "#000000" : "#F8FAFC",
+              backgroundColor: lightSystemBackground ? "#F8FAFC" : "#000000",
               zIndex: 1,
             }}
           />

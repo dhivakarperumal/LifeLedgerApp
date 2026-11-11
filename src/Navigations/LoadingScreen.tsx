@@ -1,11 +1,13 @@
 import { Poppins_600SemiBold } from "@expo-google-fonts/poppins/600SemiBold";
 import { Poppins_700Bold } from "@expo-google-fonts/poppins/700Bold";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useFonts } from "expo-font";
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import {
     Animated,
     Image,
+    Pressable,
     StatusBar,
     Text,
     View,
@@ -14,6 +16,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { isLoggedIn } from "../api";
 import { Colors } from "../constants/colors";
+import { WELCOME_COMPLETED_STORAGE_KEY } from "../constants/storageKeys";
 
 export function LoadingScreen() {
   const router = useRouter();
@@ -22,6 +25,8 @@ export function LoadingScreen() {
   const logoSize = Math.min(width * 0.28, 128);
   const [fontsLoaded] = useFonts({ Poppins_600SemiBold, Poppins_700Bold });
   const [rotation] = useState(() => new Animated.Value(0));
+  const [routeError, setRouteError] = useState("");
+  const [retryCount, setRetryCount] = useState(0);
 
   useEffect(() => {
     const animation = Animated.loop(
@@ -39,10 +44,30 @@ export function LoadingScreen() {
     let cancelled = false;
 
     const redirect = async () => {
-      const loggedIn = await isLoggedIn().catch(() => false);
+      setRouteError("");
+      try {
+        const loggedIn = await isLoggedIn().catch(() => false);
+        const welcomeCompleted = loggedIn
+          ? "true"
+          : await AsyncStorage.getItem(WELCOME_COMPLETED_STORAGE_KEY);
 
-      if (!cancelled) {
-        router.replace(loggedIn ? "/tabs" : "/auth/login");
+        if (!cancelled) {
+          router.replace(
+            loggedIn
+              ? "/tabs"
+              : welcomeCompleted === "true"
+                ? "/auth/login"
+                : "/welcome",
+          );
+        }
+      } catch (error) {
+        if (!cancelled) {
+          setRouteError(
+            error instanceof Error
+              ? error.message
+              : "LifeLedger could not finish loading. Please try again.",
+          );
+        }
       }
     };
 
@@ -50,7 +75,7 @@ export function LoadingScreen() {
     return () => {
       cancelled = true;
     };
-  }, [router]);
+  }, [retryCount, router]);
 
   const spin = rotation.interpolate({
     inputRange: [0, 1],
@@ -113,17 +138,40 @@ export function LoadingScreen() {
           </View>
 
           <View style={styles.loading}>
-            <Animated.View
-              style={[styles.spinner, { transform: [{ rotate: spin }] }]}
-            />
-            <Text
-              style={[
-                styles.loadingText,
-                fontsLoaded && { fontFamily: "Poppins_600SemiBold" },
-              ]}
-            >
-              Loading...
-            </Text>
+            {routeError ? (
+              <>
+                <Text
+                  style={[
+                    styles.loadingText,
+                    fontsLoaded && { fontFamily: "Poppins_600SemiBold" },
+                  ]}
+                >
+                  Couldn&apos;t open LifeLedger
+                </Text>
+                <Text style={styles.errorText}>{routeError}</Text>
+                <Pressable
+                  accessibilityRole="button"
+                  onPress={() => setRetryCount((count) => count + 1)}
+                  style={styles.retryButton}
+                >
+                  <Text style={styles.retryButtonText}>Try again</Text>
+                </Pressable>
+              </>
+            ) : (
+              <>
+                <Animated.View
+                  style={[styles.spinner, { transform: [{ rotate: spin }] }]}
+                />
+                <Text
+                  style={[
+                    styles.loadingText,
+                    fontsLoaded && { fontFamily: "Poppins_600SemiBold" },
+                  ]}
+                >
+                  Loading...
+                </Text>
+              </>
+            )}
           </View>
         </View>
       </View>
@@ -203,6 +251,24 @@ const styles = {
   loadingText: {
     marginTop: 8,
     color: Colors.primaryDark,
+    fontSize: 14,
+    fontWeight: "600" as const,
+  },
+  errorText: {
+    marginTop: 8,
+    color: Colors.textSecondary,
+    fontSize: 13,
+    textAlign: "center" as const,
+  },
+  retryButton: {
+    marginTop: 16,
+    borderRadius: 22,
+    backgroundColor: Colors.primary,
+    paddingHorizontal: 22,
+    paddingVertical: 10,
+  },
+  retryButtonText: {
+    color: Colors.white,
     fontSize: 14,
     fontWeight: "600" as const,
   },

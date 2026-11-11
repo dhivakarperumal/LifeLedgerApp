@@ -727,14 +727,14 @@ function AppLockLoadingScreen() {
         <Text
           style={{
             marginTop: 34,
-            color: Colors.textPrimary,
             fontSize: 21,
             lineHeight: 29,
             fontWeight: "700",
             letterSpacing: 1.1,
           }}
         >
-          LifeLedger
+          <Text style={{ color: Colors.deepForest }}>Life</Text>
+          <Text style={{ color: "#27812D" }}>Ledger</Text>
         </Text>
         <Text
           style={{
