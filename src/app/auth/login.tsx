@@ -82,18 +82,7 @@ export default function LoginScreen() {
             borderBottomRightRadius: 62,
           }}
         >
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Back to welcome screen"
-            disabled={isSubmitting}
-            onPress={() => router.replace("/welcome")}
-            className="mb-6 min-h-10 flex-row items-center self-start rounded-full border border-[#C7D2B0] bg-[#F2F5EA] px-4 active:opacity-70"
-          >
-            <ArrowLeft size={16} color={Colors.primary} strokeWidth={2.5} />
-            <Text className="ml-2 text-[12px] font-bold tracking-[0.04em] text-[#366039]">
-              Back to welcome
-            </Text>
-          </Pressable>
+        
           <View className="flex-row items-center gap-3">
           <Image
             source={require("../../../assets/images/logo.png")}
