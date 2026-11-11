@@ -2,10 +2,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import {
-  ArrowLeft,
-  ArrowRight,
   CalendarDays,
-  Check,
   Fingerprint,
   ListChecks,
   ShieldCheck,
@@ -104,6 +101,17 @@ export default function WelcomeScreen() {
           <Text style={{ color: "#27812D", fontSize: 19, fontWeight: "800" }}>
             Ledger
           </Text>
+          <Pressable
+            accessibilityRole="button"
+            disabled={saving}
+            onPress={() => void finishWelcome()}
+            hitSlop={10}
+            style={{ position: "absolute", right: 20, paddingVertical: 8 }}
+          >
+            <Text style={{ color: "#64746E", fontSize: 13, fontWeight: "600" }}>
+              Skip
+            </Text>
+          </Pressable>
         </View>
 
         <ScrollView
@@ -290,44 +298,10 @@ export default function WelcomeScreen() {
               width: "100%",
               minHeight: 58,
               marginTop: 24,
-              flexDirection: "row",
               alignItems: "center",
-              justifyContent: "space-between",
+              justifyContent: "center",
             }}
           >
-            {page === 0 ? (
-              <Pressable
-                accessibilityRole="button"
-                disabled={saving}
-                onPress={() => void finishWelcome()}
-                hitSlop={10}
-                style={{ paddingVertical: 10, paddingRight: 20 }}
-              >
-                <Text style={{ color: "#64746E", fontSize: 15, fontWeight: "700" }}>
-                  Skip
-                </Text>
-              </Pressable>
-            ) : (
-              <Pressable
-                accessibilityRole="button"
-                disabled={saving}
-                onPress={() => goToPage(page - 1)}
-                hitSlop={10}
-                style={{
-                  flexDirection: "row",
-                  alignItems: "center",
-                  gap: 7,
-                  paddingVertical: 10,
-                  paddingRight: 20,
-                }}
-              >
-                <ArrowLeft size={17} color="#64746E" />
-                <Text style={{ color: "#64746E", fontSize: 15, fontWeight: "700" }}>
-                  Back
-                </Text>
-              </Pressable>
-            )}
-
             <Pressable
               accessibilityRole="button"
               disabled={saving}
@@ -344,7 +318,6 @@ export default function WelcomeScreen() {
                 flexDirection: "row",
                 alignItems: "center",
                 justifyContent: "center",
-                gap: 10,
                 borderRadius: 26,
                 backgroundColor: "#23852B",
                 paddingHorizontal: 22,
@@ -354,16 +327,9 @@ export default function WelcomeScreen() {
               {saving ? (
                 <ActivityIndicator size="small" color="#FFFFFF" />
               ) : (
-                <>
-                  <Text style={{ color: "#FFFFFF", fontSize: 15, fontWeight: "700" }}>
-                    {page === pages.length - 1 ? "Get Started" : "Next"}
-                  </Text>
-                  {page === pages.length - 1 ? (
-                    <Check size={17} color="#FFFFFF" strokeWidth={2.5} />
-                  ) : (
-                    <ArrowRight size={17} color="#FFFFFF" strokeWidth={2.5} />
-                  )}
-                </>
+                <Text style={{ color: "#FFFFFF", fontSize: 15, fontWeight: "700" }}>
+                  Continue
+                </Text>
               )}
             </Pressable>
           </View>
