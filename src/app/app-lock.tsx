@@ -423,7 +423,8 @@ export default function AppLockSettingsPage() {
           width: "100%",
           maxWidth: 1320,
           alignSelf: "center",
-          paddingHorizontal: width >= 700 ? 34 : 16,
+          paddingHorizontal: width >= 700 ? 34 : 6,
+          paddingTop: 20,
           paddingBottom: insets.bottom + 28,
         }}
         keyboardShouldPersistTaps="handled"
@@ -444,7 +445,7 @@ export default function AppLockSettingsPage() {
                 color: "#9B3E36",
                 fontSize: 12,
                 lineHeight: 18,
-                marginTop: 8,
+                marginTop: 10,
               }}
             >
               {!draftPrimaryMethod
