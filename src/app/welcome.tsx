@@ -1,11 +1,12 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import {
+  ArrowRight,
   CalendarDays,
   Fingerprint,
   ListChecks,
-  LogIn,
   ShieldCheck,
   TrendingUp,
   Wallet,
@@ -58,6 +59,7 @@ export default function WelcomeScreen() {
   const [page, setPage] = useState(0);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const isLastPage = page === pages.length - 1;
   const artSize = Math.min(width * 0.76, height * 0.34, 300);
   const finishWelcome = async () => {
     if (saving) return;
@@ -78,10 +80,33 @@ export default function WelcomeScreen() {
     }
   };
 
+  const goToNextPage = () => {
+    const nextPage = page + 1;
+    if (nextPage >= pages.length) return;
+    setPage(nextPage);
+    scrollRef.current?.scrollTo({ x: width * nextPage, animated: true });
+  };
+
   return (
-    <SafeAreaView edges={["top", "bottom"]} style={{ flex: 1, backgroundColor: "#FFFAF4" }}>
+    <SafeAreaView
+      edges={["top", "bottom"]}
+      style={{ flex: 1, backgroundColor: "#F5F7EC" }}
+    >
       <StatusBar style="dark" />
       <View style={{ flex: 1 }}>
+        <LinearGradient
+          colors={["#F5F7EC", "#FFFAF4", "#EEF5EB"]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          pointerEvents="none"
+          style={{
+            position: "absolute",
+            top: 0,
+            right: 0,
+            bottom: 0,
+            left: 0,
+          }}
+        />
         <View
           style={{
             height: 54,
@@ -280,41 +305,79 @@ export default function WelcomeScreen() {
             </Text>
           ) : null}
 
-          <View style={{ width: "100%", marginTop: 24 }}>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Log in to Life Ledger"
-              disabled={saving}
-              onPress={() => void finishWelcome()}
-              style={({ pressed }) => ({
-                width: "100%",
-                minHeight: 52,
-                flexDirection: "row",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: 8,
-                borderWidth: 1,
-                borderColor: "#C9A34E",
-                borderRadius: 28,
-                backgroundColor: pressed ? "#123F33" : "#064D3B",
-                paddingHorizontal: 12,
-                opacity: saving ? 0.7 : 1,
-                shadowColor: "#064D3B",
-                shadowOffset: { width: 0, height: 5 },
-                shadowOpacity: pressed ? 0.08 : 0.16,
-                shadowRadius: 9,
-                elevation: pressed ? 2 : 4,
-              })}
-            >
-              {saving ? (
-                <ActivityIndicator size="small" color="#FFFFFF" />
-              ) : (
-                <LogIn size={17} color="#FFFFFF" strokeWidth={2.3} />
-              )}
-              <Text style={{ color: "#FFFFFF", fontSize: 14, fontWeight: "800" }}>
-                Log in
-              </Text>
-            </Pressable>
+          <View style={{ width: "100%", alignItems: "center", marginTop: 24 }}>
+            {isLastPage ? (
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Get started"
+                disabled={saving}
+                onPress={() => void finishWelcome()}
+                style={{
+                  width: "85%",
+                  maxWidth: 360,
+                  minHeight: 56,
+                  flexDirection: "row",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 8,
+                  borderWidth: 2,
+                  borderColor: "#C9A34E",
+                  borderRadius: 18,
+                  backgroundColor: "#064D3B",
+                  paddingHorizontal: 20,
+                  opacity: saving ? 0.7 : 1,
+                  shadowColor: "#064D3B",
+                  shadowOffset: { width: 0, height: 6 },
+                  shadowOpacity: 0.25,
+                  shadowRadius: 10,
+                  elevation: 6,
+                }}
+              >
+                {saving ? (
+                  <ActivityIndicator size="small" color="#FFFFFF" />
+                ) : (
+                  <ArrowRight size={17} color="#FFFFFF" strokeWidth={2.3} />
+                )}
+                <Text
+                  style={{ color: "#FFFFFF", fontSize: 14, fontWeight: "800" }}
+                >
+                  Get Started
+                </Text>
+              </Pressable>
+            ) : (
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Next welcome slide"
+                disabled={saving}
+                onPress={goToNextPage}
+                style={({ pressed }) => ({
+                  width: "85%",
+                  maxWidth: 360,
+                  minHeight: 52,
+                  flexDirection: "row",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 8,
+                  borderWidth: 1,
+                  borderColor: "#C9A34E",
+                  borderRadius: 28,
+                  backgroundColor: pressed ? "#123F33" : "#064D3B",
+                  paddingHorizontal: 12,
+                  shadowColor: "#064D3B",
+                  shadowOffset: { width: 0, height: 5 },
+                  shadowOpacity: pressed ? 0.08 : 0.16,
+                  shadowRadius: 9,
+                  elevation: pressed ? 2 : 4,
+                })}
+              >
+                <ArrowRight size={17} color="#FFFFFF" strokeWidth={2.3} />
+                <Text
+                  style={{ color: "#FFFFFF", fontSize: 14, fontWeight: "800" }}
+                >
+                  Next
+                </Text>
+              </Pressable>
+            )}
           </View>
         </View>
       </View>
