@@ -1,4 +1,5 @@
 import Ionicons from "@expo/vector-icons/Ionicons";
+import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import type { ReactNode } from "react";
 import { useEffect, useRef, useState } from "react";
@@ -128,6 +129,15 @@ export default function AppLockSettingsPage() {
   const initializedSettings = useRef(false);
   const wideLayout = width >= 700;
   const selectedMethodCard = draftPrimaryMethod;
+  const hasCredentialReady =
+    (configured && draftMethod === settings.method) ||
+    Boolean(credentialToSave) ||
+    (setupMethod === "password" &&
+      credential.length >= 12 &&
+      credential.length <= 128 &&
+      confirmation.length >= 12 &&
+      confirmation.length <= 128 &&
+      credential === confirmation);
 
   useEffect(() => {
     if (loading || initializedSettings.current) return;
@@ -192,15 +202,17 @@ export default function AppLockSettingsPage() {
       setSetupError("Please select a lock method first.");
       return;
     }
-    const hasConfiguredCredential =
-      configured && draftMethod === settings.method;
     if (
       enabled &&
-      (!draftMethod ||
-        (!hasConfiguredCredential && !credentialToSave))
+      (!draftMethod || !configured || draftMethod !== settings.method)
     ) {
+      const methodLabel = draftPrimaryMethod
+        ? draftPrimaryMethod === "fingerprint"
+          ? "Fingerprint"
+          : methodDetails[draftPrimaryMethod].label
+        : "lock method";
       setSetupError(
-        "Create and confirm your lock credential before enabling App Lock.",
+        `Set up and save ${methodLabel} before enabling App Lock.`,
       );
       return;
     }
@@ -303,15 +315,12 @@ export default function AppLockSettingsPage() {
       setSetupError("Please select a lock method first.");
       return;
     }
-    const hasConfiguredCredential =
-      configured && draftMethod === settings.method;
     if (
       draftEnabled &&
-      (!draftMethod ||
-        (!hasConfiguredCredential && !credentialToSave))
+      (!draftMethod || !hasCredentialReady)
     ) {
       setSetupError(
-        "Create and confirm your lock credential before enabling App Lock.",
+        "Create and confirm your lock credential before saving App Lock.",
       );
       return;
     }
@@ -394,16 +403,14 @@ export default function AppLockSettingsPage() {
     }
   };
 
-  const hasConfiguredCredential =
-    configured && draftMethod === settings.method;
   const canEnable =
     Boolean(draftPrimaryMethod) &&
     Boolean(draftMethod) &&
-    (hasConfiguredCredential || Boolean(credentialToSave)) &&
+    hasCredentialReady &&
     (draftPrimaryMethod !== "fingerprint" ||
       (biometricAvailable && draftBiometricEnabled));
   const toggleDisabled =
-    !serviceAvailable || busy || (!draftEnabled && !canEnable);
+    !serviceAvailable || busy;
 
   return (
     <SafeAreaView
@@ -438,7 +445,7 @@ export default function AppLockSettingsPage() {
             disabled={toggleDisabled}
             onChange={toggleAppLock}
           />
-          {!draftEnabled && !canEnable ? (
+          {!canEnable ? (
             <Text
               accessibilityLiveRegion="polite"
               style={{
@@ -452,7 +459,7 @@ export default function AppLockSettingsPage() {
                 ? "Please select a lock method first."
                 : draftPrimaryMethod === "fingerprint" && !biometricAvailable
                   ? "Fingerprint or face authentication is not enrolled on this device."
-                  : "Configure and confirm your lock credential before enabling App Lock."}
+                  : "Configure and confirm your lock credential before saving App Lock."}
             </Text>
           ) : null}
 
@@ -924,11 +931,30 @@ export default function AppLockSettingsPage() {
               Boolean(setupMethod && setupMethod !== "password")
             }
             onPress={() => void handleSave()}
-            className="mt-3 min-h-12 w-full max-w-[420px] items-center justify-center rounded-lg bg-green-600 px-5 py-3 active:bg-green-700 disabled:opacity-60"
+            className="mt-3 w-full max-w-[420px] overflow-hidden rounded-lg disabled:opacity-60"
           >
-            <Text className="text-base font-semibold text-white">
-              {busy ? "Saving..." : "Save Security Settings"}
-            </Text>
+            {({ pressed }) => (
+              <LinearGradient
+                colors={
+                  pressed
+                    ? [Colors.primaryDark, Colors.primary]
+                    : Colors.greenGradient
+                }
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={{
+                  minHeight: 48,
+                  alignItems: "center",
+                  justifyContent: "center",
+                  paddingHorizontal: 20,
+                  paddingVertical: 12,
+                }}
+              >
+                <Text className="text-base font-semibold text-white">
+                  {busy ? "Saving..." : "Save Security Settings"}
+                </Text>
+              </LinearGradient>
+            )}
           </Pressable>
         </View>
 

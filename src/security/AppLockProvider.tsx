@@ -15,6 +15,8 @@ import {
 import {
   ActivityIndicator,
   AppState,
+  Image,
+  KeyboardAvoidingView,
   Platform,
   Pressable,
   ScrollView,
@@ -37,6 +39,7 @@ import api, {
   logoutUser,
   setAppLockToken,
 } from "../api";
+import ConfirmPopup from "../components/ConfirmPopup";
 import { GradientSafeAreaView as SafeAreaView } from "../components/GradientSafeAreaView";
 import { Colors } from "../constants/colors";
 import {
@@ -691,7 +694,7 @@ function AppLockLoadingScreen() {
       edges={["top", "bottom"]}
       style={{
         flex: 1,
-        backgroundColor: "#F8FAFC",
+        backgroundColor: Colors.contentBackground,
       }}
     >
       <StatusBar barStyle="dark-content" />
@@ -759,46 +762,6 @@ function AppLockLoadingScreen() {
   );
 }
 
-function AppLockHeader() {
-  return (
-    <LinearGradient
-      colors={Colors.greenGradient}
-      start={{ x: 0, y: 0 }}
-      end={{ x: 1, y: 1 }}
-      style={{
-        minHeight: 64,
-        flexDirection: "row",
-        alignItems: "center",
-        paddingHorizontal: 16,
-        paddingVertical: 10,
-      }}
-    >
-      <View
-        style={{
-          width: 40,
-          height: 40,
-          alignItems: "center",
-          justifyContent: "center",
-          borderRadius: 20,
-          backgroundColor: "rgba(255,255,255,0.15)",
-        }}
-      >
-        <Ionicons name="lock-closed" size={19} color={Colors.white} />
-      </View>
-      <Text
-        style={{
-          marginLeft: 12,
-          color: Colors.white,
-          fontSize: 18,
-          fontWeight: "700",
-        }}
-      >
-        App Lock
-      </Text>
-    </LinearGradient>
-  );
-}
-
 function AppLockScreen({
   error,
   onRetry,
@@ -806,7 +769,9 @@ function AppLockScreen({
   error: string | null;
   onRetry: () => void;
 }) {
+  const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { width } = useWindowDimensions();
   const {
     settings,
     biometricAvailable,
@@ -820,6 +785,25 @@ function AppLockScreen({
   const [busy, setBusy] = useState(false);
   const [resetKey, setResetKey] = useState(0);
   const [patternDrawing, setPatternDrawing] = useState(false);
+  const [storedUser, setStoredUser] = useState<{
+    name?: string;
+    email?: string;
+  } | null>(null);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const biometricAttemptedRef = useRef(false);
+
+  useEffect(() => {
+    let active = true;
+    void getStoredUser().then((user) => {
+      if (active && user) {
+        setStoredUser(user);
+      }
+    });
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const clearCredential = () => {
     setCredential("");
@@ -827,14 +811,28 @@ function AppLockScreen({
   };
 
   const submitCredential = async (value = credential) => {
-    if (!value || busy) return;
+    if (busy || unlocking) return;
+    if (!value || !value.trim()) {
+      setErrorMessage(
+        settings.method === "pin"
+          ? "Please enter your PIN."
+          : settings.method === "pattern"
+            ? "Please draw your pattern."
+            : "Please enter your password.",
+      );
+      return;
+    }
+    if (settings.method === "pin" && value.length < 4) {
+      setErrorMessage("Please enter at least 4 digits to unlock.");
+      return;
+    }
     setBusy(true);
     setErrorMessage("");
     try {
       if (await unlockWithCredential(settings.method, value)) return;
       clearCredential();
       setErrorMessage(
-        `That ${settings.method} is incorrect. Please try again.`,
+        `Incorrect ${settings.method}. Please check and try again.`,
       );
     } catch (verifyError) {
       setErrorMessage(
@@ -849,54 +847,105 @@ function AppLockScreen({
   };
 
   const submitBiometrics = async () => {
+    if (busy || unlocking) return;
     setErrorMessage("");
     setBusy(true);
     try {
       const result = await unlockWithBiometrics();
-      if (!result.success) setErrorMessage(result.message);
+      if (!result.success && result.message) {
+        setErrorMessage(result.message);
+      }
     } finally {
       setBusy(false);
     }
   };
 
+  useEffect(() => {
+    if (
+      settings.biometricEnabled &&
+      biometricAvailable &&
+      !biometricAttemptedRef.current
+    ) {
+      biometricAttemptedRef.current = true;
+      const timer = setTimeout(() => {
+        void submitBiometrics();
+      }, 350);
+      return () => clearTimeout(timer);
+    }
+  }, [biometricAvailable, settings.biometricEnabled]);
+
+  const handleSignOut = async () => {
+    setIsLoggingOut(true);
+    try {
+      await logoutUser();
+      router.replace("/auth/login");
+    } catch {
+      router.replace("/auth/login");
+    } finally {
+      setIsLoggingOut(false);
+      setShowLogoutConfirm(false);
+    }
+  };
+
   if (error) {
     return (
-      <SafeAreaView
+      <SafeAreaContainer
         edges={["top", "bottom"]}
         style={{
           flex: 1,
           backgroundColor: Colors.contentBackground,
+          justifyContent: "center",
+          alignItems: "center",
+          paddingHorizontal: 24,
         }}
       >
-        <StatusBar
-          barStyle="light-content"
-        />
-        <AppLockHeader />
+        <StatusBar barStyle="dark-content" />
         <View
           style={{
-            flex: 1,
+            width: "100%",
+            maxWidth: 400,
+            backgroundColor: "#FFFFFF",
+            borderRadius: 28,
+            padding: 28,
             alignItems: "center",
-            justifyContent: "center",
-            paddingHorizontal: 28,
+            borderWidth: 1,
+            borderColor: "#E2E8F0",
+            shadowColor: "#000",
+            shadowOffset: { width: 0, height: 6 },
+            shadowOpacity: 0.08,
+            shadowRadius: 16,
+            elevation: 4,
           }}
         >
-          <Ionicons name="lock-closed-outline" size={42} color={Colors.primary} />
+          <View
+            style={{
+              width: 72,
+              height: 72,
+              borderRadius: 36,
+              backgroundColor: "#FEE2E2",
+              alignItems: "center",
+              justifyContent: "center",
+              marginBottom: 18,
+            }}
+          >
+            <Ionicons name="lock-closed" size={32} color="#DC2626" />
+          </View>
           <Text
             style={{
-              marginTop: 16,
-              color: Colors.textPrimary,
-              fontSize: 18,
+              color: "#202936",
+              fontSize: 20,
               fontWeight: "800",
               textAlign: "center",
             }}
           >
-            App Lock service unavailable
+            App Lock Unavailable
           </Text>
           <Text
             style={{
               marginTop: 8,
-              color: Colors.textSecondary,
+              color: "#58636A",
               fontSize: 14,
+              lineHeight: 21,
               textAlign: "center",
             }}
           >
@@ -905,217 +954,408 @@ function AppLockScreen({
           <Pressable
             accessibilityRole="button"
             onPress={onRetry}
-            style={{
-              marginTop: 20,
-              paddingHorizontal: 20,
-              paddingVertical: 12,
-              borderRadius: 13,
-              backgroundColor: Colors.primary,
-            }}
+            style={({ pressed }) => ({
+              marginTop: 24,
+              width: "100%",
+              height: 52,
+              borderRadius: 26,
+              backgroundColor: pressed ? Colors.primaryDark : Colors.primary,
+              alignItems: "center",
+              justifyContent: "center",
+            })}
           >
-            <Text style={{ color: Colors.white, fontWeight: "700" }}>Retry</Text>
+            <Text style={{ color: "#FFFFFF", fontSize: 16, fontWeight: "700" }}>
+              Retry
+            </Text>
           </Pressable>
         </View>
-      </SafeAreaView>
+      </SafeAreaContainer>
     );
   }
 
   return (
-    <SafeAreaView
+    <SafeAreaContainer
       edges={["top", "bottom"]}
-      style={{ flex: 1, backgroundColor: "#F7F7F5" }}
+      style={{ flex: 1, backgroundColor: Colors.contentBackground }}
     >
-      <StatusBar
-        barStyle="light-content"
+      <StatusBar barStyle="dark-content" />
+      <ConfirmPopup
+        visible={showLogoutConfirm}
+        type="logout"
+        title="Reset App Lock"
+        message="If you forgot your lock code, you can sign out and log back in with your account password to reset it. Do you want to sign out?"
+        confirmText="Sign Out"
+        cancelText="Cancel"
+        loading={isLoggingOut}
+        onConfirm={handleSignOut}
+        onCancel={() => setShowLogoutConfirm(false)}
       />
-      <AppLockHeader />
-      <ScrollView
-        scrollEnabled={!patternDrawing}
-        contentContainerStyle={{
-          flexGrow: 1,
-          alignItems: "center",
-          justifyContent: "center",
-          paddingHorizontal: 20,
-          paddingTop: 18,
-          paddingBottom: insets.bottom + 24,
-        }}
-        keyboardShouldPersistTaps="handled"
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        style={{ flex: 1 }}
       >
-        <View style={{ width: "100%", maxWidth: 420, alignItems: "center" }}>
+        <ScrollView
+          scrollEnabled={!patternDrawing}
+          contentContainerStyle={{
+            flexGrow: 1,
+            alignItems: "center",
+            justifyContent: "center",
+            paddingHorizontal: 24,
+            paddingTop: Math.max(insets.top, 24),
+            paddingBottom: Math.max(insets.bottom, 24),
+          }}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
           <View
             style={{
-              width: 112,
-              height: 112,
+              width: "100%",
+              maxWidth: 390,
               alignItems: "center",
-              justifyContent: "center",
-              borderRadius: 56,
-              backgroundColor: "#DDEEDA",
-              shadowColor: "#103B2C",
-              shadowOffset: { width: 0, height: 8 },
-              shadowOpacity: 0.08,
-              shadowRadius: 12,
-              elevation: 2,
             }}
           >
+            {/* Lock Medallion */}
             <View
               style={{
-                width: 60,
-                height: 60,
-                borderRadius: 18,
-                backgroundColor: "#1C5C3C",
+                width: 96,
+                height: 96,
+                borderRadius: 48,
+                backgroundColor: "#E2EBD5",
                 alignItems: "center",
                 justifyContent: "center",
+                shadowColor: "#264B2A",
+                shadowOffset: { width: 0, height: 6 },
+                shadowOpacity: 0.12,
+                shadowRadius: 14,
+                elevation: 4,
               }}
             >
-              <Ionicons name="lock-closed" size={32} color="#F7F7F5" />
+              <LinearGradient
+                colors={["#3D7A44", "#2E5E33"]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 0, y: 1 }}
+                style={{
+                  width: 66,
+                  height: 66,
+                  borderRadius: 33,
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <Ionicons name="lock-closed" size={32} color="#FFFFFF" />
+              </LinearGradient>
             </View>
-          </View>
 
-          <Text
-            style={{
-              marginTop: 18,
-              color: "#183B2D",
-              fontSize: 27,
-              fontWeight: "800",
-              textAlign: "center",
-            }}
-          >
-            {settings.method === "pin"
-              ? "Enter PIN to unlock"
-              : settings.method === "pattern"
-                ? "Draw pattern to unlock"
-                : "Enter password to unlock"}
-          </Text>
-        </View>
-
-        {settings.biometricEnabled && biometricAvailable ? (
-          <View style={{ marginTop: 10, marginBottom: 8 }}>
-            <BiometricPrompt
-              available={biometricAvailable}
-              busy={busy}
-              message="Unlock with fingerprint or face"
-              onPress={() => void submitBiometrics()}
-            />
-          </View>
-        ) : null}
-
-        <View
-          style={{
-            width: "100%",
-            maxWidth: 360,
-            alignSelf: "center",
-            alignItems: "center",
-            marginTop: 8,
-          }}
-        >
-          {settings.method === "pin" ? (
-            <>
-              <PinKeypad
-                key={resetKey}
-                value={credential}
-                maxLength={6}
-                onChange={setCredential}
-                onSubmit={(value) => void submitCredential(value)}
-                minLength={4}
-                submitLabel="Unlock"
-                variant="lock"
-              />
-              <View style={{ marginTop: 18, width: "100%", maxWidth: 310, alignSelf: "center" }}>
-                <PrimaryButton
-                  label={unlocking ? "Verifying..." : "Unlock"}
-                  disabled={unlocking || credential.length < 4}
-                  onPress={() => void submitCredential()}
-                />
-              </View>
-            </>
-          ) : settings.method === "pattern" ? (
-            <PatternGrid
-              key={resetKey}
-              resetKey={String(resetKey)}
-              variant="lock"
-              onDrawingChange={setPatternDrawing}
-              onInvalid={() => setErrorMessage("Draw at least 4 different dots to unlock.")}
-              onComplete={(pattern) => {
-                setCredential(pattern);
-                void submitCredential(pattern);
-              }}
-            />
-          ) : (
-            <View style={{ width: "100%", gap: 12 }}>
-              <PasswordForm
-                value={credential}
-                onChange={setCredential}
-                placeholder="Enter your password"
-              />
-              <PrimaryButton
-                label={unlocking ? "Checking..." : "Unlock"}
-                disabled={unlocking || !credential}
-                onPress={() => void submitCredential()}
-              />
-            </View>
-          )}
-        </View>
-
-        {errorMessage ? (
-          <View
-            accessibilityLiveRegion="polite"
-            style={{
-              alignSelf: "center",
-              flexDirection: "row",
-              alignItems: "center",
-              gap: 8,
-              maxWidth: 360,
-              marginTop: 12,
-              paddingHorizontal: 16,
-              paddingVertical: 10,
-              borderRadius: 14,
-              backgroundColor: "#FEE2E2",
-              borderWidth: 1,
-              borderColor: "#FECACA",
-            }}
-          >
-            <Ionicons name="alert-circle" size={18} color="#DC2626" />
+            {/* Title & Subtitle */}
             <Text
               style={{
-                flex: 1,
-                color: "#B91C1C",
-                fontSize: 13,
-                fontWeight: "600",
+                marginTop: 20,
+                color: "#202936",
+                fontSize: 25,
+                fontWeight: "800",
+                textAlign: "center",
+                letterSpacing: 0.2,
               }}
             >
-              {errorMessage}
+              {settings.method === "pin"
+                ? "Enter PIN to unlock"
+                : settings.method === "pattern"
+                  ? "Draw pattern to unlock"
+                  : "Enter password to unlock"}
             </Text>
+
+            <Text
+              style={{
+                marginTop: 6,
+                marginBottom: 26,
+                color: "#58636A",
+                fontSize: 14,
+                lineHeight: 20,
+                textAlign: "center",
+                maxWidth: 320,
+              }}
+            >
+              {storedUser?.name
+                ? `Welcome back, ${storedUser.name}. Enter your ${settings.method} to continue.`
+                : `Enter your lock ${settings.method} to access Life Ledger.`}
+            </Text>
+
+            {/* Center Content */}
+            {settings.method === "pin" ? (
+              <View
+                style={{
+                  width: "100%",
+                  backgroundColor: "#FFFFFF",
+                  borderRadius: 30,
+                  paddingVertical: 20,
+                  paddingHorizontal: 16,
+                  borderWidth: 1,
+                  borderColor: "#E5ECE6",
+                  shadowColor: "#000",
+                  shadowOffset: { width: 0, height: 4 },
+                  shadowOpacity: 0.05,
+                  shadowRadius: 12,
+                  elevation: 2,
+                  alignItems: "center",
+                }}
+              >
+                <PinKeypad
+                  key={resetKey}
+                  value={credential}
+                  maxLength={6}
+                  minLength={4}
+                  onChange={setCredential}
+                  onSubmit={(value) => void submitCredential(value)}
+                  onBiometric={
+                    settings.biometricEnabled && biometricAvailable
+                      ? () => void submitBiometrics()
+                      : undefined
+                  }
+                  variant="lock"
+                />
+                <View
+                  style={{
+                    marginTop: 16,
+                    width: "100%",
+                    maxWidth: 290,
+                    alignSelf: "center",
+                  }}
+                >
+                  <PrimaryButton
+                    label={busy || unlocking ? "Verifying..." : "Unlock"}
+                    disabled={busy || unlocking}
+                    onPress={() => void submitCredential()}
+                  />
+                </View>
+              </View>
+            ) : settings.method === "pattern" ? (
+              <View
+                style={{
+                  width: "100%",
+                  backgroundColor: "#FFFFFF",
+                  borderRadius: 30,
+                  padding: 22,
+                  borderWidth: 1,
+                  borderColor: "#E5ECE6",
+                  shadowColor: "#000",
+                  shadowOffset: { width: 0, height: 4 },
+                  shadowOpacity: 0.05,
+                  shadowRadius: 12,
+                  elevation: 2,
+                  alignItems: "center",
+                }}
+              >
+                <PatternGrid
+                  key={resetKey}
+                  resetKey={String(resetKey)}
+                  variant="lock"
+                  onDrawingChange={setPatternDrawing}
+                  onInvalid={() =>
+                    setErrorMessage("Connect at least 4 dots to unlock.")
+                  }
+                  onComplete={(pattern) => {
+                    setCredential(pattern);
+                    void submitCredential(pattern);
+                  }}
+                />
+
+                {settings.biometricEnabled && biometricAvailable ? (
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel="Unlock with biometrics"
+                    disabled={busy || unlocking}
+                    onPress={() => void submitBiometrics()}
+                    style={({ pressed }) => ({
+                      marginTop: 16,
+                      flexDirection: "row",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: 8,
+                      minHeight: 54,
+                      paddingHorizontal: 24,
+                      borderRadius: 27,
+                      backgroundColor: pressed ? "#DFE7C8" : "#ECF4E9",
+                      borderWidth: 1.2,
+                      borderColor: "#D2E5CE",
+                    })}
+                  >
+                    <Ionicons
+                      name="finger-print"
+                      size={22}
+                      color={Colors.primary}
+                    />
+                    <Text
+                      style={{
+                        fontSize: 15,
+                        fontWeight: "700",
+                        color: Colors.primaryDark,
+                      }}
+                    >
+                      Unlock with Biometrics
+                    </Text>
+                  </Pressable>
+                ) : null}
+              </View>
+            ) : (
+              <View
+                style={{
+                  width: "100%",
+                  backgroundColor: "#FFFFFF",
+                  borderRadius: 28,
+                  padding: 24,
+                  borderWidth: 1,
+                  borderColor: "#E5ECE6",
+                  shadowColor: "#000",
+                  shadowOffset: { width: 0, height: 4 },
+                  shadowOpacity: 0.05,
+                  shadowRadius: 12,
+                  elevation: 2,
+                  gap: 16,
+                }}
+              >
+                <PasswordForm
+                  value={credential}
+                  onChange={setCredential}
+                  placeholder="Enter your lock password"
+                  onSubmitEditing={() => void submitCredential()}
+                  returnKeyType="done"
+                />
+
+                <PrimaryButton
+                  label={busy || unlocking ? "Verifying..." : "Unlock"}
+                  disabled={busy || unlocking}
+                  onPress={() => void submitCredential()}
+                />
+
+                {settings.biometricEnabled && biometricAvailable ? (
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel="Unlock with biometrics"
+                    disabled={busy || unlocking}
+                    onPress={() => void submitBiometrics()}
+                    style={({ pressed }) => ({
+                      flexDirection: "row",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: 8,
+                      minHeight: 54,
+                      borderRadius: 27,
+                      backgroundColor: pressed ? "#DFE7C8" : "#ECF4E9",
+                      borderWidth: 1.2,
+                      borderColor: "#CADDC5",
+                    })}
+                  >
+                    <Ionicons
+                      name="finger-print"
+                      size={22}
+                      color={Colors.primary}
+                    />
+                    <Text
+                      style={{
+                        fontSize: 15,
+                        fontWeight: "700",
+                        color: Colors.primaryDark,
+                      }}
+                    >
+                      Unlock with Biometrics
+                    </Text>
+                  </Pressable>
+                ) : null}
+              </View>
+            )}
+
+            {/* Error Notification Banner */}
+            {errorMessage ? (
+              <View
+                accessibilityLiveRegion="polite"
+                style={{
+                  width: "100%",
+                  flexDirection: "row",
+                  alignItems: "center",
+                  gap: 10,
+                  marginTop: 14,
+                  paddingHorizontal: 16,
+                  paddingVertical: 12,
+                  borderRadius: 18,
+                  backgroundColor: "#FEF2F2",
+                  borderWidth: 1,
+                  borderColor: "#FECACA",
+                }}
+              >
+                <Ionicons name="alert-circle" size={20} color="#DC2626" />
+                <Text
+                  style={{
+                    flex: 1,
+                    color: "#991B1B",
+                    fontSize: 13,
+                    fontWeight: "600",
+                    lineHeight: 18,
+                  }}
+                >
+                  {errorMessage}
+                </Text>
+              </View>
+            ) : null}
+
+            {!errorMessage && loadError ? (
+              <Text
+                accessibilityLiveRegion="polite"
+                style={{
+                  alignSelf: "center",
+                  maxWidth: 340,
+                  marginTop: 14,
+                  color: "#9B3E36",
+                  fontSize: 12,
+                  textAlign: "center",
+                }}
+              >
+                {loadError}
+              </Text>
+            ) : null}
+
+            {/* Footer Safety Options */}
+            <View style={{ alignItems: "center", marginTop: 24, paddingBottom: 8 }}>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Forgot lock code, sign out"
+                disabled={busy || unlocking}
+                onPress={() => setShowLogoutConfirm(true)}
+                style={({ pressed }) => ({
+                  paddingVertical: 8,
+                  paddingHorizontal: 16,
+                  opacity: pressed ? 0.6 : 1,
+                })}
+              >
+                <Text
+                  style={{
+                    fontSize: 13,
+                    fontWeight: "700",
+                    color: "#58636A",
+                    textDecorationLine: "underline",
+                  }}
+                >
+                  Forgot lock code? Sign out of account
+                </Text>
+              </Pressable>
+            </View>
           </View>
-        ) : null}
-        {!errorMessage && loadError ? (
-          <Text
-            accessibilityLiveRegion="polite"
-            style={{
-              alignSelf: "center",
-              maxWidth: 340,
-              marginTop: 14,
-              color: "#9B3E36",
-              fontSize: 12,
-              textAlign: "center",
-            }}
-          >
-            {loadError}
-          </Text>
-        ) : null}
-      </ScrollView>
-    </SafeAreaView>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </SafeAreaContainer>
   );
 }
 
 function PrimaryButton({
   label,
-  disabled,
+  disabled = false,
   onPress,
 }: {
   label: string;
-  disabled: boolean;
+  disabled?: boolean;
   onPress: () => void;
 }) {
+  const isBusy = label === "Checking..." || label === "Verifying...";
+
   return (
     <Pressable
       accessibilityRole="button"
@@ -1124,29 +1364,64 @@ function PrimaryButton({
       onPress={onPress}
       style={({ pressed }) => ({
         width: "100%",
-        minHeight: 56,
+        minHeight: 64,
         alignItems: "center",
         justifyContent: "center",
-        borderRadius: 16,
-        backgroundColor: disabled
-          ? "#285B38"
-          : pressed
-            ? Colors.primaryDark
-            : Colors.primary,
-        opacity: pressed && !disabled ? 0.88 : 1,
-        shadowColor: Colors.primary,
-        shadowOffset: { width: 0, height: 3 },
-        shadowOpacity: disabled ? 0 : 0.22,
-        shadowRadius: 6,
-        elevation: disabled ? 0 : 2,
+        borderRadius: 32,
+        backgroundColor: pressed ? "#244E28" : "#366039",
+        opacity: isBusy ? 0.82 : pressed ? 0.92 : 1,
+        shadowColor: "#1B3E1F",
+        shadowOffset: { width: 0, height: 6 },
+        shadowOpacity: isBusy ? 0 : 0.35,
+        shadowRadius: 12,
+        elevation: isBusy ? 1 : 6,
       })}
     >
-      {disabled && (label === "Checking..." || label === "Verifying...") ? (
-        <ActivityIndicator color={Colors.white} />
+      <LinearGradient
+        colors={["#3D7A44", "#2E5E33"]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 0, y: 1 }}
+        style={[
+          StyleSheet.absoluteFill,
+          { borderRadius: 32 },
+        ]}
+      />
+      {isBusy ? (
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+          <ActivityIndicator color="#FFFFFF" size="small" />
+          <Text
+            style={{
+              color: "#FFFFFF",
+              fontSize: 17,
+              fontWeight: "800",
+              letterSpacing: 0.6,
+            }}
+          >
+            {label}
+          </Text>
+        </View>
       ) : (
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-          <Ionicons name="lock-open-outline" size={18} color={Colors.white} />
-          <Text style={{ color: disabled ? "#D5E84E" : Colors.white, fontSize: 15, fontWeight: "800", letterSpacing: 0.3 }}>
+        <View
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 10,
+          }}
+        >
+          <Ionicons
+            name="lock-open-outline"
+            size={22}
+            color="#FFFFFF"
+          />
+          <Text
+            style={{
+              color: "#FFFFFF",
+              fontSize: 17,
+              fontWeight: "800",
+              letterSpacing: 0.8,
+            }}
+          >
             {label}
           </Text>
         </View>

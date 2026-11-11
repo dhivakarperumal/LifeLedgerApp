@@ -57,8 +57,8 @@ export function PinKeypad({
   variant?: "default" | "lock";
 }) {
   const lockStyle = variant === "lock";
-  const keySize = lockStyle ? 68 : 72;
-  const keyGap = lockStyle ? 18 : 0;
+  const keySize = lockStyle ? 70 : 72;
+  const keyGap = lockStyle ? 16 : 0;
   const handlePressDigit = (digit: string) => {
     if (value.length < maxLength) {
       const nextValue = `${value}${digit}`;
@@ -84,30 +84,38 @@ export function PinKeypad({
         width: keySize,
         height: keySize,
         borderRadius: keySize / 2,
-        backgroundColor: pressed ? "#DCEBCC" : lockStyle ? "#F5F8EF" : "#F4F7F4",
-        borderWidth: 1,
-        borderColor: pressed ? "#C8DAC9" : lockStyle ? "#C8D6C8" : "#E2EBE2",
+        backgroundColor: pressed ? "#DFE7C8" : "#FFFFFF",
+        borderWidth: 1.2,
+        borderColor: pressed ? "#CAD6B8" : lockStyle ? "#E1E8DE" : "#E2EBE2",
         alignItems: "center",
         justifyContent: "center",
-        shadowColor: "#000",
-        shadowOpacity: pressed || lockStyle ? 0 : 0.04,
+        shadowColor: "#264B2A",
+        shadowOpacity: pressed ? 0 : 0.05,
         shadowRadius: 3,
         shadowOffset: { width: 0, height: 1 },
-        elevation: pressed || lockStyle ? 0 : 1,
+        elevation: pressed ? 0 : 1,
       })}
     >
       <Text
         style={{
-          fontSize: 26,
-          fontWeight: lockStyle ? "500" : "700",
-          color: Colors.textPrimary,
-          lineHeight: 30,
+          fontSize: 25,
+          fontWeight: "700",
+          color: "#202936",
+          lineHeight: 29,
         }}
       >
         {digit}
       </Text>
-      {subtitle && !lockStyle ? (
-        <Text style={{ fontSize: 9, fontWeight: "700", color: "#7E9082", letterSpacing: 1.5, marginTop: 1 }}>
+      {subtitle ? (
+        <Text
+          style={{
+            fontSize: 9,
+            fontWeight: "700",
+            color: "#7E9082",
+            letterSpacing: 1.5,
+            marginTop: 1,
+          }}
+        >
           {subtitle}
         </Text>
       ) : null}
@@ -120,9 +128,16 @@ export function PinKeypad({
           accessibilityRole="button"
           accessibilityLabel="Unlock with biometrics"
           onPress={onBiometric}
-          style={{ width: keySize, height: keySize, alignItems: "center", justifyContent: "center" }}
+          style={({ pressed }) => ({
+            width: keySize,
+            height: keySize,
+            borderRadius: keySize / 2,
+            backgroundColor: pressed ? "#DFE7C8" : "#ECF4E9",
+            alignItems: "center",
+            justifyContent: "center",
+          })}
         >
-          <Ionicons name="finger-print" size={32} color={Colors.primary} />
+          <Ionicons name="finger-print" size={30} color={Colors.primary} />
         </Pressable>
       );
     }
@@ -132,9 +147,18 @@ export function PinKeypad({
           accessibilityRole="button"
           accessibilityLabel="Clear all"
           onPress={handleClear}
-          style={{ width: keySize, height: keySize, alignItems: "center", justifyContent: "center" }}
+          style={({ pressed }) => ({
+            width: keySize,
+            height: keySize,
+            borderRadius: keySize / 2,
+            backgroundColor: pressed ? "#F2F5EA" : "transparent",
+            alignItems: "center",
+            justifyContent: "center",
+          })}
         >
-          <Text style={{ fontSize: 12, fontWeight: "700", color: "#6A7B70" }}>CLEAR</Text>
+          <Text style={{ fontSize: 12, fontWeight: "800", color: "#6A7B70", letterSpacing: 0.5 }}>
+            CLEAR
+          </Text>
         </Pressable>
       );
     }
@@ -151,31 +175,45 @@ export function PinKeypad({
         width: keySize,
         height: keySize,
         borderRadius: keySize / 2,
-        backgroundColor: pressed ? "#E6EEE7" : "transparent",
+        backgroundColor: pressed ? "#DFE7C8" : "transparent",
         alignItems: "center",
         justifyContent: "center",
-        opacity: value.length === 0 ? 0.3 : 1,
+        opacity: value.length === 0 ? 0.25 : 1,
       })}
     >
-      <Ionicons name="backspace-outline" size={26} color={controlColors.ink} />
+      <Ionicons name="backspace-outline" size={26} color="#202936" />
     </Pressable>
   );
 
   return (
     <View style={{ width: "100%", alignItems: "center" }}>
-      <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", gap: lockStyle ? 16 : 14, marginVertical: lockStyle ? 12 : 18 }}>
+      <View
+        style={{
+          flexDirection: "row",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: 16,
+          marginVertical: lockStyle ? 16 : 18,
+        }}
+      >
         {Array.from({ length: maxLength }, (_, index) => {
           const isFilled = value.length > index;
           return (
             <View
               key={index}
               style={{
-                width: 14,
-                height: 14,
-                borderRadius: 7,
+                width: 15,
+                height: 15,
+                borderRadius: 7.5,
                 borderWidth: isFilled ? 0 : 2,
-                borderColor: isFilled ? Colors.primary : lockStyle ? "#A8C4A0" : "#CAD6CD",
-                backgroundColor: isFilled ? Colors.primary : lockStyle ? "#F5F8EF" : "#EEF3EF",
+                borderColor: isFilled ? Colors.primary : "#CAD6CD",
+                backgroundColor: isFilled ? Colors.primary : "#EEF3EF",
+                transform: [{ scale: isFilled ? 1.15 : 1 }],
+                shadowColor: isFilled ? Colors.primaryDark : "transparent",
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: isFilled ? 0.35 : 0,
+                shadowRadius: 4,
+                elevation: isFilled ? 2 : 0,
               }}
             />
           );
@@ -184,9 +222,9 @@ export function PinKeypad({
       <View
         style={{
           width: "100%",
-          maxWidth: lockStyle ? 276 : 290,
+          maxWidth: lockStyle ? 280 : 290,
           alignSelf: "center",
-          paddingHorizontal: lockStyle ? 8 : 0,
+          paddingHorizontal: lockStyle ? 6 : 0,
         }}
       >
         {KEYPAD_DIGITS.map((row, rowIndex) => (
@@ -204,7 +242,16 @@ export function PinKeypad({
             {row.map((item) => renderDigit(item.key, item.sub))}
           </View>
         ))}
-        <View style={{ width: "100%", flexDirection: "row", justifyContent: lockStyle ? "center" : "space-between", alignItems: "center", columnGap: keyGap, marginBottom: 6 }}>
+        <View
+          style={{
+            width: "100%",
+            flexDirection: "row",
+            justifyContent: lockStyle ? "center" : "space-between",
+            alignItems: "center",
+            columnGap: keyGap,
+            marginBottom: 6,
+          }}
+        >
           {renderActionSlot()}
           {renderDigit("0")}
           {renderDelete()}
@@ -398,7 +445,7 @@ export function PatternGrid({
               y1={start.y}
               x2={end.x}
               y2={end.y}
-              stroke={lockStyle ? "#77BB10" : Colors.primary}
+              stroke={Colors.primary}
               strokeWidth={4}
               strokeLinecap="round"
             />
@@ -410,7 +457,7 @@ export function PatternGrid({
             y1={10 + (Math.floor(path[path.length - 1] / 3) + 0.5) * ((size - 20) / 3)}
             x2={currentPoint.x}
             y2={currentPoint.y}
-            stroke={lockStyle ? "#77BB10" : Colors.primary}
+            stroke={Colors.primary}
             strokeWidth={3}
             strokeLinecap="round"
           />
@@ -438,12 +485,12 @@ export function PatternGrid({
                 borderWidth: selectedIndex >= 0 ? 0 : lockStyle ? 0 : 2,
                 borderColor: "#9EADA2",
                 backgroundColor: selectedIndex >= 0
-                  ? lockStyle ? "#3F970F" : Colors.primary
-                  : lockStyle ? "#A7BE9E" : controlColors.surface,
+                  ? Colors.primary
+                  : lockStyle ? "#C2D0C6" : controlColors.surface,
                 transform: [{ scale: selectedIndex >= 0 ? 1.2 : 1 }],
-                shadowColor: lockStyle && selectedIndex >= 0 ? "#9DEB3A" : "transparent",
-                shadowOpacity: lockStyle && selectedIndex >= 0 ? 0.8 : 0,
-                shadowRadius: lockStyle ? 10 : 0,
+                shadowColor: lockStyle && selectedIndex >= 0 ? Colors.primary : "transparent",
+                shadowOpacity: lockStyle && selectedIndex >= 0 ? 0.4 : 0,
+                shadowRadius: lockStyle ? 8 : 0,
                 elevation: lockStyle && selectedIndex >= 0 ? 3 : 0,
               }}
             />
@@ -471,37 +518,79 @@ export function PasswordForm({
   onChange,
   placeholder = "Enter password",
   showToggle = true,
+  leftIcon = true,
+  onSubmitEditing,
+  returnKeyType = "done",
 }: {
   value: string;
   onChange: (value: string) => void;
   placeholder?: string;
   showToggle?: boolean;
+  leftIcon?: boolean;
+  onSubmitEditing?: () => void;
+  returnKeyType?: "done" | "go" | "next" | "search" | "send";
 }) {
   const [visible, setVisible] = useState(false);
+  const [focused, setFocused] = useState(false);
+
   return (
     <View
       style={{
         width: "100%",
-        minHeight: 54,
+        minHeight: 56,
         flexDirection: "row",
         alignItems: "center",
-        borderRadius: 14,
-        borderWidth: 1,
-        borderColor: controlColors.border,
-        backgroundColor: controlColors.surface,
-        paddingLeft: 15,
-        paddingRight: 12,
+        borderRadius: 16,
+        borderWidth: focused ? 1.8 : 1.2,
+        borderColor: focused ? Colors.primary : "#D1DABB",
+        backgroundColor: "#FFFFFF",
+        paddingHorizontal: 14,
+        gap: 10,
+        shadowColor: "#264B2A",
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: focused ? 0.08 : 0.03,
+        shadowRadius: 4,
+        elevation: 1,
       }}
     >
+      {leftIcon && (
+        <View
+          style={{
+            width: 34,
+            height: 34,
+            borderRadius: 17,
+            backgroundColor: focused ? "#E8F0E2" : "#F2F5EA",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <Ionicons
+            name="lock-closed-outline"
+            size={18}
+            color={focused ? Colors.primary : "#718078"}
+          />
+        </View>
+      )}
       <TextInput
         value={value}
         onChangeText={onChange}
         placeholder={placeholder}
+        placeholderTextColor="#8C9B90"
         secureTextEntry={!visible}
         autoCapitalize="none"
         autoCorrect={false}
         autoComplete="off"
-        style={{ flex: 1, minHeight: 52, color: controlColors.ink, fontSize: 15 }}
+        onFocus={() => setFocused(true)}
+        onBlur={() => setFocused(false)}
+        onSubmitEditing={onSubmitEditing}
+        returnKeyType={returnKeyType}
+        style={{
+          flex: 1,
+          minHeight: 52,
+          color: "#202936",
+          fontSize: 15,
+          fontWeight: "600",
+        }}
       />
       {showToggle ? (
         <Pressable
@@ -509,12 +598,19 @@ export function PasswordForm({
           accessibilityLabel={visible ? "Hide password" : "Show password"}
           onPress={() => setVisible((current) => !current)}
           hitSlop={10}
-          style={{ padding: 7 }}
+          style={({ pressed }) => ({
+            width: 34,
+            height: 34,
+            borderRadius: 17,
+            backgroundColor: pressed ? "#DFE7C8" : "#F2F5EA",
+            alignItems: "center",
+            justifyContent: "center",
+          })}
         >
           <Ionicons
             name={visible ? "eye-off-outline" : "eye-outline"}
-            size={20}
-            color={controlColors.muted}
+            size={19}
+            color={focused ? Colors.primary : "#718078"}
           />
         </Pressable>
       ) : null}
@@ -534,32 +630,40 @@ export function BiometricPrompt({
   onPress: () => void;
 }) {
   return (
-    <View style={{ width: "100%", alignItems: "center", gap: 8 }}>
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel="Unlock with biometrics"
-        accessibilityState={{ disabled: !available || busy }}
-        disabled={!available || busy}
-        onPress={onPress}
-        style={({ pressed }) => ({
-          width: 66,
-          height: 66,
-          alignItems: "center",
-          justifyContent: "center",
-          borderRadius: 22,
-          backgroundColor: "#E8F2E8",
-          opacity: pressed ? 0.75 : 1,
-        })}
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel="Unlock with biometrics"
+      accessibilityState={{ disabled: !available || busy }}
+      disabled={!available || busy}
+      onPress={onPress}
+      style={({ pressed }) => ({
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: 10,
+        paddingHorizontal: 20,
+        paddingVertical: 14,
+        borderRadius: 20,
+        backgroundColor: pressed ? "#DFE7C8" : "#ECF4E9",
+        borderWidth: 1.2,
+        borderColor: "#CADDC5",
+        opacity: !available || busy ? 0.6 : 1,
+      })}
+    >
+      <Ionicons
+        name="finger-print"
+        size={24}
+        color={available ? Colors.primary : "#A8B2AC"}
+      />
+      <Text
+        style={{
+          color: available ? Colors.primaryDark : controlColors.muted,
+          fontSize: 14,
+          fontWeight: "700",
+        }}
       >
-        <Ionicons
-          name="finger-print-outline"
-          size={38}
-          color={available ? Colors.primary : "#A8B2AC"}
-        />
-      </Pressable>
-      <Text style={{ color: controlColors.muted, fontSize: 12, textAlign: "center" }}>
         {message}
       </Text>
-    </View>
+    </Pressable>
   );
 }

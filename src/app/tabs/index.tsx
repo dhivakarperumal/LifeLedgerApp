@@ -21,6 +21,7 @@ import { GradientSafeAreaView as SafeAreaView } from "../../components/GradientS
 import { parseLocalDate } from "../../components/dateTimeUtils";
 import { Colors } from "../../constants/colors";
 import { HOME_QUOTES, HOME_QUOTE_INDEX_KEY } from "../../constants/homeQuotes";
+import { useAppLock } from "../../security/AppLockProvider";
 
 type StoredUser = {
   name?: string;
@@ -309,6 +310,7 @@ function EmptyStateCard({ message }: { message: string }) {
 
 export default function Index() {
   const router = useRouter();
+  const { locked, ready } = useAppLock();
   const params = useLocalSearchParams<{ successMessage?: string | string[] }>();
   const insets = useSafeAreaInsets();
   const [currentTime, setCurrentTime] = useState(() => new Date());
@@ -414,6 +416,7 @@ export default function Index() {
 
   useFocusEffect(
     useCallback(() => {
+      if (!ready || locked) return;
       let isActive = true;
 
       const fetchData = async () => {
@@ -441,7 +444,19 @@ export default function Index() {
               },
             )
             .catch((error: unknown) => {
-              console.error("Failed to fetch monthly budget:", error);
+              const isAppLockRequired =
+                typeof error === "object" &&
+                error !== null &&
+                "status" in error &&
+                error.status === 423 &&
+                "data" in error &&
+                typeof error.data === "object" &&
+                error.data !== null &&
+                "code" in error.data &&
+                error.data.code === "APP_LOCK_REQUIRED";
+              if (!isAppLockRequired) {
+                console.error("Failed to fetch monthly budget:", error);
+              }
               if (isActive) setBudgetLoaded(true);
             });
           const [expensesRes, incomesRes] = await Promise.allSettled([
@@ -704,7 +719,7 @@ export default function Index() {
       return () => {
         isActive = false;
       };
-    }, [refreshKey]),
+    }, [locked, ready, refreshKey]),
   );
 
   const dateLabel = currentTime
