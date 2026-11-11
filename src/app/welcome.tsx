@@ -2,6 +2,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import {
+  ArrowRight,
   CalendarDays,
   Fingerprint,
   ListChecks,
@@ -12,6 +13,7 @@ import {
 import { useRef, useState } from "react";
 import {
   ActivityIndicator,
+  Image,
   Pressable,
   ScrollView,
   type ScrollViewInstance,
@@ -57,7 +59,7 @@ export default function WelcomeScreen() {
   const [page, setPage] = useState(0);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
-  const artSize = Math.min(width * 0.74, height * 0.37, 300);
+  const artSize = Math.min(width * 0.76, height * 0.34, 300);
   const finishWelcome = async () => {
     if (saving) return;
     setSaving(true);
@@ -84,31 +86,71 @@ export default function WelcomeScreen() {
   };
 
   return (
-    <SafeAreaView edges={["top", "bottom"]} style={{ flex: 1, backgroundColor: "#FFFFFF" }}>
+    <SafeAreaView edges={["top", "bottom"]} style={{ flex: 1, backgroundColor: "#FFFAF4" }}>
       <StatusBar style="dark" />
       <View style={{ flex: 1, paddingTop: 8 }}>
         <View
           style={{
-            height: 48,
+            height: 56,
+            marginHorizontal: 20,
             flexDirection: "row",
             alignItems: "center",
-            justifyContent: "center",
+            gap: 10,
           }}
         >
-          <Text style={{ color: Colors.deepForest, fontSize: 19, fontWeight: "800" }}>
-            Life
-          </Text>
-          <Text style={{ color: "#27812D", fontSize: 19, fontWeight: "800" }}>
-            Ledger
-          </Text>
+          <View
+            style={{
+              width: 44,
+              height: 44,
+              alignItems: "center",
+              justifyContent: "center",
+              borderWidth: 1,
+              borderColor: "#D8D0BA",
+              borderRadius: 14,
+              backgroundColor: "#FFFFFF",
+            }}
+          >
+            <Image
+              source={require("../../assets/images/logo.png")}
+              style={{ width: 34, height: 34, borderRadius: 10 }}
+              resizeMode="contain"
+              accessibilityLabel="Life Ledger logo"
+            />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={{ color: Colors.deepForest, fontSize: 17, fontWeight: "800" }}>
+              Life Ledger
+            </Text>
+            <Text
+              style={{
+                marginTop: 3,
+                color: "#A17D34",
+                fontSize: 9,
+                fontWeight: "800",
+                letterSpacing: 1.8,
+              }}
+            >
+              YOUR DAILY COMPANION
+            </Text>
+          </View>
           <Pressable
             accessibilityRole="button"
             disabled={saving}
             onPress={() => void finishWelcome()}
             hitSlop={10}
-            style={{ position: "absolute", right: 20, paddingVertical: 8 }}
+            style={{
+              minWidth: 66,
+              alignItems: "center",
+              justifyContent: "center",
+              borderWidth: 1.5,
+              borderColor: "#315B4B",
+              borderRadius: 24,
+              paddingHorizontal: 14,
+              paddingVertical: 9,
+              opacity: saving ? 0.6 : 1,
+            }}
           >
-            <Text style={{ color: "#64746E", fontSize: 13, fontWeight: "600" }}>
+            <Text style={{ color: "#244B3D", fontSize: 13, fontWeight: "700" }}>
               Skip
             </Text>
           </Pressable>
@@ -146,8 +188,8 @@ export default function WelcomeScreen() {
                     height: artSize,
                     alignItems: "center",
                     justifyContent: "center",
-                    borderRadius: artSize * 0.38,
-                    backgroundColor: "#F1F8EA",
+                    borderRadius: artSize * 0.34,
+                    backgroundColor: "#F2F5EA",
                   }}
                 >
                   <View
@@ -159,7 +201,7 @@ export default function WelcomeScreen() {
                       height: artSize * 0.26,
                       alignItems: "center",
                       justifyContent: "center",
-                      borderRadius: 22,
+                      borderRadius: artSize * 0.09,
                       backgroundColor: "#FFFFFF",
                       shadowColor: "#1B4332",
                       shadowOffset: { width: 0, height: 5 },
@@ -195,52 +237,35 @@ export default function WelcomeScreen() {
                       strokeWidth={1.7}
                     />
                   </View>
-                  <View
-                    style={{
-                      position: "absolute",
-                      bottom: artSize * 0.1,
-                      left: artSize * 0.12,
-                      flexDirection: "row",
-                      alignItems: "center",
-                      gap: 8,
-                      borderRadius: 20,
-                      backgroundColor: "#FFFFFF",
-                      paddingHorizontal: 12,
-                      paddingVertical: 9,
-                      shadowColor: "#1B4332",
-                      shadowOffset: { width: 0, height: 4 },
-                      shadowOpacity: 0.1,
-                      shadowRadius: 8,
-                      elevation: 3,
-                    }}
-                  >
-                    <View
-                      style={{
-                        width: 8,
-                        height: 8,
-                        borderRadius: 4,
-                        backgroundColor: "#3D9B3C",
-                      }}
-                    />
-                    <Text
-                      style={{
-                        color: Colors.deepForest,
-                        fontSize: 10,
-                        fontWeight: "700",
-                        letterSpacing: 0.8,
-                      }}
-                    >
-                      {item.label}
-                    </Text>
-                  </View>
                 </View>
 
+                <View
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    gap: 10,
+                    marginTop: 24,
+                  }}
+                >
+                  <View style={{ width: 28, height: 1.5, backgroundColor: "#C9A34E" }} />
+                  <Text
+                    style={{
+                      color: Colors.deepForest,
+                      fontSize: 10,
+                      fontWeight: "800",
+                      letterSpacing: 2,
+                    }}
+                  >
+                    {item.label}
+                  </Text>
+                  <View style={{ width: 28, height: 1.5, backgroundColor: "#C9A34E" }} />
+                </View>
                 <Text
                   style={{
-                    marginTop: 28,
+                    marginTop: 14,
                     color: "#0D2928",
-                    fontSize: 25,
-                    lineHeight: 32,
+                    fontSize: 29,
+                    lineHeight: 36,
                     fontWeight: "800",
                     textAlign: "center",
                   }}
@@ -250,7 +275,7 @@ export default function WelcomeScreen() {
                 <Text
                   style={{
                     maxWidth: 340,
-                    marginTop: 8,
+                    marginTop: 10,
                     color: "#475569",
                     fontSize: 15,
                     lineHeight: 23,
@@ -264,16 +289,16 @@ export default function WelcomeScreen() {
           })}
         </ScrollView>
 
-        <View style={{ alignItems: "center", paddingBottom: 12 }}>
+        <View style={{ alignItems: "center", paddingHorizontal: 20, paddingBottom: 10 }}>
           <View style={{ flexDirection: "row", alignItems: "center", gap: 9 }}>
             {pages.map((item, index) => (
               <View
                 key={item.title}
                 style={{
-                  width: 10,
-                  height: 10,
-                  borderRadius: 5,
-                  backgroundColor: index === page ? "#187A27" : "#D7EAD4",
+                  width: index === page ? 28 : 8,
+                  height: 8,
+                  borderRadius: 4,
+                  backgroundColor: index === page ? "#064D3B" : "#E7D5A5",
                 }}
               />
             ))}
@@ -296,8 +321,8 @@ export default function WelcomeScreen() {
           <View
             style={{
               width: "100%",
-              minHeight: 58,
-              marginTop: 24,
+              minHeight: 56,
+              marginTop: 26,
               alignItems: "center",
               justifyContent: "center",
             }}
@@ -313,23 +338,34 @@ export default function WelcomeScreen() {
                 }
               }}
               style={{
-                minWidth: 140,
-                minHeight: 48,
+                width: "100%",
+                minHeight: 54,
                 flexDirection: "row",
                 alignItems: "center",
                 justifyContent: "center",
-                borderRadius: 26,
-                backgroundColor: "#23852B",
+                gap: 10,
+                borderWidth: 1.5,
+                borderColor: "#C9A34E",
+                borderRadius: 30,
+                backgroundColor: "#064D3B",
                 paddingHorizontal: 22,
-                opacity: saving ? 0.7 : 1,
+                opacity: saving ? 0.75 : 1,
+                shadowColor: "#C9A34E",
+                shadowOffset: { width: 0, height: 7 },
+                shadowOpacity: 0.18,
+                shadowRadius: 12,
+                elevation: 5,
               }}
             >
               {saving ? (
                 <ActivityIndicator size="small" color="#FFFFFF" />
               ) : (
-                <Text style={{ color: "#FFFFFF", fontSize: 15, fontWeight: "700" }}>
-                  Continue
-                </Text>
+                <>
+                  <Text style={{ color: "#FFFFFF", fontSize: 15, fontWeight: "700" }}>
+                    Continue
+                  </Text>
+                  <ArrowRight size={19} color="#FFFFFF" strokeWidth={2.5} />
+                </>
               )}
             </Pressable>
           </View>
