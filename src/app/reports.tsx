@@ -27,6 +27,7 @@ import {
 } from "../components/DateRangeFilter";
 import { GradientSafeAreaView as SafeAreaView } from "../components/GradientSafeAreaView";
 import { PageHeader } from "../components/PageHeader";
+import { Pagination } from "../components/Pagination";
 import { SearchBar } from "../components/SearchBar";
 import { createSessionDataCache } from "../components/SessionDataCache";
 import { formatLocalDate, parseLocalDate } from "../components/dateTimeUtils";
@@ -62,6 +63,7 @@ type ReportsData = {
 };
 
 const reportsDataCache = createSessionDataCache<ReportsData>();
+const reportsPerPage = 10;
 
 function getRows(data: any, key: string): any[] {
   if (Array.isArray(data)) return data;
@@ -377,6 +379,7 @@ export default function Reports() {
   const [sort, setSort] = useState<SortOption>(DEFAULT_FILTER_STATE.sort);
   const [viewMode, setViewMode] = useState<"list" | "grid">("list");
   const [exporting, setExporting] = useState<"pdf" | "csv" | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
 
   const filterValues = useMemo<FilterState>(
     () => ({
@@ -393,6 +396,7 @@ export default function Reports() {
   );
 
   const applyReportFilters = (filters: FilterState) => {
+    setCurrentPage(1);
     setDateRange(filters.dateRange);
     setCategoryFilter(filters.category || "All");
     setAmountMin(filters.amountMin);
@@ -546,6 +550,17 @@ export default function Reports() {
     sort,
   ]);
 
+  const totalPages = Math.ceil(visible.length / reportsPerPage);
+  const displayedPage = Math.min(currentPage, Math.max(totalPages, 1));
+  const pagedRecords = useMemo(
+    () =>
+      visible.slice(
+        (displayedPage - 1) * reportsPerPage,
+        displayedPage * reportsPerPage,
+      ),
+    [visible, displayedPage],
+  );
+
   const stats = useMemo(() => {
     const expenseRows = visible.filter((record) => record._type === "expense");
     const transferRows = visible.filter(
@@ -631,6 +646,7 @@ export default function Reports() {
   );
 
   const resetFilters = () => {
+    setCurrentPage(1);
     setReportType("all");
     setSearch("");
     setCategoryFilter("All");
@@ -643,6 +659,7 @@ export default function Reports() {
   };
 
   const changeReportType = (nextType: "all" | ReportType) => {
+    setCurrentPage(1);
     setReportType(nextType);
     setCategoryFilter("All");
     setPaymentFilter("All");
@@ -1000,7 +1017,10 @@ export default function Reports() {
         <View className="mb-4 rounded-2xl border border-[#E4E8E3] bg-white p-3.5">
           <SearchBar
             value={search}
-            onChangeText={setSearch}
+            onChangeText={(value) => {
+              setCurrentPage(1);
+              setSearch(value);
+            }}
             placeholder="Search title, category, notes, amount"
             activeFilterCount={
               countActiveFilters({ ...filterValues, custom: {} }) +
@@ -1010,6 +1030,7 @@ export default function Reports() {
               currentFilters: filterValues,
               onApply: applyReportFilters,
               onReset: () => {
+                setCurrentPage(1);
                 setReportType("all");
                 setPaymentFilter("All");
               },
@@ -1095,7 +1116,7 @@ export default function Reports() {
                 : "gap-3"
             }
           >
-            {visible.map((record, index) => {
+            {pagedRecords.map((record, index) => {
               const isExpense = record._type === "expense";
               const amount = getRecordAmount(record);
               const payment =
@@ -1168,7 +1189,7 @@ export default function Reports() {
                       </Text>
                     )}
                     <Text className="text-[9px] font-medium text-[#A0A9A2]">
-                      #{index + 1}
+                      #{(displayedPage - 1) * reportsPerPage + index + 1}
                     </Text>
                   </View>
                   {!!record.notes && (
@@ -1184,6 +1205,20 @@ export default function Reports() {
             })}
           </View>
         )}
+        {totalPages > 1 ? (
+          <View style={{ alignItems: "center", gap: 12, marginTop: 8 }}>
+            <Text style={{ color: Colors.textSecondary, fontSize: 12 }}>
+              Showing {(displayedPage - 1) * reportsPerPage + 1}–
+              {Math.min(displayedPage * reportsPerPage, visible.length)} of{" "}
+              {visible.length} records
+            </Text>
+            <Pagination
+              currentPage={displayedPage}
+              totalPages={totalPages}
+              onPageChange={setCurrentPage}
+            />
+          </View>
+        ) : null}
 
       </ScrollView>
       )}
