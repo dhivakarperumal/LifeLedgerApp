@@ -1241,8 +1241,16 @@ export default function Expenses() {
       const selectedTransfer = transfers.find(
         (transfer) => String(transfer.id) === form.transfer_id,
       );
+      const originalExpense = expenses.find(
+        (expense) => String(expense.id) === String(editingExpenseId),
+      );
+      const balanceAlreadyUsedByExpense =
+        originalExpense &&
+        String(originalExpense.transfer_id) === form.transfer_id
+          ? Number(originalExpense.expense_amount ?? originalExpense.amount ?? 0)
+          : 0;
       const transferBalance = selectedTransfer
-        ? getTransferBalance(selectedTransfer)
+        ? getTransferBalance(selectedTransfer) + balanceAlreadyUsedByExpense
         : 0;
       const selectedAmount = Number(form.transfer_amount);
       if (!selectedTransfer || !Number.isFinite(selectedAmount) || selectedAmount <= 0) {
