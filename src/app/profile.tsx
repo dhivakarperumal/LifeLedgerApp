@@ -2,7 +2,6 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useState } from "react";
 import {
-    ActivityIndicator,
     Alert,
     Pressable,
     RefreshControl,
@@ -18,6 +17,7 @@ import api, {
     saveUser,
 } from "../api";
 import { CenteredPageLoader } from "../components/CenteredPageLoader";
+import { ButtonLoadingIndicator } from "../components/ButtonLoadingIndicator";
 import ConfirmPopup from "../components/ConfirmPopup";
 import { FormInput, FormLabel } from "../components/FormControls";
 import { GradientSafeAreaView as SafeAreaView } from "../components/GradientSafeAreaView";
@@ -539,7 +539,7 @@ export default function Profile() {
                   className={`flex-1 flex-row items-center justify-center rounded-xl bg-[#315640] py-3 ${savingProfile ? "opacity-60" : ""}`}
                 >
                   {savingProfile ? (
-                    <ActivityIndicator color="#FFFFFF" />
+                    <ButtonLoadingIndicator />
                   ) : (
                     <>
                       <Ionicons
@@ -666,7 +666,7 @@ export default function Profile() {
             onPress={() => void handlePasswordChange()}
           >
             {savingPassword ? (
-              <ActivityIndicator color="#FFFFFF" />
+              <ButtonLoadingIndicator />
             ) : (
               <>
                 <Ionicons
@@ -700,7 +700,7 @@ export default function Profile() {
             onPress={confirmDeactivation}
           >
             {deactivating ? (
-              <ActivityIndicator color="#B64C45" />
+              <ButtonLoadingIndicator color1="#B64C45" color2="#7D2828" />
             ) : (
               <>
                 <Ionicons

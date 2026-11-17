@@ -32,6 +32,7 @@ import api, {
   logoutUser,
 } from "../api";
 import { AddButton } from "../components/AddButton";
+import { ButtonLoadingIndicator } from "../components/ButtonLoadingIndicator";
 import {
     createDateRangeSelection,
     isDateInRange,
@@ -2004,7 +2005,7 @@ export default function Income() {
                 onPress={() => void submitIncome()}
               >
                 {saving ? (
-                  <ActivityIndicator color="#FFFFFF" />
+                  <ButtonLoadingIndicator />
                 ) : (
                   <Text className="text-sm font-bold text-white">
                     {editingIncomeId !== null ? "Update income" : "Save income"}
@@ -2056,7 +2057,7 @@ export default function Income() {
                 onPress={() => void saveBudget()}
               >
                 {budgetSaving ? (
-                  <ActivityIndicator color="#FFFFFF" />
+                  <ButtonLoadingIndicator />
                 ) : (
                   <Text className="text-sm font-bold text-white">
                     Save budget
@@ -2604,7 +2605,7 @@ export default function Income() {
                     style={{ opacity: funding ? 0.7 : 1 }}
                   >
                     {funding ? (
-                      <ActivityIndicator color="#FFFFFF" />
+                      <ButtonLoadingIndicator />
                     ) : (
                       <Text className="text-sm font-bold text-white">
                         Fund transfer

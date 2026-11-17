@@ -20,7 +20,6 @@ import {
     useState,
 } from "react";
 import {
-    ActivityIndicator,
     Alert,
     Image,
     KeyboardAvoidingView,
@@ -47,6 +46,7 @@ import { AddButton } from "../../components/AddButton";
 import { CenteredPageLoader } from "../../components/CenteredPageLoader";
 import { CommonScreenHeader } from "../../components/CommonScreenHeader";
 import ConfirmPopup from "../../components/ConfirmPopup";
+import { ButtonLoadingIndicator } from "../../components/ButtonLoadingIndicator";
 import {
     createDateRangeSelection,
     isDateInRange,
@@ -1775,7 +1775,7 @@ export default function Diary() {
                   }}
                 >
                   {submitting ? (
-                    <ActivityIndicator color={Colors.white} />
+                    <ButtonLoadingIndicator />
                   ) : (
                     <Text style={{ color: Colors.white, fontWeight: "800" }}>
                       {editingId ? "Save entry" : "Publish entry"}

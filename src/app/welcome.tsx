@@ -13,7 +13,6 @@ import {
 } from "lucide-react-native";
 import { useRef, useState } from "react";
 import {
-  ActivityIndicator,
   Pressable,
   ScrollView,
   type ScrollViewInstance,
@@ -23,6 +22,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Colors } from "../constants/colors";
+import { ButtonLoadingIndicator } from "../components/ButtonLoadingIndicator";
 import { WELCOME_COMPLETED_STORAGE_KEY } from "../constants/storageKeys";
 
 const pages = [
@@ -327,7 +327,7 @@ export default function WelcomeScreen() {
                 }}
               >
                 {saving ? (
-                  <ActivityIndicator size="small" color="#FFFFFF" />
+                  <ButtonLoadingIndicator size={18} />
                 ) : (
                   <ArrowRight size={17} color="#FFFFFF" strokeWidth={2.3} />
                 )}

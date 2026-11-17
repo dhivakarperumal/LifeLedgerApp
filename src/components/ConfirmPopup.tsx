@@ -1,13 +1,13 @@
 import type { ReactNode } from "react";
 import { useRef, useState } from "react";
 import {
-    ActivityIndicator,
     Modal,
     Pressable,
     Text,
     useColorScheme,
     View,
 } from "react-native";
+import { ButtonLoadingIndicator } from "./ButtonLoadingIndicator";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 export type ConfirmPopupType =
@@ -195,7 +195,7 @@ export default function ConfirmPopup({
               }}
             >
               {isBusy ? (
-                <ActivityIndicator color="#FFFFFF" />
+                <ButtonLoadingIndicator />
               ) : (
                 <Text className="text-[15px] font-semibold text-white">
                   {confirmText ?? defaults.confirmText}

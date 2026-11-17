@@ -6,7 +6,6 @@ import { useFocusEffect, useRouter } from "expo-router";
 import * as Sharing from "expo-sharing";
 import { useCallback, useMemo, useState } from "react";
 import {
-    ActivityIndicator,
     Alert,
     Platform,
     Pressable,
@@ -20,6 +19,7 @@ import {
 import Svg, { Path, Rect } from "react-native-svg";
 import api, { getApiErrorMessage, logoutUser } from "../api";
 import { CenteredPageLoader } from "../components/CenteredPageLoader";
+import { ButtonLoadingIndicator } from "../components/ButtonLoadingIndicator";
 import {
     createDateRangeSelection,
     isDateInRange,
@@ -859,7 +859,7 @@ export default function Reports() {
             onPress={() => void exportPdf()}
           >
             {exporting === "pdf" ? (
-              <ActivityIndicator size="small" color="#FFFFFF" />
+              <ButtonLoadingIndicator size={18} />
             ) : (
               <Ionicons
                 name="document-text-outline"
@@ -878,7 +878,11 @@ export default function Reports() {
             onPress={() => void exportCsv()}
           >
             {exporting === "csv" ? (
-              <ActivityIndicator size="small" color="#315640" />
+              <ButtonLoadingIndicator
+                size={18}
+                color1="#315640"
+                color2="#0C6011"
+              />
             ) : (
               <Ionicons name="download-outline" size={17} color="#315640" />
             )}

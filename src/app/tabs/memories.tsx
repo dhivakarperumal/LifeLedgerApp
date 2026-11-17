@@ -17,7 +17,6 @@ import {
 import { VideoView, useVideoPlayer } from "expo-video";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
-    ActivityIndicator,
     Alert,
     Image,
     KeyboardAvoidingView,
@@ -44,6 +43,7 @@ import { AddButton } from "../../components/AddButton";
 import { CenteredPageLoader } from "../../components/CenteredPageLoader";
 import ConfirmPopup from "../../components/ConfirmPopup";
 import { CommonScreenHeader } from "../../components/CommonScreenHeader";
+import { ButtonLoadingIndicator } from "../../components/ButtonLoadingIndicator";
 import {
     createDateRangeSelection,
     isDateInRange,
@@ -1626,7 +1626,7 @@ export default function Memories() {
                 }}
               >
                 {submitting ? (
-                  <ActivityIndicator color={Colors.white} />
+                  <ButtonLoadingIndicator />
                 ) : (
                   <Text
                     style={{

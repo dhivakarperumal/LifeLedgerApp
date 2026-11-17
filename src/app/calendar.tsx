@@ -2,7 +2,6 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 import { useFocusEffect, useLocalSearchParams, usePathname, useRouter } from "expo-router";
 import { useCallback, useState } from "react";
 import {
-  ActivityIndicator,
   Alert,
   Image,
   KeyboardAvoidingView,
@@ -18,6 +17,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import api, { API_BASE_URL, getApiErrorMessage } from "../api";
 import { AddButton } from "../components/AddButton";
+import { ButtonLoadingIndicator } from "../components/ButtonLoadingIndicator";
 import { CenteredPageLoader } from "../components/CenteredPageLoader";
 import ConfirmPopup from "../components/ConfirmPopup";
 import { DateTimePickerComponent } from "../components/DateTimePickerComponent";
@@ -1341,7 +1341,7 @@ export default function CalendarScreen() {
                 className="items-center rounded-xl bg-[#366039] py-3.5"
               >
                 {saving ? (
-                  <ActivityIndicator color={Colors.white} />
+                  <ButtonLoadingIndicator />
                 ) : (
                   <Text className="text-base font-bold text-white">Save</Text>
                 )}

@@ -3,7 +3,6 @@ import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useState } from "react";
 import {
-    ActivityIndicator,
     Alert,
     Image,
     Pressable,
@@ -12,6 +11,7 @@ import {
 } from "react-native";
 import { getApiErrorMessage, registerUser } from "../../api";
 import ConfirmPopup from "../../components/ConfirmPopup";
+import { ButtonLoadingIndicator } from "../../components/ButtonLoadingIndicator";
 import { FormInput, FormLabel } from "../../components/FormControls";
 import { GradientSafeAreaView as SafeAreaView } from "../../components/GradientSafeAreaView";
 import { KeyboardAwareFormScrollView } from "../../components/KeyboardAwareFormScrollView";
@@ -261,7 +261,7 @@ export default function RegisterScreen() {
             className="mb-7 mt-2 h-16 flex-row items-center justify-center gap-3 rounded-full px-4 bg-[#366039]"
           >
             {isSubmitting ? (
-              <ActivityIndicator size="small" color="#FFFFFF" />
+              <ButtonLoadingIndicator size={18} />
             ) : null}
             <Text className="text-[16px] font-extrabold tracking-[0.18em] text-white">
               {isSubmitting ? "Creating Account..." : "Create Account"}

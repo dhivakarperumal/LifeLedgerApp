@@ -4,7 +4,6 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useFocusEffect, useLocalSearchParams, usePathname, useRouter } from "expo-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
-    ActivityIndicator,
     Alert,
     Image,
     KeyboardAvoidingView,
@@ -26,6 +25,7 @@ import api, {
     logoutUser,
 } from "../api";
 import { AddButton } from "../components/AddButton";
+import { ButtonLoadingIndicator } from "../components/ButtonLoadingIndicator";
 import { CenteredPageLoader } from "../components/CenteredPageLoader";
 import ConfirmPopup from "../components/ConfirmPopup";
 import {
@@ -932,7 +932,7 @@ export default function Categories() {
                 onPress={() => void saveCategory()}
               >
                 {saving ? (
-                  <ActivityIndicator color="#FFFFFF" />
+                  <ButtonLoadingIndicator />
                 ) : (
                   <Text className="text-sm font-bold text-white">
                     {editingCategory ? "Save changes" : "Create category"}

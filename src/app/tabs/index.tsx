@@ -17,6 +17,7 @@ import Svg, { Circle } from "react-native-svg";
 import { TopHeader } from "../../Navigations/TopHeader";
 import { API_BASE_URL, getShared, getStoredUser } from "../../api";
 import ConfirmPopup from "../../components/ConfirmPopup";
+import { ButtonLoadingIndicator } from "../../components/ButtonLoadingIndicator";
 import { GradientSafeAreaView as SafeAreaView } from "../../components/GradientSafeAreaView";
 import { parseLocalDate } from "../../components/dateTimeUtils";
 import { Colors } from "../../constants/colors";
@@ -1255,7 +1256,7 @@ export default function Index() {
                           color={Colors.white}
                         />
                       ) : (
-                        <ActivityIndicator size="small" color={Colors.white} />
+                        <ButtonLoadingIndicator size={16} />
                       )}
                       <Text className="ml-1 text-[10px] font-bold text-white">
                         {!budgetLoaded

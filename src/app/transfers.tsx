@@ -23,6 +23,7 @@ import Svg, { Path, Rect } from "react-native-svg";
 import api, { API_BASE_URL, getApiErrorMessage, logoutUser } from "../api";
 import { ActionIconButton } from "../components/ActionIconButton";
 import { AddButton } from "../components/AddButton";
+import { ButtonLoadingIndicator } from "../components/ButtonLoadingIndicator";
 import { CenteredPageLoader } from "../components/CenteredPageLoader";
 import ConfirmPopup from "../components/ConfirmPopup";
 import {
@@ -1820,7 +1821,11 @@ export default function Transfers() {
                       }}
                     >
                       {returningId === transfer.id ? (
-                        <ActivityIndicator size="small" color="#264B2A" />
+                        <ButtonLoadingIndicator
+                          size={16}
+                          color1="#264B2A"
+                          color2="#0C6011"
+                        />
                       ) : (
                         <Ionicons
                           name="arrow-undo-outline"
@@ -2258,7 +2263,7 @@ export default function Transfers() {
                 onPress={() => void submitTransfer()}
               >
                 {submitting ? (
-                  <ActivityIndicator color="#FFFFFF" />
+                  <ButtonLoadingIndicator />
                 ) : (
                   <Text className="text-sm font-bold text-white">
                     {editingTransferId !== null
@@ -2542,7 +2547,7 @@ export default function Transfers() {
                   }}
                 >
                   {returningId === selectedTransfer?.id ? (
-                    <ActivityIndicator size="small" color="#FFFFFF" />
+                    <ButtonLoadingIndicator size={18} />
                   ) : (
                     <Ionicons
                       name="arrow-undo-outline"

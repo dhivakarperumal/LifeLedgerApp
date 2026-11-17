@@ -4,7 +4,6 @@ import { StatusBar } from "expo-status-bar";
 import { ArrowLeft } from "lucide-react-native";
 import { useState } from "react";
 import {
-    ActivityIndicator,
     Alert,
     Image,
     Pressable,
@@ -13,6 +12,7 @@ import {
 } from "react-native";
 import { getApiErrorMessage, loginWithIdentifier } from "../../api";
 import ConfirmPopup from "../../components/ConfirmPopup";
+import { ButtonLoadingIndicator } from "../../components/ButtonLoadingIndicator";
 import { FormInput, FormLabel } from "../../components/FormControls";
 import { GradientSafeAreaView as SafeAreaView } from "../../components/GradientSafeAreaView";
 import { KeyboardAwareFormScrollView } from "../../components/KeyboardAwareFormScrollView";
@@ -190,7 +190,7 @@ export default function LoginScreen() {
             className="mb-10 mt-2 h-[60px] flex-row items-center justify-center gap-3 rounded-full px-4 bg-[#366039]"
           >
             {isSubmitting ? (
-              <ActivityIndicator size="small" color="#FFFFFF" />
+              <ButtonLoadingIndicator size={18} />
             ) : null}
             <Text className="text-[17px] font-extrabold tracking-[0.22em] text-white">
               {isSubmitting ? "Signing In..." : "Sign In"}

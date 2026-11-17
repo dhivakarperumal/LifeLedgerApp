@@ -2,7 +2,6 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useRef, useState } from "react";
 import {
-  ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -17,6 +16,7 @@ import {
 } from "react-native-safe-area-context";
 import api, { getApiErrorMessage } from "../api";
 import { CommonScreenHeader } from "../components/CommonScreenHeader";
+import { ButtonLoadingIndicator } from "../components/ButtonLoadingIndicator";
 import { DateTimePickerComponent } from "../components/DateTimePickerComponent";
 import { PopupSelect } from "../components/PopupSelect";
 import { Colors } from "../constants/colors";
@@ -406,7 +406,7 @@ export default function TodoFormPage() {
                 }}
               >
                 {saving ? (
-                  <ActivityIndicator size="small" color="white" />
+                  <ButtonLoadingIndicator size={18} />
                 ) : (
                   <Ionicons
                     name={isEditing ? "checkmark" : "add"}

@@ -29,6 +29,7 @@ import api, {
   logoutUser,
 } from "../../api";
 import { AddButton } from "../../components/AddButton";
+import { ButtonLoadingIndicator } from "../../components/ButtonLoadingIndicator";
 import { ActionIconButton } from "../../components/ActionIconButton";
 import { CommonScreenHeader } from "../../components/CommonScreenHeader";
 
@@ -2547,7 +2548,7 @@ export default function Expenses() {
                     }}
                   >
                     {fundingTransfer ? (
-                      <ActivityIndicator color={Colors.white} />
+                      <ButtonLoadingIndicator />
                     ) : (
                       <Text
                         style={{

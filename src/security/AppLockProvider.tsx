@@ -40,6 +40,7 @@ import api, {
   setAppLockToken,
 } from "../api";
 import ConfirmPopup from "../components/ConfirmPopup";
+import { ButtonLoadingIndicator } from "../components/ButtonLoadingIndicator";
 import { GradientSafeAreaView as SafeAreaView } from "../components/GradientSafeAreaView";
 import { Colors } from "../constants/colors";
 import {
@@ -1388,7 +1389,7 @@ function PrimaryButton({
       />
       {isBusy ? (
         <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
-          <ActivityIndicator color="#FFFFFF" size="small" />
+          <ButtonLoadingIndicator size={18} />
           <Text
             style={{
               color: "#FFFFFF",
