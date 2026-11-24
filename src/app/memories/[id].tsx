@@ -456,7 +456,7 @@ export default function MemoryDetails() {
         onCancel={() => setShowDeletePopup(false)}
       />
       <PageHeader
-        title="Memories"
+        title={memory.title || "Memories"}
         onBack={goBack}
         accessibilityLabel="Back to memories"
         right={

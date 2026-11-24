@@ -485,7 +485,7 @@ export default function DiaryDetails() {
         onCancel={() => setShowDeletePopup(false)}
       />
       <PageHeader
-        title="Diary"
+        title={entry.title || "Diary"}
         onBack={goBack}
         accessibilityLabel="Back to diary"
         right={
