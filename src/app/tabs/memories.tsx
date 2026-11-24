@@ -239,16 +239,30 @@ function getMediaUrl(value?: string) {
 }
 
 function getMemoryImage(memory: Memory) {
-  const image = getMemoryAttachments(memory).find(
+  const explicitImages = Array.isArray(memory.images) ? memory.images : [];
+  const firstImage = explicitImages.find((item) => Boolean(getAttachmentUrl(item)));
+  if (firstImage) return getAttachmentUrl(firstImage);
+
+  const mediaItems = [
+    ...(Array.isArray(memory.media_files) ? memory.media_files : []),
+    ...(Array.isArray(memory.media_gallery) ? memory.media_gallery : []),
+    ...(Array.isArray(memory.attachments) ? memory.attachments : []),
+    ...(Array.isArray(memory.media) ? memory.media : []),
+  ];
+  const image = mediaItems.find(
     (item) => getAttachmentKind(item) === "image",
   );
-  return image
-    ? getAttachmentUrl(image)
-    : getMediaUrl(
-        memory.media_type?.toLowerCase().startsWith("image")
-          ? memory.media_url
-          : undefined,
-      );
+  if (image) return getAttachmentUrl(image);
+
+  const isLegacyImage = String(memory.media_type || "")
+    .toLowerCase()
+    .startsWith("image");
+  if (isLegacyImage) {
+    const legacyImage = mediaItems.find((item) => Boolean(getAttachmentUrl(item)));
+    if (legacyImage) return getAttachmentUrl(legacyImage);
+    return getMediaUrl(memory.media_url);
+  }
+  return "";
 }
 
 function getMemoryMediaType(memory: Memory) {

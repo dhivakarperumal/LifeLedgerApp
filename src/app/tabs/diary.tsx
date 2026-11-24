@@ -89,8 +89,11 @@ type DiaryEntry = {
   is_favorite?: boolean | number | string;
   is_private?: boolean | number | string;
   is_locked?: boolean | number | string;
+  images?: (string | Record<string, any>)[];
   attachments?: (string | Record<string, any>)[];
   media_files?: (string | Record<string, any>)[];
+  media_url?: string;
+  media_type?: string;
   attachment_count?: number;
   created_at?: string;
   updated_at?: string;
@@ -352,45 +355,43 @@ function attachmentKind(file: string | Record<string, any>) {
 }
 
 function diaryImageUrl(entry: DiaryEntry) {
-  const files = getDiaryAttachments(entry);
-  const image = files.find((file) => {
-    const type =
-      typeof file === "string"
-        ? ""
-        : String(
-            file.file_type ||
-              file.mime_type ||
-              file.mimeType ||
-              file.media_type ||
-              file.type ||
-              "",
-          ).toLowerCase();
-    const url =
-      typeof file === "string"
-        ? file
-        : String(
-            file.file_url ||
-              file.url ||
-              file.src ||
-              file.path ||
-              file.file_path ||
-              "",
-          );
-    return (
-      type.includes("image") || /\.(png|jpe?g|gif|webp|bmp)(\?|$)/i.test(url)
-    );
-  });
-  if (!image) return "";
+  const explicitImages = Array.isArray(entry.images) ? entry.images : [];
+  const firstImage = explicitImages.find((item) => Boolean(getDiaryMediaUrl(item)));
+  if (firstImage) return getDiaryMediaUrl(firstImage);
 
+  if (entry.image_path) return getDiaryMediaUrl(entry.image_path);
+
+  const listed = [
+    ...(Array.isArray(entry.media_files) ? entry.media_files : []),
+    ...(Array.isArray(entry.attachments) ? entry.attachments : []),
+  ];
+  const image = listed.find(
+    (file) =>
+      attachmentKind(file) === "image" && Boolean(getDiaryMediaUrl(file)),
+  );
+  if (image) return getDiaryMediaUrl(image);
+
+  const isLegacyImage = String(entry.media_type || "")
+    .toLowerCase()
+    .startsWith("image");
+  if (isLegacyImage) {
+    const legacyImage = listed.find((file) => Boolean(getDiaryMediaUrl(file)));
+    if (legacyImage) return getDiaryMediaUrl(legacyImage);
+    return getDiaryMediaUrl(entry.media_url || "");
+  }
+  return "";
+}
+
+function getDiaryMediaUrl(file: string | Record<string, any>) {
   const value =
-    typeof image === "string"
-      ? image
+    typeof file === "string"
+      ? file
       : String(
-          image.file_url ||
-            image.url ||
-            image.src ||
-            image.path ||
-            image.file_path ||
+          file.file_url ||
+            file.url ||
+            file.src ||
+            file.path ||
+            file.file_path ||
             "",
         );
   if (!value) return "";
@@ -400,9 +401,11 @@ function diaryImageUrl(entry: DiaryEntry) {
 }
 
 function getDiaryAttachments(entry: DiaryEntry) {
-  const listed = [...(entry.attachments || []), ...(entry.media_files || [])];
-  if (listed.length) return listed;
-
+  const listed = [
+    ...(Array.isArray(entry.images) ? entry.images : []),
+    ...(Array.isArray(entry.attachments) ? entry.attachments : []),
+    ...(Array.isArray(entry.media_files) ? entry.media_files : []),
+  ];
   const fallback: Record<string, any>[] = [];
   if (entry.image_path) {
     fallback.push({
@@ -432,7 +435,21 @@ function getDiaryAttachments(entry: DiaryEntry) {
       file_type: "file",
     });
   }
-  return fallback;
+  if (entry.media_url) {
+    fallback.push({
+      file_name: entry.title,
+      file_url: entry.media_url,
+      file_type: entry.media_type,
+    });
+  }
+
+  const seen = new Set<string>();
+  return [...listed, ...fallback].filter((file) => {
+    const url = getDiaryMediaUrl(file);
+    if (!url || seen.has(url)) return false;
+    seen.add(url);
+    return true;
+  });
 }
 
 function getDiaryDraftStorageKey(
