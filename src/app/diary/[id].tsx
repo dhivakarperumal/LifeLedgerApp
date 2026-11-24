@@ -1,6 +1,8 @@
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { useAudioPlayer, useAudioPlayerStatus } from "expo-audio";
+import { LinearGradient } from "expo-linear-gradient";
 import { useLocalSearchParams, useRouter } from "expo-router";
+import * as ExpoLinking from "expo-linking";
 import { VideoView, useVideoPlayer } from "expo-video";
 import { useEffect, useMemo, useState } from "react";
 import {
@@ -10,6 +12,7 @@ import {
     Linking,
     Pressable,
     RefreshControl,
+    Share,
     ScrollView,
     Text,
     View,
@@ -29,9 +32,14 @@ type DiaryMedia = {
   url?: string;
   src?: string;
   path?: string;
+  file_path?: string;
   file_name?: string;
+  filename?: string;
   name?: string;
   file_type?: string;
+  mime_type?: string;
+  mimeType?: string;
+  media_type?: string;
   type?: string;
 };
 
@@ -53,11 +61,37 @@ type DiaryDetailsEntry = {
   updated_at?: string;
   attachments?: (string | DiaryMedia)[];
   media_files?: (string | DiaryMedia)[];
+  images?: (string | DiaryMedia)[];
+  videos?: (string | DiaryMedia)[];
+  audio?: (string | DiaryMedia)[];
+  media_url?: string;
+  media_type?: string;
   image_path?: string;
   video_path?: string;
   audio_path?: string;
   file_path?: string;
 };
+
+type AttachmentCategory = "images" | "videos" | "audio" | "zip" | "files";
+type MediaTabId = "personal" | "all" | AttachmentCategory;
+type DiaryAttachment = {
+  media: string | DiaryMedia;
+  url: string;
+  fileName: string;
+  category: AttachmentCategory;
+  kind: string;
+};
+const mediaCategoryOptions: {
+  id: AttachmentCategory;
+  label: string;
+  icon: keyof typeof Ionicons.glyphMap;
+}[] = [
+  { id: "images", label: "Images", icon: "image-outline" },
+  { id: "videos", label: "Videos", icon: "videocam-outline" },
+  { id: "audio", label: "Audio", icon: "musical-notes-outline" },
+  { id: "zip", label: "ZIP", icon: "archive-outline" },
+  { id: "files", label: "Files", icon: "document-text-outline" },
+];
 
 const mediaBaseUrl = API_BASE_URL.replace(/\/api\/?$/, "");
 
@@ -126,22 +160,35 @@ function mediaUrlFor(item: string | DiaryMedia) {
   return mediaUrl(
     typeof item === "string"
       ? item
-      : item.file_url || item.url || item.src || item.path,
+      : item.file_url || item.url || item.src || item.path || item.file_path,
   );
 }
 
 function mediaName(item: string | DiaryMedia, index: number) {
   if (typeof item !== "string") {
-    return item.file_name || item.name || `Attachment ${index + 1}`;
+    return (
+      item.file_name || item.filename || item.name || `Attachment ${index + 1}`
+    );
   }
   return item.split("/").pop() || `Attachment ${index + 1}`;
 }
 
 function mediaType(item: string | DiaryMedia) {
   const type =
-    typeof item === "string" ? "" : String(item.file_type || item.type || "");
+    typeof item === "string"
+      ? ""
+      : String(
+          item.file_type ||
+            item.mime_type ||
+            item.mimeType ||
+            item.media_type ||
+            item.type ||
+            "",
+        );
   const source =
-    typeof item === "string" ? item : `${type} ${mediaName(item, 0)}`;
+    typeof item === "string"
+      ? item
+      : `${type} ${mediaName(item, 0)} ${mediaUrlFor(item)}`;
   const value = source.toLowerCase();
   if (
     value.includes("image") ||
@@ -157,24 +204,61 @@ function mediaType(item: string | DiaryMedia) {
   return "file";
 }
 
-function getAttachments(entry: DiaryDetailsEntry): (string | DiaryMedia)[] {
-  const listed = [...(entry.attachments || []), ...(entry.media_files || [])];
-  if (listed.length) {
-    const seen = new Set<string>();
-    return listed.filter((item) => {
-      const key = `${mediaUrlFor(item)}|${mediaName(item, 0)}`;
-      if (!key || seen.has(key)) return false;
-      seen.add(key);
-      return true;
-    });
-  }
+function getAttachmentCategory(
+  media: string | DiaryMedia,
+  fallback?: AttachmentCategory,
+): AttachmentCategory {
+  if (fallback) return fallback;
+  const kind = mediaType(media);
+  if (kind === "image") return "images";
+  if (kind === "video") return "videos";
+  if (kind === "audio") return "audio";
+  if (kind === "archive") return "zip";
+  return "files";
+}
 
-  return [
-    entry.image_path,
-    entry.video_path,
-    entry.audio_path,
-    entry.file_path,
-  ].filter((value): value is string => Boolean(value));
+function getAttachments(entry: DiaryDetailsEntry): DiaryAttachment[] {
+  const sources: {
+    media: string | DiaryMedia;
+    category?: AttachmentCategory;
+  }[] = [
+    ...(entry.images || []).map((media) => ({ media, category: "images" as const })),
+    ...(entry.videos || []).map((media) => ({ media, category: "videos" as const })),
+    ...(entry.audio || []).map((media) => ({ media, category: "audio" as const })),
+    ...(entry.attachments || []).map((media) => ({ media })),
+    ...(entry.media_files || []).map((media) => ({ media })),
+    ...(entry.image_path ? [{ media: entry.image_path, category: "images" as const }] : []),
+    ...(entry.video_path ? [{ media: entry.video_path, category: "videos" as const }] : []),
+    ...(entry.audio_path ? [{ media: entry.audio_path, category: "audio" as const }] : []),
+    ...(entry.file_path ? [{ media: entry.file_path, category: "files" as const }] : []),
+    ...(entry.media_url ? [{ media: { file_url: entry.media_url, file_type: entry.media_type } }] : []),
+  ];
+  const seen = new Set<string>();
+
+  return sources.reduce<DiaryAttachment[]>((result, { media, category }, index) => {
+    const url = mediaUrlFor(media);
+    if (!url || seen.has(url)) return result;
+    seen.add(url);
+    const kind = category
+      ? category === "images"
+        ? "image"
+        : category === "videos"
+          ? "video"
+          : category === "audio"
+            ? "audio"
+            : category === "zip"
+              ? "archive"
+              : "file"
+      : mediaType(media);
+    result.push({
+      media,
+      url,
+      fileName: mediaName(media, index),
+      category: getAttachmentCategory(media, category),
+      kind,
+    });
+    return result;
+  }, []);
 }
 
 export default function DiaryDetails() {
@@ -186,6 +270,7 @@ export default function DiaryDetails() {
   const [loading, setLoading] = useState(true);
   const [refreshKey, setRefreshKey] = useState(0);
   const [showDeletePopup, setShowDeletePopup] = useState(false);
+  const [activeMediaTab, setActiveMediaTab] = useState<MediaTabId>("personal");
 
   useEffect(() => {
     let active = true;
@@ -239,6 +324,46 @@ export default function DiaryDetails() {
     () => (entry ? getAttachments(entry) : []),
     [entry],
   );
+  const mediaTabs: {
+    id: MediaTabId;
+    label: string;
+    icon: keyof typeof Ionicons.glyphMap;
+    count?: number;
+  }[] = [
+    { id: "personal", label: "Personal", icon: "book-outline" },
+    ...(attachments.length
+      ? [
+          {
+            id: "all" as const,
+            label: "All",
+            icon: "document-text-outline" as const,
+            count: attachments.length,
+          },
+          ...mediaCategoryOptions
+            .map((category) => ({
+              ...category,
+              count: attachments.filter(
+                (attachment) => attachment.category === category.id,
+              ).length,
+            }))
+            .filter((category) => category.count > 0),
+        ]
+      : []),
+  ];
+  const selectedTab = mediaTabs.some((tab) => tab.id === activeMediaTab)
+    ? activeMediaTab
+    : "personal";
+  const selectedMediaItems =
+    selectedTab === "all"
+      ? attachments
+      : selectedTab === "personal"
+        ? []
+        : attachments.filter(
+            (attachment) => attachment.category === selectedTab,
+          );
+  const coverImageUrl =
+    attachments.find((attachment) => attachment.category === "images")?.url ||
+    "";
 
   const toggleFavorite = async () => {
     if (!entry) return;
@@ -268,6 +393,25 @@ export default function DiaryDetails() {
   const deleteEntry = () => {
     if (!entry) return;
     setShowDeletePopup(true);
+  };
+
+  const shareEntry = async () => {
+    if (!entry) return;
+    const content = plainContent(entry.content);
+    const url = ExpoLinking.createURL(
+      `diary/${encodeURIComponent(String(entry.id))}`,
+    );
+    try {
+      await Share.share({
+        title: entry.title,
+        message: `${entry.title}${content ? `\n\n${content}` : ""}\n\n${url}`,
+      });
+    } catch (error) {
+      Alert.alert(
+        "Unable to share diary entry",
+        getApiErrorMessage(error, "Please try again."),
+      );
+    }
   };
 
   const confirmDeleteEntry = async () => {
@@ -346,6 +490,13 @@ export default function DiaryDetails() {
         accessibilityLabel="Back to diary"
         right={
           <View style={{ flexDirection: "row", gap: 8 }}>
+            <HeaderAction label="Share diary entry" onPress={() => void shareEntry()}>
+              <Ionicons
+                name="share-social-outline"
+                size={19}
+                color={Colors.white}
+              />
+            </HeaderAction>
             <HeaderAction
               label={favorite ? "Remove favorite" : "Add favorite"}
               onPress={() => void toggleFavorite()}
@@ -382,146 +533,236 @@ export default function DiaryDetails() {
           paddingBottom: insets.bottom + 30,
         }}
       >
-        <View style={{ marginBottom: 16 }}>
-          <View
-            style={{
-              flexDirection: "row",
-              flexWrap: "wrap",
-              gap: 7,
-              marginBottom: 9,
-            }}
-          >
-            <MetaPill
-              label={entry.category_name || "General"}
-              icon="pricetag-outline"
+        <View
+          style={{
+            minHeight: 224,
+            justifyContent: "flex-end",
+            overflow: "hidden",
+            marginBottom: 14,
+            padding: 18,
+            borderRadius: 22,
+            backgroundColor: "#234836",
+          }}
+        >
+          {coverImageUrl ? (
+            <Image
+              source={{ uri: coverImageUrl }}
+              resizeMode="cover"
+              style={{ position: "absolute", top: 0, right: 0, bottom: 0, left: 0 }}
             />
-            <MetaPill
-              label={entry.status || "published"}
-              icon="bookmark-outline"
-            />
-            <MetaPill label={entry.mood || "Normal"} icon="happy-outline" />
+          ) : null}
+          <LinearGradient
+            colors={
+              coverImageUrl
+                ? ["#00000000", "#000000B8"]
+                : Colors.greenGradient
+            }
+            style={{ position: "absolute", top: 0, right: 0, bottom: 0, left: 0 }}
+          />
+          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 7, marginBottom: 9 }}>
+            {[entry.category_name || "General", entry.status || "published", entry.mood || "Normal"].map(
+              (label, index) => (
+                <Text
+                  key={`${label}-${index}`}
+                  style={{
+                    overflow: "hidden",
+                    paddingHorizontal: 10,
+                    paddingVertical: 6,
+                    borderRadius: 14,
+                    backgroundColor: "rgba(255,255,255,0.2)",
+                    color: Colors.white,
+                    fontSize: 11,
+                    fontWeight: "700",
+                  }}
+                >
+                  {label}
+                </Text>
+              ),
+            )}
           </View>
           <Text
             style={{
-              color: Colors.textPrimary,
+              color: Colors.white,
               fontSize: 27,
               fontWeight: "800",
+              textShadowColor: "rgba(0,0,0,0.35)",
+              textShadowOffset: { width: 0, height: 1 },
+              textShadowRadius: 5,
             }}
           >
             {entry.title}
           </Text>
         </View>
 
-        <View
-          style={{
-            flexDirection: "row",
-            flexWrap: "wrap",
-            gap: 9,
-            marginBottom: 17,
-          }}
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={{ gap: 8, paddingBottom: 14 }}
+          accessibilityRole="tablist"
+          accessibilityLabel="Diary detail categories"
         >
-          <InfoItem
-            icon="calendar-outline"
-            label="Date"
-            value={formatDate(entry.entry_date)}
-          />
-          <InfoItem
-            icon="time-outline"
-            label="Time"
-            value={entry.entry_time || "Not set"}
-          />
-          <InfoItem
-            icon="location-outline"
-            label="Location"
-            value={entry.location || "No location"}
-          />
-          <InfoItem
-            icon="heart-outline"
-            label="Favorite"
-            value={favorite ? "Yes" : "No"}
-          />
-        </View>
-
-        <View
-          style={{
-            marginBottom: 14,
-            padding: 16,
-            borderRadius: 16,
-            borderWidth: 1,
-            borderColor: "#E0E8E3",
-            backgroundColor: Colors.white,
-          }}
-        >
-          <Text style={sectionLabel}>Diary entry</Text>
-          <Text
-            selectable
-            style={{ color: "#475A53", fontSize: 15, lineHeight: 23 }}
-          >
-            {plainContent(entry.content) || "No content provided."}
-          </Text>
-        </View>
-
-        <View style={{ flexDirection: "row", gap: 10, marginBottom: 14 }}>
-          <InfoItem
-            icon="eye-off-outline"
-            label="Private"
-            value={booleanValue(entry.is_private) ? "Yes" : "No"}
-          />
-          <InfoItem
-            icon="lock-closed-outline"
-            label="Locked"
-            value={booleanValue(entry.is_locked) ? "Yes" : "No"}
-          />
-        </View>
-
-        <View
-          style={{
-            marginBottom: 14,
-            padding: 16,
-            borderRadius: 16,
-            borderWidth: 1,
-            borderColor: "#E0E8E3",
-            backgroundColor: Colors.white,
-          }}
-        >
-          <Text style={sectionLabel}>Tags</Text>
-          {tags.length ? (
-            <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 7 }}>
-              {tags.map((tag, index) => (
-                <MetaPill
-                  key={`${tag}-${index}`}
-                  label={tag}
-                  icon="pricetag-outline"
+          {mediaTabs.map((tab) => {
+            const isActive = tab.id === selectedTab;
+            return (
+              <Pressable
+                key={tab.id}
+                accessibilityRole="tab"
+                accessibilityState={{ selected: isActive }}
+                onPress={() => setActiveMediaTab(tab.id)}
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  gap: 7,
+                  paddingHorizontal: 12,
+                  paddingVertical: 10,
+                  borderRadius: 14,
+                  backgroundColor: isActive ? Colors.forest : Colors.white,
+                  borderWidth: 1,
+                  borderColor: isActive ? Colors.forest : "#E0E8E3",
+                }}
+              >
+                <Ionicons
+                  name={tab.icon}
+                  size={15}
+                  color={isActive ? Colors.white : Colors.textSecondary}
                 />
-              ))}
+                <Text
+                  style={{
+                    color: isActive ? Colors.white : Colors.textSecondary,
+                    fontSize: 12,
+                    fontWeight: "700",
+                  }}
+                >
+                  {tab.label}
+                </Text>
+                {tab.count !== undefined ? (
+                  <Text
+                    style={{
+                      color: isActive ? Colors.white : Colors.sage,
+                      fontSize: 11,
+                      fontWeight: "700",
+                    }}
+                  >
+                    {tab.count}
+                  </Text>
+                ) : null}
+              </Pressable>
+            );
+          })}
+        </ScrollView>
+
+        {selectedTab === "personal" ? (
+          <>
+            <View
+              style={{
+                flexDirection: "row",
+                flexWrap: "wrap",
+                gap: 9,
+                marginBottom: 17,
+              }}
+            >
+              <InfoItem
+                icon="calendar-outline"
+                label="Date"
+                value={formatDate(entry.entry_date)}
+              />
+              <InfoItem
+                icon="time-outline"
+                label="Time"
+                value={entry.entry_time || "Not set"}
+              />
+              <InfoItem
+                icon="location-outline"
+                label="Location"
+                value={entry.location || "No location"}
+              />
+              <InfoItem
+                icon="heart-outline"
+                label="Favorite"
+                value={favorite ? "Yes" : "No"}
+              />
             </View>
-          ) : (
-            <Text style={{ color: Colors.sage, fontSize: 13 }}>
-              No tags added.
-            </Text>
-          )}
-        </View>
 
-        <View
-          style={{
-            marginBottom: 14,
-            padding: 16,
-            borderRadius: 16,
-            borderWidth: 1,
-            borderColor: "#E0E8E3",
-            backgroundColor: Colors.white,
-          }}
-        >
-          <Text style={sectionLabel}>Record details</Text>
-          <Text style={detailText}>
-            Created: {formatDateTime(entry.created_at)}
-          </Text>
-          <Text style={[detailText, { marginTop: 7 }]}>
-            Updated: {formatDateTime(entry.updated_at)}
-          </Text>
-        </View>
+            <View
+              style={{
+                marginBottom: 14,
+                padding: 16,
+                borderRadius: 16,
+                borderWidth: 1,
+                borderColor: "#E0E8E3",
+                backgroundColor: Colors.white,
+              }}
+            >
+              <Text style={sectionLabel}>Diary entry</Text>
+              <Text
+                selectable
+                style={{ color: "#475A53", fontSize: 15, lineHeight: 23 }}
+              >
+                {plainContent(entry.content) || "No content provided."}
+              </Text>
+            </View>
 
-        {attachments.length > 0 ? (
+            <View style={{ flexDirection: "row", gap: 10, marginBottom: 14 }}>
+              <InfoItem
+                icon="eye-off-outline"
+                label="Private"
+                value={booleanValue(entry.is_private) ? "Yes" : "No"}
+              />
+              <InfoItem
+                icon="lock-closed-outline"
+                label="Locked"
+                value={booleanValue(entry.is_locked) ? "Yes" : "No"}
+              />
+            </View>
+
+            <View
+              style={{
+                marginBottom: 14,
+                padding: 16,
+                borderRadius: 16,
+                borderWidth: 1,
+                borderColor: "#E0E8E3",
+                backgroundColor: Colors.white,
+              }}
+            >
+              <Text style={sectionLabel}>Tags</Text>
+              {tags.length ? (
+                <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 7 }}>
+                  {tags.map((tag, index) => (
+                    <MetaPill
+                      key={`${tag}-${index}`}
+                      label={tag}
+                      icon="pricetag-outline"
+                    />
+                  ))}
+                </View>
+              ) : (
+                <Text style={{ color: Colors.sage, fontSize: 13 }}>
+                  No tags added.
+                </Text>
+              )}
+            </View>
+
+            <View
+              style={{
+                marginBottom: 14,
+                padding: 16,
+                borderRadius: 16,
+                borderWidth: 1,
+                borderColor: "#E0E8E3",
+                backgroundColor: Colors.white,
+              }}
+            >
+              <Text style={sectionLabel}>Record details</Text>
+              <Text style={detailText}>
+                Created: {formatDateTime(entry.created_at)}
+              </Text>
+              <Text style={[detailText, { marginTop: 7 }]}>
+                Updated: {formatDateTime(entry.updated_at)}
+              </Text>
+            </View>
+          </>
+        ) : (
           <View
             style={{
               padding: 16,
@@ -531,25 +772,21 @@ export default function DiaryDetails() {
               backgroundColor: Colors.white,
             }}
           >
-            <Text style={sectionLabel}>Media and attachments</Text>
+            <Text style={sectionLabel}>
+              {mediaTabs.find((tab) => tab.id === selectedTab)?.label || "Media"}
+            </Text>
             <View style={{ gap: 12 }}>
-              {attachments.map((item, index) => {
-                const url = mediaUrlFor(item);
-                const kind = mediaType(item);
-                const name = mediaName(item, index);
-                if (!url) return null;
-                return (
-                  <AttachmentPreview
-                    key={`${url}-${index}`}
-                    url={url}
-                    name={name}
-                    kind={kind}
-                  />
-                );
-              })}
+              {selectedMediaItems.map((attachment, index) => (
+                <AttachmentPreview
+                  key={`${attachment.url}-${index}`}
+                  url={attachment.url}
+                  name={attachment.fileName}
+                  kind={attachment.kind}
+                />
+              ))}
             </View>
           </View>
-        ) : null}
+        )}
       </ScrollView>
     </SafeAreaView>
   );

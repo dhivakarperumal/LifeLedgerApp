@@ -44,6 +44,7 @@ type MemoryMedia = {
   file_type?: string;
   mime_type?: string;
   mimeType?: string;
+  media_type?: string;
   type?: string;
 };
 
@@ -64,6 +65,9 @@ type MemoryRecord = {
   media_type?: string;
   media_url?: string;
   media_gallery?: (string | MemoryMedia)[];
+  media_files?: (string | MemoryMedia)[];
+  images?: (string | MemoryMedia)[];
+  videos?: (string | MemoryMedia)[];
   attachments?: (string | MemoryMedia)[];
   media?: (string | MemoryMedia)[];
   created_at?: string;
@@ -112,10 +116,12 @@ function mediaKind(item: string | MemoryMedia, fallback = "") {
         item.file_type ||
           item.mime_type ||
           item.mimeType ||
+          item.media_type ||
           item.type ||
           fallback,
       );
-  const value = `${type} ${mediaName(item, 0)} ${mediaUrlOf(item)}`.toLowerCase();
+  const value =
+    `${type} ${mediaName(item, 0)} ${mediaUrlOf(item)}`.toLowerCase();
   if (
     value.includes("image") ||
     /\.(png|jpe?g|gif|webp|bmp|svg)(\?|$)/i.test(value)
@@ -173,11 +179,20 @@ function formatTimestamp(value?: string) {
 
 function getGallery(memory: MemoryRecord) {
   const items = [
+    ...(memory.images || []),
+    ...(memory.videos || []),
     ...(memory.media_gallery || []),
+    ...(memory.media_files || []),
     ...(memory.attachments || []),
     ...(memory.media || []),
   ];
-  if (memory.media_url) items.unshift(memory.media_url);
+  if (memory.media_url) {
+    items.unshift({
+      file_url: memory.media_url,
+      file_type: memory.media_type,
+      file_name: memory.title,
+    });
+  }
   const seen = new Set<string>();
   return items.filter((item) => {
     const url = mediaUrlOf(item);

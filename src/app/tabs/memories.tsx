@@ -79,9 +79,13 @@ type MemoryAttachment =
       url?: string;
       src?: string;
       path?: string;
+      file_path?: string;
       file_name?: string;
       name?: string;
       file_type?: string;
+      mime_type?: string;
+      mimeType?: string;
+      media_type?: string;
       type?: string;
     };
 
@@ -101,6 +105,9 @@ type Memory = {
   media_type?: string;
   media_url?: string;
   media_gallery?: MemoryAttachment[];
+  media_files?: MemoryAttachment[];
+  images?: MemoryAttachment[];
+  videos?: MemoryAttachment[];
   attachments?: MemoryAttachment[];
   media?: MemoryAttachment[];
   voice_note?: string;
@@ -232,28 +239,16 @@ function getMediaUrl(value?: string) {
 }
 
 function getMemoryImage(memory: Memory) {
-  const gallery = Array.isArray(memory.media_gallery)
-    ? memory.media_gallery
-    : [];
-  const image = gallery.find((item) => {
-    const type =
-      typeof item === "string" ? "" : String(item.file_type || item.type || "");
-    const url =
-      typeof item === "string"
-        ? item
-        : String(item.file_url || item.url || item.path || "");
-    return (
-      type.startsWith("image/") || /\.(png|jpe?g|gif|webp|bmp)$/i.test(url)
-    );
-  });
-  const galleryUrl =
-    typeof image === "string"
-      ? image
-      : image?.file_url || image?.url || image?.path;
-  return getMediaUrl(
-    galleryUrl ||
-      (memory.media_type === "image" ? memory.media_url : undefined),
+  const image = getMemoryAttachments(memory).find(
+    (item) => getAttachmentKind(item) === "image",
   );
+  return image
+    ? getAttachmentUrl(image)
+    : getMediaUrl(
+        memory.media_type?.toLowerCase().startsWith("image")
+          ? memory.media_url
+          : undefined,
+      );
 }
 
 function getMemoryMediaType(memory: Memory) {
@@ -263,22 +258,11 @@ function getMemoryMediaType(memory: Memory) {
   if (declaredType.startsWith("video")) return "videos";
   if (declaredType.startsWith("audio") || memory.voice_note) return "audio";
 
-  const gallery = Array.isArray(memory.media_gallery)
-    ? memory.media_gallery
-    : [];
-  const types = gallery.map((item) => {
-    const value =
-      typeof item === "string"
-        ? item
-        : String(
-            item.file_type || item.type || item.file_url || item.url || "",
-          );
-    if (/^image\//i.test(value) || /\.(png|jpe?g|gif|webp|bmp)$/i.test(value))
-      return "photos";
-    if (/^video\//i.test(value) || /\.(mp4|mov|webm|m4v)$/i.test(value))
-      return "videos";
-    if (/^audio\//i.test(value) || /\.(mp3|m4a|wav|aac|ogg)$/i.test(value))
-      return "audio";
+  const types = getMemoryAttachments(memory).map((item) => {
+    const kind = getAttachmentKind(item);
+    if (kind === "image") return "photos";
+    if (kind === "video") return "videos";
+    if (kind === "audio") return "audio";
     return "";
   });
   return types.find(Boolean) || "all";
@@ -288,7 +272,12 @@ function getAttachmentUrl(item: MemoryAttachment) {
   const value =
     typeof item === "string"
       ? item
-      : item.file_url || item.url || item.src || item.path || "";
+      : item.file_url ||
+        item.url ||
+        item.src ||
+        item.path ||
+        item.file_path ||
+        "";
   return getMediaUrl(value);
 }
 
@@ -301,8 +290,18 @@ function getAttachmentName(item: MemoryAttachment, index: number) {
 
 function getAttachmentKind(item: MemoryAttachment) {
   const declaredType =
-    typeof item === "string" ? "" : String(item.file_type || item.type || "");
-  const value = `${declaredType} ${getAttachmentName(item, 0)}`.toLowerCase();
+    typeof item === "string"
+      ? ""
+      : String(
+          item.file_type ||
+            item.mime_type ||
+            item.mimeType ||
+            item.media_type ||
+            item.type ||
+            "",
+        );
+  const value =
+    `${declaredType} ${getAttachmentName(item, 0)} ${getAttachmentUrl(item)}`.toLowerCase();
   if (
     value.includes("image") ||
     /\.(png|jpe?g|gif|webp|bmp|svg)(\?|$)/i.test(value)
@@ -318,6 +317,9 @@ function getAttachmentKind(item: MemoryAttachment) {
 function getMemoryAttachments(memory: Memory) {
   const items: MemoryAttachment[] = [
     ...(Array.isArray(memory.media_gallery) ? memory.media_gallery : []),
+    ...(Array.isArray(memory.media_files) ? memory.media_files : []),
+    ...(Array.isArray(memory.images) ? memory.images : []),
+    ...(Array.isArray(memory.videos) ? memory.videos : []),
     ...(Array.isArray(memory.attachments) ? memory.attachments : []),
     ...(Array.isArray(memory.media) ? memory.media : []),
   ];

@@ -19,6 +19,7 @@ import {
     useMemo,
     useState,
 } from "react";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
     Alert,
     Image,
@@ -39,6 +40,7 @@ import {
 import api, {
     API_BASE_URL,
     getApiErrorMessage,
+    getStoredUser,
     logoutUser,
 } from "../../api";
 import { ActionIconButton } from "../../components/ActionIconButton";
@@ -128,6 +130,8 @@ type DiaryForm = {
 };
 
 const MAX_ATTACHMENT_FILE_SIZE = 100 * 1024 * 1024;
+const MAX_ATTACHMENT_FILES = 20;
+const DIARY_DRAFT_STORAGE_KEY = "diaryDraft";
 const moods = [
   { name: "Happy", emoji: "😊" },
   { name: "Excited", emoji: "😍" },
@@ -299,7 +303,12 @@ function attachmentName(file: string | Record<string, any>, index: number) {
   if (typeof file === "string")
     return file.split("/").pop() || `Attachment ${index + 1}`;
   return String(
-    file.file_name || file.name || file.filename || `Attachment ${index + 1}`,
+    file.file_name ||
+      file.name ||
+      file.filename ||
+      file.file_path?.split("/").pop() ||
+      file.file_url?.split("/").pop() ||
+      `Attachment ${index + 1}`,
   );
 }
 
@@ -313,34 +322,60 @@ function attachmentKind(file: string | Record<string, any>) {
   const type =
     typeof file === "string"
       ? ""
-      : String(file.file_type || file.type || "").toLowerCase();
+      : String(
+          file.file_type ||
+            file.mime_type ||
+            file.mimeType ||
+            file.media_type ||
+            file.type ||
+            "",
+        ).toLowerCase();
   const name = attachmentName(file, 0).toLowerCase();
-  if (type.includes("image") || /\.(png|jpe?g|gif|webp|bmp|svg)$/i.test(name))
+  const url =
+    typeof file === "string"
+      ? file
+      : String(file.file_url || file.url || file.src || file.path || file.file_path || "");
+  const value = `${type} ${name} ${url}`.toLowerCase();
+  if (value.includes("image") || /\.(png|jpe?g|gif|webp|bmp|svg)(\?|$)/i.test(value))
     return "image";
-  if (type.includes("video") || /\.(mp4|webm|mov|m4v|ogg)$/i.test(name))
+  if (value.includes("video") || /\.(mp4|webm|mov|m4v|ogg)(\?|$)/i.test(value))
     return "video";
-  if (type.includes("audio") || /\.(mp3|wav|m4a|aac|webm)$/i.test(name))
+  if (value.includes("audio") || /\.(mp3|wav|m4a|aac|webm)(\?|$)/i.test(value))
     return "audio";
   if (
-    type.includes("zip") ||
-    type.includes("compressed") ||
-    /\.(zip|rar|7z)$/i.test(name)
+    value.includes("zip") ||
+    value.includes("compressed") ||
+    /\.(zip|rar|7z)(\?|$)/i.test(value)
   )
     return "zip";
   return "file";
 }
 
 function diaryImageUrl(entry: DiaryEntry) {
-  const files = [...(entry.attachments || []), ...(entry.media_files || [])];
+  const files = getDiaryAttachments(entry);
   const image = files.find((file) => {
     const type =
       typeof file === "string"
         ? ""
-        : String(file.file_type || file.type || "").toLowerCase();
+        : String(
+            file.file_type ||
+              file.mime_type ||
+              file.mimeType ||
+              file.media_type ||
+              file.type ||
+              "",
+          ).toLowerCase();
     const url =
       typeof file === "string"
         ? file
-        : String(file.file_url || file.url || file.src || file.path || "");
+        : String(
+            file.file_url ||
+              file.url ||
+              file.src ||
+              file.path ||
+              file.file_path ||
+              "",
+          );
     return (
       type.includes("image") || /\.(png|jpe?g|gif|webp|bmp)(\?|$)/i.test(url)
     );
@@ -350,11 +385,63 @@ function diaryImageUrl(entry: DiaryEntry) {
   const value =
     typeof image === "string"
       ? image
-      : String(image.file_url || image.url || image.src || image.path || "");
+      : String(
+          image.file_url ||
+            image.url ||
+            image.src ||
+            image.path ||
+            image.file_path ||
+            "",
+        );
   if (!value) return "";
   if (/^(https?:|file:|content:|data:)/i.test(value)) return value;
   const baseUrl = API_BASE_URL.replace(/\/api\/?$/, "");
   return `${baseUrl}${value.startsWith("/") ? value : `/${value}`}`;
+}
+
+function getDiaryAttachments(entry: DiaryEntry) {
+  const listed = [...(entry.attachments || []), ...(entry.media_files || [])];
+  if (listed.length) return listed;
+
+  const fallback: Record<string, any>[] = [];
+  if (entry.image_path) {
+    fallback.push({
+      file_name: entry.image_path.split("/").pop() || "Image",
+      file_url: entry.image_path,
+      file_type: "image",
+    });
+  }
+  if (entry.video_path) {
+    fallback.push({
+      file_name: entry.video_path.split("/").pop() || "Video",
+      file_url: entry.video_path,
+      file_type: "video",
+    });
+  }
+  if (entry.audio_path) {
+    fallback.push({
+      file_name: entry.audio_path.split("/").pop() || "Audio",
+      file_url: entry.audio_path,
+      file_type: "audio",
+    });
+  }
+  if (entry.file_path) {
+    fallback.push({
+      file_name: entry.file_path.split("/").pop() || "Attachment",
+      file_url: entry.file_path,
+      file_type: "file",
+    });
+  }
+  return fallback;
+}
+
+function getDiaryDraftStorageKey(
+  ownerKey: string,
+  editingId: number | string | null,
+) {
+  return editingId === null
+    ? `${DIARY_DRAFT_STORAGE_KEY}:${ownerKey}:new`
+    : `${DIARY_DRAFT_STORAGE_KEY}:${ownerKey}:${editingId}`;
 }
 
 function initialDiaryForm(categoryId = ""): DiaryForm {
@@ -409,6 +496,11 @@ export default function Diary() {
   const [uploadProgress, setUploadProgress] = useState<number | null>(null);
   const [editingId, setEditingId] = useState<number | string | null>(null);
   const [form, setForm] = useState<DiaryForm>(initialDiaryForm());
+  const [draftOwnerKey, setDraftOwnerKey] = useState<string | null>(null);
+  const [draftOwnerLoaded, setDraftOwnerLoaded] = useState(false);
+  const [draftHydrated, setDraftHydrated] = useState(false);
+  const [draftSaved, setDraftSaved] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
   const [attachments, setAttachments] = useState<LocalAttachment[]>([]);
   const [existingAttachments, setExistingAttachments] = useState<
     (string | Record<string, any>)[]
@@ -440,6 +532,7 @@ export default function Diary() {
     [categories],
   );
   const applyDiaryFilters = (filters: FilterState) => {
+    setCurrentPage(1);
     setDateRange(filters.dateRange);
     setSelectedCategory(filters.category || "all");
     setSelectedFilter((filters.custom?.entryType as EntryFilter) || "all");
@@ -550,9 +643,37 @@ export default function Diary() {
     selectedCategory,
     selectedMood,
   ]);
+  const stats = useMemo(() => {
+    const now = new Date();
+    const thisMonth = entries.filter((entry) => {
+      const date = parseDateKey(String(entry.entry_date || "").slice(0, 10));
+      return date?.getMonth() === now.getMonth() &&
+        date?.getFullYear() === now.getFullYear();
+    }).length;
+    const thisYear = entries.filter((entry) => {
+      const date = parseDateKey(String(entry.entry_date || "").slice(0, 10));
+      return date?.getFullYear() === now.getFullYear();
+    }).length;
+    return {
+      totalEntries: entries.length,
+      thisMonth,
+      thisYear,
+      favorites: entries.filter((entry) => asBoolean(entry.is_favorite)).length,
+      drafts: entries.filter((entry) => entry.status === "draft").length,
+    };
+  }, [entries]);
+  const pageSize = 10;
+  const totalPages = Math.max(1, Math.ceil(filteredEntries.length / pageSize));
+  const safeCurrentPage = Math.min(currentPage, totalPages);
+  const paginatedEntries = filteredEntries.slice(
+    (safeCurrentPage - 1) * pageSize,
+    safeCurrentPage * pageSize,
+  );
 
   const openNewEntry = () => {
     setEditingId(null);
+    setDraftHydrated(false);
+    setDraftSaved(false);
     setForm(initialDiaryForm(categories[0] ? String(categories[0].id) : ""));
     setAttachments([]);
     setExistingAttachments([]);
@@ -562,6 +683,8 @@ export default function Diary() {
 
   const openEditEntry = (entry: DiaryEntry) => {
     setEditingId(entry.id);
+    setDraftHydrated(false);
+    setDraftSaved(false);
     setForm({
       title: entry.title || "",
       content: plainContent(entry.content),
@@ -575,10 +698,7 @@ export default function Diary() {
       is_private: asBoolean(entry.is_private),
       is_locked: asBoolean(entry.is_locked),
     });
-    setExistingAttachments([
-      ...(entry.media_files || []),
-      ...(entry.attachments || []),
-    ]);
+    setExistingAttachments(getDiaryAttachments(entry));
     setAttachments([]);
     setRemovedIds({ image: [], video: [], audio: [], zip: [] });
     setEditorVisible(true);
@@ -616,6 +736,108 @@ export default function Diary() {
     const timeout = setTimeout(() => openRequestedEntry(), 0);
     return () => clearTimeout(timeout);
   }, [createParam, editParam, loading, entries.length]);
+
+  useEffect(() => {
+    let active = true;
+    getStoredUser()
+      .then((user) => {
+        const owner = user?.id ?? user?.email ?? user?.phone;
+        if (owner === undefined || owner === null || String(owner).trim() === "") {
+          throw new Error("Could not identify the signed-in user for local drafts.");
+        }
+        if (active) setDraftOwnerKey(encodeURIComponent(String(owner)));
+      })
+      .catch((error) => {
+        if (!active) return;
+        console.warn("Diary local drafts are unavailable.", error);
+        Alert.alert(
+          "Local drafts unavailable",
+          getApiErrorMessage(error, "Please sign in again and try once more."),
+        );
+      })
+      .finally(() => {
+        if (active) setDraftOwnerLoaded(true);
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!editorVisible) return;
+    if (!draftOwnerLoaded) return;
+    if (!draftOwnerKey) {
+      let active = true;
+      const timeout = setTimeout(() => {
+        if (active) setDraftHydrated(true);
+      }, 0);
+      return () => {
+        active = false;
+        clearTimeout(timeout);
+      };
+    }
+    let active = true;
+    const storageKey = getDiaryDraftStorageKey(draftOwnerKey, editingId);
+    AsyncStorage.getItem(storageKey)
+      .then((savedDraft) => {
+        if (!active || !savedDraft) return;
+        const parsed: unknown = JSON.parse(savedDraft);
+        if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+          throw new Error("Saved diary draft has an invalid format.");
+        }
+        setForm((current) => ({ ...current, ...(parsed as Partial<DiaryForm>) }));
+      })
+      .catch((error) => {
+        if (!active) return;
+        console.warn("Unable to restore the saved diary draft.", error);
+        Alert.alert(
+          "Unable to restore draft",
+          getApiErrorMessage(error, "Please try again."),
+        );
+      })
+      .finally(() => {
+        if (active) {
+          setDraftHydrated(true);
+          setDraftSaved(true);
+        }
+      });
+    return () => {
+      active = false;
+    };
+  }, [draftOwnerKey, draftOwnerLoaded, editorVisible, editingId]);
+
+  useEffect(() => {
+    if (
+      !editorVisible ||
+      !draftHydrated ||
+      !draftOwnerKey ||
+      (!form.title.trim() && !form.content.trim())
+    ) {
+      return;
+    }
+    let active = true;
+    const timeout = setTimeout(() => {
+      AsyncStorage.setItem(
+        getDiaryDraftStorageKey(draftOwnerKey, editingId),
+        JSON.stringify(form),
+      )
+        .then(() => {
+          if (active) setDraftSaved(true);
+        })
+        .catch((error) => {
+          if (!active) return;
+          console.warn("Unable to save the diary draft locally.", error);
+          Alert.alert(
+            "Unable to save draft locally",
+            getApiErrorMessage(error, "Please try again."),
+          );
+        });
+    }, 800);
+    return () => {
+      active = false;
+      clearTimeout(timeout);
+    };
+  }, [draftHydrated, draftOwnerKey, editingId, editorVisible, form]);
 
   const pickAttachments = async () => {
     try {
@@ -656,10 +878,10 @@ export default function Diary() {
             (file) => !current.some((existing) => existing.uri === file.uri),
           ),
         ];
-        if (merged.length + existingAttachments.length > 10) {
+        if (merged.length + existingAttachments.length > MAX_ATTACHMENT_FILES) {
           Alert.alert(
             "Attachment limit",
-            "A diary entry can have up to 10 attachments.",
+            `A diary entry can have up to ${MAX_ATTACHMENT_FILES} attachments.`,
           );
           return current;
         }
@@ -684,7 +906,16 @@ export default function Diary() {
             name: `voice-note-${Date.now()}.m4a`,
             mimeType: "audio/mp4",
           };
-          setAttachments((current) => [...current, voiceFile]);
+          setAttachments((current) => {
+            if (current.length + existingAttachments.length >= MAX_ATTACHMENT_FILES) {
+              Alert.alert(
+                "Attachment limit",
+                `A diary entry can have up to ${MAX_ATTACHMENT_FILES} attachments.`,
+              );
+              return current;
+            }
+            return [...current, voiceFile];
+          });
         }
         return;
       }
@@ -766,6 +997,13 @@ export default function Diary() {
     const oversized = attachments.find(
       (file) => (file.size || 0) > MAX_ATTACHMENT_FILE_SIZE,
     );
+    if (attachments.length + existingAttachments.length > MAX_ATTACHMENT_FILES) {
+      Alert.alert(
+        "Attachment limit",
+        `A diary entry can have up to ${MAX_ATTACHMENT_FILES} attachments.`,
+      );
+      return;
+    }
     if (oversized) {
       Alert.alert(
         "File too large",
@@ -801,6 +1039,24 @@ export default function Diary() {
       if (attachments.length && savedId)
         await uploadAttachments(savedId, attachments);
       setAttachments([]);
+      if (!attachments.length || savedId) {
+        try {
+          if (draftOwnerKey) {
+            await AsyncStorage.removeItem(
+              getDiaryDraftStorageKey(draftOwnerKey, editingId),
+            );
+          }
+        } catch (error) {
+          console.warn("Unable to clear the saved diary draft.", error);
+          Alert.alert(
+            "Entry saved, draft remains",
+            getApiErrorMessage(
+              error,
+              "The saved draft could not be removed from this device.",
+            ),
+          );
+        }
+      }
       await fetchData();
       setSuccessMessage(
         attachments.length && !savedId
@@ -885,6 +1141,7 @@ export default function Diary() {
   };
 
   const updateForm = (key: keyof DiaryForm, value: string | boolean) => {
+    setDraftSaved(false);
     setForm((current) => ({ ...current, [key]: value }));
   };
 
@@ -940,10 +1197,60 @@ export default function Diary() {
           paddingBottom: insets.bottom + 112,
         }}
       >
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={{ gap: 9, paddingTop: 16, paddingBottom: 12 }}
+        >
+          {[
+            { label: "Total entries", value: stats.totalEntries },
+            { label: "This month", value: stats.thisMonth },
+            { label: "This year", value: stats.thisYear },
+            { label: "Favorites", value: stats.favorites },
+            { label: "Drafts", value: stats.drafts },
+          ].map((stat) => (
+            <View
+              key={stat.label}
+              style={{
+                width: 112,
+                minHeight: 72,
+                justifyContent: "center",
+                paddingHorizontal: 12,
+                borderRadius: 14,
+                borderWidth: 1,
+                borderColor: "#E2EAE4",
+                backgroundColor: Colors.white,
+              }}
+            >
+              <Text
+                style={{
+                  color: Colors.textSecondary,
+                  fontSize: 11,
+                  fontWeight: "600",
+                }}
+              >
+                {stat.label}
+              </Text>
+              <Text
+                style={{
+                  color: Colors.forest,
+                  fontSize: 20,
+                  fontWeight: "800",
+                  marginTop: 3,
+                }}
+              >
+                {stat.value}
+              </Text>
+            </View>
+          ))}
+        </ScrollView>
         <SearchBar
           className="mt-5"
           value={search}
-          onChangeText={setSearch}
+          onChangeText={(value) => {
+            setCurrentPage(1);
+            setSearch(value);
+          }}
           placeholder="Search title, mood, tags..."
           activeFilterCount={
             countActiveFilters({ ...filterValues, custom: {} }) +
@@ -1015,7 +1322,7 @@ export default function Diary() {
           </View>
         ) : (
           <View style={{ gap: 20 }}>
-            {groupEntriesByMonth(filteredEntries).map((group) => (
+            {groupEntriesByMonth(paginatedEntries).map((group) => (
               <View key={group.monthKey}>
                 {/* ── Month header ── */}
                 <View
@@ -1477,6 +1784,70 @@ export default function Diary() {
                 </View>
               </View>
             ))}
+            {totalPages > 1 ? (
+              <View
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  paddingVertical: 4,
+                }}
+              >
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Previous diary page"
+                  disabled={safeCurrentPage <= 1}
+                  onPress={() => setCurrentPage((page) => Math.max(1, page - 1))}
+                  style={{
+                    paddingHorizontal: 14,
+                    paddingVertical: 9,
+                    borderRadius: 10,
+                    backgroundColor:
+                      safeCurrentPage <= 1 ? "#E9EEEA" : Colors.forest,
+                  }}
+                >
+                  <Text
+                    style={{
+                      color:
+                        safeCurrentPage <= 1 ? Colors.sage : Colors.white,
+                      fontWeight: "700",
+                    }}
+                  >
+                    Previous
+                  </Text>
+                </Pressable>
+                <Text style={{ color: Colors.textSecondary, fontSize: 12 }}>
+                  Page {safeCurrentPage} of {totalPages}
+                </Text>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Next diary page"
+                  disabled={safeCurrentPage >= totalPages}
+                  onPress={() =>
+                    setCurrentPage((page) => Math.min(totalPages, page + 1))
+                  }
+                  style={{
+                    paddingHorizontal: 14,
+                    paddingVertical: 9,
+                    borderRadius: 10,
+                    backgroundColor:
+                      safeCurrentPage >= totalPages ? "#E9EEEA" : Colors.forest,
+                  }}
+                >
+                  <Text
+                    style={{
+                      color:
+                        safeCurrentPage >= totalPages
+                          ? Colors.sage
+                          : Colors.white,
+                      fontWeight: "700",
+                    }}
+                  >
+                    Next
+                  </Text>
+                </Pressable>
+              </View>
+            ) : null}
           </View>
         )}
       </ScrollView>
@@ -1603,6 +1974,20 @@ export default function Diary() {
                 value={form.location}
                 onChangeText={(value) => updateForm("location", value)}
                 placeholder="Where were you?"
+              />
+              <FormToggle
+                label="Private entry"
+                description="Keep this diary entry private."
+                value={form.is_private}
+                onPress={() =>
+                  updateForm("is_private", !form.is_private)
+                }
+              />
+              <FormToggle
+                label="Lock entry"
+                description="Mark this entry as locked."
+                value={form.is_locked}
+                onPress={() => updateForm("is_locked", !form.is_locked)}
               />
               <FormField
                 label="Tags"
@@ -1733,6 +2118,24 @@ export default function Diary() {
                   Uploading attachments: {uploadProgress}%
                 </Text>
               ) : null}
+              <Text
+                style={{
+                  color: Colors.sage,
+                  fontSize: 11,
+                  marginTop: 10,
+                  marginBottom: 2,
+                }}
+              >
+                {!draftHydrated
+                  ? "Restoring saved draft..."
+                  : !draftOwnerKey
+                    ? "Local draft saving is unavailable for this account."
+                  : form.title.trim() || form.content.trim()
+                    ? draftSaved
+                      ? "Draft saved on this device. Attachments are not included."
+                      : "Saving draft on this device..."
+                    : "Your writing will be saved locally as you type."}
+              </Text>
 
               <View
                 style={{
@@ -1762,10 +2165,39 @@ export default function Diary() {
                   </Text>
                 </Pressable>
                 <Pressable
+                  onPress={() => void saveEntry("draft")}
+                  disabled={submitting || isRecording}
+                  style={{
+                    flex: 1.15,
+                    height: 48,
+                    alignItems: "center",
+                    justifyContent: "center",
+                    borderRadius: 13,
+                    borderWidth: 1,
+                    borderColor: Colors.forest,
+                    backgroundColor: Colors.white,
+                    opacity: submitting || isRecording ? 0.6 : 1,
+                  }}
+                >
+                  {submitting ? (
+                    <ButtonLoadingIndicator />
+                  ) : (
+                    <Text
+                      style={{
+                        color: Colors.forest,
+                        fontWeight: "800",
+                        fontSize: 12,
+                      }}
+                    >
+                      Save draft
+                    </Text>
+                  )}
+                </Pressable>
+                <Pressable
                   onPress={() => void saveEntry("published")}
                   disabled={submitting || isRecording}
                   style={{
-                    flex: 1.5,
+                    flex: 1.3,
                     height: 48,
                     alignItems: "center",
                     justifyContent: "center",
@@ -1823,6 +2255,51 @@ function FormField({
         }}
       />
     </View>
+  );
+}
+
+function FormToggle({
+  label,
+  description,
+  value,
+  onPress,
+}: {
+  label: string;
+  description: string;
+  value: boolean;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable
+      onPress={onPress}
+      accessibilityRole="checkbox"
+      accessibilityState={{ checked: value }}
+      style={{
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 11,
+        marginBottom: 12,
+        padding: 12,
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: value ? "#9AB58C" : "#DFE7E2",
+        backgroundColor: value ? "#F1F7EE" : "#FFFFFF",
+      }}
+    >
+      <Ionicons
+        name={value ? "checkbox" : "square-outline"}
+        size={21}
+        color={value ? Colors.forest : Colors.sage}
+      />
+      <View style={{ flex: 1 }}>
+        <Text style={{ color: Colors.textPrimary, fontWeight: "700" }}>
+          {label}
+        </Text>
+        <Text style={{ color: Colors.textSecondary, fontSize: 12, marginTop: 2 }}>
+          {description}
+        </Text>
+      </View>
+    </Pressable>
   );
 }
 
