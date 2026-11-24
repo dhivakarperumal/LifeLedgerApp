@@ -22,7 +22,6 @@ import {
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
     Alert,
-    Image,
     KeyboardAvoidingView,
     Linking,
     Platform,
@@ -72,6 +71,7 @@ import { GradientSafeAreaView as SafeAreaView } from "../../components/GradientS
 import { PopupSelect } from "../../components/PopupSelect";
 import { SearchBar } from "../../components/SearchBar";
 import { UploadFilePreview } from "../../components/UploadFilePreview";
+import { AuthenticatedMediaImage } from "../../components/AuthenticatedMediaImage";
 import { Colors } from "../../constants/colors";
 
 type DiaryEntry = {
@@ -1197,53 +1197,7 @@ export default function Diary() {
           paddingBottom: insets.bottom + 112,
         }}
       >
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={{ gap: 9, paddingTop: 16, paddingBottom: 12 }}
-        >
-          {[
-            { label: "Total entries", value: stats.totalEntries },
-            { label: "This month", value: stats.thisMonth },
-            { label: "This year", value: stats.thisYear },
-            { label: "Favorites", value: stats.favorites },
-            { label: "Drafts", value: stats.drafts },
-          ].map((stat) => (
-            <View
-              key={stat.label}
-              style={{
-                width: 112,
-                minHeight: 72,
-                justifyContent: "center",
-                paddingHorizontal: 12,
-                borderRadius: 14,
-                borderWidth: 1,
-                borderColor: "#E2EAE4",
-                backgroundColor: Colors.white,
-              }}
-            >
-              <Text
-                style={{
-                  color: Colors.textSecondary,
-                  fontSize: 11,
-                  fontWeight: "600",
-                }}
-              >
-                {stat.label}
-              </Text>
-              <Text
-                style={{
-                  color: Colors.forest,
-                  fontSize: 20,
-                  fontWeight: "800",
-                  marginTop: 3,
-                }}
-              >
-                {stat.value}
-              </Text>
-            </View>
-          ))}
-        </ScrollView>
+        
         <SearchBar
           className="mt-5"
           value={search}
@@ -1674,8 +1628,9 @@ export default function Diary() {
                             }}
                           >
                             {photoUrl ? (
-                              <Image
-                                source={{ uri: photoUrl }}
+                              <AuthenticatedMediaImage
+                                url={photoUrl}
+                                accessibilityLabel={`${entry.title} image`}
                                 resizeMode="cover"
                                 style={{
                                   position: "absolute",

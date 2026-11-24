@@ -8,7 +8,6 @@ import { useEffect, useMemo, useState } from "react";
 import {
     ActivityIndicator,
     Alert,
-    Image,
     Linking,
     Pressable,
     RefreshControl,
@@ -20,6 +19,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import api, { API_BASE_URL, getApiErrorMessage, logoutUser } from "../../api";
 import { AttachmentFileActions } from "../../components/AttachmentFileActions";
+import { AuthenticatedMediaImage } from "../../components/AuthenticatedMediaImage";
 import ConfirmPopup from "../../components/ConfirmPopup";
 import { parseLocalDate } from "../../components/dateTimeUtils";
 import { GradientSafeAreaView as SafeAreaView } from "../../components/GradientSafeAreaView";
@@ -545,8 +545,9 @@ export default function DiaryDetails() {
           }}
         >
           {coverImageUrl ? (
-            <Image
-              source={{ uri: coverImageUrl }}
+            <AuthenticatedMediaImage
+              url={coverImageUrl}
+              accessibilityLabel={`${entry.title} cover image`}
               resizeMode="cover"
               style={{ position: "absolute", top: 0, right: 0, bottom: 0, left: 0 }}
             />
@@ -907,8 +908,9 @@ function AttachmentPreview({
           backgroundColor: "#F2F5F3",
         }}
       >
-        <Image
-          source={{ uri: url }}
+        <AuthenticatedMediaImage
+          url={url}
+          accessibilityLabel={name}
           resizeMode="contain"
           style={{ width: "100%", height: 230 }}
         />

@@ -17,9 +17,7 @@ import {
 import { VideoView, useVideoPlayer } from "expo-video";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
-    ActivityIndicator,
     Alert,
-    Image,
     KeyboardAvoidingView,
     Linking,
     Platform,
@@ -28,9 +26,6 @@ import {
     ScrollView,
     Text,
     View,
-    type ImageSourcePropType,
-    type ImageStyle,
-    type StyleProp,
 } from "react-native";
 import {
     SafeAreaView as NativeSafeAreaView,
@@ -73,6 +68,7 @@ import { GradientSafeAreaView as SafeAreaView } from "../../components/GradientS
 import { PopupSelect } from "../../components/PopupSelect";
 import { SearchBar } from "../../components/SearchBar";
 import { UploadFilePreview } from "../../components/UploadFilePreview";
+import { AuthenticatedMediaImage } from "../../components/AuthenticatedMediaImage";
 import { Colors } from "../../constants/colors";
 
 type MemoryAttachment =
@@ -1106,7 +1102,7 @@ export default function Memories() {
                           }}
                         >
                           {imageUrl ? (
-                            <AuthenticatedMemoryImage
+                            <AuthenticatedMediaImage
                               url={imageUrl}
                               accessibilityLabel={`${memory.title} image`}
                               resizeMode="cover"
@@ -1671,7 +1667,7 @@ function MemoryAttachmentPreview({
   if (kind === "image") {
     return (
       <View style={{ overflow: "hidden", borderRadius: 12, backgroundColor: "#F3F6F4" }}>
-        <AuthenticatedMemoryImage
+        <AuthenticatedMediaImage
           url={url}
           accessibilityLabel={name}
           resizeMode="contain"
@@ -1809,70 +1805,6 @@ async function getAuthenticatedMediaSource(url: string) {
     uri: url,
     ...(token ? { headers: { Authorization: `Bearer ${token}` } } : {}),
   };
-}
-
-function AuthenticatedMemoryImage({
-  url,
-  accessibilityLabel,
-  resizeMode,
-  style,
-}: {
-  url: string;
-  accessibilityLabel: string;
-  resizeMode: "cover" | "contain";
-  style: StyleProp<ImageStyle>;
-}) {
-  const [loadedSource, setLoadedSource] = useState<{
-    url: string;
-    source: ImageSourcePropType;
-  } | null>(null);
-  const [failedUrl, setFailedUrl] = useState<string | null>(null);
-
-  useEffect(() => {
-    let active = true;
-    void getAuthenticatedMediaSource(url)
-      .then((source) => {
-        if (active) setLoadedSource({ url, source });
-      })
-      .catch(() => {
-        if (active) setFailedUrl(url);
-      });
-    return () => {
-      active = false;
-    };
-  }, [url]);
-
-  const source = loadedSource?.url === url ? loadedSource.source : null;
-  const failed = failedUrl === url;
-
-  return (
-    <View
-      style={[
-        style,
-        {
-          overflow: "hidden",
-          alignItems: "center",
-          justifyContent: "center",
-          backgroundColor: "#DDE9E4",
-        },
-      ]}
-      accessibilityLabel={accessibilityLabel}
-    >
-      {source && !failed ? (
-        <Image
-          source={source}
-          resizeMode={resizeMode}
-          onError={() => setFailedUrl(url)}
-          style={{ width: "100%", height: "100%" }}
-          accessibilityLabel={accessibilityLabel}
-        />
-      ) : failed ? (
-        <Ionicons name="image-outline" size={26} color={Colors.sage} />
-      ) : (
-        <ActivityIndicator size="small" color={Colors.forest} />
-      )}
-    </View>
-  );
 }
 
 const memoryAttachmentRowStyle = {
